@@ -33,6 +33,7 @@
 # local dev / webhook listener loglari
 .dev.log
 .webhook.log
+.inngest.log
 
 # debug
 npm-debug.log*
