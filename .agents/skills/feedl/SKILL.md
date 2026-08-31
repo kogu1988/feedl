@@ -9,6 +9,8 @@ feedl (domain: feedl.co, planned) is an AI-supported customer feedback platform 
 a Canny clone MVP built solo. This skill encodes everything learned so far so
 future sessions do not repeat mistakes.
 
+Git: `github.com/kogu1988/feedl` (main) - commit + push after each validated sprint.
+
 ## Source of truth (read before acting)
 
 - `docs/plan.md` - sprint log; find the current sprint here first
@@ -21,9 +23,11 @@ Do not duplicate these docs in code comments; point to them.
 ## Stack (pinned - do not bump majors without asking)
 
 - Next.js 15 App Router (scaffolded with `create-next-app@15`)
-- React 19.1.4 (pinned by @clerk/nextjs peer deps - see pitfalls)
+- React + react-dom 19.2.8 (pinned EXACTLY, identical versions - see pitfalls)
 - Tailwind v4 + shadcn/ui (`components.json` at root)
-- Clerk (`@clerk/nextjs`) + `svix` for webhook verification
+- Clerk (`@clerk/nextjs` v7 + `@clerk/ui` shadcn theme) + `svix` for webhook
+  verification; Clerk CLI 3.2.0 (global); app "feedl" =
+  `app_3Ih0Ue3SHQLk5HOOFnWEM7LD6Ze` (dev instance `ins_3Ih0UbHGeYBU0L04QhDtPo94eh0`)
 - Drizzle ORM + `@neondatabase/serverless` (neon-http driver) + `drizzle-kit`
 - Inngest for background jobs; OpenRouter for LLM; OpenAI for embeddings
 - Email: Resend (production) / Ethereal.email (dev/test)
@@ -65,8 +69,21 @@ docs/                                                 planning docs (source of t
   `input`/`textarea`/`button` manually.
 - **svix `Webhook.verify()` returns void** in current typings. Verify (it throws
   on invalid), then cast the parsed payload: `evt = payload as WebhookEvent`.
-- **@clerk/nextjs requires react `~19.1.4`** - react 19.1.0 fails ERESOLVE.
-  Fix: `npm i react@19.1.4 react-dom@19.1.4`.
+- **react/react-dom must be the EXACT same version.** Installing `@clerk/ui`
+  bumped react to 19.2.8 while react-dom stayed 19.1.4; build failed with
+  "Incompatible React versions". Fix: `npm i react@19.2.8 react-dom@19.2.8
+  --save-exact` (both Clerk packages' peers allow `~19.2.3`).
+- **Clerk v7 layout rules**: `ClerkProvider` goes INSIDE `<body>` (not wrapping
+  `<html>`); matcher must include `"/__clerk/(.*)"` after the api/trpc matcher.
+- **`clerk init` hangs at "Scanning for issues..." on Windows** (CLI 3.2.0, pty).
+  Run `clerk init --app <id> -y --no-skills`, let the timeout kill it, then
+  verify results: it SKIPs existing middleware/layout/sign-in files and appends
+  env URL vars, but does NOT write keys over empty placeholders - pull keys
+  with `clerk env pull --app <id> --file .env.local`.
+- **`clerk listen` is gone in CLI 3.x**: use
+  `clerk webhooks listen --forward-to http://localhost:3000/api/webhooks/clerk`
+  (optionally pin the URL with `--token "$(clerk webhooks token)"`). Put the
+  printed `whsec_...` into `CLERK_WEBHOOK_SIGNING_SECRET`.
 - **create-next-app refuses non-empty directories**; `docs/` is whitelisted, so
   planning docs can live there during scaffolding.
 - **drizzle-kit does NOT auto-load `.env.local`** (unlike Next.js). `drizzle.config.ts`
@@ -90,9 +107,10 @@ docs/                                                 planning docs (source of t
    update the docs in the same change.
 3. Validate with `npm run build` (types + lint).
 4. Report the sprint's **Kontrol** checklist to the user for manual verification.
-5. External services: Neon via `npx neonctl`, Clerk app created manually in the
-   Clerk dashboard (use `clerk listen` to forward webhooks to localhost),
-   Vercel at the deploy sprint.
+5. External services: Neon via `npx neonctl`; Clerk app exists ("feedl",
+   `app_3Ih0Ue3SHQLk5HOOFnWEM7LD6Ze`, CLI linked, authed as oguzkir@gmail.com);
+   forward webhooks with `clerk webhooks listen` (see pitfalls); Vercel at the
+   deploy sprint.
 6. **NEVER name anything** (Neon project, Vercel project, Clerk app, database,
    skill, etc.) without asking the user first - the user explicitly requires
     being consulted on every name.

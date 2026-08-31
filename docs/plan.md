@@ -26,6 +26,22 @@
 
 ## Sprint 1: Kimlik Doğrulama (Auth) & Roller (2. Gün)
 
+> **Durum (2026-08-31):** Kod tamamlandı, uçtan uca test bekliyor.
+>
+> - Clerk uygulaması "feedl" (`app_3Ih0Ue3SHQLk5HOOFnWEM7LD6Ze`) oluşturuldu; Clerk
+>   CLI 3.2.0 ile projeye bağlandı, key'ler `clerk env pull` ile `.env.local`'e yazıldı.
+> - `clerk init` mevcut dosyaları (middleware, layout, sign-in/up) SKIP etti; yalnızca
+>   sign-in/up URL + fallback redirect env'lerini ekledi. Windows'ta "Scanning for
+>   issues..." adımında takıldı — dosyalar yazılmıştı, sorun yok.
+> - Ek düzeltmeler: matcher'a `/__clerk/(.*)` eklendi; `ClerkProvider` v7 gereği
+>   `<body>` içine taşındı; `@clerk/ui` shadcn teması uygulandı; react/react-dom
+>   19.2.8'e (exact) sabitlendi.
+> - Layout'ta geçici üst bar (Giriş/Kayıt/UserButton) var — Sprint 2'de gerçek
+>   navigasyonla değişecek.
+> - Bekleyen: `CLERK_WEBHOOK_SIGNING_SECRET` (`clerk webhooks listen` çıktısından),
+>   ilk kullanıcı kaydı + Neon `users` doğrulaması, admin e-postasına `role='admin'`.
+> - Depo: `github.com/kogu1988/feedl` (main).
+
 **Hedef:** Giriş yapma, kayıt olma ve admin/üye ayrımı.
 
 **Yapılacaklar:**
