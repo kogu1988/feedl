@@ -194,7 +194,9 @@
 >   eşiği yakalayamadı (yerel 0.801, başlık birebir aynıydı). Alakasız
 >   generic çiftler 0.489'a kadar çıkıyor; bantlar 0.45'te ayrışıyor →
 >   DUPLICATE_SIMILARITY_THRESHOLD 0.45'e indirildi. Karar yine LLM'de;
->   post başına ≤1 karşılaştırma çağrısı, maliyet sınırlı.
+>   post başına ≤1 karşılaştırma çağrısı, maliyet sınırlı. Rerun ile
+>   doğrulandı: 0.547 adayı LLM DUPLICATE dedi, duplicate_of +
+>   duplicate_note canlıda doldu.
 > - Inngest Cloud bağlantısı Vercel entegrasyonuyla kuruldu (signing/event
 >   key otomatik enjekte edildi; `getfeedl.vercel.app/api/inngest` üzerinde
 >   App diagnostics 200 + tüm key'ler CORRECT). **Not:** Vercel Deployment
