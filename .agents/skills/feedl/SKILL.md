@@ -81,9 +81,18 @@ docs/                                                 planning docs (source of t
   env URL vars, but does NOT write keys over empty placeholders - pull keys
   with `clerk env pull --app <id> --file .env.local`.
 - **`clerk listen` is gone in CLI 3.x**: use
-  `clerk webhooks listen --forward-to http://localhost:3000/api/webhooks/clerk`
-  (optionally pin the URL with `--token "$(clerk webhooks token)"`). Put the
-  printed `whsec_...` into `CLERK_WEBHOOK_SIGNING_SECRET`.
+  `clerk webhooks listen --token c_zC347Uji8e --forward-to http://localhost:3000/api/webhooks/clerk`.
+  The relay URL is NOT auto-registered: add it as an endpoint in the Clerk
+  Dashboard (webhooks page; events user.created/updated/deleted) and copy the
+  endpoint's Signing Secret into `CLERK_WEBHOOK_SIGNING_SECRET` (done once;
+  relay is pinned via --token so the URL stays stable across restarts).
+- **@neondatabase/serverless v1: `neon(url)` returns a tagged-template-only
+  function.** `sql('SELECT ...')` throws; use `sql.query('SELECT ...', [])`
+  for ad-hoc SQL (or go through Drizzle).
+- **Background processes die with the tool's pty on Windows.** `nohup ... &`
+  gets killed when the shell exits. Launch detached instead:
+  `powershell -NoProfile -Command "Start-Process cmd.exe -ArgumentList '/c','npm run dev > D:\\Projects\\feedl.co\\.dev.log 2>&1' -WorkingDirectory 'D:\\Projects\\feedl.co' -WindowStyle Hidden"`.
+  Find/kill via Get-CimInstance CommandLine match + `taskkill //F //T //PID <pid>`.
 - **create-next-app refuses non-empty directories**; `docs/` is whitelisted, so
   planning docs can live there during scaffolding.
 - **drizzle-kit does NOT auto-load `.env.local`** (unlike Next.js). `drizzle.config.ts`

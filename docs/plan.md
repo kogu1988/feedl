@@ -26,7 +26,7 @@
 
 ## Sprint 1: Kimlik Doğrulama (Auth) & Roller (2. Gün)
 
-> **Durum (2026-08-31):** Kod tamamlandı, uçtan uca test bekliyor.
+> **Durum (2026-08-31):** ✅ Sprint 1 tamamlandı — uçtan uca test edildi ve doğrulandı.
 >
 > - Clerk uygulaması "feedl" (`app_3Ih0Ue3SHQLk5HOOFnWEM7LD6Ze`) oluşturuldu; Clerk
 >   CLI 3.2.0 ile projeye bağlandı, key'ler `clerk env pull` ile `.env.local`'e yazıldı.
@@ -38,8 +38,13 @@
 >   19.2.8'e (exact) sabitlendi.
 > - Layout'ta geçici üst bar (Giriş/Kayıt/UserButton) var — Sprint 2'de gerçek
 >   navigasyonla değişecek.
-> - Bekleyen: `CLERK_WEBHOOK_SIGNING_SECRET` (`clerk webhooks listen` çıktısından),
->   ilk kullanıcı kaydı + Neon `users` doğrulaması, admin e-postasına `role='admin'`.
+> - Webhook akışı doğrulandı: `user.created` → 200 → `users` satırı düştü. Relay
+>   URL'i Dashboard'da endpoint olarak eklendi (imza sırrı `.env.local`'de). Lokal
+>   dinleyici: `clerk webhooks listen --token c_zC347Uji8e --forward-to
+>   http://localhost:3000/api/webhooks/clerk` (sabit relay URL).
+> - Admin: `oguzkir@gmail.com` → `role='admin'` atandı.
+> - Manuel testler ✓: admin `/dashboard`'a, üye `/portal`'a yönleniyor; çıkış
+>   sonrası korunan rota (`/dashboard`) giriş ekranı gösteriyor.
 > - Depo: `github.com/kogu1988/feedl` (main).
 
 **Hedef:** Giriş yapma, kayıt olma ve admin/üye ayrımı.
