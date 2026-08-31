@@ -184,8 +184,18 @@
 >   embedding ✓; kopya post → cosine 0.801 aday + LLM DUPLICATE kararı +
 >   duplicate_of/duplicate_note doldu ✓. `POST /api/posts` trigger'ı try/catch
 >   içinde — Inngest erişilemezse bile fikir kaydı başarılı.
-> - Bekleyen: kullanıcı portal testi (yeni fikir gönder → 10-30 sn içinde
->   portaldan görünmese de DB'de özet dolmalı) + deploy'da Inngest Cloud key'leri.
+> - Üretim doğrulaması (2026-09-01): `getfeedl.vercel.app/portal` üzerinden
+>   "Karanlık mod desteği" fikri → ~60 sn içinde DB'de ai_summary +
+>   sentiment_label (notr) + 5 ai_keywords + embedding doldu; duplicate
+>   çıkmadı (doğru negatif). Uçtan uca zincir canlı: portal → post/created →
+>   Inngest Cloud → OpenRouter → Neon.
+> - Inngest Cloud bağlantısı Vercel entegrasyonuyla kuruldu (signing/event
+>   key otomatik enjekte edildi; `getfeedl.vercel.app/api/inngest` üzerinde
+>   App diagnostics 200 + tüm key'ler CORRECT). **Not:** Vercel Deployment
+>   Protection, deployment URL'lerine sync'i engellediği için ("Unattached
+>   syncs") uygulama production domain üzerinden manuel eklendi; entegrasyona
+>   Protection Bypass key'i de girildi (bir sonraki deploy'da otomatik sync
+>   test edilecek).
 
 **Hedef:** Yeni fikir gelince, Inngest background'da çalışsın; OpenRouter LLM ile etiket/özet çıkarsın, OpenRouter embedding ile vektör üretsin, pgvector ile duplicate kontrolü yapsın.
 
