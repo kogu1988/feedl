@@ -312,7 +312,7 @@ Canny araştırmasına (docs/deepseek.txt, docs/oxalpha.txt) dayalı plan;
   1. Portal güçlendirme: arama + **yazarken benzer post önerisi** (mevcut
      embedding altyapısı yeniden kullanılır — Canny'nin kritik duplicate
      önleme UX'i) + public roadmap kanban görünümü.
-  2. Tasarım/UI cilası (referans: `DESING.md` — Base UI dokümantasyonu).
+  2. Tasarım/UI cilası (referans: `DESIGN.md` — Base UI dokümantasyonu).
   3. Yorumlar (canny.md: MVP sonrası; etkileşimi canlandıran çekirdek
      özellik — sıra odağa göre netleşecek).
 - Not: Ücretsiz LLM'de ara sıra 429 (upstream rate limit) normal;
@@ -332,7 +332,7 @@ Canny araştırmasına (docs/deepseek.txt, docs/oxalpha.txt) dayalı plan;
 
 ## 📚 Referans Dokümanlar
 
-- **`DESING.md` (repo kökü) — TASARIM REFERANSI:** Planlamanın ilerleyen
+- **`DESIGN.md` (repo kökü) — TASARIM REFERANSI:** Planlamanın ilerleyen
   bölümlerinde görsel/UX tasarım ve bileşen işlerine çalışırken bu dosyaya
   bakılacak: `@base-ui/react` (Base UI) dokümantasyonu — shadcn/ui
   bileşenlerinin altındaki headless kütüphane. Yeni bileşen/tasarım işinde

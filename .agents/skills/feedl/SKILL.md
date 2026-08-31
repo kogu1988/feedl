@@ -20,7 +20,7 @@ Git: `github.com/kogu1988/feedl` (main) - commit + push after each validated spr
 
 Design/feature references (consult when the task touches them):
 
-- `DESING.md` (repo root) - Base UI (`@base-ui/react`) documentation; the
+- `DESIGN.md` (repo root) - Base UI (`@base-ui/react`) documentation; the
   design reference for UI/component work going forward (plan.md §Referans)
 - `docs/deepseek.txt`, `docs/oxalpha.txt` - Canny platform research gathered
   from AI models (features, statuses/roadmap/changelog, monetization, data
