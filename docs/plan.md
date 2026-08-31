@@ -214,7 +214,16 @@
 
 ## Sprint 6: E-posta Bildirimleri (Shipped Notifications) & Deploy (7. Gün)
 
-> **Durum (2026-09-01):** ✅ Kod tamamlandı — üretim testi bekliyor.
+> **Durum (2026-09-01):** ✅ Sprint 6 tamamlandı — üretimde uçtan uca test edildi.
+>
+> - Üretim testi: dashboard'dan "Karanlık mod desteği" shipped'e çekildi →
+>   Inngest `notify-shipped` run çıktısı `provider: ethereal, recipients: 1,
+>   sent: 1, failed: 0` + Ethereal preview URL'de e-posta dogru içerikle
+>   görüntülendi; portalda "Yayında" bölümünde post doğru listede.
+> - **Inngest auto-sync çözüldü:** Protection Bypass key'i entegrasyona
+>   girdikten sonraki ilk deploy'da (98509c0) entegrasyon deploy URL'ine
+>   sync edebildi — "Unattached syncs" sorusu kapandı, 2 fonksiyon
+>   (ai-autopilot + notify-shipped) otomatik göründü.
 >
 > - `npm i resend nodemailer` (+ `@types/nodemailer`). Sağlayıcı seçimi
 >   `lib/email/send.ts` içinde env'e göre otomatik: RESEND_API_KEY varsa
