@@ -24,6 +24,9 @@
 .DS_Store
 *.pem
 
+# vercel cli link dosyası
+.vercel
+
 # clerk init öncesi alınan geçici yedekler
 .clerk-backup/
 
@@ -46,3 +49,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+.vercel
+.env*
