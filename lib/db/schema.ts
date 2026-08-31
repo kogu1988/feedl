@@ -6,6 +6,8 @@ import {
   timestamp,
   unique,
   uuid,
+  vector,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 
 export const userRoleEnum = pgEnum("user_role", ["admin", "customer"]);
@@ -40,8 +42,8 @@ export const postSentimentEnum = pgEnum("post_sentiment", [
 ]);
 
 // posts: Ana fikir tablosu (docs/README.md §3).
-// embedding_vector (pgvector) ve duplicate_* alanları Sprint 5 migration'ında
-// eklenecek — pgvector extension kurulumu gerektirir.
+// embedding_vector: nvidia/nemotron-3-embed-1b:free (2048 boyut). HNSW limiti
+// 2000 olduğu için index yok — MVP hacminde sıralı tarama yeterli (docs/README.md §3).
 export const posts = pgTable(
   "posts",
   {
@@ -55,6 +57,11 @@ export const posts = pgTable(
     sentimentLabel: postSentimentEnum("sentiment_label"),
     aiKeywords: text("ai_keywords").array(),
     aiSummary: text("ai_summary"),
+    embeddingVector: vector("embedding_vector", { dimensions: 2048 }),
+    duplicateOf: uuid("duplicate_of").references((): AnyPgColumn => posts.id, {
+      onDelete: "set null",
+    }),
+    duplicateNote: text("duplicate_note"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

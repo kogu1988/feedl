@@ -5,6 +5,7 @@ import { count, desc, eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { posts, votes } from "@/lib/db/schema";
 import { createPostSchema } from "@/lib/validations/post";
+import { inngest } from "@/inngest/client";
 
 // GET /api/posts — herkese açık fikir listesi (en son eklenen en üstte),
 // oy sayılarıyla birlikte.
@@ -82,6 +83,26 @@ export async function POST(req: Request) {
         status: posts.status,
         createdAt: posts.createdAt,
       });
+
+    // AI analizi arka planda Inngest ile çalışır (plan.md Sprint 5). Event
+    // gönderimi başarısız olsa bile fikir kaydı başarılı kalmalıdır; lokalde
+    // Dev Server kapalıyken veya production'da key yokken buraya düşer.
+    try {
+      await inngest.send({
+        name: "post/created",
+        data: {
+          postId: created.id,
+          title: created.title,
+          description: created.description,
+          userId,
+        },
+      });
+    } catch (eventErr) {
+      console.error(
+        "post/created event could not be sent:",
+        eventErr instanceof Error ? eventErr.message : eventErr,
+      );
+    }
 
     return NextResponse.json({ success: true, data: created }, { status: 201 });
   } catch (err) {

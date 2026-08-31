@@ -1,0 +1,28 @@
+{"time":"2026-08-31T21:21:00.027626Z","level":"INFO","msg":"initialized database","db":"sqlite","mode":"memory"}
+{"time":"2026-08-31T21:21:00.0362654Z","level":"INFO","msg":"ran database migrations","db":"sqlite","mode":"memory"}
+{"time":"2026-08-31T21:21:00.0449057Z","level":"INFO","msg":"starting executor grpc server","svc":"executor","addr":":50053"}
+{"time":"2026-08-31T21:21:00.0464082Z","level":"INFO","msg":"service starting","caller":"devserver","service":"devserver"}
+{"time":"2026-08-31T21:21:00.0464082Z","level":"INFO","msg":"service starting","caller":"executor","service":"executor"}
+{"time":"2026-08-31T21:21:00.0464082Z","level":"INFO","msg":"service starting","caller":"api","service":"api"}
+{"time":"2026-08-31T21:21:00.0464082Z","level":"INFO","msg":"autodiscovering locally hosted SDKs"}
+{"time":"2026-08-31T21:21:00.0464082Z","level":"INFO","msg":"starting server","caller":"api","addr":"0.0.0.0:8288"}
+{"time":"2026-08-31T21:21:00.0464082Z","level":"INFO","msg":"service starting","caller":"lease-scavenger","service":"lease-scavenger"}
+{"time":"2026-08-31T21:21:00.0464082Z","level":"INFO","msg":"service starting","caller":"connect-gateway","service":"connect-gateway"}
+{"time":"2026-08-31T21:21:00.0464082Z","level":"INFO","msg":"starting event stream","backend":"redis"}
+{"time":"2026-08-31T21:21:00.0464082Z","level":"INFO","msg":"service starting","caller":"runner","service":"runner"}
+{"time":"2026-08-31T21:21:00.0464082Z","level":"INFO","msg":"subscribing to function queue"}
+{"time":"2026-08-31T21:21:00.047418Z","level":"INFO","msg":"Executor started in assignedQueueShard Mode","queue_shard":"default"}
+{"time":"2026-08-31T21:21:00.0514536Z","level":"INFO","msg":"subscribing to events","topic":"events"}
+{"time":"2026-08-31T21:21:13.187781Z","level":"INFO","msg":"apps synced, disabling auto-discovery"}
+{"time":"2026-08-31T21:24:48.9784422Z","level":"INFO","msg":"publishing event","caller":"api","event_name":"post/created","internal_id":"01M1CVBT6JK3GBC40AFRFTK4A9","external_id":"01M1CVBT6JK3GBC40AFRFTK4A9","event":{"id":"01M1CVBT6JK3GBC40AFRFTK4A9","name":"post/created","data":{"description":"harika olabilir!","postId":"26f2293b-d38a-4603-be4a-31c6749f673f","title":"fikir","userId":"test-user"},"ts":1788211488978}}
+{"time":"2026-08-31T21:24:49.1439501Z","level":"INFO","msg":"received event","event":"post/created","event_id":"01M1CVBT6JK3GBC40AFRFTK4A9","internal_id":"01M1CVBT6JK3GBC40AFRFTK4A9"}
+{"time":"2026-08-31T21:24:49.1445945Z","level":"INFO","msg":"initializing fn","event":"post/created","event_id":"01M1CVBT6JK3GBC40AFRFTK4A9","internal_id":"01M1CVBT6JK3GBC40AFRFTK4A9","function":"ai-autopilot","function_id":"1c0e547c-0d24-52fd-86ad-7d9cab10371e"}
+{"time":"2026-08-31T21:25:00.2562018Z","level":"INFO","msg":"received event","event":"inngest/function.finished","event_id":"01M1CVC53KQPQDE00HE179J19K","internal_id":"01M1CVC53K0TK1G2HSD0ZJ3Z23"}
+{"time":"2026-08-31T21:25:42.6523246Z","level":"INFO","msg":"publishing event","caller":"api","event_name":"post/created","internal_id":"01M1CVDEKW14R349HGF3BCJB8N","external_id":"01M1CVDEKW14R349HGF3BCJB8N","event":{"id":"01M1CVDEKW14R349HGF3BCJB8N","name":"post/created","data":{"description":"harika olabilir! gercekten cok harika bir fikir","postId":"5d8bd169-7581-4d18-9f32-cd3e107da13d","title":"fikir tekrar","userId":"test-user"},"ts":1788211542652}}
+{"time":"2026-08-31T21:25:42.825451Z","level":"INFO","msg":"received event","event":"post/created","event_id":"01M1CVDEKW14R349HGF3BCJB8N","internal_id":"01M1CVDEKW14R349HGF3BCJB8N"}
+{"time":"2026-08-31T21:25:42.8259631Z","level":"INFO","msg":"initializing fn","event":"post/created","event_id":"01M1CVDEKW14R349HGF3BCJB8N","internal_id":"01M1CVDEKW14R349HGF3BCJB8N","function":"ai-autopilot","function_id":"1c0e547c-0d24-52fd-86ad-7d9cab10371e"}
+{"time":"2026-08-31T21:25:51.7149616Z","level":"INFO","msg":"received event","event":"inngest/function.finished","event_id":"01M1CVDQCENA0YF2681PZZZVFH","internal_id":"01M1CVDQCE8KYEY9C27HP4D7BQ"}
+{"time":"2026-08-31T21:27:49.2607471Z","level":"INFO","msg":"publishing event","caller":"api","event_name":"post/created","internal_id":"01M1CVHA8CP0XT6DDFC8SBQ5BQ","external_id":"01M1CVHA8CP0XT6DDFC8SBQ5BQ","event":{"id":"01M1CVHA8CP0XT6DDFC8SBQ5BQ","name":"post/created","data":{"description":"harika olabilir! gercekten cok harika bir fikir","postId":"5d8bd169-7581-4d18-9f32-cd3e107da13d","title":"fikir tekrar","userId":"test-user"},"ts":1788211669260}}
+{"time":"2026-08-31T21:27:49.3119753Z","level":"INFO","msg":"received event","event":"post/created","event_id":"01M1CVHA8CP0XT6DDFC8SBQ5BQ","internal_id":"01M1CVHA8CP0XT6DDFC8SBQ5BQ"}
+{"time":"2026-08-31T21:27:49.3127012Z","level":"INFO","msg":"initializing fn","event":"post/created","event_id":"01M1CVHA8CP0XT6DDFC8SBQ5BQ","internal_id":"01M1CVHA8CP0XT6DDFC8SBQ5BQ","function":"ai-autopilot","function_id":"1c0e547c-0d24-52fd-86ad-7d9cab10371e"}
+{"time":"2026-08-31T21:28:00.918136Z","level":"INFO","msg":"received event","event":"inngest/function.finished","event_id":"01M1CVHNDTQZEJB54WVB8S28R7","internal_id":"01M1CVHNDT9FSDV4XJ5Q1YZFB0"}

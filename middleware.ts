@@ -5,6 +5,8 @@ import type { NextRequest } from "next/server";
 // - "/" ve "/portal" sayfa görünümü herkese açık (public read)
 // - GET /api/posts public; POST handler içinde auth zorunlu tutulur
 // - /api/webhooks/* imza doğrulamasıyla public
+// - /api/inngest Inngest Cloud/Dev Server tarafından çağrılır (production'da
+//   signing key doğrulaması serve() içinde yapılır)
 // Fikir gönderme, oy verme ve admin işlemleri korumalıdır.
 const isPublicRoute = createRouteMatcher([
   "/",
@@ -13,6 +15,7 @@ const isPublicRoute = createRouteMatcher([
   "/portal(.*)",
   "/api/posts(.*)",
   "/api/webhooks(.*)",
+  "/api/inngest(.*)",
 ]);
 
 // Middleware SADECE giriş kontrolü yapar. Admin yetkisi tek kaynak olarak

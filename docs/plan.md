@@ -165,6 +165,28 @@
 
 ## Sprint 5: Yapay Zeka Otomasyonu (AI Autopilot) - EN KRİTİK (6. Gün)
 
+> **Durum (2026-09-01):** ✅ Sprint 5 tamamlandı — uçtan uca test edildi.
+>
+> - Inngest v4 kuruldu; `app/api/inngest` serve endpoint + `inngest/` klasörü.
+>   **v4 API notu:** trigger artık options içinde (`triggers: { event: ... }`),
+>   3 argümanlı v3 imzası çalışmıyor. Lokal geliştirmede `INNGEST_DEV=1`
+>   gerekiyor (SDK NODE_ENV'e bakmıyor); middleware'a `/api/inngest(.*)` public
+>   eklendi (Inngest Cloud signing key ile doğrular).
+> - Migration 0003_sprint5_ai: `CREATE EXTENSION vector` + `embedding_vector
+>   vector(2048)` + `duplicate_of` (self-FK, set null) + `duplicate_note`.
+> - AI stack tamamen ücretsiz: LLM `minimax/minimax-m3:free`, embedding
+>   `nvidia/nemotron-3-embed-1b:free` (ikisi de OpenRouter, tek key). Gemma-4
+>   429 verdigi için, nemotron-lightning formatı bozduğu için elendi.
+> - **Eşik kalibrasyonu:** nemotron embedding'leriyle benzer Türkçe postlar
+>   0.57-0.80 cosine verdi (0.85 eşiği ada-002 kalibrasyonuydu) → eşik 0.60'a
+>   çekildi; LLM çift doğrulaması yanlış pozitifleri eler.
+> - Test sonuçları: fikir postu → özet + pozitif sentiment + 3 etiket +
+>   embedding ✓; kopya post → cosine 0.801 aday + LLM DUPLICATE kararı +
+>   duplicate_of/duplicate_note doldu ✓. `POST /api/posts` trigger'ı try/catch
+>   içinde — Inngest erişilemezse bile fikir kaydı başarılı.
+> - Bekleyen: kullanıcı portal testi (yeni fikir gönder → 10-30 sn içinde
+>   portaldan görünmese de DB'de özet dolmalı) + deploy'da Inngest Cloud key'leri.
+
 **Hedef:** Yeni fikir gelince, Inngest background'da çalışsın; OpenRouter LLM ile etiket/özet çıkarsın, OpenRouter embedding ile vektör üretsin, pgvector ile duplicate kontrolü yapsın.
 
 **Yapılacaklar:**
