@@ -1,6 +1,6 @@
 ---
 name: feedl
-description: feedl (feedl.co) MVP development guide - AI feedback platform (Canny clone) on Next.js 15 + Clerk + Neon/Drizzle + Inngest + OpenRouter/OpenAI. Use when continuing development in this repo it locates the source-of-truth docs in docs/ defines the sprint workflow and conventions and lists hard-won pitfalls (OpenRouter has no embeddings endpoint shadcn form removal svix typing Clerk React pin).
+description: feedl (feedl.co) MVP development guide - AI feedback platform (Canny clone) on Next.js 15 + Clerk + Neon/Drizzle + Inngest + OpenRouter/Gemini. Use when continuing development in this repo it locates the source-of-truth docs in docs/ defines the sprint workflow and conventions and lists hard-won pitfalls (OpenRouter has no embeddings endpoint shadcn form removal svix typing Clerk React pin).
 ---
 
 # feedl - Project Development Guide
@@ -29,7 +29,8 @@ Do not duplicate these docs in code comments; point to them.
   verification; Clerk CLI 3.2.0 (global); app "feedl" =
   `app_3Ih0Ue3SHQLk5HOOFnWEM7LD6Ze` (dev instance `ins_3Ih0UbHGeYBU0L04QhDtPo94eh0`)
 - Drizzle ORM + `@neondatabase/serverless` (neon-http driver) + `drizzle-kit`
-- Inngest for background jobs; OpenRouter for LLM; OpenAI for embeddings
+- Inngest for background jobs; OpenRouter for LLM (`google/gemini-2.5-flash`);
+  Google Gemini API for embeddings (`gemini-embedding-001`, outputDimensionality 1536)
 - Email: Resend (production) / Ethereal.email (dev/test)
 
 ## Repo layout
@@ -61,9 +62,10 @@ docs/                                                 planning docs (source of t
 
 ## Known pitfalls (learned the hard way)
 
-- **OpenRouter has NO embeddings endpoint** (verified against their API docs -
-  only `/api/v1/chat/completions`). Call OpenAI `/v1/embeddings` directly with
-  `OPENAI_API_KEY` (model: `text-embedding-ada-002`, 1536 dims).
+- **OpenRouter has NO embeddings endpoint** (verified live via their API -
+  425 models listed, 0 embedding models). Call Google Gemini API directly with
+  `GOOGLE_AI_API_KEY` (model: `gemini-embedding-001`, `outputDimensionality:
+  1536`, free tier - no card needed).
 - **shadcn `form` component was removed from the registry** (404). Build forms
   with react-hook-form + zod + `@hookform/resolvers` and compose
   `input`/`textarea`/`button` manually.

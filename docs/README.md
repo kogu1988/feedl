@@ -16,8 +16,8 @@
 | **ORM** | Drizzle ORM | Tip güvenli veritabanı işlemleri, migration yönetimi. |
 | **UI** | Shadcn/ui + Tailwind CSS | Kopyala-yapıştır component mimarisi. |
 | **Background Jobs** | Inngest | Vercel timeout'ını aşan AI işlemleri için (free tier 50k adım). |
-| **AI (LLM)** | OpenRouter API | Chat completion için tek API key ile çeşitli modeller (Llama, GPT, Claude). |
-| **AI (Embedding)** | OpenAI API | `text-embedding-ada-002` embedding'leri doğrudan OpenAI üzerinden. |
+| **AI (LLM)** | OpenRouter API | Chat completion için tek API key ile çeşitli modeller; seçili model: `google/gemini-2.5-flash`. |
+| **AI (Embedding)** | Google Gemini API | `gemini-embedding-001` (`outputDimensionality: 1536`) — ücretsiz tier, kart gerekmez. |
 | **Email** | Resend (Production) / Ethereal.email (Test) | "Özellik yayında" bildirimleri. Production'da Resend, geliştirme/testte Ethereal.email kullanılır. |
 
 ---
@@ -39,11 +39,11 @@ DATABASE_URL=postgresql://[user]:[password]@[host].neon.tech/neondb?sslmode=requ
 
 ### AI (OpenRouter - LLM)
 OPENROUTER_API_KEY=
-### Önerilen LLM Modeli: meta-llama/llama-3.1-70b-instruct
+### Önerilen LLM Modeli: google/gemini-2.5-flash
 
-### AI (OpenAI - Embedding)
-OPENAI_API_KEY=
-### Önerilen Embedding Modeli: text-embedding-ada-002
+### AI (Google Gemini - Embedding)
+GOOGLE_AI_API_KEY=
+### Önerilen Embedding Modeli: gemini-embedding-001 (outputDimensionality: 1536)
 
 ### Background Jobs (Inngest)
 INNGEST_EVENT_KEY=
@@ -73,7 +73,7 @@ AI ajanı bu şemayı `/lib/db/schema.ts` olarak oluşturmalıdır.
 // sentiment_label: 'pozitif' | 'notr' | 'negatif', // prompts.md'deki LLM çıktısı
 // ai_keywords: text[], // LLM'den dönen etiketler (örn: ['dark mode', 'api'])
 // ai_summary: text,
-// embedding_vector: vector(1536) // OpenAI text-embedding-ada-002 için 1536 boyut
+// embedding_vector: vector(1536) // gemini-embedding-001 (outputDimensionality 1536) için
 // duplicate_of: uuid (FK -> posts.id, nullable), // Duplicate tespiti durumunda orijinal post
 // duplicate_note: text (nullable), // Duplicate açıklaması (örn: "#123 ile yüksek benzerlik")
 // created_at: timestamp default now(),
@@ -104,7 +104,7 @@ AI ajanı bu şemayı `/lib/db/schema.ts` olarak oluşturmalıdır.
   /portal         (Halka açık fikir portalı)
 /lib
   /db             (Drizzle bağlantıları ve şemalar)
-  /ai             (OpenRouter / OpenAI yardımcı fonksiyonları)
+  /ai             (OpenRouter / Google Gemini yardımcı fonksiyonları)
   /email          (Resend / Ethereal e-posta şablonları)
 /components
   /ui             (Shadcn komponentleri)

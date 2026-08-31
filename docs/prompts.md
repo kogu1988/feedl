@@ -53,13 +53,13 @@ Yeni İstek: {{new_post.title}} - {{new_post.description}}
 
 ---
 
-## 3. OpenAI - Embedding (Vektör) Ayarları
+## 3. Google Gemini - Embedding (Vektör) Ayarları
 
 **Kullanım Yeri:** Yeni post oluştuğunda metni vektöre çevirmek için.  
-**API:** OpenAI API (`/v1/embeddings`)  
-**Model Önerisi:** `text-embedding-ada-002` (1536 boyut)
+**API:** Google Gemini API (`gemini-embedding-001:embedContent`)  
+**Model Önerisi:** `gemini-embedding-001` (1536 boyut, `outputDimensionality: 1536`)
 
-> **Not:** Boyut (dimension) değerini veritabanındaki `embedding_vector` sütununun tipiyle eşleştirin (`vector(1536)`). LLM çağrıları OpenRouter üzerinden yapılırken embedding'ler doğrudan OpenAI API ile alınır.
+> **Not:** Boyut (dimension) değerini veritabanındaki `embedding_vector` sütununun tipiyle eşleştirin (`vector(1536)`). LLM çağrıları OpenRouter üzerinden yapılırken embedding'ler doğrudan Google Gemini API ile alınır.
 
 ---
 
@@ -68,7 +68,7 @@ Yeni İstek: {{new_post.title}} - {{new_post.description}}
 ### 4.1. Event: `post/created`
 
 **Ne Zaman:** Kullanıcı portal üzerinden yeni bir fikir gönderdiğinde (API `POST /posts`).  
-**Amacı:** AI analizini (OpenRouter LLM + OpenAI Embedding + Dedup) başlatmak.
+**Amacı:** AI analizini (OpenRouter LLM + Gemini Embedding + Dedup) başlatmak.
 
 **Payload:**
 
@@ -113,5 +113,5 @@ Bu proje **Solo Vibecoder** tarafından yapılıyor. Kod kalitesi ve hız çok �
 - **Hata Yönetimi:** `try-catch` eklemeyi asla unutma. `console.error` yanında mutlaka kullanıcıya dönülecek mesajı da yaz.
 - **Dosya Değişiklikleri:** Bir özellik eklerken eğer 3'ten fazla dosyayı aynı anda değiştirmen gerekiyorsa, dur ve bana "Bu işlem çok büyük, izin verir misin?" diye sor.
 - **Migration'lar:** Veritabanı şemasında değişiklik varsa, migration dosyasını (`drizzle-kit generate`) oluşturmayı unutma.
-- **OpenRouter Kullanımı (LLM):** Tüm LLM çağrılarında `OPENROUTER_API_KEY` kullan. Model isimlerini OpenRouter'ın tam model ID'si ile gir (örn: `meta-llama/llama-3.1-70b-instruct`).
-- **OpenAI Kullanımı (Embedding):** Embedding çağrılarında `OPENAI_API_KEY` kullan (model: `text-embedding-ada-002`). OpenRouter embedding endpoint'i sunmadığı için embedding'ler doğrudan OpenAI `/v1/embeddings` üzerinden alınır.
+- **OpenRouter Kullanımı (LLM):** Tüm LLM çağrılarında `OPENROUTER_API_KEY` kullan. Model isimlerini OpenRouter'ın tam model ID'si ile gir (örn: `google/gemini-2.5-flash`).
+- **Google Gemini Kullanımı (Embedding):** Embedding çağrılarında `GOOGLE_AI_API_KEY` kullan (model: `gemini-embedding-001`, `outputDimensionality: 1536`). OpenRouter embedding endpoint'i sunmadığı için embedding'ler doğrudan Google Gemini API üzerinden alınır.

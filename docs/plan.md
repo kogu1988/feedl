@@ -165,16 +165,16 @@
 
 ## Sprint 5: Yapay Zeka Otomasyonu (AI Autopilot) - EN KRİTİK (6. Gün)
 
-**Hedef:** Yeni fikir gelince, Inngest background'da çalışsın; OpenRouter LLM ile etiket/özet çıkarsın, OpenAI ile embedding üretsin, pgvector ile duplicate kontrolü yapsın.
+**Hedef:** Yeni fikir gelince, Inngest background'da çalışsın; OpenRouter LLM ile etiket/özet çıkarsın, Google Gemini ile embedding üretsin, pgvector ile duplicate kontrolü yapsın.
 
 **Yapılacaklar:**
 
 1. **Inngest Kurulumu:** `npm i inngest`
 2. `app/api/inngest/route.ts` oluştur (Inngest sunucusunu bağla).
-3. **Vektör (Embedding) Ayarları:** Neon'da `pgvector` eklentisini aktif et. `embedding_vector` sütununu oluştur (`vector(1536)` - OpenAI `text-embedding-ada-002` için).
+3. **Vektör (Embedding) Ayarları:** Neon'da `pgvector` eklentisini aktif et. `embedding_vector` sütununu oluştur (`vector(1536)` - Google `gemini-embedding-001` `outputDimensionality: 1536` için).
 4. **Trigger:** Yeni post oluştuğunda Inngest event'i fırlat (`post/created`).
-5. **Görev 1 (Embedding & Dedup):** Yeni postun metnini **OpenAI Embedding API**'ye gönder (model: `text-embedding-ada-002`). Veritabanındaki diğer postların vektörleriyle karşılaştır (Cosine similarity). **Cosine > 0.85** olan adayları `prompts.md`'deki LLM karşılaştırma promptuyla kontrol et. LLM `%90'dan fazla` aynıysa `DUPLICATE` dönerse, yeni postun `duplicate_of` alanını eski postun ID'sine ayarla ve `duplicate_note`'a `"Bu istek #<eski_post_id> ile yüksek olasılıkla tekrar (duplicate)"` notu düş.
-6. **Görev 2 (LLM Etiket & Özet):** OpenRouter LLM API'ye gönder (model: `meta-llama/llama-3.1-70b-instruct`). Prompt'u `prompts.md`'den al. Çıkan sonucu `ai_summary`, `sentiment_label` ve `ai_keywords` olarak kaydet.
+5. **Görev 1 (Embedding & Dedup):** Yeni postun metnini **Google Gemini Embedding API**'ye gönder (model: `gemini-embedding-001`, `outputDimensionality: 1536`). Veritabanındaki diğer postların vektörleriyle karşılaştır (Cosine similarity). **Cosine > 0.85** olan adayları `prompts.md`'deki LLM karşılaştırma promptuyla kontrol et. LLM `%90'dan fazla` aynıysa `DUPLICATE` dönerse, yeni postun `duplicate_of` alanını eski postun ID'sine ayarla ve `duplicate_note`'a `"Bu istek #<eski_post_id> ile yüksek olasılıkla tekrar (duplicate)"` notu düş.
+6. **Görev 2 (LLM Etiket & Özet):** OpenRouter LLM API'ye gönder (model: `google/gemini-2.5-flash`). Prompt'u `prompts.md`'den al. Çıkan sonucu `ai_summary`, `sentiment_label` ve `ai_keywords` olarak kaydet.
 
 **Kontrol:** Yeni bir fikir gönder. 10 saniye sonra veritabanında `ai_summary`, `sentiment_label` ve `ai_keywords` dolu mu? Benzer fikir varsa `duplicate_of` alanı dolu mu?
 
