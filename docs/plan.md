@@ -134,7 +134,8 @@
 
 ## Sprint 4: Admin Paneli & Yol Haritası (Roadmap) (5. Gün)
 
-> **Durum (2026-08-31):** Kod tamamlandı, manuel test bekliyor.
+> **Durum (2026-08-31):** ✅ Sprint 4 tamamlandı — manuel test 4 aşamada geçti
+>   (dashboard'da durum değiştirme, portala "Planlandı" badge'i olarak yansıma).
 >
 > - `lib/auth/admin.ts`: `getAdminUserId()` — rolun tek kaynağı DB (`users.role`);
 >   sayfa ve API aynı yardımcıyı kullanıyor.
@@ -146,7 +147,8 @@
 > - `shadcn add table` ile tablo bileşeni eklendi (registry'den eksikti).
 > - Girişsiz erişim: `/dashboard` → 404/redirect, `PATCH` → 404 (Clerk
 >   koruması) — canlı doğrulandı. Build ✓.
-> - Bekleyen: admin girişiyle durum değiştirme + portala yansıma testi.
+> - Production: Vercel projesi "feedl" → `https://getfeedl.vercel.app` (domain
+>   kullanıcı tarafından değiştirildi; 4 uç nokta smoke testi geçti).
 
 **Hedef:** Admin giriş yapınca özel bir panel görmeli ve fikirlerin durumunu değiştirebilmeli.
 
