@@ -99,7 +99,9 @@
 
 ## Sprint 3: Oy Verme Mekanizması (Voting) (4. Gün)
 
-> **Durum (2026-08-31):** Kod tamamlandı, manuel test bekliyor.
+> **Durum (2026-08-31):** ✅ Sprint 3 tamamlandı — manuel testler geçti (oy ver/
+>   geri al/kalıcılık/girişsiz CTA). İkinci hesap testi atlandı (unique kısıt DB
+>   seviyesinde garantili).
 >
 > - `votes` tablosu (0002_sprint3_votes): `unique(user_id, post_id)` çifte oyu DB
 >   seviyesinde engeller; FK'lar cascade. Post silinince oyları da gider.
@@ -131,6 +133,20 @@
 ---
 
 ## Sprint 4: Admin Paneli & Yol Haritası (Roadmap) (5. Gün)
+
+> **Durum (2026-08-31):** Kod tamamlandı, manuel test bekliyor.
+>
+> - `lib/auth/admin.ts`: `getAdminUserId()` — rolun tek kaynağı DB (`users.role`);
+>   sayfa ve API aynı yardımcıyı kullanıyor.
+> - `/dashboard`: admin değilse `/portal`'a yönlendirilir. Tablo: oy sayısı,
+>   başlık + ID, tarih ve satır içi durum dropdown'u (`StatusSelect`, Base UI
+>   RadioGroup; optimistik güncelleme + hata durumunda geri alma).
+> - `PATCH /api/admin/posts` `{postId, status}`: admin doğrulaması DB'den,
+>   Zod ile enum doğrulama, `updatedAt` yenilenir, bulunamazsa 404 zarfı.
+> - `shadcn add table` ile tablo bileşeni eklendi (registry'den eksikti).
+> - Girişsiz erişim: `/dashboard` → 404/redirect, `PATCH` → 404 (Clerk
+>   koruması) — canlı doğrulandı. Build ✓.
+> - Bekleyen: admin girişiyle durum değiştirme + portala yansıma testi.
 
 **Hedef:** Admin giriş yapınca özel bir panel görmeli ve fikirlerin durumunu değiştirebilmeli.
 
