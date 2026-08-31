@@ -1,13 +1,18 @@
 import { eq, sql } from "drizzle-orm";
+import { NonRetriableError } from "inngest";
 
 import { analyzeIdea, compareIdeas } from "@/lib/ai/analysis";
 import { embedText } from "@/lib/ai/openrouter";
+import { sendEmails } from "@/lib/email/send";
+import { renderShippedEmail } from "@/lib/email/shipped";
 import { getDb } from "@/lib/db";
-import { posts } from "@/lib/db/schema";
+import { posts, users, votes } from "@/lib/db/schema";
 import {
   postCreatedEventSchema,
+  postStatusChangedEventSchema,
   type PostCreatedEvent,
-} from "@/lib/validations/ai";
+  type PostStatusChangedEvent,
+} from "@/lib/validations/events";
 import { inngest } from "./client";
 
 // plan.md Sprint 5: cosine adayları LLM ile çift doğrulanır (prompts.md §2);
@@ -140,5 +145,79 @@ export const aiAutopilot = inngest.createFunction(
     });
 
     return { duplicateOf, sentiment: analysis.sentiment };
+  },
+);
+
+// plan.md Sprint 6: durum "shipped"e geçince postun yazarına ve oy veren
+// herkese bildirim gider. Diğer durum değişimlerinde sessizce çıkılır; event
+// her değişimde tetiklenir ancak e-posta yalnızca shipped'e geçiştir.
+export const notifyShipped = inngest.createFunction(
+  { id: "notify-shipped", retries: 3, triggers: { event: "post/status.changed" } },
+  async ({ event, step }) => {
+    const payload: PostStatusChangedEvent = postStatusChangedEventSchema.parse(
+      event.data,
+    );
+
+    if (payload.newStatus !== "shipped") {
+      return { skipped: true, newStatus: payload.newStatus };
+    }
+
+    // 1) Post + alıcılar (yazar + oy verenler, tekil). E-postalar loglanmaz.
+    const recipients = await step.run("fetch-recipients", async () => {
+      const [post] = await getDb()
+        .select({ id: posts.id, title: posts.title, authorId: posts.userId })
+        .from(posts)
+        .where(eq(posts.id, payload.postId))
+        .limit(1);
+
+      if (!post) {
+        // Post silinmişse retry anlamsız — tekrar denemeden bitir.
+        throw new NonRetriableError(`Post not found: ${payload.postId}`);
+      }
+
+      const voterRows = await getDb()
+        .selectDistinct({ email: users.email })
+        .from(votes)
+        .innerJoin(users, eq(users.id, votes.userId))
+        .where(eq(votes.postId, payload.postId));
+
+      const authorRows = await getDb()
+        .select({ email: users.email })
+        .from(users)
+        .where(eq(users.id, post.authorId))
+        .limit(1);
+
+      const emails = [
+        ...new Set([...authorRows.map((row) => row.email), ...voterRows.map((row) => row.email)]),
+      ];
+
+      return { postId: post.id, title: post.title, emails };
+    });
+
+    if (recipients.emails.length === 0) {
+      return { skipped: true, reason: "no-recipients" };
+    }
+
+    // 2) Şablonu hazırla ve toplu gönder. Provider (Resend/Ethereal) env'e göre
+    // lib/email/send.ts içinde seçilir.
+    const result = await step.run("send-shipped-emails", async () => {
+      const message = renderShippedEmail({ title: recipients.title });
+      return sendEmails(
+        recipients.emails.map((email) => ({
+          to: email,
+          subject: message.subject,
+          html: message.html,
+          text: message.text,
+        })),
+      );
+    });
+
+    return {
+      provider: result.provider,
+      recipients: recipients.emails.length,
+      sent: result.sent,
+      failed: result.failed,
+      previewUrls: result.previewUrls,
+    };
   },
 );

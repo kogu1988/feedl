@@ -1,7 +1,7 @@
 import { and, count, desc, eq, inArray } from "drizzle-orm";
 import { auth } from "@clerk/nextjs/server";
 import { Show, SignInButton } from "@clerk/nextjs";
-import { ThumbsUpIcon } from "lucide-react";
+import { RocketIcon, ThumbsUpIcon } from "lucide-react";
 
 import { NewPostDialog } from "@/components/custom/new-post-dialog";
 import { VoteButton } from "@/components/custom/vote-button";
@@ -67,6 +67,13 @@ export default async function PortalPage() {
     loadError = true;
   }
 
+  // plan.md Sprint 6: yayınlanan fikirler changelog mantığıyla ayrı listede,
+  // en son yayınlanan üstte. Aktif fikirler eskisi gibi en yeni üstte.
+  const activePosts = rows.filter((post) => post.status !== "shipped");
+  const shippedPosts = rows
+    .filter((post) => post.status === "shipped")
+    .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+
   return (
     <main className="container mx-auto max-w-3xl p-4 sm:p-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -102,45 +109,79 @@ export default async function PortalPage() {
             </p>
           </div>
         ) : (
-          rows.map((post) => (
-            <Card key={post.id}>
-              <CardHeader>
-                <div className="flex items-start justify-between gap-3">
-                  <CardTitle className="leading-snug">{post.title}</CardTitle>
-                  <Show when="signed-in">
-                    <VoteButton
-                      postId={post.id}
-                      initialCount={post.voteCount}
-                      initialVoted={votedIds.has(post.id)}
-                    />
-                  </Show>
-                  <Show when="signed-out">
-                    <SignInButton>
-                      <button
-                        type="button"
-                        className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
-                        aria-label="Oy vermek için giriş yap"
-                      >
-                        <ThumbsUpIcon className="size-4" aria-hidden="true" />
-                        {post.voteCount}
-                      </button>
-                    </SignInButton>
-                  </Show>
-                </div>
-                <CardDescription className="flex items-center gap-2">
-                  {dateFormatter.format(post.createdAt)}
-                  <span className="rounded-full border px-2 py-0.5 text-xs font-medium text-muted-foreground">
-                    {statusLabels[post.status] ?? post.status}
-                  </span>
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="whitespace-pre-line text-sm text-muted-foreground">
-                  {summarize(post.description)}
-                </p>
-              </CardContent>
-            </Card>
-          ))
+          <>
+            {shippedPosts.length > 0 && (
+              <section className="grid gap-4">
+                <h2 className="flex items-center gap-2 text-lg font-semibold">
+                  <RocketIcon className="size-5" aria-hidden="true" />
+                  Yayında
+                </h2>
+                {shippedPosts.map((post) => (
+                  <Card key={post.id}>
+                    <CardHeader>
+                      <CardTitle className="leading-snug">{post.title}</CardTitle>
+                      <CardDescription className="flex items-center gap-2">
+                        {dateFormatter.format(post.updatedAt)}
+                        <span className="rounded-full border border-emerald-600/30 bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                          {statusLabels[post.status] ?? post.status}
+                        </span>
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="whitespace-pre-line text-sm text-muted-foreground">
+                        {summarize(post.description)}
+                      </p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </section>
+            )}
+
+            {activePosts.length > 0 && (
+              <section className="mt-4 grid gap-4">
+                <h2 className="text-lg font-semibold">Fikirler</h2>
+                {activePosts.map((post) => (
+                  <Card key={post.id}>
+                    <CardHeader>
+                      <div className="flex items-start justify-between gap-3">
+                        <CardTitle className="leading-snug">{post.title}</CardTitle>
+                        <Show when="signed-in">
+                          <VoteButton
+                            postId={post.id}
+                            initialCount={post.voteCount}
+                            initialVoted={votedIds.has(post.id)}
+                          />
+                        </Show>
+                        <Show when="signed-out">
+                          <SignInButton>
+                            <button
+                              type="button"
+                              className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
+                              aria-label="Oy vermek için giriş yap"
+                            >
+                              <ThumbsUpIcon className="size-4" aria-hidden="true" />
+                              {post.voteCount}
+                            </button>
+                          </SignInButton>
+                        </Show>
+                      </div>
+                      <CardDescription className="flex items-center gap-2">
+                        {dateFormatter.format(post.createdAt)}
+                        <span className="rounded-full border px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                          {statusLabels[post.status] ?? post.status}
+                        </span>
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="whitespace-pre-line text-sm text-muted-foreground">
+                        {summarize(post.description)}
+                      </p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </section>
+            )}
+          </>
         )}
       </div>
     </main>
@@ -155,6 +196,7 @@ async function loadPosts() {
       description: posts.description,
       status: posts.status,
       createdAt: posts.createdAt,
+      updatedAt: posts.updatedAt,
       voteCount: count(votes.id),
     })
     .from(posts)

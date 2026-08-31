@@ -214,6 +214,31 @@
 
 ## Sprint 6: E-posta Bildirimleri (Shipped Notifications) & Deploy (7. Gün)
 
+> **Durum (2026-09-01):** ✅ Kod tamamlandı — üretim testi bekliyor.
+>
+> - `npm i resend nodemailer` (+ `@types/nodemailer`). Sağlayıcı seçimi
+>   `lib/email/send.ts` içinde env'e göre otomatik: RESEND_API_KEY varsa
+>   Resend (batch), yoksa Ethereal SMTP (nodemailer), o da yoksa uyarıyla
+>   atlanır — bildirim hatası ana akışı bozmaz. Ethereal test hesabı otomatik
+>   oluşturuldu (kimlik bilgileri .env.local'da, değerler loglanmaz).
+> - Şablon: `lib/email/shipped.ts` (inline stilli HTML + text). Plan'daki
+>   `shipped.tsx` önerisinden bilinçli sapma: react-email bağımlılığı
+>   eklememek için düz HTML üretir; Resend SDK `html` kabul eder.
+> - Trigger: `PATCH /api/admin/posts` eski durumu önce okur, yalnızca gerçek
+>   değişimde `post/status.changed` fırlatır (prompts.md §4.2; event
+>   gönderimi try/catch içinde — güncelleme event hatasından etkilenmez).
+> - Inngest: `notify-shipped` (retries 3) — yalnızca `newStatus=shipped`'te
+>   çalışır; alıcılar = yazar + oy verenler (tekilleştirilmiş). Silinen post
+>   `NonRetriableError` ile retry döngüsünü bitirir. Event şemaları
+>   `lib/validations/events.ts`'te toplandı (postCreated buraya taşındı).
+> - Portal: "Yayında" bölümü (changelog mantığı, en son yayınlanan üstte,
+>   oy butonu yok); aktif fikirler ayrı listede kaldı.
+> - Portal linki `NEXT_PUBLIC_APP_URL` ile override edilebilir (varsayılan
+>   https://getfeedl.vercel.app/portal). Gönderen: Resend'de feedl.co
+>   doğrulanana kadar `onboarding@resend.dev` (yalnızca hesap sahibine
+>   teslim eder); `EMAIL_FROM` ile override edilebilir. Resend'e geçiş için
+>   tek adım: Vercel + .env.local'a RESEND_API_KEY girmek.
+
 **Hedef:** Admin durumu "shipped" yaptığında, o isteği açan ve oy veren herkese Resend (production) veya Ethereal.email (test) ile mail gitmeli.
 
 **Yapılacaklar:**

@@ -1,15 +1,5 @@
 import { z } from "zod";
 
-// Inngest event payload (docs/prompts.md §4.1).
-export const postCreatedEventSchema = z.object({
-  postId: z.uuid(),
-  title: z.string().min(1),
-  description: z.string().min(1),
-  userId: z.string().min(1),
-});
-
-export type PostCreatedEvent = z.infer<typeof postCreatedEventSchema>;
-
 // prompts.md §1: LLM analiz çıktısı. "nötr" gibi varyantlar "notr"a normalize
 // edilir; eşleşmeyen değer şema hatası sayılır ve Inngest retry ile tekrar dener.
 const sentimentSchema = z

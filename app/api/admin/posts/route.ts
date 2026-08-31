@@ -7,6 +7,8 @@ import { z } from "zod";
 import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { postStatusEnum, posts } from "@/lib/db/schema";
+import { postStatusChangedEventSchema } from "@/lib/validations/events";
+import { inngest } from "@/inngest/client";
 
 const patchSchema = z.object({
   postId: z.uuid("Geçersiz fikir kimliği."),
@@ -45,6 +47,20 @@ export async function PATCH(req: Request) {
       );
     }
 
+    // Eski durum, event payload'ı için güncellemeden önce okunur.
+    const [existing] = await getDb()
+      .select({ id: posts.id, status: posts.status })
+      .from(posts)
+      .where(eq(posts.id, parsed.data.postId))
+      .limit(1);
+
+    if (!existing) {
+      return NextResponse.json(
+        { success: false, error: "Fikir bulunamadı." },
+        { status: 404 },
+      );
+    }
+
     const [updated] = await getDb()
       .update(posts)
       .set({
@@ -64,6 +80,25 @@ export async function PATCH(req: Request) {
         { success: false, error: "Fikir bulunamadı." },
         { status: 404 },
       );
+    }
+
+    // Durum gerçekten değiştiyse Inngest event'i fırlat (plan.md Sprint 6);
+    // "shipped"e geçişte yazar + oy verenlere bildirim gider. Event gönderimi
+    // başarısız olsa bile durum güncellemesi başarılı kalmalıdır.
+    const payload = postStatusChangedEventSchema.safeParse({
+      postId: updated.id,
+      oldStatus: existing.status,
+      newStatus: updated.status,
+    });
+    if (payload.success && existing.status !== updated.status) {
+      try {
+        await inngest.send({ name: "post/status.changed", data: payload.data });
+      } catch (eventErr) {
+        console.error(
+          "post/status.changed event could not be sent:",
+          eventErr instanceof Error ? eventErr.message : eventErr,
+        );
+      }
     }
 
     return NextResponse.json({ success: true, data: updated });
