@@ -17,7 +17,7 @@
 | **UI** | Shadcn/ui + Tailwind CSS | Kopyala-yapıştır component mimarisi. |
 | **Background Jobs** | Inngest | Vercel timeout'ını aşan AI işlemleri için (free tier 50k adım). |
 | **AI (LLM)** | OpenRouter API | Chat completion için tek API key ile çeşitli modeller; seçili model: `google/gemini-2.5-flash`. |
-| **AI (Embedding)** | Google Gemini API | `gemini-embedding-001` (`outputDimensionality: 1536`) — ücretsiz tier, kart gerekmez. |
+| **AI (Embedding)** | OpenRouter API | Aynı key ile `/api/v1/embeddings`; model: `nvidia/nemotron-3-embed-1b:free` (2048 boyut, 33K context). |
 | **Email** | Resend (Production) / Ethereal.email (Test) | "Özellik yayında" bildirimleri. Production'da Resend, geliştirme/testte Ethereal.email kullanılır. |
 
 ---
@@ -41,9 +41,9 @@ DATABASE_URL=postgresql://[user]:[password]@[host].neon.tech/neondb?sslmode=requ
 OPENROUTER_API_KEY=
 ### Önerilen LLM Modeli: google/gemini-2.5-flash
 
-### AI (Google Gemini - Embedding)
-GOOGLE_AI_API_KEY=
-### Önerilen Embedding Modeli: gemini-embedding-001 (outputDimensionality: 1536)
+### AI (OpenRouter - Embedding)
+### Aynı key kullanılır: OPENROUTER_API_KEY
+### Önerilen Embedding Modeli: nvidia/nemotron-3-embed-1b:free (2048 boyut)
 
 ### Background Jobs (Inngest)
 INNGEST_EVENT_KEY=
@@ -73,7 +73,7 @@ AI ajanı bu şemayı `/lib/db/schema.ts` olarak oluşturmalıdır.
 // sentiment_label: 'pozitif' | 'notr' | 'negatif', // prompts.md'deki LLM çıktısı
 // ai_keywords: text[], // LLM'den dönen etiketler (örn: ['dark mode', 'api'])
 // ai_summary: text,
-// embedding_vector: vector(1536) // gemini-embedding-001 (outputDimensionality 1536) için
+// embedding_vector: vector(2048) // nemotron-3-embed-1b:free için (HNSW limit 2000; MVP'de index yok, halfvec ileride)
 // duplicate_of: uuid (FK -> posts.id, nullable), // Duplicate tespiti durumunda orijinal post
 // duplicate_note: text (nullable), // Duplicate açıklaması (örn: "#123 ile yüksek benzerlik")
 // created_at: timestamp default now(),
@@ -104,7 +104,7 @@ AI ajanı bu şemayı `/lib/db/schema.ts` olarak oluşturmalıdır.
   /portal         (Halka açık fikir portalı)
 /lib
   /db             (Drizzle bağlantıları ve şemalar)
-  /ai             (OpenRouter / Google Gemini yardımcı fonksiyonları)
+  /ai             (OpenRouter yardımcı fonksiyonları - LLM + embedding)
   /email          (Resend / Ethereal e-posta şablonları)
 /components
   /ui             (Shadcn komponentleri)

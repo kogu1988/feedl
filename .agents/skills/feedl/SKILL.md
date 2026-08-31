@@ -1,6 +1,6 @@
 ---
 name: feedl
-description: feedl (feedl.co) MVP development guide - AI feedback platform (Canny clone) on Next.js 15 + Clerk + Neon/Drizzle + Inngest + OpenRouter/Gemini. Use when continuing development in this repo it locates the source-of-truth docs in docs/ defines the sprint workflow and conventions and lists hard-won pitfalls (OpenRouter has no embeddings endpoint shadcn form removal svix typing Clerk React pin).
+description: feedl (feedl.co) MVP development guide - AI feedback platform (Canny clone) on Next.js 15 + Clerk + Neon/Drizzle + Inngest + OpenRouter (LLM + embeddings). Use when continuing development in this repo it locates the source-of-truth docs in docs/ defines the sprint workflow and conventions and lists hard-won pitfalls (OpenRouter free-model quirks pgvector 2000-dim index cap shadcn form removal svix typing Clerk React pin).
 ---
 
 # feedl - Project Development Guide
@@ -29,8 +29,8 @@ Do not duplicate these docs in code comments; point to them.
   verification; Clerk CLI 3.2.0 (global); app "feedl" =
   `app_3Ih0Ue3SHQLk5HOOFnWEM7LD6Ze` (dev instance `ins_3Ih0UbHGeYBU0L04QhDtPo94eh0`)
 - Drizzle ORM + `@neondatabase/serverless` (neon-http driver) + `drizzle-kit`
-- Inngest for background jobs; OpenRouter for LLM (`google/gemini-2.5-flash`);
-  Google Gemini API for embeddings (`gemini-embedding-001`, outputDimensionality 1536)
+- Inngest for background jobs; OpenRouter for BOTH LLM (`google/gemini-2.5-flash`)
+  and embeddings (`nvidia/nemotron-3-embed-1b:free`, 2048 dims) - single API key
 - Email: Resend (production) / Ethereal.email (dev/test)
 
 ## Repo layout
@@ -62,10 +62,13 @@ docs/                                                 planning docs (source of t
 
 ## Known pitfalls (learned the hard way)
 
-- **OpenRouter has NO embeddings endpoint** (verified live via their API -
-  425 models listed, 0 embedding models). Call Google Gemini API directly with
-  `GOOGLE_AI_API_KEY` (model: `gemini-embedding-001`, `outputDimensionality:
-  1536`, free tier - no card needed).
+- **OpenRouter HAS embeddings now** (verified live 2026-09-01 via
+  `POST /api/v1/embeddings`; earlier checks found none - feature is new).
+  Free models: `nvidia/nemotron-3-embed-1b:free` (2048 dims, 33K ctx - chosen)
+  and `liquid/lfm-2.5-embedding-350m:free` (1024 dims, 512 ctx - truncates
+  long Turkish posts). pgvector HNSW caps at 2000 dims -> store `vector(2048)`
+  WITHOUT index; sequential scan fine at MVP scale, `halfvec` HNSW later.
+  Free-tier models may retain data for training.
 - **shadcn `form` component was removed from the registry** (404). Build forms
   with react-hook-form + zod + `@hookform/resolvers` and compose
   `input`/`textarea`/`button` manually.
