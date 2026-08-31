@@ -16,11 +16,12 @@ import {
 import { inngest } from "./client";
 
 // plan.md Sprint 5: cosine adayları LLM ile çift doğrulanır (prompts.md §2);
-// LLM "DUPLICATE" derse yeni post duplicate işaretlenir. Eşik 0.85 değil:
-// nemotron-3-embed-1b canlı testlerinde benzer Türkçe postlar 0.57-0.80 arası
-// skor üretti (ada-002 kalibrasyonu bu model için geçerli değil) — 0.60
-// pragmatik başlangıç, LLM doğrulaması yanlış pozitifleri eler.
-const DUPLICATE_SIMILARITY_THRESHOLD = 0.6;
+// LLM "DUPLICATE" derse yeni post duplicate işaretlenir. Eşik kalibrasyonu
+// canlı veriyle revize edildi (2026-09-01): gerçek yakın-kopya çift 0.547,
+// alakasız-generic çiftler 0.489'a kadar çıkabiliyor → 0.60 kaçırdı, 0.45
+// iki bandı ayırır. Post başına en fazla 1 LLM karşılaştırması olduğu için
+// düşük eşiğin maliyeti sınırlı; yanlış adayları LLM eler.
+const DUPLICATE_SIMILARITY_THRESHOLD = 0.45;
 const DUPLICATE_CANDIDATE_LIMIT = 5;
 
 interface DuplicateCandidate {

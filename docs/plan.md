@@ -189,6 +189,12 @@
 >   sentiment_label (notr) + 5 ai_keywords + embedding doldu; duplicate
 >   çıkmadı (doğru negatif). Uçtan uca zincir canlı: portal → post/created →
 >   Inngest Cloud → OpenRouter → Neon.
+> - **Üretim eşik revizyonu (2026-09-01):** canlı kopya testinde başlığı
+>   farklı, gövdesi orijinal+ek olan yakın kopya 0.547 cosine verdi — 0.60
+>   eşiği yakalayamadı (yerel 0.801, başlık birebir aynıydı). Alakasız
+>   generic çiftler 0.489'a kadar çıkıyor; bantlar 0.45'te ayrışıyor →
+>   DUPLICATE_SIMILARITY_THRESHOLD 0.45'e indirildi. Karar yine LLM'de;
+>   post başına ≤1 karşılaştırma çağrısı, maliyet sınırlı.
 > - Inngest Cloud bağlantısı Vercel entegrasyonuyla kuruldu (signing/event
 >   key otomatik enjekte edildi; `getfeedl.vercel.app/api/inngest` üzerinde
 >   App diagnostics 200 + tüm key'ler CORRECT). **Not:** Vercel Deployment
