@@ -63,6 +63,25 @@
 
 ## Sprint 2: Müşteri Portalı (Public Read, Auth for Actions) (3. Gün)
 
+> **Durum (2026-08-31):** Kod tamamlandı, manuel test bekliyor.
+>
+> - `posts` tablosu migration'ı (0001_sprint2_posts): temel alanlar + status
+>   enum + nullable AI alanları. `embedding_vector` (pgvector) ve `duplicate_*`
+>   alanları Sprint 5 migration'ına bırakıldı (pgvector extension gerektirir).
+> - `GET /api/posts` public (limit 100, created_at DESC); `POST /api/posts`
+>   handler içinde auth (401 zarfı) + Zod validasyon (lib/validations/post.ts,
+>   başlık 3-140, açıklama 10-2000).
+> - `/portal`: force-dynamic server component, DB'den direkt okur; kartlar
+>   (başlık, durum etiketi, tarih, özet), boş durum ve hata durumu var.
+> - "Yeni Fikir Gönder" dialog'u (components/custom/new-post-dialog.tsx):
+>   RHF + Zod, inline hata gösterimi, başarıda router.refresh(). Giriş yapmayan
+>   kullanıcıya SignInButton ile giriş CTA'sı gösteriliyor.
+> - Yeni shadcn bileşenleri Base UI tabanlı: `asChild` YOK, `render` prop'u var
+>   (örn. `<DialogTrigger render={<Button />}>`).
+> - Canlı API testleri ✓: GET boş zarf, POST girişsiz 401, /portal 200.
+> - Bekleyen (senin testin): giriş yapıp dialog'dan fikir gönder → portalda
+>   listelenmeli, DB'de görünmeli.
+
 **Hedef:** Kullanıcıların fikirleri herkese açık şekilde görmesi; yeni fikir gönderme ve oy verme işlemlerinin giriş gerektirmesi.
 
 **Yapılacaklar:**

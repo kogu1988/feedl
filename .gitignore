@@ -27,6 +27,10 @@
 # clerk init öncesi alınan geçici yedekler
 .clerk-backup/
 
+# local dev / webhook listener loglari
+.dev.log
+.webhook.log
+
 # debug
 npm-debug.log*
 yarn-debug.log*
