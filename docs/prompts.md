@@ -113,4 +113,4 @@ Bu proje **Solo Vibecoder** tarafından yapılıyor. Kod kalitesi ve hız çok �
 - **Hata Yönetimi:** `try-catch` eklemeyi asla unutma. `console.error` yanında mutlaka kullanıcıya dönülecek mesajı da yaz.
 - **Dosya Değişiklikleri:** Bir özellik eklerken eğer 3'ten fazla dosyayı aynı anda değiştirmen gerekiyorsa, dur ve bana "Bu işlem çok büyük, izin verir misin?" diye sor.
 - **Migration'lar:** Veritabanı şemasında değişiklik varsa, migration dosyasını (`drizzle-kit generate`) oluşturmayı unutma.
-- **OpenRouter Kullanımı (LLM + Embedding):** Tüm çağrılar tek `OPENROUTER_API_KEY` ile yapılır. LLM: `/api/v1/chat/completions` (model: `google/gemini-2.5-flash`). Embedding: `/api/v1/embeddings` (model: `nvidia/nemotron-3-embed-1b:free`, 2048 boyut).
+- **OpenRouter Kullanımı (LLM + Embedding):** Tüm çağrılar tek `OPENROUTER_API_KEY` ile yapılır. LLM: `/api/v1/chat/completions` (model: `minimax/minimax-m3:free`). Embedding: `/api/v1/embeddings` (model: `nvidia/nemotron-3-embed-1b:free`, 2048 boyut).

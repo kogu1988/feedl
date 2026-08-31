@@ -174,7 +174,7 @@
 3. **Vektör (Embedding) Ayarları:** Neon'da `pgvector` eklentisini aktif et. `embedding_vector` sütununu oluştur (`vector(2048)` - `nvidia/nemotron-3-embed-1b:free` için; 2048 > HNSW limiti 2000 olduğundan index konmaz, MVP hacminde sıralı tarama yeterli).
 4. **Trigger:** Yeni post oluştuğunda Inngest event'i fırlat (`post/created`).
 5. **Görev 1 (Embedding & Dedup):** Yeni postun metnini **OpenRouter Embeddings API**'ye gönder (model: `nvidia/nemotron-3-embed-1b:free`, 2048 boyut). Veritabanındaki diğer postların vektörleriyle karşılaştır (Cosine similarity). **Cosine > 0.85** olan adayları `prompts.md`'deki LLM karşılaştırma promptuyla kontrol et. LLM `%90'dan fazla` aynıysa `DUPLICATE` dönerse, yeni postun `duplicate_of` alanını eski postun ID'sine ayarla ve `duplicate_note`'a `"Bu istek #<eski_post_id> ile yüksek olasılıkla tekrar (duplicate)"` notu düş.
-6. **Görev 2 (LLM Etiket & Özet):** OpenRouter LLM API'ye gönder (model: `google/gemini-2.5-flash`). Prompt'u `prompts.md`'den al. Çıkan sonucu `ai_summary`, `sentiment_label` ve `ai_keywords` olarak kaydet.
+6. **Görev 2 (LLM Etiket & Özet):** OpenRouter LLM API'ye gönder (model: `minimax/minimax-m3:free`). Yanıtın ilk `{` ile son `}` arası çıkarılıp Zod ile doğrulanır; parse hatasında Inngest retry ile tekrar dener. Prompt'u `prompts.md`'den al. Çıkan sonucu `ai_summary`, `sentiment_label` ve `ai_keywords` olarak kaydet.
 
 **Kontrol:** Yeni bir fikir gönder. 10 saniye sonra veritabanında `ai_summary`, `sentiment_label` ve `ai_keywords` dolu mu? Benzer fikir varsa `duplicate_of` alanı dolu mu?
 

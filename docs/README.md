@@ -16,7 +16,7 @@
 | **ORM** | Drizzle ORM | Tip güvenli veritabanı işlemleri, migration yönetimi. |
 | **UI** | Shadcn/ui + Tailwind CSS | Kopyala-yapıştır component mimarisi. |
 | **Background Jobs** | Inngest | Vercel timeout'ını aşan AI işlemleri için (free tier 50k adım). |
-| **AI (LLM)** | OpenRouter API | Chat completion için tek API key ile çeşitli modeller; seçili model: `google/gemini-2.5-flash`. |
+| **AI (LLM)** | OpenRouter API | Chat completion için tek API key; seçili model: `minimax/minimax-m3:free` (canlı test edildi: Türkçe + JSON uyumu iyi). |
 | **AI (Embedding)** | OpenRouter API | Aynı key ile `/api/v1/embeddings`; model: `nvidia/nemotron-3-embed-1b:free` (2048 boyut, 33K context). |
 | **Email** | Resend (Production) / Ethereal.email (Test) | "Özellik yayında" bildirimleri. Production'da Resend, geliştirme/testte Ethereal.email kullanılır. |
 

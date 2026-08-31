@@ -29,7 +29,7 @@ Do not duplicate these docs in code comments; point to them.
   verification; Clerk CLI 3.2.0 (global); app "feedl" =
   `app_3Ih0Ue3SHQLk5HOOFnWEM7LD6Ze` (dev instance `ins_3Ih0UbHGeYBU0L04QhDtPo94eh0`)
 - Drizzle ORM + `@neondatabase/serverless` (neon-http driver) + `drizzle-kit`
-- Inngest for background jobs; OpenRouter for BOTH LLM (`google/gemini-2.5-flash`)
+- Inngest for background jobs; OpenRouter for BOTH LLM (`minimax/minimax-m3:free`)
   and embeddings (`nvidia/nemotron-3-embed-1b:free`, 2048 dims) - single API key
 - Email: Resend (production) / Ethereal.email (dev/test)
 
@@ -56,7 +56,9 @@ docs/                                                 planning docs (source of t
   top level (keeps `next build` working without DATABASE_URL)
 - Public routes in middleware: `/`, `/sign-in(.*)`, `/sign-up(.*)`, `/portal(.*)`,
   `/api/posts(.*)` (GET public, POST checks auth in handler), `/api/webhooks(.*)`
-- Zod-validate all LLM outputs; normalize `nötr` → `notr`; parse failure = retry via Inngest
+- Zod-validate all LLM outputs; extract substring from first `{` to last `}`
+  before parsing (free models wrap JSON in code fences); normalize `nötr` →
+  `notr`; parse failure = retry via Inngest
 - Secrets only in `.env.local` (gitignored); never log emails/tokens/passwords
 - Webhook handlers: verify svix signature first; on `user.updated` never overwrite `role`
 
@@ -69,6 +71,12 @@ docs/                                                 planning docs (source of t
   long Turkish posts). pgvector HNSW caps at 2000 dims -> store `vector(2048)`
   WITHOUT index; sequential scan fine at MVP scale, `halfvec` HNSW later.
   Free-tier models may retain data for training.
+- **Free LLM pick: `minimax/minimax-m3:free`** (tested live 2026-09-01: best
+  Turkish quality, correct sentiment, extractable JSON). Rejected:
+  `nvidia/nemotron-3.5-lightning:free` ignores JSON format (reasoning dump);
+  `google/gemma-4-26b-a4b-it:free` returned 429 twice (upstream shared pool).
+  Fallback if free proves flaky in prod: paid `google/gemini-2.5-flash`
+  (one-line model switch).
 - **shadcn `form` component was removed from the registry** (404). Build forms
   with react-hook-form + zod + `@hookform/resolvers` and compose
   `input`/`textarea`/`button` manually.
