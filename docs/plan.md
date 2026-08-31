@@ -277,6 +277,15 @@
 
 ## Sprint 7: MVP Sonrası - CSV Dışa Aktar (Düşük Öncelik)
 
+> **Durum (2026-09-01):** ✅ Kod tamamlandı — üretim testi bekliyor.
+>
+> - `app/api/admin/export/route.ts` (GET): admin-only (rol DB'den doğrulanır),
+>   limit yok — tüm fikirler. Kolonlar: Başlık, Durum (Türkçe etiket),
+>   Oy Sayısı, Oluşturma, Güncelleme, ID. RFC 4180 kaçışlama (virgül/tırnak/
+>   yeni satır içeren alanlar güvenli) + UTF-8 BOM (Excel Türkçe karakter).
+> - Dashboard'a "CSV İndir" butonu (`/api/admin/export`, `download` attr).
+> - Tarih formatı tr-TR; dosya adı `feedl-fikirler-YYYY-MM-DD.csv`.
+
 **Hedef:** Admin panelinden tüm fikirleri CSV olarak indirmek.
 
 **Yapılacaklar:**
@@ -286,6 +295,29 @@
 3. Admin paneline "CSV İndir" butonu ekle.
 
 > Not: Bu özellik `canny.md`'de MCP sunucusu yerine planlanan basit dışa aktar işlemidir.
+
+---
+
+## 🗺️ Faz 2 Yol Haritası (2026-09-01 güncellemesi)
+
+Canny araştırmasına (docs/deepseek.txt, docs/oxalpha.txt) dayalı plan;
+**domain gerektiren faz ertelendi** (henüz domain alınmayacak):
+
+- **Ertelendi (domain alımına kadar):** Domain bağlama (feedl.co + wildcard
+  DNS), Organizations / çoklu müşteri + subdomain (`acme.feedl.co`), Widget
+  SDK (`widget.js` + iframe overlay + Secure Identify — Canny modeli:
+  SDK identify + data-canny-link yakalama, developers.canny.io'dan
+  doğrulandı). Domain alındığında bu sprintler aktifleşecek.
+- **Sıradaki (özellik + arayüz/tasarım odağı):**
+  1. Portal güçlendirme: arama + **yazarken benzer post önerisi** (mevcut
+     embedding altyapısı yeniden kullanılır — Canny'nin kritik duplicate
+     önleme UX'i) + public roadmap kanban görünümü.
+  2. Tasarım/UI cilası (referans: `DESING.md` — Base UI dokümantasyonu).
+  3. Yorumlar (canny.md: MVP sonrası; etkileşimi canlandıran çekirdek
+     özellik — sıra odağa göre netleşecek).
+- Not: Ücretsiz LLM'de ara sıra 429 (upstream rate limit) normal;
+  Inngest retry mekanizması zaten telafi ediyor. Sıklaşırsa tek satırlık
+  model değişikliğiyle ücretli fallback'e geçilir (bkz. skill fallback).
 
 ---
 

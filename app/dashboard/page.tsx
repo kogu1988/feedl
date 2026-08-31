@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { DownloadIcon } from "lucide-react";
 import { count, desc, eq } from "drizzle-orm";
 
 import { StatusSelect } from "@/components/custom/status-select";
@@ -46,10 +47,23 @@ export default async function DashboardPage() {
 
   return (
     <main className="container mx-auto max-w-5xl p-4 sm:p-8">
-      <h1 className="text-2xl font-bold">Admin Paneli</h1>
-      <p className="mt-2 text-muted-foreground">
-        Fikirleri incele, durumlarını güncelleyerek yol haritasını yönet.
-      </p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Admin Paneli</h1>
+          <p className="mt-2 text-muted-foreground">
+            Fikirleri incele, durumlarını güncelleyerek yol haritasını yönet.
+          </p>
+        </div>
+
+        <a
+          href="/api/admin/export"
+          download
+          className="inline-flex h-9 shrink-0 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+        >
+          <DownloadIcon className="size-4" aria-hidden="true" />
+          CSV İndir
+        </a>
+      </div>
 
       <Card className="mt-8">
         <CardHeader>
