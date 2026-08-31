@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { desc } from "drizzle-orm";
+import { count, desc, eq } from "drizzle-orm";
 
 import { getDb } from "@/lib/db";
-import { posts } from "@/lib/db/schema";
+import { posts, votes } from "@/lib/db/schema";
 import { createPostSchema } from "@/lib/validations/post";
 
-// GET /api/posts — herkese açık fikir listesi (en son eklenen en üstte).
+// GET /api/posts — herkese açık fikir listesi (en son eklenen en üstte),
+// oy sayılarıyla birlikte.
 export async function GET() {
   try {
     const rows = await getDb()
@@ -16,8 +17,11 @@ export async function GET() {
         description: posts.description,
         status: posts.status,
         createdAt: posts.createdAt,
+        voteCount: count(votes.id),
       })
       .from(posts)
+      .leftJoin(votes, eq(votes.postId, posts.id))
+      .groupBy(posts.id)
       .orderBy(desc(posts.createdAt))
       .limit(100);
 

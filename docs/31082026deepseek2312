@@ -1,0 +1,182 @@
+Canny'nin iş modelini, fiyatlandırma stratejisinden pazarlama taktiklerine kadar tüm detaylarıyla aşağıda çıkardım.
+
+---
+
+## 📊 1. Temel İş Modeli: Kullanım Bazlı (Usage-Based) SaaS
+
+Canny, **"Tracked User"** (İzlenen Kullanıcı) metriği üzerinden fiyatlandırılan bir SaaS modeli kullanıyor.
+
+**Tracked User Tanımı:** Geri bildirimde bulunan herhangi bir kullanıcıdır. Bu şu yollarla olur:
+- Portal üzerinden doğrudan geri bildirim gönderme
+- Mevcut bir gönderiye oy verme veya yorum yapma
+- Admin'in kullanıcı adına geri bildirim takip etmesi ("vote on behalf")
+- Autopilot'un Intercom, Zendesk, Gong gibi araçlardan geri bildirim bulması
+
+> **Kritik Nokta:** Bir kullanıcı ne kadar çok post, vote veya comment yaparsa yapsın, **sadece 1 Tracked User** olarak sayılır.
+
+---
+
+## 💰 2. Planlar ve Fiyatlandırma (2026 Güncel)
+
+Canny, Mayıs 2025'te fiyatlandırmasını köklü bir şekilde değiştirdi. Eski "admin seat" modelinden "tracked user" tabanlı modele geçtiler.
+
+### 2.1. Plan Karşılaştırması
+
+| | **Free** | **Core** | **Pro** | **Business** |
+|---|---|---|---|---|
+| **Fiyat** | $0/ay | **$19/ay** (yıllık) | **$79/ay** (yıllık) | Özel fiyatlandırma |
+| **Tracked Users** | 25 | 100+ | 100+ | 5,000+ |
+| **Yönetici (Manager)** | 5 | 5 | 10 | Custom |
+| **Katkıda Bulunan** | Sınırsız | Sınırsız | Sınırsız | Sınırsız |
+
+### 2.2. Aylık ve Yıllık Fiyat Farkı
+
+Pro planında **aylık faturalandırma $99/ay**, yıllık faturalandırma ise **$79/ay** ($948/yıl). Yıllık ödemede **%20'ye varan** tasarruf sağlanıyor.
+
+### 2.3. Tracked User Artışına Göre Otomatik Fiyatlandırma (Pro Plan)
+
+Canny, tracked user sayısı arttıkça fiyatı **otomatik olarak** artırıyor:
+
+| Tracked Users | Aylık Fiyat | Yıllık (Aylık) |
+|---|---|---|
+| 100 | $99 | $79 |
+| 200 | $161 | $129 |
+| 500 | $349 | $279 |
+| 1,000 | $661 | $529 |
+| 2,500 | $1,036 | $829 |
+| 5,000 | $1,349 | $1,079 |
+
+*(Kaynak: )*
+
+> **Strateji Notu:** Fiyatlandırma "kademeli" (tiered) değil, **"kullanım arttıkça otomatik artan"** bir yapıda. Müşteri büyüdükçe Canny'nin geliri de otomatik artıyor.
+
+---
+
+## 🎯 3. Değer Metriği (Value Metric) Stratejisi
+
+Canny'nin fiyatlandırma felsefesinin temelinde şu mantık yatıyor:
+
+> **"Müşteri ne kadar değer alıyorsa, o kadar ödesin."**
+
+Bunu şu şekilde açıklıyorlar:
+- Geri bildirim toplamıyorsan → **Free plan**'da kalırsın
+- Geri bildirim topladıkça → **Fiyat otomatik artar**
+- Sadece aldığın değer kadar ödersin
+
+### 3.1. Neden "Tracked User"?
+
+Canny bu metriği seçme nedenini şöyle açıklıyor:
+- **2021 öncesi:** Tracked user bazlıydı.
+- **2021-2025:** Admin seat bazlıydı (tracked users sınırsızdı, fiyat admin sayısına göreydi).
+- **Sorun:** Takımlar daha fazla admin ekleyerek değer görmediler; tracked users sınırsız olmasına rağmen geri bildirim toplayamadılar.
+- **Çözüm:** Tracked user'a geri dönüş. Çünkü bu, müşterinin **üründen aldığı gerçek değeri** yansıtıyor.
+
+---
+
+## 🧠 4. Autopilot AI ve "Her Plana Dahil" Stratejisi
+
+Canny'nin en büyük fiyatlandırma hamlesi: **Autopilot AI'yi tüm planlara dahil etmek**.
+
+### 4.1. Eski Sistem (2025 Öncesi)
+- Autopilot "credits" ile çalışıyordu
+- Free plan: Ayda sadece 25 kredi
+- Yeterli değildi, müşteriler değeri göremiyordu
+
+### 4.2. Yeni Sistem (2025 Sonrası)
+- **Tüm planlarda sınırsız Autopilot**
+- Sınırsız feedback discovery
+- Sınırsız feedback sources
+- Otomatik deduplication
+
+> **Strateji:** "Değeri önce göster, sonra ödet." Müşteri AI'nın gücünü gördükten sonra upgrade yapıyor.
+
+---
+
+## 📈 5. Büyüme ve Ölçeklenme Mekanizmaları
+
+### 5.1. "Start Low, Scale Up" Felsefesi
+Canny, müşterilerine **düşük başlangıç** ve **kontrollü büyüme** vaat ediyor:
+- "Küçük başla, kullanıcı arttıkça ölçeklen"
+- "Opsiyonel harcama limiti belirle"
+
+### 5.2. Harcama Limiti (Spend Limit)
+Kullanıcılar **aylık harcama limiti** belirleyebiliyor:
+- Limit aşıldığında Canny otomatik olarak yeni kullanıcıları takip etmeyi durduruyor
+- Limit istediğin zaman güncellenebilir veya kaldırılabilir
+
+### 5.3. "Fewer than you think" Mesajı
+Canny, müşterilerin tracked user ihtiyacını **küçümsüyor**:
+- "Çoğu yeni takım Free plan'daki 25 tracked user ile başlamak için yeterli"
+- "Bir B2B SaaS şirketinde genellikle toplam kullanıcıların sadece %1-5'i tracked user olur"
+- "Çoğu takım upgrade yapmadan aylarca Canny kullanıyor"
+
+---
+
+## 🎨 6. Pazarlama ve Positioning Dili
+
+### 6.1. Ana Positioning
+> *"Canny costs less than building the wrong features"*
+
+Bu, **alternatif maliyet** üzerinden satış yapma stratejisi. "Yanlış özellikleri geliştirmek, Canny'den daha pahalı" mesajı.
+
+### 6.2. Fiyatlandırma Sayfasındaki Kritik Cümleler
+| Cümle | Stratejik Amaç |
+|---|---|
+| *"Start free and uncover which features will drive revenue"* | Değeri önce göster |
+| *"Autopilot AI is included in all plans"* | Rekabet avantajı |
+| *"No credit card required"* | Dönüşüm engelini kaldır |
+| *"Save up to 20% by paying for a year upfront"* | Yıllık ödemeyi teşvik et |
+| *"Plans for B2C - special plans for high-volume"* | Pazar genişletme |
+
+### 6.3. Özel Planlar ve İndirimler
+- **B2C Planları:** Yüksek hacimli tüketici ürünleri için özel planlar
+- **Kar Amacı Gütmeyen İndirimi:** Nitelikli STK'lar için indirim
+- **Grandfathered Planlar:** Mayıs 2025 öncesi kaydolanlar eski planlarında kalabiliyor
+
+---
+
+## 🏗️ 7. Feature-Based Fiyatlandırma Farkları
+
+Canny'nin planları arasındaki **ana farklar**:
+
+| Özellik | Free | Core | Pro | Business |
+|---|---|---|---|---|
+| **Custom Domain** | ❌ | ✅ | ✅ | ✅ |
+| **Content Translations** | ❌ | ✅ | ✅ | ✅ |
+| **PM Entegrasyonları** (Jira, Linear, Asana, ClickUp) | ❌ | ❌ | ✅ | ✅ |
+| **Advanced Privacy** | ❌ | ❌ | ✅ | ✅ |
+| **SSO/SAML** | ❌ | ❌ | ❌ | ✅ |
+| **CRM Entegrasyonları** (HubSpot, Salesforce) | ❌ | ❌ | ❌ | ✅ |
+| **Roadmap Sayısı** | 1 | 1 | Sınırsız | Sınırsız |
+
+---
+
+## 📊 8. Gelir Modeli Özeti
+
+| Bileşen | Detay |
+|---|---|
+| **Gelir Modeli** | Subscription-based (aylık/yıllık abonelik) |
+| **Değer Metriği** | Tracked User (kullanım bazlı) |
+| **Fiyatlandırma Stratejisi** | Kademeli otomatik ölçeklenme |
+| **Ana Gelir Kaynağı** | Pro plan ($79/ay başlangıç, tracked user arttıkça artar) |
+| **Enterprise Geliri** | Business plan (özel fiyatlandırma, 5.000+ tracked user) |
+| **Yıllık Ödeme Teşviki** | %20'ye varan indirim |
+| **Pazar Genişletme** | B2C özel planlar, STK indirimleri |
+| **Büyüme Motoru** | "Önce değeri göster, sonra ödet" (Autopilot tüm planlarda ücretsiz) |
+
+---
+
+## 🎯 9. "Kopyalayacak Olsan" Çıkarımları
+
+Eğer Canny'nin iş modelini birebir kopyalayacak olsaydın, şu **6 temel prensibi** uygulaman gerekir:
+
+1. **Değer Metriği:** "Tracked User" yerine kendi metriğini bul (ör: "Active Feedback Submitters").
+2. **Otomatik Ölçeklenme:** Kullanıcı arttıkça fiyat otomatik artsın, manuel upgrade gerektirmesin.
+3. **Önce Değeri Göster:** En güçlü özelliğini (AI) tüm planlara ücretsiz dahil et.
+4. **Harcama Limiti:** Kullanıcıya kontrol hissi ver, "sürpriz fatura" korkusunu ortadan kaldır.
+5. **Düşük Giriş Engeli:** "No credit card required" ve 25 tracked user free plan.
+6. **Yıllık Ödeme Teşviki:** %20 indirim ile yıllık ödemeyi cazip hale getir.
+
+---
+
+Bu bilgilerle Canny'nin iş modelini **baştan aşağı** kopyalayabilirsin. 🚀

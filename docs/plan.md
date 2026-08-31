@@ -63,7 +63,8 @@
 
 ## Sprint 2: Müşteri Portalı (Public Read, Auth for Actions) (3. Gün)
 
-> **Durum (2026-08-31):** Kod tamamlandı, manuel test bekliyor.
+> **Durum (2026-08-31):** ✅ Sprint 2 tamamlandı — uçtan uca test edildi (boş durum,
+> validasyon hatası, fikir gönderimi, kalıcılık). Bekleyen yok.
 >
 > - `posts` tablosu migration'ı (0001_sprint2_posts): temel alanlar + status
 >   enum + nullable AI alanları. `embedding_vector` (pgvector) ve `duplicate_*`
@@ -97,6 +98,23 @@
 ---
 
 ## Sprint 3: Oy Verme Mekanizması (Voting) (4. Gün)
+
+> **Durum (2026-08-31):** Kod tamamlandı, manuel test bekliyor.
+>
+> - `votes` tablosu (0002_sprint3_votes): `unique(user_id, post_id)` çifte oyu DB
+>   seviyesinde engeller; FK'lar cascade. Post silinince oyları da gider.
+> - `POST /api/votes` `{postId}` → `onConflictDoNothing` + güncel sayaç döner
+>   (idempotent). `DELETE /api/votes?postId=...` → kullanıcının kendi oyunu siler.
+>   Rotalar middleware'da korumalı: girişsiz isteklere Clerk **404** döndürür
+>   (API rotalarında Clerk'in standart davranışı — handler'daki 401 zarfı
+>   savunma katmanı olarak duruyor).
+> - Portal: LEFT JOIN + GROUP BY ile `voteCount`; oturum sahibinin oyları
+>   `inArray` ile çekilip butonlara başlangıç durumu olarak geçer.
+> - `VoteButton` (client): POST/DELETE toggle, sayı ve durum sunucu yanıtına
+>   göre güncellenir (optimistik UI yok). Girişsiz kullanıcıda buton
+>   SignInButton'a dönüşür (tıklayınca giriş sayfası).
+> - `GET /api/posts` artık `voteCount` döndürüyor.
+> - Build ✓, migration ✓. Bekleyen: giriş yapmış oy verme/geri alma testi.
 
 **Hedef:** Her fikrin altında oy butonu olsun. Aynı kullanıcı bir kez oy kullanabilsin.
 

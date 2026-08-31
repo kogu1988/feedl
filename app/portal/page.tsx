@@ -1,7 +1,10 @@
-import { desc } from "drizzle-orm";
+import { and, count, desc, eq, inArray } from "drizzle-orm";
+import { auth } from "@clerk/nextjs/server";
 import { Show, SignInButton } from "@clerk/nextjs";
+import { ThumbsUpIcon } from "lucide-react";
 
 import { NewPostDialog } from "@/components/custom/new-post-dialog";
+import { VoteButton } from "@/components/custom/vote-button";
 import {
   Card,
   CardContent,
@@ -10,7 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { getDb } from "@/lib/db";
-import { posts } from "@/lib/db/schema";
+import { posts, votes } from "@/lib/db/schema";
 
 // Canlı liste: her istekte DB'den okunur, build zamanında dondurulmaz.
 export const dynamic = "force-dynamic";
@@ -34,10 +37,28 @@ const statusLabels: Record<string, string> = {
 
 export default async function PortalPage() {
   let rows: Awaited<ReturnType<typeof loadPosts>> = [];
+  let votedIds = new Set<string>();
   let loadError = false;
 
   try {
     rows = await loadPosts();
+
+    const { userId } = await auth();
+    if (userId && rows.length > 0) {
+      const mine = await getDb()
+        .select({ postId: votes.postId })
+        .from(votes)
+        .where(
+          and(
+            eq(votes.userId, userId),
+            inArray(
+              votes.postId,
+              rows.map((row) => row.id),
+            ),
+          ),
+        );
+      votedIds = new Set(mine.map((row) => row.postId));
+    }
   } catch (err) {
     console.error(
       "Portal list failed:",
@@ -52,7 +73,7 @@ export default async function PortalPage() {
         <div>
           <h1 className="text-2xl font-bold">Fikir Portalı</h1>
           <p className="mt-2 text-muted-foreground">
-            Özellik isteklerini paylaş, başkalarının fikirlerini oku.
+            Özellik isteklerini paylaş, oy ver, öne çıkanları belirle.
           </p>
         </div>
 
@@ -84,14 +105,33 @@ export default async function PortalPage() {
           rows.map((post) => (
             <Card key={post.id}>
               <CardHeader>
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex items-start justify-between gap-3">
                   <CardTitle className="leading-snug">{post.title}</CardTitle>
-                  <span className="shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+                  <Show when="signed-in">
+                    <VoteButton
+                      postId={post.id}
+                      initialCount={post.voteCount}
+                      initialVoted={votedIds.has(post.id)}
+                    />
+                  </Show>
+                  <Show when="signed-out">
+                    <SignInButton>
+                      <button
+                        type="button"
+                        className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
+                        aria-label="Oy vermek için giriş yap"
+                      >
+                        <ThumbsUpIcon className="size-4" aria-hidden="true" />
+                        {post.voteCount}
+                      </button>
+                    </SignInButton>
+                  </Show>
+                </div>
+                <CardDescription className="flex items-center gap-2">
+                  {dateFormatter.format(post.createdAt)}
+                  <span className="rounded-full border px-2 py-0.5 text-xs font-medium text-muted-foreground">
                     {statusLabels[post.status] ?? post.status}
                   </span>
-                </div>
-                <CardDescription>
-                  {dateFormatter.format(post.createdAt)}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -115,8 +155,11 @@ async function loadPosts() {
       description: posts.description,
       status: posts.status,
       createdAt: posts.createdAt,
+      voteCount: count(votes.id),
     })
     .from(posts)
+    .leftJoin(votes, eq(votes.postId, posts.id))
+    .groupBy(posts.id)
     .orderBy(desc(posts.createdAt))
     .limit(100);
 }
