@@ -278,3 +278,20 @@
 - **TypeScript:** Tüm fonksiyonlar kesinlikle tip güvenli olsun.
 - **Migration:** Drizzle ile migration yapmayı unutma (`drizzle-kit generate` ve `drizzle-kit migrate`).
 - **Güvenlik:** Admin route'larında mutlaka `auth()` kontrolü yap ve `role` kontrolü ekle.
+
+---
+
+## 📚 Referans Dokümanlar
+
+- **`DESING.md` (repo kökü) — TASARIM REFERANSI:** Planlamanın ilerleyen
+  bölümlerinde görsel/UX tasarım ve bileşen işlerine çalışırken bu dosyaya
+  bakılacak: `@base-ui/react` (Base UI) dokümantasyonu — shadcn/ui
+  bileşenlerinin altındaki headless kütüphane. Yeni bileşen/tasarım işinde
+  önce buradaki ilgili bileşen/handball sayfasına başvur.
+- **`docs/deepseek.txt` ve `docs/oxalpha.txt` — CANNY ARAŞTIRMASI:** Çeşitli
+  AI modellerinden toplanan Canny platform analizleri (özellik seti,
+  durum/roadmap/changelog modelleri, monetizasyon, veri şeması, kritik UX
+  detayları). Yeni özellik planlarken veya UX kararı verirken önce bu iki
+  dosyadaki ilgili bölüme bak (örn. canlı oy güncelleme, benzer post önerisi,
+  "Complete olunca oylayıcılara kişisel e-posta" gibi Canny'yi Canny yapan
+  detaylar oxalpha.txt §6'da).
