@@ -2,14 +2,15 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Show, SignInButton } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
-import { and, asc, count, countDistinct, desc, eq, gt, inArray, isNotNull, ne, sql } from "drizzle-orm";
+import { and, asc, count, countDistinct, desc, eq, gt, inArray, isNotNull, isNull, ne, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { z } from "zod";
-import { ArrowLeftIcon, EyeOffIcon, SparklesIcon } from "lucide-react";
+import { ArrowLeftIcon, EyeOffIcon, GitMergeIcon, SparklesIcon } from "lucide-react";
 
 import { CommentForm } from "@/components/custom/comment-form";
 import { CommentCountBadge } from "@/components/custom/comment-count-badge";
 import { KeywordChips } from "@/components/custom/keyword-chips";
+import { MergeControls } from "@/components/custom/merge-controls";
 import { SentimentBadge } from "@/components/custom/sentiment-badge";
 import { StatusBadge } from "@/components/custom/status-badge";
 import { VoteButton } from "@/components/custom/vote-button";
@@ -56,6 +57,19 @@ export default async function PostDetailPage({
     notFound();
   }
 
+  // Sprint 20: birleşmiş fikir hedefinin başlığını banner'da gösterir.
+  let mergedInto: { id: string; title: string } | null = null;
+  if (post.mergedIntoId) {
+    const [target] = await getDb()
+      .select({ id: posts.id, title: posts.title })
+      .from(posts)
+      .where(eq(posts.id, post.mergedIntoId))
+      .limit(1);
+    if (target) {
+      mergedInto = target;
+    }
+  }
+
   const commentRows = await loadComments(postId, isAdmin);
 
   // Benzer fikirler best-effort: embedding/vektör sorgusu başarısız olsa
@@ -80,28 +94,56 @@ export default async function PostDetailPage({
         Portala dön
       </Link>
 
+      {mergedInto ? (
+        <div className="mt-4 flex flex-wrap items-center gap-2 rounded-md border border-amber-600/30 bg-amber-500/10 p-3 text-sm">
+          <GitMergeIcon className="size-4 shrink-0 text-amber-700 dark:text-amber-400" aria-hidden="true" />
+          <span>
+            Bu fikir{" "}
+            <Link
+              href={`/portal/${mergedInto.id}`}
+              className="font-medium underline underline-offset-4"
+            >
+              {mergedInto.title}
+            </Link>{" "}
+            ile birleştirildi — oy ve yorumlar hedef fikirde.
+          </span>
+        </div>
+      ) : null}
+
       <Card className="mt-4">
         <CardHeader>
           <div className="flex items-start justify-between gap-3">
             <CardTitle className="text-xl leading-snug">{post.title}</CardTitle>
-            <Show when="signed-in">
-              <VoteButton
-                postId={post.id}
-                initialCount={post.voteCount}
-                initialVoted={post.voted}
-              />
-            </Show>
-            <Show when="signed-out">
-              <SignInButton>
-                <button
-                  type="button"
-                  className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
-                  aria-label="Oy vermek için giriş yap"
-                >
-                  {post.voteCount}
-                </button>
-              </SignInButton>
-            </Show>
+            {mergedInto ? (
+              // Birleşmiş fikirde oy butonu kapalı: oylar hedef fikirde.
+              <span
+                className="inline-flex shrink-0 items-center rounded-md border px-3 py-1.5 text-sm font-medium text-muted-foreground"
+                aria-label="Birleşmiş fikir — oy hedef fikirde"
+              >
+                {post.voteCount}
+              </span>
+            ) : (
+              <>
+                <Show when="signed-in">
+                  <VoteButton
+                    postId={post.id}
+                    initialCount={post.voteCount}
+                    initialVoted={post.voted}
+                  />
+                </Show>
+                <Show when="signed-out">
+                  <SignInButton>
+                    <button
+                      type="button"
+                      className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
+                      aria-label="Oy vermek için giriş yap"
+                    >
+                      {post.voteCount}
+                    </button>
+                  </SignInButton>
+                </Show>
+              </>
+            )}
           </div>
           <CardDescription className="flex flex-wrap items-center gap-2">
             <StatusBadge status={post.status} />
@@ -134,6 +176,10 @@ export default async function PostDetailPage({
               <p className="text-sm text-muted-foreground">{post.aiSummary}</p>
             </div>
           ) : null}
+
+          {isAdmin ? (
+            <MergeControls postId={post.id} mergedInto={mergedInto} />
+          ) : null}
         </CardContent>
       </Card>
 
@@ -143,11 +189,13 @@ export default async function PostDetailPage({
         </h2>
 
         <Show when="signed-in">
-          <Card>
-            <CardContent className="pt-6">
-              <CommentForm postId={post.id} isAdmin={isAdmin} />
-            </CardContent>
-          </Card>
+          {mergedInto ? null : (
+            <Card>
+              <CardContent className="pt-6">
+                <CommentForm postId={post.id} isAdmin={isAdmin} />
+              </CardContent>
+            </Card>
+          )}
         </Show>
         <Show when="signed-out">
           <SignInButton>
@@ -239,6 +287,7 @@ async function loadPost(postId: string, userId: string | null) {
       sentimentLabel: posts.sentimentLabel,
       aiKeywords: posts.aiKeywords,
       aiSummary: posts.aiSummary,
+      mergedIntoId: posts.mergedIntoId,
       createdAt: posts.createdAt,
       voteCount: count(votes.id),
     })
@@ -306,6 +355,8 @@ async function loadSimilarPosts(postId: string) {
       and(
         ne(posts.id, postId),
         isNotNull(posts.embeddingVector),
+        // Sprint 20: birleşmiş fikirler benzer önerilerde de görünmez.
+        isNull(posts.mergedIntoId),
         gt(similarity(), SIMILAR_POSTS_MIN_SIMILARITY),
       ),
     )

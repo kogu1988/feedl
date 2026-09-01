@@ -1,4 +1,4 @@
-import { and, countDistinct, desc, eq } from "drizzle-orm";
+import { and, countDistinct, desc, eq, isNull } from "drizzle-orm";
 import Link from "next/link";
 
 import { CommentCountBadge } from "@/components/custom/comment-count-badge";
@@ -144,6 +144,8 @@ async function loadPosts() {
       comments,
       and(eq(comments.postId, posts.id), eq(comments.isInternal, false)),
     )
+    // Sprint 20: birleşmiş fikirler roadmap'te görünmez.
+    .where(isNull(posts.mergedIntoId))
     .groupBy(posts.id)
     .orderBy(desc(posts.createdAt))
     .limit(100);

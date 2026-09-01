@@ -1,6 +1,7 @@
 import {
   boolean,
   index,
+  jsonb,
   pgEnum,
   pgTable,
   text,
@@ -63,6 +64,14 @@ export const posts = pgTable(
       onDelete: "set null",
     }),
     duplicateNote: text("duplicate_note"),
+    // Sprint 20: admin merge işlemi (duplicateOf AI adayını işaretler,
+    // mergedIntoId gerçek birleşmeyi). Kaynak fikir listelerden düşer,
+    // detay sayfası hedefe yönlendirir; unmerge ile geri alınabilir.
+    mergedIntoId: uuid("merged_into_id").references(
+      (): AnyPgColumn => posts.id,
+      { onDelete: "set null" },
+    ),
+    mergedAt: timestamp("merged_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -91,6 +100,12 @@ export const votes = pgTable(
     postId: uuid("post_id")
       .notNull()
       .references(() => posts.id, { onDelete: "cascade" }),
+    // Sprint 20 merge: oy bir kaynak fikirden hedefe taşındıysa kaynağı
+    // işaretler; unmerge bu kolonla geri taşır. normal oyda null.
+    mergedFromPostId: uuid("merged_from_post_id").references(
+      (): AnyPgColumn => posts.id,
+      { onDelete: "set null" },
+    ),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -116,6 +131,11 @@ export const comments = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     body: text("body").notNull(),
     isInternal: boolean("is_internal").notNull().default(false),
+    // Sprint 20 merge: yorum taşınması izi (votes.mergedFromPostId ile aynı model).
+    mergedFromPostId: uuid("merged_from_post_id").references(
+      (): AnyPgColumn => posts.id,
+      { onDelete: "set null" },
+    ),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -125,3 +145,35 @@ export const comments = pgTable(
 
 export type Comment = typeof comments.$inferSelect;
 export type NewComment = typeof comments.$inferInsert;
+
+// post_merges: Sprint 20 merge audit kaydı. Taşınan oy/yorum id'leri
+// snapshot olarak saklanır; unmerge tam olarak bu id'leri kaynak fikre
+// geri taşır (neon-http interaktif transaction desteklemediği için merge
+// tek CTE statement'ı ile atomik yürütülür — app/api/admin/merge/route.ts).
+export const postMerges = pgTable(
+  "post_merges",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    sourcePostId: uuid("source_post_id")
+      .notNull()
+      .references((): AnyPgColumn => posts.id, { onDelete: "cascade" }),
+    targetPostId: uuid("target_post_id")
+      .notNull()
+      .references((): AnyPgColumn => posts.id, { onDelete: "cascade" }),
+    movedVoteIds: jsonb("moved_vote_ids").$type<string[]>().notNull().default([]),
+    movedCommentIds: jsonb("moved_comment_ids")
+      .$type<string[]>()
+      .notNull()
+      .default([]),
+    mergedAt: timestamp("merged_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    unmergedAt: timestamp("unmerged_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("post_merges_source_idx").on(table.sourcePostId, table.mergedAt),
+  ],
+);
+
+export type PostMerge = typeof postMerges.$inferSelect;
+export type NewPostMerge = typeof postMerges.$inferInsert;

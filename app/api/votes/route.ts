@@ -4,7 +4,7 @@ import { and, count, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { getDb } from "@/lib/db";
-import { votes } from "@/lib/db/schema";
+import { posts, votes } from "@/lib/db/schema";
 import { voteSchema } from "@/lib/validations/vote";
 
 async function countVotes(postId: string): Promise<number> {
@@ -42,6 +42,28 @@ export async function POST(req: Request) {
     if (!parsed.success) {
       return NextResponse.json(
         { success: false, error: "Geçersiz fikir kimliği." },
+        { status: 400 },
+      );
+    }
+
+    // Sprint 20: birleşmiş fikre oy kabul edilmez — oy hedef fikirde.
+    const [post] = await getDb()
+      .select({ mergedIntoId: posts.mergedIntoId })
+      .from(posts)
+      .where(eq(posts.id, parsed.data.postId))
+      .limit(1);
+    if (!post) {
+      return NextResponse.json(
+        { success: false, error: "Fikir bulunamadı." },
+        { status: 404 },
+      );
+    }
+    if (post.mergedIntoId) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Bu fikir başka bir fikirle birleştirildi; oyunu hedef fikirde kullanabilirsin.",
+        },
         { status: 400 },
       );
     }

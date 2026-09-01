@@ -176,6 +176,11 @@ export default async function DashboardPage({
                           {post.title}
                         </Link>
                       </div>
+                      {post.mergedIntoId ? (
+                        <div className="mt-0.5 inline-flex items-center gap-1 rounded-full border border-amber-600/30 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">
+                          Birleştirildi
+                        </div>
+                      ) : null}
                       <div className="font-mono text-xs text-muted-foreground">
                         {post.id}
                       </div>
@@ -223,6 +228,7 @@ async function loadPosts() {
       status: posts.status,
       sentimentLabel: posts.sentimentLabel,
       aiKeywords: posts.aiKeywords,
+      mergedIntoId: posts.mergedIntoId,
       createdAt: posts.createdAt,
       voteCount: count(votes.id),
     })

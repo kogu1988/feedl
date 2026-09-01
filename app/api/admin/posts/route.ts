@@ -1,12 +1,12 @@
 import "server-only";
 
 import { NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { and, count, desc, eq, ilike, isNull, ne } from "drizzle-orm";
 import { z } from "zod";
 
 import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
-import { comments, postStatusEnum, posts } from "@/lib/db/schema";
+import { comments, postStatusEnum, posts, votes } from "@/lib/db/schema";
 import { statusLabels } from "@/lib/post-format";
 import { postStatusChangedEventSchema } from "@/lib/validations/events";
 import { inngest } from "@/inngest/client";
@@ -17,6 +17,63 @@ const patchSchema = z.object({
     error: "Geçersiz durum.",
   }),
 });
+
+// GET /api/admin/posts?q=...&exclude=... — merge hedef seçici için başlık
+// araması (Sprint 20). Birleşmiş fikirler hedef olamaz; kaynak fikir de
+// listeden çıkarılır. Sonuç sınırlı: sadece id/başlık/oy.
+export async function GET(req: Request) {
+  try {
+    const adminId = await getAdminUserId();
+    if (!adminId) {
+      return NextResponse.json(
+        { success: false, error: "Bu işlem için admin yetkisi gerekir." },
+        { status: 403 },
+      );
+    }
+
+    const url = new URL(req.url);
+    const q = (url.searchParams.get("q") ?? "").trim();
+    const excludeRaw = url.searchParams.get("exclude") ?? "";
+    const excludeId = z.uuid().safeParse(excludeRaw).success
+      ? excludeRaw
+      : null;
+
+    if (q.length < 2) {
+      return NextResponse.json({ success: true, data: [] });
+    }
+
+    const rows = await getDb()
+      .select({
+        id: posts.id,
+        title: posts.title,
+        status: posts.status,
+        voteCount: count(votes.id),
+      })
+      .from(posts)
+      .leftJoin(votes, eq(votes.postId, posts.id))
+      .where(
+        and(
+          isNull(posts.mergedIntoId),
+          excludeId ? ne(posts.id, excludeId) : undefined,
+          ilike(posts.title, `%${q}%`),
+        ),
+      )
+      .groupBy(posts.id)
+      .orderBy(desc(posts.createdAt))
+      .limit(8);
+
+    return NextResponse.json({ success: true, data: rows });
+  } catch (err) {
+    console.error(
+      "GET /api/admin/posts failed:",
+      err instanceof Error ? err.message : err,
+    );
+    return NextResponse.json(
+      { success: false, error: "Arama başarısız. Lütfen tekrar deneyin." },
+      { status: 500 },
+    );
+  }
+}
 
 // PATCH /api/admin/posts — fikir durumunu güncelle (sadece admin).
 // Rota middleware'da korumalı; admin rolü burada DB'den doğrulanır.

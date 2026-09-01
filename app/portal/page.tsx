@@ -1,4 +1,4 @@
-import { and, countDistinct, desc, eq, inArray, type SQL } from "drizzle-orm";
+import { and, countDistinct, desc, eq, inArray, isNull, type SQL } from "drizzle-orm";
 import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
 import { Show, SignInButton } from "@clerk/nextjs";
@@ -357,7 +357,8 @@ async function loadPosts(searchQuery: string, sort: "top" | "new") {
       comments,
       and(eq(comments.postId, posts.id), eq(comments.isInternal, false)),
     )
-    .where(search.condition)
+    // Sprint 20: birleşmiş fikirler listede görünmez (kaynak arşivlenir).
+    .where(and(search.condition, isNull(posts.mergedIntoId)))
     .groupBy(posts.id)
     .orderBy(...orderBys)
     .limit(100);

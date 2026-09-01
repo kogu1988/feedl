@@ -53,7 +53,7 @@ export async function POST(
     }
 
     const [post] = await getDb()
-      .select({ id: posts.id })
+      .select({ id: posts.id, mergedIntoId: posts.mergedIntoId })
       .from(posts)
       .where(eq(posts.id, parsedId.data))
       .limit(1);
@@ -61,6 +61,16 @@ export async function POST(
       return NextResponse.json(
         { success: false, error: "Fikir bulunamadı." },
         { status: 404 },
+      );
+    }
+    // Sprint 20: birleşmiş fikre yorum kabul edilmez — tartışma hedef fikirde.
+    if (post.mergedIntoId) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Bu fikir başka bir fikirle birleştirildi; yorumunu hedef fikirde yazabilirsin.",
+        },
+        { status: 400 },
       );
     }
 

@@ -36,6 +36,20 @@
       "when": 1788274269007,
       "tag": "0004_add_comments",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1788291249286,
+      "tag": "0005_post_merge",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1788291445715,
+      "tag": "0006_post_merge_from_columns",
+      "breakpoints": true
     }
   ]
 }
