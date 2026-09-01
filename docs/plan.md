@@ -599,6 +599,10 @@ Yapılacaklar:
 >   şablon aynı kaynağı kullanır (tek kaynak kuralı).
 > - Provider seçimi değişmedi: RESEND_API_KEY varsa Resend, yoksa
 >   Ethereal (mevcut sendEmails akışı).
+> - **Ethereal test hesabı değişti (2026-09-01):** eski hesap hatalıydı;
+>   yeni hesap retha10@ethereal.email. Kimlik bilgileri .env.local ve
+>   Vercel production env'lerinde güncellendi + redeploy yapıldı
+>   (şifre hiçbir dosyaya yazılmaz). Gelen kutusu: ethereal.email.
 
 **Hedef:** Admin yeni fikirden anında haberdar olsun — triage hızlanır
 (Canny'nin admin notification modeli; docs/deepseek.txt §2 ekip akışı).
