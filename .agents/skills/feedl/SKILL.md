@@ -25,6 +25,11 @@ Design/feature references (consult when the task touches them):
 - `docs/deepseek.txt`, `docs/oxalpha.txt` - Canny platform research gathered
   from AI models (features, statuses/roadmap/changelog, monetization, data
   model, critical UX details); check before planning new features/UX
+- `docs/Feedl–Canny Fonksiyonel Parite Analizi.md` - P0-P5 prioritized parity
+  roadmap (source of Sprint 20-34 in plan.md's Faz 3 section); check the
+  relevant P-item + acceptance criteria (§6) before adding features. Its
+  "current state" rows predate Sprint 10+ - verify against plan.md's
+  "Analiz doğrulaması" section
 
 Do not duplicate these docs in code comments; point to them.
 

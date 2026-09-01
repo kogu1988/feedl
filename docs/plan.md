@@ -644,6 +644,8 @@ Canny araştırmasına (docs/deepseek.txt, docs/oxalpha.txt) dayalı plan;
   SDK (`widget.js` + iframe overlay + Secure Identify — Canny modeli:
   SDK identify + data-canny-link yakalama, developers.canny.io'dan
   doğrulandı). Domain alındığında bu sprintler aktifleşecek.
+  (Faz 3 güncellemesi: Widget custom domain gerektirmediğinden Sprint
+  32'ye alındı; Organizations/subdomain + domain Sprint 37'de.)
 - **Sıradaki (özellik + arayüz/tasarım odağı):**
   1. Tasarım/UI cilası (referans: `DESIGN.md` — Base UI dokümantasyonu;
      ilk adım özel 404 sayfası, Sprint 16).
@@ -657,6 +659,113 @@ Canny araştırmasına (docs/deepseek.txt, docs/oxalpha.txt) dayalı plan;
 - Not: Ücretsiz LLM'de ara sıra 429 (upstream rate limit) normal;
   Inngest retry mekanizması zaten telafi ediyor. Sıklaşırsa tek satırlık
   model değişikliğiyle ücretli fallback'e geçilir (bkz. skill fallback).
+
+---
+
+## 🧭 Faz 3 Yol Haritası: Canny Fonksiyonel Parite (2026-09-01)
+
+Kaynak: `docs/Feedl–Canny Fonksiyonel Parite Analizi.md` (P0–P5
+önceliklendirilmiş yol haritası + kabul kriterleri §6). **Kısıt: Domain
+gerektiren işler ve Resend geçişi en sonda** (kullanıcı kararı).
+
+### Analiz doğrulaması (rapor vs mevcut repo)
+
+Raporun konum değerlendirmesi eski bir commit'e (51d10f27) dayanıyor;
+aşağıdaki maddeler o zamandan beri tamamlandı ve raporun "eksik"
+dediği yerler güncel değil:
+
+- **Yorumlar + iç notlar (public/internal):** Sprint 10 — `comments`
+  tablosu + `isInternal` var; rapor §1'deki "Comments yok" ifadesi
+  güncel değil.
+- **Fikir detay sayfası (P0.3):** Sprint 10 + 13 + 17 — kalıcı URL, tam
+  açıklama, oy durumu, yorumlar, yorum sayısı ve "benzer fikirler"
+  bölümü mevcut.
+- CSV export (Sprint 7), admin filtre/sıralama (Sprint 12), admin'e yeni
+  fikir bildirimi (Sprint 18), "Oyladıklarım" (Sprint 15), roadmap
+  kanban + arama + yazarken benzer öneri (Sprint 8).
+- AI özet/sentiment/keyword/duplicate adayı (Sprint 5) — rapor P5'in
+  "temel AI paritesi var" tespitini doğruluyor.
+
+### Raporun doğru tespit ettiği sınırlar
+
+- `duplicateOf` alanı var ama operasyonel **merge/unmerge yok** (P1.2).
+- "Yayında" listesi bağımsız **changelog** değil (P2.1).
+- 4 sabit status; **status history** yok (P1.5).
+- Yorumlarda thread/edit/delete/bildirim yok (P1.1 revizyon).
+- Admin'de bulk action/saved view/tag/owner yok (P1.3, P1.4).
+- Arama ILIKE; full-text/vector hybrid yok (rapor §5).
+- Bildirim yalnızca shipped e-postası; takip/tercih yok (P2.3).
+- Raporlama/analitik yok (rapor §1).
+
+### Sprint listesi (☐ = planlandı)
+
+- ☐ **Sprint 20 — Post Merge/Unmerge (P1.2):** Admin iki fikri
+  birleştirir; kaynak post arşivlenir ve hedefe bağlanır; oylar/yorumlar
+  tek transaction ile hedefe taşınır; unmerge ile geri alınabilir;
+  shipped/notify akışları hedef postu takip eder.
+- ☐ **Sprint 21 — Etiketler + Kategoriler + Post Tipi (P1.3 lite):**
+  `tags` + `categories` + `post_tags` + `post_type` (feature/bug/
+  usability); AI keyword'leri etiketlerle eşleşir; portalda etiket
+  filtresi; dashboard'da etikete göre gruplama.
+- ☐ **Sprint 22 — Admin Bulk Actions + Kayıtlı Görünümler (P1.4):**
+  çoklu seçim ile toplu status/etiket; filtre kombinasyonlarını kaydet
+  (saved views); server-side pagination.
+- ☐ **Sprint 23 — Status Yaşam Döngüsü Genişletme (P1.5):** `under-review`
+  ve `closed` statüleri; `post_status_history` tablosu; status
+  değişiminde açıklama notu → bildirim e-postasına dahil; roadmap'te
+  gösterilecek kolon seçimi.
+- ☐ **Sprint 24 — Yorum Revizyonu (P1.1):** threaded reply
+  (`parentCommentId`), edit/delete, admin etiketi, yorum bildirimi
+  (post sahibine; admin cevabında oy verenlere).
+- ☐ **Sprint 25 — Bağımsız Changelog (P2.1):** `changelog_entries` +
+  `changelog_post_links`; markdown gövde, label, yayın tarihi; public
+  `/portal/changelog` route; post detayından release note bağlantısı.
+- ☐ **Sprint 26 — Bildirim Merkezi + Post Takibi (P2.3):**
+  `post_followers`; status/yorum bildirimleri; e-posta tercihleri +
+  token'lı unsubscribe; `email_deliveries` idempotency.
+- ☐ **Sprint 27 — Arama Güçlendirme (rapor §5):** PostgreSQL full-text
+  (Türkçe) + trigram; mevcut vector skorla hybrid sıralama;
+  `lib/post-search.ts` tek kaynak kalır.
+- ☐ **Sprint 28 — Internal Roadmap + Scoring (P2.2):** admin'de owner,
+  target date, effort/impact, basit RICE skoru; public roadmap'ten ayrı
+  internal görünüm.
+- ☐ **Sprint 29 — Temel Analytics (rapor §1):** dashboard özet
+  metrikleri (haftalık yeni fikir/oy/yorum, en çok istenenler,
+  sentiment dağılımı); CSV export'u genişlet.
+- ☐ **Sprint 30 — Company/Segment Profili (P3.1):** `companies` +
+  `company_members` + user profil alanları; fikir başına "kaç müşteri
+  istedi" sayacı (Canny kritik UX'i).
+- ☐ **Sprint 31 — Opportunities + Gelir Ağırlıklı Öncelik (P3.2):**
+  fırsat/değer alanları; oy sayısı + MRR ağırlıklı skor raporu.
+- ☐ **Sprint 32 — Widget SDK (P4.1 lite):** (domain gerektirmez —
+  önceki kararı koru) `<script>` + iframe overlay ile portal gömme;
+  güvenli identify için imzalı kısa ömürlü JWT + origin allowlist.
+- ☐ **Sprint 33 — Autopilot Inbox (P5):** AI önerileri için admin
+  inbox (kaynak, güven skoru, önerilen aksiyon); approve/reject/edit/
+  merge/spam; audit log.
+- ☐ **Sprint 34 — Public API + Webhooks (P4.2):** scope'lu API key;
+  `/api/v1` altında posts/votes/comments okuma; `post.created`,
+  `post.status_changed`, `comment.created` webhook'ları; imza + rate
+  limit + pagination.
+
+### Ertelenen blok (en son — kullanıcının kısıtı)
+
+- **Resend geçişi:** tek env `RESEND_API_KEY`; kod otomatik geçer
+  (`lib/email/send.ts`). Domain doğrulaması gerektiğinden domain ile
+  birlikte yapılır.
+- **Domain gerektirenler:** Workspace/Organizations + çoklu tenancy
+  (P0.1) + subdomain yönlendirme, board erişim politikaları (P0.2),
+  custom domain + markalama, üçüncü taraf entegrasyonları (P4.3:
+  Slack/Intercom/Jira...), billing/plan limitleri.
+
+### ⚠️ Mimari risk notu (P0.1 ertelenmesi hakkında)
+
+Rapor, workspace/board modelini "önce yapılmalı" (P0) diye işaretliyor;
+ancak feedl MVP'de tek workspace/tek admin geçerli ve Organizations
+domain gerektirdiğinden ertelendi. Riski azaltmak için Sprint 20–34'te
+oluşturulacak tüm yeni tablolar (changelog, followers, companies vb.)
+tek migration ile `workspaceId` eklenebilecek şekilde tutulur (rapor
+§5 migration stratejisi).
 
 ---
 
@@ -676,6 +785,14 @@ Canny araştırmasına (docs/deepseek.txt, docs/oxalpha.txt) dayalı plan;
   bakılacak: `@base-ui/react` (Base UI) dokümantasyonu — shadcn/ui
   bileşenlerinin altındaki headless kütüphane. Yeni bileşen/tasarım işinde
   önce buradaki ilgili bileşen/handball sayfasına başvur.
+- **`docs/Feedl–Canny Fonksiyonel Parite Analizi.md` — PARİTE HARİTASI:**
+  Canny resmi özellik kataloğuna dayalı P0–P5 önceliklendirilmiş analiz
+  (mevcut konum değerlendirmesi, eksikler, kabul kriterleri §6, mimari
+  dönüşüm §5). Faz 3 sprint listesi (Sprint 20–34) buradan türetildi.
+  Yeni özellik eklerken önce ilgili P maddesini ve kabul kriterini
+  kontrol et. Not: raporun "mevcut durum" satırları eski commit'e
+  dayanır; güncel durum için plan.md'deki "Analiz doğrulaması"
+  bölümüne bak.
 - **`docs/deepseek.txt` ve `docs/oxalpha.txt` — CANNY ARAŞTIRMASI:** Çeşitli
   AI modellerinden toplanan Canny platform analizleri (özellik seti,
   durum/roadmap/changelog modelleri, monetizasyon, veri şeması, kritik UX
