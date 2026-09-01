@@ -108,7 +108,13 @@ docs/                                                 planning docs (source of t
 - **StatusBadge** (components/custom/status-badge.tsx) is the single
   visual source for status colors; `statusLabels` comes only from
   `lib/post-format.ts` - no local copies (one was found in the export
-  route and removed).
+  route and removed). Same pattern: **SentimentBadge** +
+  **KeywordChips** for AI data; `sentimentLabels` in lib/post-format.
+- **AI data visibility split** (user decision, Sprint 11): sentiment
+  label + keywords are PUBLIC (portal cards, detail page); `aiSummary`
+  is ADMIN-ONLY (detail page box). Rows render nothing when AI data is
+  null. If this split ever changes, check all three surfaces.
+- **Comments / internal notes** (Sprint 10): `comments.is_internal=true`
 - **shadcn `form` component was removed from the registry** (404). Build forms
   with react-hook-form + zod + `@hookform/resolvers` and compose
   `input`/`textarea`/`button` manually.

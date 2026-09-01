@@ -421,8 +421,8 @@ yorum yazmak etkileşimi canlandırır, internal note müşteriye görünmez).
 
 ## Sprint 11: AI Etiketleri + Dashboard Cilası (Faz 2)
 
-> **Durum (2026-09-01):** 🚧 Kod tamamlandı — üretim testi bekliyor.
->
+> **Durum (2026-09-01):** ✅ Tamamlandı — üretimde doğrulandı (kullanıcı
+> testi "hepsi ok").
 > - **SentimentBadge + KeywordChips** ortak bileşenleri; sentiment
 >   etiketleri lib/post-format'a eklendi (pozitif yeşil / notr nötr /
 >   negatif gül kurusu).
