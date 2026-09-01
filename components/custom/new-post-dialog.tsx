@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { statusLabels } from "@/lib/post-format";
+import { StatusBadge } from "@/components/custom/status-badge";
 import {
   createPostSchema,
   type CreatePostInput,
@@ -162,9 +162,7 @@ export function NewPostDialog() {
               <ul className="grid gap-1.5">
                 {similarPosts.map((post) => (
                   <li key={post.id} className="flex items-center gap-2 text-sm">
-                    <span className="rounded-full border px-2 py-0.5 text-xs text-muted-foreground">
-                      {statusLabels[post.status] ?? post.status}
-                    </span>
+                    <StatusBadge status={post.status} />
                     <span className="min-w-0 flex-1 truncate">{post.title}</span>
                     <span className="shrink-0 text-xs text-muted-foreground">
                       {post.voteCount} oy

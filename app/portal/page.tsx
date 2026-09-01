@@ -4,6 +4,7 @@ import { Show, SignInButton } from "@clerk/nextjs";
 import { RocketIcon, SearchIcon, ThumbsUpIcon } from "lucide-react";
 
 import { NewPostDialog } from "@/components/custom/new-post-dialog";
+import { StatusBadge } from "@/components/custom/status-badge";
 import { VoteButton } from "@/components/custom/vote-button";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,7 +16,6 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { getDb } from "@/lib/db";
-import { statusLabels } from "@/lib/post-format";
 import { buildPostSearch } from "@/lib/post-search";
 import { posts, votes } from "@/lib/db/schema";
 
@@ -159,9 +159,7 @@ export default async function PortalPage({
                       <CardTitle className="leading-snug">{post.title}</CardTitle>
                       <CardDescription className="flex items-center gap-2">
                         {dateFormatter.format(post.updatedAt)}
-                        <span className="rounded-full border border-emerald-600/30 bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-400">
-                          {statusLabels[post.status] ?? post.status}
-                        </span>
+                        <StatusBadge status={post.status} />
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -204,9 +202,7 @@ export default async function PortalPage({
                       </div>
                       <CardDescription className="flex items-center gap-2">
                         {dateFormatter.format(post.createdAt)}
-                        <span className="rounded-full border px-2 py-0.5 text-xs font-medium text-muted-foreground">
-                          {statusLabels[post.status] ?? post.status}
-                        </span>
+                        <StatusBadge status={post.status} />
                       </CardDescription>
                     </CardHeader>
                     <CardContent>

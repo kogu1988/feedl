@@ -47,6 +47,7 @@ Do not duplicate these docs in code comments; point to them.
 app/api/{posts,votes,admin/export,webhooks,inngest}   API routes
 app/{dashboard,portal,sign-in/[[...sign-in]],sign-up/[[...sign-up]]}
 lib/{db,ai,email}                                     db schema+client, AI helpers, email templates
+lib/{post-format,post-search,validations}.ts          status labels+dates, Turkish search, zod schemas
 components/{ui,custom}                                shadcn ui + project components
 inngest/                                              Inngest function definitions
 migrations/                                           drizzle-kit output
@@ -85,6 +86,24 @@ docs/                                                 planning docs (source of t
   `google/gemma-4-26b-a4b-it:free` returned 429 twice (upstream shared pool).
   Fallback if free proves flaky in prod: paid `google/gemini-2.5-flash`
   (one-line model switch).
+- **Clerk v7 exports are split by runtime.** `auth()` and other server
+  helpers ONLY from `@clerk/nextjs/server`; UI components (`SignInButton`,
+  `SignUpButton`, `Show`, `UserButton`) ONLY from `@clerk/nextjs`. Mixing
+  both in one import fails the Turbopack build with "Export X doesn't
+  exist in target module" (verified 2026-09-01).
+- **Never call `redirect()` inside try/catch.** It throws NEXT_REDIRECT;
+  your own catch swallows it and redirects to the fallback (admin "/" →
+  portal bug, fixed 2026-09-01). Compute the target inside try, call
+  `redirect()` after the block.
+- **Search lives in `lib/post-search.ts`** (Turkish-aware, used by
+  /api/posts GET + portal): multi-token AND, diacritic folding via SQL
+  `translate+lower` mirrored in JS `foldTr`, relevance score (title 2 /
+  description 1). SQL and JS fold mappings MUST stay in sync
+  (TR_FOLD_SOURCE/TARGET ↔ TR_FOLD_MAP).
+- **StatusBadge** (components/custom/status-badge.tsx) is the single
+  visual source for status colors; `statusLabels` comes only from
+  `lib/post-format.ts` - no local copies (one was found in the export
+  route and removed).
 - **shadcn `form` component was removed from the registry** (404). Build forms
   with react-hook-form + zod + `@hookform/resolvers` and compose
   `input`/`textarea`/`button` manually.

@@ -5,6 +5,7 @@ import { count, desc, eq } from "drizzle-orm";
 
 import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
+import { statusLabels } from "@/lib/post-format";
 import { posts, votes } from "@/lib/db/schema";
 
 // GET /api/admin/export — tüm fikirleri CSV olarak indir (plan.md Sprint 7).
@@ -56,13 +57,6 @@ export async function GET() {
     );
   }
 }
-
-const statusLabels: Record<string, string> = {
-  open: "Açık",
-  planned: "Planlandı",
-  "in-progress": "Geliştiriliyor",
-  shipped: "Yayınlandı",
-};
 
 const dateFormatter = new Intl.DateTimeFormat("tr-TR", {
   day: "numeric",

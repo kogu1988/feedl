@@ -8,8 +8,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { StatusBadge } from "@/components/custom/status-badge";
 import { getDb } from "@/lib/db";
-import { roadmapStatuses, statusLabels } from "@/lib/post-format";
+import { roadmapStatuses } from "@/lib/post-format";
 import { posts, votes } from "@/lib/db/schema";
 
 // Herkese açık yol haritası (plan.md Sprint 8): kanban görünümü —
@@ -85,9 +86,9 @@ export default async function RoadmapPage() {
                         <CardTitle className="text-base leading-snug">
                           {post.title}
                         </CardTitle>
-                        <CardDescription>
-                          {post.voteCount} oy ·{" "}
-                          {statusLabels[post.status] ?? post.status}
+                        <CardDescription className="flex items-center gap-2">
+                          <StatusBadge status={post.status} />
+                          <span>{post.voteCount} oy</span>
                         </CardDescription>
                       </CardHeader>
                       <CardContent>

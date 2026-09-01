@@ -339,8 +339,28 @@ docs/oxalpha.txt §6 kritik UX detayları).
 
 ## Sprint 9: Tasarım/UI Cilası (Faz 2 adım 2)
 
-> **Durum (2026-09-01):** 🚧 Devam ediyor — ilk iki parça tamam: ortak üst
-> bar + landing page. Sırada portal görsel cilası.
+> **Durum (2026-09-01):** ✅ Tamamlandı — üst bar + landing page üretimde
+> doğrulandı (kullanıcı testi "hepsi ok"); durum etiketleri tek
+> bileşende toplandı.
+>
+> - **Ortak site üst barı (layout.tsx):** "feedl" markası + Portal /
+>   Yol Haritası linkleri + Giriş/Kayıt/UserButton; Sprint 2'deki
+>   geçici barın yerine geçti. Üretimde test edildi.
+> - **Landing page ("/"):** Çıkıştaki ziyaretçiye hero + 3 özellik
+>   kartı + CTA ("Fikir vermeye başla" / "Fikirlere göz at"); giriş
+>   yapmış kullanıcı role bazlı yönlendirmeye devam eder. Üretimde
+>   test edildi.
+> - **Gerçek hata giderildi:** "/" sayfasında redirect() try bloğu
+>   içindeydi; NEXT_REDIRECT hatası catch tarafından yakalanıp admin
+>   "/" üzerinden hep portala düşüyordu. Hedef artık try DIŞINDA
+>   redirect ediliyor — admin "/" → dashboard çalışıyor (kullanıcı
+>   doğruladı).
+> - **StatusBadge bileşeni** (components/custom/status-badge.tsx):
+>   durum renklerinin tek görsel kaynağı — Açık nötr, Planlandı mavi,
+>   Geliştiriliyor amber, Yayınlandı yeşil. Portal, roadmap ve dialog
+>   aynı bileşeni kullanır. Bu vesileyle export route'unun kendi yerel
+>   statusLabels kopyası bulundu; lib/post-format'tan import'a
+>   çevrildi ("export aynı kaynağı kullanır" kuralı ihlaliydi).
 
 **Hedef:** Arayüzü "ürün" görünümüne kavuşturmak (referans: `DESIGN.md` —
 Base UI dokümantasyonu; docs/deepseek.txt §1 Feedback Portal, docs/
@@ -356,8 +376,9 @@ Yapılacaklar:
   hata giderildi: redirect() try bloğu içindeydi; NEXT_REDIRECT hatası
   catch tarafından yakalanıp admin "/" üzerinden dashboard yerine
   portala düşüyordu. Hedef artık try DIŞINDA redirect ediliyor.
-- **Portal görsel cilası:** kart düzeni, durum etiketi renkleri ve boş
-  durumların tutarlılığı — sıradaki parça.
+- **Portal görsel cilası:** durum etiketi renkleri StatusBadge ile
+  birleştirildi; kart düzeni ve boş durumlar zaten tutarlıydı, ek
+  değişiklik gerekmedi.
 
 ---
 
