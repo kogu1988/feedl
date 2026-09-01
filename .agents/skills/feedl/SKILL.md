@@ -151,6 +151,25 @@ docs/                                                 planning docs (source of t
   is ADMIN-ONLY (detail page box). Rows render nothing when AI data is
   null. If this split ever changes, check all three surfaces.
 - **Comments / internal notes** (Sprint 10): `comments.is_internal=true`
+- **neon-http does NOT support `db.transaction()`** (session throws "No
+  transactions support in neon-http driver", verified 2026-09-01). For
+  multi-table atomic writes use a SINGLE CTE statement via `db.execute(sql`...`)`
+  — data-modifying CTEs run in one implicit transaction; coordinate via
+  RETURNING + `EXISTS (SELECT 1 FROM cte)` guards (see
+  app/api/admin/merge/route.ts). `db.execute()` result shape varies —
+  normalize `Array.isArray(res) ? res : res.rows`. In SET clauses use
+  plain column names (drizzle renders interpolated columns qualified,
+  which Postgres rejects in SET); table refs in FROM/INSERT INTO may use
+  `${table}` interpolation.
+- **Merge model (Sprint 20)**: `posts.mergedIntoId/mergedAt` = real
+  merge (duplicateOf = AI candidate only); `votes/comments.mergedFromPostId`
+  marks moved rows; `post_merges` = audit. Unmerge restores by
+  `merged_from_post_id = source`. A voter who voted on BOTH posts keeps
+  the source vote un-moved (NOT IN guard preserves unique(user_id,
+  post_id)). Merged posts excluded from portal/roadmap/similar lists +
+  votes/comments APIs reject them (400), but STAY in dashboard with a
+  "Birleştirildi" badge (that is the unmerge path). No merge chains:
+  target with mergedIntoId set cannot be a merge target.
 - **shadcn `form` component was removed from the registry** (404). Build forms
   with react-hook-form + zod + `@hookform/resolvers` and compose
   `input`/`textarea`/`button` manually.

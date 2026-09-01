@@ -699,10 +699,18 @@ dediği yerler güncel değil:
 
 ### Sprint listesi (☐ = planlandı)
 
-- ☐ **Sprint 20 — Post Merge/Unmerge (P1.2):** Admin iki fikri
-  birleştirir; kaynak post arşivlenir ve hedefe bağlanır; oylar/yorumlar
-  tek transaction ile hedefe taşınır; unmerge ile geri alınabilir;
-  shipped/notify akışları hedef postu takip eder.
+- ✅ **Sprint 20 — Post Merge/Unmerge (P1.2)** (2026-09-01, commit 29aead5,
+  üretimde doğrulandı): `posts.mergedIntoId/mergedAt` +
+  `votes/comments.mergedFromPostId` + `post_merges` audit tablosu
+  (migration 0005+0006). Merge/unmerge tek atomik CTE statement'ı ile
+  yürütülür (neon-http `db.transaction()` desteklemiyor — bkz. skill).
+  Kaynak fikir portal/roadmap/benzer fikirlerden gizlenir; detay
+  sayfasında amber banner + hedef linki; dashboard'da "Birleştirildi"
+  rozeti. Birleşmiş fikre oy/yorum API'leri 400 döner. Hedefi birleşmiş
+  fikir hedef seçilemez (zincir yok); iki fikre de oy veren kullanıcının
+  kaynak oyu taşınmaz (unique kısıt korunur). Admin arayüzü: detay
+  sayfasında aramalı hedef seçici (GET /api/admin/posts?q=) + geri alma
+  butonu (merged_from_post_id iziyle yalnızca taşınan satırlar döner).
 - ☐ **Sprint 21 — Etiketler + Kategoriler + Post Tipi (P1.3 lite):**
   `tags` + `categories` + `post_tags` + `post_type` (feature/bug/
   usability); AI keyword'leri etiketlerle eşleşir; portalda etiket
