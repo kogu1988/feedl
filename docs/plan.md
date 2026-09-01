@@ -441,8 +441,8 @@ etiketleme; dashboard'a admin için tek bakışta durum) — docs/deepseek.txt
 
 ## Sprint 12: Sıralama Sekmeleri + Dashboard Filtreleri (Faz 2)
 
-> **Durum (2026-09-01):** 🚧 Kod tamamlandı — üretim testi bekliyor.
->
+> **Durum (2026-09-01):** ✅ Tamamlandı — üretimde doğrulandı (kullanıcı
+> testi "hepsi tamam").
 > - **Portal sıralama sekmeleri (Canny "Top / New" modeli):** "En Çok Oy
 >   Alan" (varsayılan) / "En Yeni" — ?sort= query param'ı. Arama varken
 >   sekmeler gizlenir, alaka sıralaması önceliklidir. BEHAVIOR CHANGE:

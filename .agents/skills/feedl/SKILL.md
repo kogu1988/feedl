@@ -105,6 +105,14 @@ docs/                                                 planning docs (source of t
   `translate+lower` mirrored in JS `foldTr`, relevance score (title 2 /
   description 1). SQL and JS fold mappings MUST stay in sync
   (TR_FOLD_SOURCE/TARGET ↔ TR_FOLD_MAP).
+- **FilterTabs** (components/custom/filter-tabs.tsx) is the shared
+  pattern for server-side tab navigation via URL params (?sort=, ?status=).
+  Reuse it for new filter/tab UI - no client state, links stay shareable.
+- **Portal default sort is "top" (vote count) since Sprint 12** - this
+  SUPERSEDES plan.md Sprint 2's "en son eklenen en üstte" default
+  (documented as BEHAVIOR CHANGE in plan.md). While a search query is
+  active, tabs hide and relevance ordering wins. Dashboard stats are
+  always computed from ALL posts; ?status= filters only the table.
 - **StatusBadge** (components/custom/status-badge.tsx) is the single
   visual source for status colors; `statusLabels` comes only from
   `lib/post-format.ts` - no local copies (one was found in the export
