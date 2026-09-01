@@ -301,13 +301,25 @@
 
 ## Sprint 8: Portal Güçlendirme (Arama, Benzer Post Önerisi, Roadmap)
 
-> **Durum (2026-09-01):** ✅ Kod tamamlandı — üretim testi bekliyor.
+> **Durum (2026-09-01):** ✅ Tamamlandı — sprint, arama algoritması v2
+> güçlendirmesiyle kapatıldı.
 >
-> - **Arama:** GET /api/posts?q= ve portalda ?q= (server-side ILIKE,
->   title+description; %/_ kaçışlı, 100 karakter üstü reddedilir).
->   Arama kasıtlı olarak ILIKE: her tuş vuruşunda embedding çağrısı 429
->   riski + gecikme yaratır; semantic duplicate tespiti zaten arka planda
->   AI autopilot'ta (0.45 eşik + LLM çift kontrol).
+> - **Arama:** GET /api/posts?q= ve portalda ?q= (server-side, title+
+>   description; 100 karakter üstü reddedilir). Başta tek parça ILIKE idi,
+>   kapanışta aşağıdaki v2 algoritmaya yükseltildi. Arama kasıtlı olarak
+>   embedding'siz: her tuş vuruşunda embedding çağrısı 429 riski + gecikme
+>   yaratır; semantic duplicate tespiti zaten arka planda AI autopilot'ta
+>   (0.45 eşik + LLM çift kontrol).
+> - **Arama algoritması v2 (sprint kapanışı):** lib/post-search.ts ortak
+>   modülü — (1) çok kelimeli AND eşleşme, kelime sırası önemsiz ("mod
+>   karanlık" → "Karanlık mod desteği"); (2) Türkçe diakritik katlaması,
+>   SQL translate+lower ile JS foldTr birebir aynı eşleme ("karanlik" →
+>   "karanlık", "islem" → "İşlem"); (3) alaka sıralaması: başlık
+>   eşleşmesi 2p / açıklama 1p → oy sayısı → tarih (arama yokken eski
+>   davranış: en yeni üstte); (4) LIKE kaçışında ters eğik çizgi hatası
+>   giderildi (eski kod "a\b" sorgusunu "ab" diye arıyordu). /api/posts ve
+>   portal aynı kondisyonu kullanır; dialog önerileri de bu endpoint'ten
+>   beslendiği için otomatik iyileşti.
 > - **Yazarken benzer post önerisi (Canny'nin kritik duplicate önleme
 >   UX'i):** NewPostDialog başlık alanında 400ms debounce + min 3 karakter
 >   ile /api/posts?q= çağrısı, en fazla 5 öneri (durum etiketi + oy sayısı);

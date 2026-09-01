@@ -1,15 +1,17 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { count, desc, eq, ilike, or } from "drizzle-orm";
+import { count, desc, eq, sql } from "drizzle-orm";
 
 import { getDb } from "@/lib/db";
 import { posts, votes } from "@/lib/db/schema";
 import { createPostSchema } from "@/lib/validations/post";
 import { inngest } from "@/inngest/client";
+import { buildPostSearch } from "@/lib/post-search";
 
 // GET /api/posts — herkese açık fikir listesi (en son eklenen en üstte),
-// oy sayılarıyla birlikte. Opsiyonel ?q= ile başlık/açıklama araması yapılır
-// (plan.md Sprint 8: yazarken benzer post önerisi bu endpoint'i kullanır).
+// oy sayılarıyla birlikte. Opsiyonel ?q= ile çok kelimeli, diakritik
+// duyarsız arama + alaka sıralaması (lib/post-search; plan.md Sprint 8:
+// yazarken benzer post önerisi bu endpoint'i kullanır).
 export async function GET(req: Request) {
   try {
     const q = new URL(req.url).searchParams.get("q")?.trim() ?? "";
@@ -20,7 +22,7 @@ export async function GET(req: Request) {
       );
     }
 
-    const likePattern = `%${q.replaceAll("%", "\\%").replaceAll("_", "\\_")}%`;
+    const search = buildPostSearch(q);
 
     const rows = await getDb()
       .select({
@@ -33,13 +35,15 @@ export async function GET(req: Request) {
       })
       .from(posts)
       .leftJoin(votes, eq(votes.postId, posts.id))
-      .where(
-        q
-          ? or(ilike(posts.title, likePattern), ilike(posts.description, likePattern))
-          : undefined,
-      )
+      .where(search.condition)
       .groupBy(posts.id)
-      .orderBy(desc(posts.createdAt))
+      .orderBy(
+        // Arama varken alaka önce gelir: skor → oy sayısı → tarih.
+        ...(search.tokens.length > 0
+          ? [desc(search.score), desc(sql`count(${votes.id})`)]
+          : []),
+        desc(posts.createdAt),
+      )
       .limit(100);
 
     return NextResponse.json({ success: true, data: rows });

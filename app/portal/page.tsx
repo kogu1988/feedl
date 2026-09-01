@@ -1,4 +1,4 @@
-import { and, count, desc, eq, ilike, inArray, or } from "drizzle-orm";
+import { and, count, desc, eq, inArray, sql } from "drizzle-orm";
 import { auth } from "@clerk/nextjs/server";
 import { Show, SignInButton } from "@clerk/nextjs";
 import { RocketIcon, SearchIcon, ThumbsUpIcon } from "lucide-react";
@@ -16,6 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { getDb } from "@/lib/db";
 import { statusLabels } from "@/lib/post-format";
+import { buildPostSearch } from "@/lib/post-search";
 import { posts, votes } from "@/lib/db/schema";
 
 // Canlı liste: her istekte DB'den okunur, build zamanında dondurulmaz.
@@ -224,10 +225,10 @@ export default async function PortalPage({
   );
 }
 
+// plan.md Sprint 8: arama çok kelimeli ve diakritik duyarsız (lib/post-search);
+// arama varken sıralama alakaya göre (skor → oy → tarih), yoksa en yeni üstte.
 async function loadPosts(searchQuery: string) {
-  const likePattern = `%${searchQuery
-    .replaceAll("%", "\\%")
-    .replaceAll("_", "\\_")}%`;
+  const search = buildPostSearch(searchQuery);
 
   return getDb()
     .select({
@@ -241,12 +242,13 @@ async function loadPosts(searchQuery: string) {
     })
     .from(posts)
     .leftJoin(votes, eq(votes.postId, posts.id))
-    .where(
-      searchQuery
-        ? or(ilike(posts.title, likePattern), ilike(posts.description, likePattern))
-        : undefined,
-    )
+    .where(search.condition)
     .groupBy(posts.id)
-    .orderBy(desc(posts.createdAt))
+    .orderBy(
+      ...(search.tokens.length > 0
+        ? [desc(search.score), desc(sql`count(${votes.id})`)]
+        : []),
+      desc(posts.createdAt),
+    )
     .limit(100);
 }

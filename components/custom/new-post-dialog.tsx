@@ -56,8 +56,9 @@ export function NewPostDialog() {
   const abortRef = useRef<AbortController | null>(null);
 
   // plan.md Sprint 8: başlık yazarken canlı benzer fikir önerisi — duplicate
-  // önleme UX'i (Canny modeli). ILIKE arama kullanılır; embedding tabanlı
-  // tam duplicate tespiti arka planda AI autopilot'ta yapılır.
+  // önleme UX'i (Canny modeli). Arama çok kelimeli ve diakritik duyarsız
+  // (lib/post-search); embedding tabanlı tam duplicate tespiti arka planda
+  // AI autopilot'ta yapılır.
   useEffect(() => {
     const trimmed = title.trim();
     if (!open || trimmed.length < SUGGESTION_MIN_LENGTH) {
