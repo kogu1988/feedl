@@ -384,8 +384,15 @@ Yapılacaklar:
 
 ## Sprint 10: Yorumlar + Post Detay Sayfası (Faz 2 adım 3)
 
-> **Durum (2026-09-01):** 🚧 Kod tamamlandı — üretim testi bekliyor.
+> **Durum (2026-09-01):** ✅ Tamamlandı — çekirdek üretimde doğrulandı
+> (kullanıcı testi "hepsi ok"); ek olarak otomatik durum iç notu
+> eklendi, onun üretim testi bekliyor.
 >
+> - **EK (Sprint 10 kapanışı):** Admin durumu değiştirince detay
+>   sayfasına otomatik iç not düşer: "Durum güncellendi: X → Y"
+>   (statusLabels'tan etiketler; best-effort — not başarısız olsa bile
+>   durum güncellemesi başarılı kalır). PATCH /api/admin/posts içine
+>   gömüldü; Inngest event akışını etkilemez.
 > - **comments tablosu:** post_id (FK cascade) + user_id (FK cascade) +
 >   body + is_internal + created_at; index (post_id, created_at).
 >   Migration 0004 canlı DB'ye drizzle-kit generate+migrate ile

@@ -65,6 +65,11 @@ docs/                                                 planning docs (source of t
   top level (keeps `next build` working without DATABASE_URL)
 - Public routes in middleware: `/`, `/sign-in(.*)`, `/sign-up(.*)`, `/portal(.*)`,
   `/api/posts(.*)` (GET public, POST checks auth in handler), `/api/webhooks(.*)`
+- **Comments / internal notes** (Sprint 10): `comments.is_internal=true`
+  olanlar HER okuma yolunda server-side filtrelenir (sayfa sorgusu + API);
+  flag yalnızca admin oturumunda set edilir, istemciden gelen bayrağa
+  asıl güvenilmez. Admin durum değişince otomatik iç not düşer
+  (PATCH /api/admin/posts, best-effort).
 - Zod-validate all LLM outputs; extract substring from first `{` to last `}`
   before parsing (free models wrap JSON in code fences); normalize `nötr` →
   `notr`; parse failure = retry via Inngest
@@ -146,6 +151,13 @@ docs/                                                 planning docs (source of t
   `/api/inngest`.
 - Node v20.13.1 produces EBADENGINE warnings (some tools want >=20.18.1);
   harmless so far, but worth knowing.
+- **base-ui Checkbox `onCheckedChange(checked)`**: checked is
+  `boolean | "indeterminate"` - cast with `checked === true`.
+  `npx shadcn add checkbox label` works (registry healthy for these).
+- **drizzle-kit generate for ADDITIVE tables is non-interactive**;
+  use `npx drizzle-kit generate --name <name>` then `npx drizzle-kit
+  migrate` (config loads .env.local itself). Applied live to Neon
+  without issue (migration 0004).
 - Validation command is `npm run build`. Do NOT start `npm run dev` in-session
   (long-running server).
 

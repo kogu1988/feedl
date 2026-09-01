@@ -6,7 +6,8 @@ import { z } from "zod";
 
 import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
-import { postStatusEnum, posts } from "@/lib/db/schema";
+import { comments, postStatusEnum, posts } from "@/lib/db/schema";
+import { statusLabels } from "@/lib/post-format";
 import { postStatusChangedEventSchema } from "@/lib/validations/events";
 import { inngest } from "@/inngest/client";
 
@@ -97,6 +98,27 @@ export async function PATCH(req: Request) {
         console.error(
           "post/status.changed event could not be sent:",
           eventErr instanceof Error ? eventErr.message : eventErr,
+        );
+      }
+    }
+
+    // Durum değişince detay sayfasına otomatik iç not düş (plan.md Sprint 10
+    // eki; Canny davranışı: durum değişiklikleri iz bırakır). Best-effort:
+    // not başarısız olsa bile durum güncellemesi başarılı kalmalıdır.
+    if (existing.status !== updated.status) {
+      try {
+        const oldLabel = statusLabels[existing.status] ?? existing.status;
+        const newLabel = statusLabels[updated.status] ?? updated.status;
+        await getDb().insert(comments).values({
+          postId: updated.id,
+          userId: adminId,
+          body: `Durum güncellendi: ${oldLabel} → ${newLabel}`,
+          isInternal: true,
+        });
+      } catch (noteErr) {
+        console.error(
+          "status change internal note could not be saved:",
+          noteErr instanceof Error ? noteErr.message : noteErr,
         );
       }
     }
