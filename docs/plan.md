@@ -582,6 +582,33 @@ Yapılacaklar:
 
 ---
 
+## Sprint 18: Admin'e Yeni Fikir Bildirimi (Faz 2)
+
+> **Durum (2026-09-01):** 🚧 Uygulandı — üretim doğrulaması bekleniyor.
+>
+> - **Yeni Inngest fonksiyonu notify-admin-post-created:** post/created
+>   event'ini dinler (ai-autopilot ile aynı event — çoklu tüketici).
+> - **Alıcılar DB'den:** users.role=admin (tek kaynak); yazarın kendi
+>   e-postası listeden çıkarılır — admin kendi fikri için mail almaz.
+>   Admin yoksa sessizce atlanır.
+> - **Şablon lib/email/admin-new-post.ts:** shipped şablonuyla aynı
+>   inline-stil görsel dili; başlık + yazar + açıklama (400 karakter
+>   kırpım) + "Fikri incele" butonu → /portal/[id]. Konu: 📬 Yeni fikir:
+>   {başlık}. Alıcı e-postaları loglanmaz.
+> - **escapeHtml lib/email/html.ts'e çıkarıldı** — shipped ve yeni
+>   şablon aynı kaynağı kullanır (tek kaynak kuralı).
+> - Provider seçimi değişmedi: RESEND_API_KEY varsa Resend, yoksa
+>   Ethereal (mevcut sendEmails akışı).
+
+**Hedef:** Admin yeni fikirden anında haberdar olsun — triage hızlanır
+(Canny'nin admin notification modeli; docs/deepseek.txt §2 ekip akışı).
+
+Yapılacaklar:
+- notifyAdminNewPost fonksiyonu + serve() kaydı; e-posta şablonu;
+  escapeHtml ortaklaştırması.
+
+---
+
 ## 🗺️ Faz 2 Yol Haritası (2026-09-01 güncellemesi)
 
 Canny araştırmasına (docs/deepseek.txt, docs/oxalpha.txt) dayalı plan;

@@ -4,6 +4,7 @@ import { NonRetriableError } from "inngest";
 import { analyzeIdea, compareIdeas } from "@/lib/ai/analysis";
 import { embedText } from "@/lib/ai/openrouter";
 import { sendEmails } from "@/lib/email/send";
+import { renderAdminNewPostEmail } from "@/lib/email/admin-new-post";
 import { renderShippedEmail } from "@/lib/email/shipped";
 import { getDb } from "@/lib/db";
 import { posts, users, votes } from "@/lib/db/schema";
@@ -216,6 +217,68 @@ export const notifyShipped = inngest.createFunction(
     return {
       provider: result.provider,
       recipients: recipients.emails.length,
+      sent: result.sent,
+      failed: result.failed,
+      previewUrls: result.previewUrls,
+    };
+  },
+);
+
+// plan.md Sprint 18: yeni fikir düştüğünde admin'e kısa bildirim. post/created
+// event'ini ai-autopilot da tüketiyor; Inngest birden çok fonksiyonun aynı
+// event'e bağlanmasına izin verir. Admin kendi fikri için mail almaz.
+export const notifyAdminNewPost = inngest.createFunction(
+  { id: "notify-admin-post-created", retries: 3, triggers: { event: "post/created" } },
+  async ({ event, step }) => {
+    const payload: PostCreatedEvent = postCreatedEventSchema.parse(event.data);
+
+    // 1) Alıcılar (DB tek kaynak: users.role=admin) + yazar bilgisi.
+    //    Yazarın kendi e-postası admin listesinden çıkarılır.
+    const context = await step.run("fetch-admins-and-author", async () => {
+      const adminRows = await getDb()
+        .select({ email: users.email })
+        .from(users)
+        .where(eq(users.role, "admin"));
+
+      const [author] = await getDb()
+        .select({ name: users.name, email: users.email })
+        .from(users)
+        .where(eq(users.id, payload.userId))
+        .limit(1);
+
+      return {
+        adminEmails: adminRows
+          .map((row) => row.email)
+          .filter((email) => email !== author?.email),
+        authorName: author?.name ?? author?.email ?? "Bir üye",
+      };
+    });
+
+    if (context.adminEmails.length === 0) {
+      return { skipped: true, reason: "no-admin-recipients" };
+    }
+
+    // 2) Şablonu hazırla ve gönder. Provider seçimi lib/email/send.ts'te.
+    const result = await step.run("send-admin-email", async () => {
+      const message = renderAdminNewPostEmail({
+        title: payload.title,
+        description: payload.description,
+        authorName: context.authorName,
+        postId: payload.postId,
+      });
+      return sendEmails(
+        context.adminEmails.map((email) => ({
+          to: email,
+          subject: message.subject,
+          html: message.html,
+          text: message.text,
+        })),
+      );
+    });
+
+    return {
+      provider: result.provider,
+      recipients: context.adminEmails.length,
       sent: result.sent,
       failed: result.failed,
       previewUrls: result.previewUrls,

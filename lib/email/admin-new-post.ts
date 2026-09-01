@@ -1,13 +1,16 @@
-// "Shipped" bildirim e-postası şablonu (plan.md Sprint 6).
-// E-posta istemcileri CSS sınıflarını desteklemediği için inline stil kullanılır.
-// Alıcı e-postası buraya yazılmaz; gönderici katmanı (lib/email/send.ts) zaten
-// alıcı listesini ayrı tutar — şablon yalnızca içerik üretir.
+// Admin "yeni fikir" bildirim e-postası şablonu (plan.md Sprint 18).
+// E-posta istemcileri CSS sınıflarını desteklemediği için inline stil
+// kullanılır (shipped.ts ile aynı görsel dil). Alıcı listesi gönderici
+// katmanında (lib/email/send.ts) tutulur; şablon yalnızca içerik üretir.
 import { escapeHtml } from "./html";
 
 const PORTAL_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://getfeedl.vercel.app/portal";
 
-export interface ShippedEmailInput {
+export interface AdminNewPostEmailInput {
   title: string;
+  description: string;
+  authorName: string;
+  postId: string;
 }
 
 export interface RenderedEmail {
@@ -16,9 +19,25 @@ export interface RenderedEmail {
   text: string;
 }
 
-export function renderShippedEmail(input: ShippedEmailInput): RenderedEmail {
+const DESCRIPTION_MAX_LENGTH = 400;
+
+function summarize(text: string): string {
+  return text.length > DESCRIPTION_MAX_LENGTH
+    ? `${text.slice(0, DESCRIPTION_MAX_LENGTH).trimEnd()}…`
+    : text;
+}
+
+export function renderAdminNewPostEmail(
+  input: AdminNewPostEmailInput,
+): RenderedEmail {
   const title = escapeHtml(input.title);
-  const subject = `🎉 İsteğin yayına alındı: ${input.title}`;
+  const authorName = escapeHtml(input.authorName);
+  const description = escapeHtml(summarize(input.description)).replaceAll(
+    "\n",
+    "<br />",
+  );
+  const postUrl = `${PORTAL_URL}/${input.postId}`;
+  const subject = `📬 Yeni fikir: ${input.title}`;
 
   const html = `<!doctype html>
 <html lang="tr">
@@ -34,24 +53,22 @@ export function renderShippedEmail(input: ShippedEmailInput): RenderedEmail {
             </tr>
             <tr>
               <td style="padding:32px;">
-                <h1 style="margin:0 0 16px;font-size:20px;line-height:1.4;color:#18181b;">🎉 İsteğin yayına alındı!</h1>
+                <h1 style="margin:0 0 16px;font-size:20px;line-height:1.4;color:#18181b;">📬 Yeni fikir geldi!</h1>
                 <p style="margin:0 0 12px;font-size:15px;line-height:1.6;color:#3f3f46;">
-                  Takip ettiğin şu özellik kullanıma açıldı:
+                  <strong style="color:#18181b;">${authorName}</strong> yeni bir fikir gönderdi:
                 </p>
                 <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#18181b;font-weight:600;">${title}</p>
-                <p style="margin:0 0 28px;font-size:15px;line-height:1.6;color:#3f3f46;">
-                  Geri bildirimin ürünü doğrudan şekillendiriyor. Destek için teşekkürler!
-                </p>
-                <a href="${PORTAL_URL}"
+                <p style="margin:0 0 28px;font-size:15px;line-height:1.6;color:#3f3f46;">${description}</p>
+                <a href="${postUrl}"
                    style="display:inline-block;padding:12px 24px;background-color:#18181b;color:#ffffff;text-decoration:none;border-radius:6px;font-size:14px;font-weight:600;">
-                  Portalda görüntüle
+                  Fikri incele
                 </a>
               </td>
             </tr>
             <tr>
               <td style="padding:20px 32px;border-top:1px solid #e4e4e7;">
                 <p style="margin:0;font-size:12px;line-height:1.5;color:#71717a;">
-                  Bu bildirimi isteği desteklediğin veya gönderdiğin için alıyorsun.
+                  Bu bildirimi admin rolü nedeniyle alıyorsun.
                 </p>
               </td>
             </tr>
@@ -62,17 +79,17 @@ export function renderShippedEmail(input: ShippedEmailInput): RenderedEmail {
   </body>
 </html>`;
 
-  const text = `Isteğin yayına alındı!
+  const text = `Yeni fikir geldi!
 
-Takip ettiğin şu özellik kullanıma açıldı:
+${input.authorName} yeni bir fikir gönderdi:
 
 ${input.title}
 
-Geri bildirimin ürünü doğrudan şekillendiriyor. Destek için teşekkürler!
+${summarize(input.description)}
 
-Portalda görüntüle: ${PORTAL_URL}
+Fikri incele: ${postUrl}
 
-Bu bildirimi isteği desteklediğin veya gönderdiğin için alıyorsun.`;
+Bu bildirimi admin rolü nedeniyle alıyorsun.`;
 
   return { subject, html, text };
 }
