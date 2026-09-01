@@ -462,8 +462,8 @@ istenen özellikler öne çıkar") + admin triage hızlandırma.
 
 ## Sprint 13: Kartlarda Yorum Sayısı (Faz 2)
 
-> **Durum (2026-09-01):** 🚧 Uygulandı — üretim doğrulaması bekleniyor.
->
+> **Durum (2026-09-01):** ✅ Tamamlandı — üretimde doğrulandı (kullanıcı
+> testi "hepsi tamam").
 > - **CommentCountBadge** (components/custom/comment-count-badge.tsx):
 >   yorum sayısı rozetinin tek görsel kaynağı; 0'da hiç render edilmez,
 >   tıklanınca /portal/[id]#yorumlar yorum bölümüne gider.
@@ -490,8 +490,8 @@ Yapılacaklar:
 
 ## Sprint 14: Boş Durum CTA'ları (Faz 2)
 
-> **Durum (2026-09-01):** 🚧 Uygulandı — üretim doğrulaması bekleniyor.
->
+> **Durum (2026-09-01):** ✅ Tamamlandı — üretimde doğrulandı (kullanıcı
+> testi "hepsi tamam").
 > - **Portal "Henüz fikir yok":** giriş yapmışa NewPostDialog CTA'sı,
 >   çıkıştaya "İlk fikri sen gönder" giriş butonu.
 > - **Portal arama boşluğu:** aynı CTA'lar + "Aramayı temizle" butonu
@@ -510,8 +510,8 @@ Yapılacaklar:
 
 ## Sprint 15: "Oyladıklarım" Sayfası (Faz 2)
 
-> **Durum (2026-09-01):** 🚧 Uygulandı — üretim doğrulaması bekleniyor.
->
+> **Durum (2026-09-01):** ✅ Tamamlandı — üretimde doğrulandı (kullanıcı
+> testi "hepsi tamam").
 > - **/portal/oyladiklarim:** kullanıcının oy verdiği fikirler, en son
 >   oyladığı üstte. Oy geri çekme mevcut VoteButton + DELETE /api/votes
 >   ile çalışır; geri çekilen fikir listeden sonraki yenilemede kalkar.
@@ -535,6 +535,27 @@ Yapılacaklar:
 
 ---
 
+## Sprint 16: Özel 404 Sayfası (Faz 2 — tasarım cilası)
+
+> **Durum (2026-09-01):** 🚧 Uygulandı — üretim doğrulaması bekleniyor.
+>
+> - **app/not-found.tsx:** feedl üst barı root layout'tan otomatik gelir;
+>   görsel dil portaldaki boş durumlarla aynı (kesikli kenarlık,
+>   merkezli metin). Büyük 404 + "Sayfa bulunamadı" açıklaması +
+>   "Portala dön" (primary) ve "Yol Haritasına göz at" (outline)
+>   butonları; CompassIcon ile boş durum ikon dili.
+> - Kapsam: Next.js notFound() çağrıları (örn. /portal/<geçersiz-id>)
+>   ve eşleşmeyen statik yollar. Korumalı bilinmeyen yollar middleware
+>   tarafından önce sign-in'e yönlendirilir (mevcut davranış).
+
+**Hedef:** Varsayılan Next.js 404'ünü marka diline oturtmak (Faz 2 yol
+haritasındaki "Tasarım/UI cilası"nın ilk adımı; referans: `DESIGN.md`).
+
+Yapılacaklar:
+- app/not-found.tsx eklendi; planlanmış tek dosyalık değişiklik.
+
+---
+
 ## 🗺️ Faz 2 Yol Haritası (2026-09-01 güncellemesi)
 
 Canny araştırmasına (docs/deepseek.txt, docs/oxalpha.txt) dayalı plan;
@@ -546,13 +567,15 @@ Canny araştırmasına (docs/deepseek.txt, docs/oxalpha.txt) dayalı plan;
   SDK identify + data-canny-link yakalama, developers.canny.io'dan
   doğrulandı). Domain alındığında bu sprintler aktifleşecek.
 - **Sıradaki (özellik + arayüz/tasarım odağı):**
-  1. Portal güçlendirme: **yazarken benzer post önerisi** (mevcut
-     embedding altyapısı yeniden kullanılır — Canny'nin kritik duplicate
-     önleme UX'i).
-  2. Tasarım/UI cilası (referans: `DESIGN.md` — Base UI dokümantasyonu).
+  1. Tasarım/UI cilası (referans: `DESIGN.md` — Base UI dokümantasyonu;
+     ilk adım özel 404 sayfası, Sprint 16).
+  2. Detay sayfasına "Benzer fikirler" bölümü (pgvector cosine
+     similarity — mevcut embedding altyapısı yeniden kullanılır,
+     Canny'nin related posts modeli).
 - Not: Ara adımlar tamamlandı — public roadmap kanban (Sprint 8),
-  yorumlar + iç notlar (Sprint 10); kartlara yorum sayısı Sprint 13'te
-  eklendi.
+  yazarken benzer post önerisi (Sprint 8), yorumlar + iç notlar
+  (Sprint 10); kartlara yorum sayısı (13), boş durum CTA'ları (14) ve
+  "Oyladıklarım" sayfası (15) Sprint 13-15'te eklendi.
 - Not: Ücretsiz LLM'de ara sıra 429 (upstream rate limit) normal;
   Inngest retry mekanizması zaten telafi ediyor. Sıklaşırsa tek satırlık
   model değişikliğiyle ücretli fallback'e geçilir (bkz. skill fallback).
