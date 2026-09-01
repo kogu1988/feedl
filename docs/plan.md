@@ -460,6 +460,34 @@ istenen özellikler öne çıkar") + admin triage hızlandırma.
 
 ---
 
+## Sprint 13: Kartlarda Yorum Sayısı (Faz 2)
+
+> **Durum (2026-09-01):** 🚧 Uygulandı — üretim doğrulaması bekleniyor.
+>
+> - **CommentCountBadge** (components/custom/comment-count-badge.tsx):
+>   yorum sayısı rozetinin tek görsel kaynağı; 0'da hiç render edilmez,
+>   tıklanınca /portal/[id]#yorumlar yorum bölümüne gider.
+> - **Roadmap kartları:** durum + oy sayısının yanında yorum sayısı.
+> - **Portal kartları:** Yayında ve Fikirler kartlarında aynı rozet —
+>   iki liste yüzeyi arasında tutarlılık (Canny modeli: satırda
+>   tartışma sinyali, oxalpha.txt §2.A comment_count).
+> - **Sayı doğruluğu:** her iki sayfa oy + yorum için çift leftJoin
+>   kullanıyor; join fan-out'u count değerlerini şişirdiği için
+>   count → countDistinct'e çevrildi. Yorum sayısına iç notlar dahil
+>   değil (join koşulunda is_internal=false filtresi).
+> - Detay sayfası yorum bölümüne #yorumlar anchor'ı eklendi.
+
+**Hedef:** Kartlardan tartışma sinyali — Sprint 10 yorum altyapısının
+görünür yüzü (docs/oxalpha.txt §6 kritik UX: kullanıcı kart üstünden
+tartışmanın büyüklüğünü görsün).
+
+Yapılacaklar:
+- CommentCountBadge ortak bileşeni; roadmap + portal (her iki bölüm)
+  kartlarına eklendi; iç notlar sayılmıyor; countDistinct ile fan-out
+  düzeltmesi; detay sayfasına yorumlar anchor'ı.
+
+---
+
 ## 🗺️ Faz 2 Yol Haritası (2026-09-01 güncellemesi)
 
 Canny araştırmasına (docs/deepseek.txt, docs/oxalpha.txt) dayalı plan;
@@ -471,12 +499,13 @@ Canny araştırmasına (docs/deepseek.txt, docs/oxalpha.txt) dayalı plan;
   SDK identify + data-canny-link yakalama, developers.canny.io'dan
   doğrulandı). Domain alındığında bu sprintler aktifleşecek.
 - **Sıradaki (özellik + arayüz/tasarım odağı):**
-  1. Portal güçlendirme: arama + **yazarken benzer post önerisi** (mevcut
+  1. Portal güçlendirme: **yazarken benzer post önerisi** (mevcut
      embedding altyapısı yeniden kullanılır — Canny'nin kritik duplicate
-     önleme UX'i) + public roadmap kanban görünümü.
+     önleme UX'i).
   2. Tasarım/UI cilası (referans: `DESIGN.md` — Base UI dokümantasyonu).
-  3. Yorumlar (canny.md: MVP sonrası; etkileşimi canlandıran çekirdek
-     özellik — sıra odağa göre netleşecek).
+- Not: Ara adımlar tamamlandı — public roadmap kanban (Sprint 8),
+  yorumlar + iç notlar (Sprint 10); kartlara yorum sayısı Sprint 13'te
+  eklendi.
 - Not: Ücretsiz LLM'de ara sıra 429 (upstream rate limit) normal;
   Inngest retry mekanizması zaten telafi ediyor. Sıklaşırsa tek satırlık
   model değişikliğiyle ücretli fallback'e geçilir (bkz. skill fallback).

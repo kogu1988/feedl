@@ -105,6 +105,13 @@ docs/                                                 planning docs (source of t
   `translate+lower` mirrored in JS `foldTr`, relevance score (title 2 /
   description 1). SQL and JS fold mappings MUST stay in sync
   (TR_FOLD_SOURCE/TARGET ↔ TR_FOLD_MAP).
+- **Dual leftJoin aggregates (votes + comments) MUST use `countDistinct`,
+  not `count`** — join fan-out multiplies rows and silently inflates
+  every count on the page (found while adding comment counts, Sprint
+  13). Public comment counts exclude internal notes via
+  `is_internal = false` in the JOIN condition itself;
+  `CommentCountBadge` is the single visual source (renders nothing at
+  0, links to `/portal/[id]#yorumlar`).
 - **FilterTabs** (components/custom/filter-tabs.tsx) is the shared
   pattern for server-side tab navigation via URL params (?sort=, ?status=).
   Reuse it for new filter/tab UI - no client state, links stay shareable.

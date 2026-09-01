@@ -123,7 +123,7 @@ export default async function PostDetailPage({
         </CardContent>
       </Card>
 
-      <section className="mt-8 grid gap-4">
+      <section id="yorumlar" className="mt-8 grid gap-4">
         <h2 className="text-lg font-semibold">
           Yorumlar ({commentRows.length})
         </h2>

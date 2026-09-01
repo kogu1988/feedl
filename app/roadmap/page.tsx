@@ -1,6 +1,7 @@
-import { count, desc, eq } from "drizzle-orm";
+import { and, countDistinct, desc, eq } from "drizzle-orm";
 import Link from "next/link";
 
+import { CommentCountBadge } from "@/components/custom/comment-count-badge";
 import {
   Card,
   CardContent,
@@ -11,10 +12,11 @@ import {
 import { StatusBadge } from "@/components/custom/status-badge";
 import { getDb } from "@/lib/db";
 import { roadmapStatuses } from "@/lib/post-format";
-import { posts, votes } from "@/lib/db/schema";
+import { comments, posts, votes } from "@/lib/db/schema";
 
 // Herkese açık yol haritası (plan.md Sprint 8): kanban görünümü —
-// Planlandı / Geliştiriliyor / Yayında kolonları, kartlar oy sayısıyla.
+// Planlandı / Geliştiriliyor / Yayında kolonları, kartlar oy + yorum
+// sayısıyla (Sprint 13).
 
 // Canlı liste: her istekte DB'den okunur, build zamanında dondurulmaz.
 export const dynamic = "force-dynamic";
@@ -94,6 +96,10 @@ export default async function RoadmapPage() {
                         <CardDescription className="flex items-center gap-2">
                           <StatusBadge status={post.status} />
                           <span>{post.voteCount} oy</span>
+                          <CommentCountBadge
+                            postId={post.id}
+                            count={post.commentCount}
+                          />
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
@@ -120,10 +126,18 @@ async function loadPosts() {
       title: posts.title,
       description: posts.description,
       status: posts.status,
-      voteCount: count(votes.id),
+      // İki leftJoin satır çoğaltır (fan-out): count yerine countDistinct
+      // şart, yoksa oy/yorum sayıları şişer (plan.md Sprint 13). Yorum
+      // sayısına iç notlar dahil değildir (join koşulunda filtre).
+      voteCount: countDistinct(votes.id),
+      commentCount: countDistinct(comments.id),
     })
     .from(posts)
     .leftJoin(votes, eq(votes.postId, posts.id))
+    .leftJoin(
+      comments,
+      and(eq(comments.postId, posts.id), eq(comments.isInternal, false)),
+    )
     .groupBy(posts.id)
     .orderBy(desc(posts.createdAt))
     .limit(100);

@@ -1,9 +1,10 @@
-import { and, count, desc, eq, inArray, sql, type SQL } from "drizzle-orm";
+import { and, countDistinct, desc, eq, inArray, type SQL } from "drizzle-orm";
 import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
 import { Show, SignInButton } from "@clerk/nextjs";
 import { RocketIcon, SearchIcon, ThumbsUpIcon } from "lucide-react";
 
+import { CommentCountBadge } from "@/components/custom/comment-count-badge";
 import { NewPostDialog } from "@/components/custom/new-post-dialog";
 import { FilterTabs } from "@/components/custom/filter-tabs";
 import { KeywordChips } from "@/components/custom/keyword-chips";
@@ -21,7 +22,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { getDb } from "@/lib/db";
 import { buildPostSearch } from "@/lib/post-search";
-import { posts, votes } from "@/lib/db/schema";
+import { comments, posts, votes } from "@/lib/db/schema";
 
 // Canlı liste: her istekte DB'den okunur, build zamanında dondurulmaz.
 export const dynamic = "force-dynamic";
@@ -188,6 +189,10 @@ export default async function PortalPage({
                       <CardDescription className="flex items-center gap-2">
                         {dateFormatter.format(post.updatedAt)}
                         <StatusBadge status={post.status} />
+                        <CommentCountBadge
+                          postId={post.id}
+                          count={post.commentCount}
+                        />
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="grid gap-2">
@@ -249,6 +254,10 @@ export default async function PortalPage({
                       <CardDescription className="flex items-center gap-2">
                         {dateFormatter.format(post.createdAt)}
                         <StatusBadge status={post.status} />
+                        <CommentCountBadge
+                          postId={post.id}
+                          count={post.commentCount}
+                        />
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="grid gap-2">
@@ -278,17 +287,18 @@ export default async function PortalPage({
   );
 }
 
-// plan.md Sprint 8 + 12: arama çok kelimeli ve diakritik duyarsız (lib/
-// post-search); sıralama — arama varken alaka (skor → oy → tarih), yoksa
-// sekme seçimi: "top" oy sayısına göre, "new" en yeni.
+// plan.md Sprint 8 + 12 + 13: arama çok kelimeli ve diakritik duyarsız
+// (lib/post-search); sıralama — arama varken alaka (skor → oy → tarih),
+// yoksa sekme seçimi: "top" oy sayısına göre, "new" en yeni. Kartlar oy
+// + yorum (iç notlar hariç) sayısını countDistinct ile gösterir.
 async function loadPosts(searchQuery: string, sort: "top" | "new") {
   const search = buildPostSearch(searchQuery);
 
   const orderBys: SQL[] = [];
   if (search.tokens.length > 0) {
-    orderBys.push(desc(search.score), desc(sql`count(${votes.id})`));
+    orderBys.push(desc(search.score), desc(countDistinct(votes.id)));
   } else if (sort === "top") {
-    orderBys.push(desc(sql`count(${votes.id})`));
+    orderBys.push(desc(countDistinct(votes.id)));
   }
   orderBys.push(desc(posts.createdAt));
 
@@ -302,10 +312,18 @@ async function loadPosts(searchQuery: string, sort: "top" | "new") {
       aiKeywords: posts.aiKeywords,
       createdAt: posts.createdAt,
       updatedAt: posts.updatedAt,
-      voteCount: count(votes.id),
+      // İki leftJoin satır çoğaltır (fan-out): count yerine countDistinct
+      // şart, yoksa oy/yorum sayıları şişer (plan.md Sprint 13). Yorum
+      // sayısına iç notlar dahil değildir (join koşulunda filtre).
+      voteCount: countDistinct(votes.id),
+      commentCount: countDistinct(comments.id),
     })
     .from(posts)
     .leftJoin(votes, eq(votes.postId, posts.id))
+    .leftJoin(
+      comments,
+      and(eq(comments.postId, posts.id), eq(comments.isInternal, false)),
+    )
     .where(search.condition)
     .groupBy(posts.id)
     .orderBy(...orderBys)
