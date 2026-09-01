@@ -2,11 +2,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Show, SignInButton } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
-import { and, asc, count, eq } from "drizzle-orm";
+import { and, asc, count, countDistinct, desc, eq, gt, inArray, isNotNull, ne, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { z } from "zod";
 import { ArrowLeftIcon, EyeOffIcon, SparklesIcon } from "lucide-react";
 
 import { CommentForm } from "@/components/custom/comment-form";
+import { CommentCountBadge } from "@/components/custom/comment-count-badge";
 import { KeywordChips } from "@/components/custom/keyword-chips";
 import { SentimentBadge } from "@/components/custom/sentiment-badge";
 import { StatusBadge } from "@/components/custom/status-badge";
@@ -55,6 +57,18 @@ export default async function PostDetailPage({
   }
 
   const commentRows = await loadComments(postId, isAdmin);
+
+  // Benzer fikirler best-effort: embedding/vektör sorgusu başarısız olsa
+  // bile detay sayfası açılmaya devam eder, bölüm yalnızca gizlenir.
+  let similarPosts: Awaited<ReturnType<typeof loadSimilarPosts>> = [];
+  try {
+    similarPosts = await loadSimilarPosts(postId);
+  } catch (err) {
+    console.error(
+      "Similar posts load failed:",
+      err instanceof Error ? err.message : err,
+    );
+  }
 
   return (
     <main className="container mx-auto max-w-3xl p-4 sm:p-8">
@@ -183,6 +197,34 @@ export default async function PostDetailPage({
           ))
         )}
       </section>
+
+      {similarPosts.length > 0 ? (
+        <section className="mt-8 grid gap-3">
+          <h2 className="text-lg font-semibold">Benzer fikirler</h2>
+          {similarPosts.map((post) => (
+            <Card key={post.id}>
+              <CardHeader>
+                <CardTitle className="text-base leading-snug">
+                  <Link
+                    href={`/portal/${post.id}`}
+                    className="underline-offset-4 transition-colors hover:text-primary hover:underline"
+                  >
+                    {post.title}
+                  </Link>
+                </CardTitle>
+                <CardDescription className="flex items-center gap-2">
+                  <StatusBadge status={post.status} />
+                  <span>{post.voteCount} oy</span>
+                  <CommentCountBadge
+                    postId={post.id}
+                    count={post.commentCount}
+                  />
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          ))}
+        </section>
+      ) : null}
     </main>
   );
 }
@@ -240,4 +282,59 @@ async function loadComments(postId: string, isAdmin: boolean) {
         : and(eq(comments.postId, postId), eq(comments.isInternal, false)),
     )
     .orderBy(asc(comments.createdAt));
+}
+
+// plan.md Sprint 17: embedding tabanlı "Benzer fikirler" (Canny related
+// posts modeli). Vektör JS'e taşınmaz: cosine benzerlik Postgres içinde
+// skalar alt sorguyla hesaplanır. Eşik kalibrasyonu inngest/functions.ts
+// duplicate eşiğiyle aynı veriye dayanır — alakasız-generic çiftler 0.489'a
+// kadar çıkarken yakın-kopyalar 0.547+; 0.5 "gerçekten alakalı" bandı.
+const SIMILAR_POSTS_LIMIT = 3;
+const SIMILAR_POSTS_MIN_SIMILARITY = 0.5;
+
+async function loadSimilarPosts(postId: string) {
+  const currentPost = alias(posts, "current_post");
+  const similarity = () =>
+    sql<number>`1 - (${posts.embeddingVector} <=> (select ${currentPost.embeddingVector} from ${currentPost} where ${currentPost.id} = ${postId}))`;
+
+  // 1) Embedding'i olan en benzer fikirlerin id'leri (join'siz — sıralama
+  //    gruplamasız expression olarak kalır).
+  const similarIds = await getDb()
+    .select({ id: posts.id })
+    .from(posts)
+    .where(
+      and(
+        ne(posts.id, postId),
+        isNotNull(posts.embeddingVector),
+        gt(similarity(), SIMILAR_POSTS_MIN_SIMILARITY),
+      ),
+    )
+    .orderBy(desc(similarity()))
+    .limit(SIMILAR_POSTS_LIMIT);
+
+  if (similarIds.length === 0) {
+    return [];
+  }
+
+  // 2) Kart verisi: oy + yorum (iç notlar hariç) sayıları — çift leftJoin
+  //    fan-out'una karşı countDistinct (plan.md Sprint 13 pattern'i).
+  const rows = await getDb()
+    .select({
+      id: posts.id,
+      title: posts.title,
+      status: posts.status,
+      voteCount: countDistinct(votes.id),
+      commentCount: countDistinct(comments.id),
+    })
+    .from(posts)
+    .leftJoin(votes, eq(votes.postId, posts.id))
+    .leftJoin(
+      comments,
+      and(eq(comments.postId, posts.id), eq(comments.isInternal, false)),
+    )
+    .where(inArray(posts.id, similarIds.map((row) => row.id)))
+    .groupBy(posts.id);
+
+  const order = new Map(similarIds.map((row, index) => [row.id, index]));
+  return rows.sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
 }

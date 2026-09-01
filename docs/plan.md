@@ -556,6 +556,32 @@ Yapılacaklar:
 
 ---
 
+## Sprint 17: "Benzer Fikirler" Bölümü (Faz 2)
+
+> **Durum (2026-09-01):** 🚧 Uygulandı — üretim doğrulaması bekleniyor.
+>
+> - **Detay sayfası /portal/[id] altında "Benzer fikirler":** embedding
+>   altyapısı (pgvector cosine) ile en benzer en fazla 3 fikir; Canny
+>   related posts modeli.
+> - **Vektör JS'e taşınmaz:** cosine benzerlik Postgres içinde skalar
+>   alt sorguyla hesaplanır (`1 - (embedding <=> (select ...))`), eşik
+>   0.5 — duplicate kalibrasyonuyla aynı veriye dayanır (alakasız-generic
+>   ≤ 0.489, yakın-kopya ≥ 0.547; inngest/functions.ts notu).
+> - İki sorgu: benzer id'ler (join'siz sıralama) + kart verisi
+>   (oy/yorum sayıları countDistinct, iç notlar hariç — Sprint 13
+>   pattern'i). Sorgu best-effort: başarısız olursa bölüm gizlenir,
+>   sayfa bozulmaz.
+> - Embedding'i olmayan fikirlerde (AI henüz çalışmadıysa) bölüm çıkmaz.
+
+**Hedef:** Kullanıcıyı benzer fikirlere yönlendirip oy hak ettirmek;
+duplicate azaltma UX'i (docs/oxalpha.txt §6 kritik UX detayları).
+
+Yapılacaklar:
+- loadSimilarPosts (skalar alt sorgu + iki aşamalı yükleme); detay
+  sayfasına yorumların altına kompakt kart listesi.
+
+---
+
 ## 🗺️ Faz 2 Yol Haritası (2026-09-01 güncellemesi)
 
 Canny araştırmasına (docs/deepseek.txt, docs/oxalpha.txt) dayalı plan;
