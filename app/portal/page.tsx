@@ -157,8 +157,27 @@ export default async function PortalPage({
           <div className="rounded-lg border border-dashed p-10 text-center">
             <p className="font-medium">Aramanla eşleşen fikir yok</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Belki de bu özelliği ilk sen istersin — yukarıdan gönder.
+              Belki de bu özelliği ilk sen istersin — gönder ya da aramayı
+              temizle.
             </p>
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+              <Show when="signed-in">
+                <NewPostDialog />
+              </Show>
+              <Show when="signed-out">
+                <SignInButton>
+                  <button className="inline-flex h-9 cursor-pointer items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+                    Bu fikri ilk sen gönder
+                  </button>
+                </SignInButton>
+              </Show>
+              <Link
+                href="/portal"
+                className="inline-flex h-9 items-center justify-center rounded-md border px-4 text-sm font-medium hover:bg-accent"
+              >
+                Aramayı temizle
+              </Link>
+            </div>
           </div>
         ) : rows.length === 0 ? (
           <div className="rounded-lg border border-dashed p-10 text-center">
@@ -166,6 +185,18 @@ export default async function PortalPage({
             <p className="mt-1 text-sm text-muted-foreground">
               İlk fikri sen gönder; ürün yol haritası buradan başlıyor.
             </p>
+            <div className="mt-4 flex justify-center">
+              <Show when="signed-in">
+                <NewPostDialog />
+              </Show>
+              <Show when="signed-out">
+                <SignInButton>
+                  <button className="inline-flex h-9 cursor-pointer items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+                    İlk fikri sen gönder
+                  </button>
+                </SignInButton>
+              </Show>
+            </div>
           </div>
         ) : (
           <>

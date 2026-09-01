@@ -488,6 +488,26 @@ Yapılacaklar:
 
 ---
 
+## Sprint 14: Boş Durum CTA'ları (Faz 2)
+
+> **Durum (2026-09-01):** 🚧 Uygulandı — üretim doğrulaması bekleniyor.
+>
+> - **Portal "Henüz fikir yok":** giriş yapmışa NewPostDialog CTA'sı,
+>   çıkıştaya "İlk fikri sen gönder" giriş butonu.
+> - **Portal arama boşluğu:** aynı CTA'lar + "Aramayı temizle" butonu
+>   (/portal'a dönüp aramayı sıfırlar).
+> - **Roadmap boş kolon:** "Portaldan fikir öner →" linki.
+
+**Hedef:** Dönüşüm odaklı boş durumlar (docs/deepseek.txt §5.A feedback
+portal; Canny UX: boş ekranda kullanıcıyı ilk aksiyona yönlendirmek).
+
+Yapılacaklar:
+- Portal iki boş durumuna CTA satırı (giriş durumuna göre dialog veya
+  SignInButton); arama boşluğuna "Aramayı temizle"; roadmap boş
+  kolonuna portal linki.
+
+---
+
 ## 🗺️ Faz 2 Yol Haritası (2026-09-01 güncellemesi)
 
 Canny araştırmasına (docs/deepseek.txt, docs/oxalpha.txt) dayalı plan;

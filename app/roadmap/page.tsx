@@ -78,9 +78,15 @@ export default async function RoadmapPage() {
                 </h2>
 
                 {columnPosts.length === 0 ? (
-                  <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+                  <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
                     Bu kolonda henüz fikir yok.
-                  </p>
+                    <Link
+                      href="/portal"
+                      className="mt-2 inline-block font-medium text-primary underline-offset-4 hover:underline"
+                    >
+                      Portaldan fikir öner →
+                    </Link>
+                  </div>
                 ) : (
                   columnPosts.map((post) => (
                     <Card key={post.id}>
