@@ -1,0 +1,124 @@
+import { count, desc, eq } from "drizzle-orm";
+import Link from "next/link";
+
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { getDb } from "@/lib/db";
+import { roadmapStatuses, statusLabels } from "@/lib/post-format";
+import { posts, votes } from "@/lib/db/schema";
+
+// Herkese açık yol haritası (plan.md Sprint 8): kanban görünümü —
+// Planlandı / Geliştiriliyor / Yayında kolonları, kartlar oy sayısıyla.
+
+// Canlı liste: her istekte DB'den okunur, build zamanında dondurulmaz.
+export const dynamic = "force-dynamic";
+
+const columnTitles: Record<string, string> = {
+  planned: "🗓️ Planlandı",
+  "in-progress": "🔨 Geliştiriliyor",
+  shipped: "🚀 Yayında",
+};
+
+export default async function RoadmapPage() {
+  let rows: Awaited<ReturnType<typeof loadPosts>> = [];
+  let loadError = false;
+
+  try {
+    rows = await loadPosts();
+  } catch (err) {
+    console.error(
+      "Roadmap load failed:",
+      err instanceof Error ? err.message : err,
+    );
+    loadError = true;
+  }
+
+  return (
+    <main className="container mx-auto max-w-6xl p-4 sm:p-8">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Yol Haritası</h1>
+          <p className="mt-2 text-muted-foreground">
+            Hangi özelliklerin planlandığını, geliştirildiğini ve yayınlandığını
+            şeffafça takip et.
+          </p>
+        </div>
+        <Link
+          href="/portal"
+          className="inline-block text-sm font-medium text-primary underline-offset-4 hover:underline"
+        >
+          ← Portala dön
+        </Link>
+      </div>
+
+      {loadError ? (
+        <p className="mt-8 rounded-md border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+          Yol haritası yüklenemedi. Sayfayı yenilemeyi dene.
+        </p>
+      ) : (
+        <div className="mt-8 grid gap-4 md:grid-cols-3">
+          {roadmapStatuses.map((status) => {
+            const columnPosts = rows.filter((post) => post.status === status);
+
+            return (
+              <section key={status} className="grid content-start gap-3">
+                <h2 className="flex items-center justify-between text-lg font-semibold">
+                  {columnTitles[status]}
+                  <span className="rounded-full border px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                    {columnPosts.length}
+                  </span>
+                </h2>
+
+                {columnPosts.length === 0 ? (
+                  <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+                    Bu kolonda henüz fikir yok.
+                  </p>
+                ) : (
+                  columnPosts.map((post) => (
+                    <Card key={post.id}>
+                      <CardHeader>
+                        <CardTitle className="text-base leading-snug">
+                          {post.title}
+                        </CardTitle>
+                        <CardDescription>
+                          {post.voteCount} oy ·{" "}
+                          {statusLabels[post.status] ?? post.status}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="line-clamp-3 text-sm text-muted-foreground">
+                          {post.description}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </section>
+            );
+          })}
+        </div>
+      )}
+    </main>
+  );
+}
+
+async function loadPosts() {
+  return getDb()
+    .select({
+      id: posts.id,
+      title: posts.title,
+      description: posts.description,
+      status: posts.status,
+      voteCount: count(votes.id),
+    })
+    .from(posts)
+    .leftJoin(votes, eq(votes.postId, posts.id))
+    .groupBy(posts.id)
+    .orderBy(desc(posts.createdAt))
+    .limit(100);
+}

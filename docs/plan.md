@@ -277,7 +277,8 @@
 
 ## Sprint 7: MVP Sonrası - CSV Dışa Aktar (Düşük Öncelik)
 
-> **Durum (2026-09-01):** ✅ Kod tamamlandı — üretim testi bekliyor.
+> **Durum (2026-09-01):** ✅ Sprint 7 tamamlandı — üretimde test edildi
+>   (CSV indirildi, kolonlar ve Türkçe karakterler doğrulandı).
 >
 > - `app/api/admin/export/route.ts` (GET): admin-only (rol DB'den doğrulanır),
 >   limit yok — tüm fikirler. Kolonlar: Başlık, Durum (Türkçe etiket),
@@ -295,6 +296,32 @@
 3. Admin paneline "CSV İndir" butonu ekle.
 
 > Not: Bu özellik `canny.md`'de MCP sunucusu yerine planlanan basit dışa aktar işlemidir.
+
+---
+
+## Sprint 8: Portal Güçlendirme (Arama, Benzer Post Önerisi, Roadmap)
+
+> **Durum (2026-09-01):** ✅ Kod tamamlandı — üretim testi bekliyor.
+>
+> - **Arama:** GET /api/posts?q= ve portalda ?q= (server-side ILIKE,
+>   title+description; %/_ kaçışlı, 100 karakter üstü reddedilir).
+>   Arama kasıtlı olarak ILIKE: her tuş vuruşunda embedding çağrısı 429
+>   riski + gecikme yaratır; semantic duplicate tespiti zaten arka planda
+>   AI autopilot'ta (0.45 eşik + LLM çift kontrol).
+> - **Yazarken benzer post önerisi (Canny'nin kritik duplicate önleme
+>   UX'i):** NewPostDialog başlık alanında 400ms debounce + min 3 karakter
+>   ile /api/posts?q= çağrısı, en fazla 5 öneri (durum etiketi + oy sayısı);
+>   AbortController ile bayat istekler iptal edilir, hata öneriyi sessiz
+>   geçer (form akışı etkilenmez).
+> - **Public roadmap kanban:** /roadmap — Planlandı / Geliştiriliyor /
+>   Yayında kolonları (kart: başlık, oy, 3 satır açıklama); middleware
+>   public route'a eklendi, portaldan "Yol Haritası →" linki.
+> - Ortak durum etiketleri + tarih formatları lib/post-format.ts'te
+>   toplandı (portal, dialog, roadmap, export aynı kaynağı kullanır).
+
+**Hedef:** Portalda arama, yeni fikir yazarken benzer fikir önerisi (duplicate
+önleme UX'i) ve herkese açık kanban yol haritası (docs/deepseek.txt §5.A,
+docs/oxalpha.txt §6 kritik UX detayları).
 
 ---
 

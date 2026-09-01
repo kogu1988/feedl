@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { count, desc, eq } from "drizzle-orm";
+import { count, desc, eq, ilike, or } from "drizzle-orm";
 
 import { getDb } from "@/lib/db";
 import { posts, votes } from "@/lib/db/schema";
@@ -8,9 +8,20 @@ import { createPostSchema } from "@/lib/validations/post";
 import { inngest } from "@/inngest/client";
 
 // GET /api/posts — herkese açık fikir listesi (en son eklenen en üstte),
-// oy sayılarıyla birlikte.
-export async function GET() {
+// oy sayılarıyla birlikte. Opsiyonel ?q= ile başlık/açıklama araması yapılır
+// (plan.md Sprint 8: yazarken benzer post önerisi bu endpoint'i kullanır).
+export async function GET(req: Request) {
   try {
+    const q = new URL(req.url).searchParams.get("q")?.trim() ?? "";
+    if (q.length > 100) {
+      return NextResponse.json(
+        { success: false, error: "Arama terimi çok uzun." },
+        { status: 400 },
+      );
+    }
+
+    const likePattern = `%${q.replaceAll("%", "\\%").replaceAll("_", "\\_")}%`;
+
     const rows = await getDb()
       .select({
         id: posts.id,
@@ -22,6 +33,11 @@ export async function GET() {
       })
       .from(posts)
       .leftJoin(votes, eq(votes.postId, posts.id))
+      .where(
+        q
+          ? or(ilike(posts.title, likePattern), ilike(posts.description, likePattern))
+          : undefined,
+      )
       .groupBy(posts.id)
       .orderBy(desc(posts.createdAt))
       .limit(100);
