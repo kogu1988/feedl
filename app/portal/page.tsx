@@ -1,10 +1,11 @@
-import { and, count, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, count, desc, eq, inArray, sql, type SQL } from "drizzle-orm";
 import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
 import { Show, SignInButton } from "@clerk/nextjs";
 import { RocketIcon, SearchIcon, ThumbsUpIcon } from "lucide-react";
 
 import { NewPostDialog } from "@/components/custom/new-post-dialog";
+import { FilterTabs } from "@/components/custom/filter-tabs";
 import { KeywordChips } from "@/components/custom/keyword-chips";
 import { SentimentBadge } from "@/components/custom/sentiment-badge";
 import { StatusBadge } from "@/components/custom/status-badge";
@@ -38,17 +39,20 @@ function summarize(text: string, maxLength = 160) {
 export default async function PortalPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; sort?: string }>;
 }) {
-  const { q: rawQuery } = await searchParams;
+  const { q: rawQuery, sort: rawSort } = await searchParams;
   const searchQuery = (rawQuery ?? "").trim().slice(0, 100);
+  // plan.md Sprint 12: "top" varsayılan (Canny modeli — en çok istenen öne
+  // çıkar), "new" en yeni; arama varken alaka sıralaması önceliklidir.
+  const sort = rawSort === "new" ? "new" : "top";
 
   let rows: Awaited<ReturnType<typeof loadPosts>> = [];
   let votedIds = new Set<string>();
   let loadError = false;
 
   try {
-    rows = await loadPosts(searchQuery);
+    rows = await loadPosts(searchQuery, sort);
 
     const { userId } = await auth();
     if (userId && rows.length > 0) {
@@ -128,6 +132,20 @@ export default async function PortalPage({
           Ara
         </Button>
       </form>
+
+      {!searchQuery ? (
+        <div className="mt-4">
+          <FilterTabs
+            paramName="sort"
+            basePath="/portal"
+            active={sort === "new" ? "new" : ""}
+            options={[
+              { value: "", label: "En Çok Oy Alan" },
+              { value: "new", label: "En Yeni" },
+            ]}
+          />
+        </div>
+      ) : null}
 
       <div className="mt-8 grid gap-4">
         {loadError ? (
@@ -260,10 +278,19 @@ export default async function PortalPage({
   );
 }
 
-// plan.md Sprint 8: arama çok kelimeli ve diakritik duyarsız (lib/post-search);
-// arama varken sıralama alakaya göre (skor → oy → tarih), yoksa en yeni üstte.
-async function loadPosts(searchQuery: string) {
+// plan.md Sprint 8 + 12: arama çok kelimeli ve diakritik duyarsız (lib/
+// post-search); sıralama — arama varken alaka (skor → oy → tarih), yoksa
+// sekme seçimi: "top" oy sayısına göre, "new" en yeni.
+async function loadPosts(searchQuery: string, sort: "top" | "new") {
   const search = buildPostSearch(searchQuery);
+
+  const orderBys: SQL[] = [];
+  if (search.tokens.length > 0) {
+    orderBys.push(desc(search.score), desc(sql`count(${votes.id})`));
+  } else if (sort === "top") {
+    orderBys.push(desc(sql`count(${votes.id})`));
+  }
+  orderBys.push(desc(posts.createdAt));
 
   return getDb()
     .select({
@@ -281,11 +308,6 @@ async function loadPosts(searchQuery: string) {
     .leftJoin(votes, eq(votes.postId, posts.id))
     .where(search.condition)
     .groupBy(posts.id)
-    .orderBy(
-      ...(search.tokens.length > 0
-        ? [desc(search.score), desc(sql`count(${votes.id})`)]
-        : []),
-      desc(posts.createdAt),
-    )
+    .orderBy(...orderBys)
     .limit(100);
 }

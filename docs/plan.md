@@ -439,6 +439,27 @@ etiketleme; dashboard'a admin için tek bakışta durum) — docs/deepseek.txt
 
 ---
 
+## Sprint 12: Sıralama Sekmeleri + Dashboard Filtreleri (Faz 2)
+
+> **Durum (2026-09-01):** 🚧 Kod tamamlandı — üretim testi bekliyor.
+>
+> - **Portal sıralama sekmeleri (Canny "Top / New" modeli):** "En Çok Oy
+>   Alan" (varsayılan) / "En Yeni" — ?sort= query param'ı. Arama varken
+>   sekmeler gizlenir, alaka sıralaması önceliklidir. BEHAVIOR CHANGE:
+>   Sprint 2'deki "en son eklenen en üstte" varsayılanı "en çok oy
+>   alan" olarak değişti (Canny araştırması §2: oy en önemli sinyal).
+> - **Dashboard durum filtreleri:** Tümü / Açık / Planlandı /
+>   Geliştiriliyor / Yayınlandı sekmeleri — ?status= ile tabloyu
+>   filtreler. İstatistik satırı her zaman tüm fikirlerden hesaplanır;
+>   filtre yalnızca tabloyu etkiler. Geçersiz değer "Tümü"ne düşer.
+> - Ortak **FilterTabs** bileşeni (components/custom/filter-tabs.tsx):
+>   sunucu bileşenlerinde URL param'ıyla çalışan hafif sekme navigasyonu.
+
+**Hedef:** Canny'nin kritik UX detayları (docs/oxalpha.txt §2 "En çok
+istenen özellikler öne çıkar") + admin triage hızlandırma.
+
+---
+
 ## 🗺️ Faz 2 Yol Haritası (2026-09-01 güncellemesi)
 
 Canny araştırmasına (docs/deepseek.txt, docs/oxalpha.txt) dayalı plan;

@@ -4,6 +4,7 @@ import { DownloadIcon } from "lucide-react";
 import { count, desc, eq } from "drizzle-orm";
 
 import { KeywordChips } from "@/components/custom/keyword-chips";
+import { FilterTabs } from "@/components/custom/filter-tabs";
 import { SentimentBadge } from "@/components/custom/sentiment-badge";
 import { StatusSelect } from "@/components/custom/status-select";
 import {
@@ -23,17 +24,29 @@ import {
 } from "@/components/ui/table";
 import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
-import { posts, votes } from "@/lib/db/schema";
+import { postStatusEnum, posts, votes } from "@/lib/db/schema";
+import { statusLabels } from "@/lib/post-format";
 
 // Canlı veri: her istekte DB'den okunur.
 export const dynamic = "force-dynamic";
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string }>;
+}) {
   // Middleware girişi garanti eder; admin rolü tek kaynaktan (DB) doğrulanır.
   const adminId = await getAdminUserId();
   if (!adminId) {
     redirect("/portal");
   }
+
+  // plan.md Sprint 12: durum filtresi ?status= ile gelir; geçersiz değer
+  // "Tümü"ne düşer. İstatistikler her zaman TÜM fikirlerden hesaplanır,
+  // filtre yalnızca tabloyu etkiler.
+  const { status: rawStatus } = await searchParams;
+  const statusFilter =
+    postStatusEnum.enumValues.find((value) => value === rawStatus) ?? null;
 
   let rows: Awaited<ReturnType<typeof loadPosts>> = [];
   let loadError = false;
@@ -47,6 +60,10 @@ export default async function DashboardPage() {
     );
     loadError = true;
   }
+
+  const visibleRows = statusFilter
+    ? rows.filter((row) => row.status === statusFilter)
+    : rows;
 
   // İstatistik satırı (plan.md Sprint 11): tek sorgudan JS tarafında hesaplanır.
   const totalVotes = rows.reduce((sum, row) => sum + row.voteCount, 0);
@@ -99,8 +116,26 @@ export default async function DashboardPage() {
           <CardDescription>
             {loadError
               ? "Liste yüklenemedi."
-              : `Toplam ${rows.length} fikir — durumu satırdan değiştirebilirsin.`}
+              : statusFilter
+                ? `Filtrede ${visibleRows.length} / toplam ${rows.length} fikir — durumu satırdan değiştirebilirsin.`
+                : `Toplam ${rows.length} fikir — durumu satırdan değiştirebilirsin.`}
           </CardDescription>
+          {!loadError && rows.length > 0 ? (
+            <div className="pt-2">
+              <FilterTabs
+                paramName="status"
+                basePath="/dashboard"
+                active={statusFilter ?? ""}
+                options={[
+                  { value: "", label: "Tümü" },
+                  ...postStatusEnum.enumValues.map((value) => ({
+                    value,
+                    label: statusLabels[value] ?? value,
+                  })),
+                ]}
+              />
+            </div>
+          ) : null}
         </CardHeader>
         <CardContent>
           {loadError ? (
@@ -110,6 +145,10 @@ export default async function DashboardPage() {
           ) : rows.length === 0 ? (
             <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
               Henüz fikir yok. Portala gönderilen ilk fikir burada görünecek.
+            </p>
+          ) : visibleRows.length === 0 ? (
+            <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+              Bu durumda fikir yok.
             </p>
           ) : (
             <Table>
@@ -123,7 +162,7 @@ export default async function DashboardPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {rows.map((post) => (
+                {visibleRows.map((post) => (
                   <TableRow key={post.id}>
                     <TableCell className="font-medium tabular-nums">
                       {post.voteCount}
