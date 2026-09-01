@@ -697,6 +697,73 @@ dediği yerler güncel değil:
 - Bildirim yalnızca shipped e-postası; takip/tercih yok (P2.3).
 - Raporlama/analitik yok (rapor §1).
 
+### Analiz gözden geçirmesi (2026-09-02): mevcut / revizyon / eklenecek
+
+Rapor §1'deki alan tablosunun güncel repo durumuyla satır satır
+sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
+➕ = yeni eklenecek; sprint numaraları Faz 3 listesine bağlı):
+
+**Bizde mevcut (raporun yanlış "eksik" dedikleri dahil):**
+- ✅ Public portal + arama + yeni fikir formu + yazarken benzer öneri
+  (Sprint 2, 8) — P0.3'ün büyük kısmı karşılanmış durumda.
+- ✅ Upvote: kullanıcı başına tek oy, geri alma, sayaç (Sprint 3).
+- ✅ Status/roadmap: 4 statü + public kanban (Sprint 4, 8).
+- ✅ Yorumlar (public/internal) — Sprint 10; rapor §1 "Comments yok"
+  ifadesi güncel değil. İç notlar tüm okuma yollarında server-side
+  filtreleniyor (bkz. skill).
+- ✅ Fikir detay sayfası (P0.3): kalıcı URL, tam açıklama, oy durumu,
+  yorumlar, benzer fikirler (Sprint 10, 13, 17).
+- ✅ Merge/unmerge + oy/yorum taşıma + audit (P1.2, Sprint 20).
+- ✅ Post tipi (feature/bug/usability) + serbest etiketler + ?tag=
+  filtreleri (P1.3 lite, Sprint 21).
+- ✅ Admin filtre/sıralama (Sprint 12), CSV export (Sprint 7),
+  admin'e yeni fikir bildirimi (Sprint 18), "Oyladıklarım" (Sprint 15).
+- ✅ AI özet/sentiment/keyword/duplicate adayı (Sprint 5) — P5 temeli.
+
+**Revizyon gerektirenler (mevcut yapı genişletilecek):**
+- 🔧 Yorumlar (P1.1): threaded reply, edit/delete, admin etiketi,
+  yorum bildirimi + mention → **Sprint 24** (mention, 2026-09-02
+  gözden geçirmesiyle Sprint 24 kapsamına eklendi).
+- 🔧 Status yaşam döngüsü (P1.5): `under-review` + `closed` statüleri,
+  `post_status_history`, değişim açıklaması → **Sprint 23**.
+- 🔧 Admin triage (P1.4): bulk actions, saved views, server-side
+  pagination → **Sprint 22**.
+- 🔧 "Yayında" listesi → bağımsız changelog (P2.1) → **Sprint 25**.
+- 🔧 Bildirim: yalnızca shipped e-postası → takip + tercihler +
+  unsubscribe (P2.3) → **Sprint 26**.
+- 🔧 Arama: ILIKE → PostgreSQL full-text + trigram + hybrid (rapor §5)
+  → **Sprint 27**.
+- 🔧 Internal roadmap/scoring (P2.2): owner, target date, RICE →
+  **Sprint 28** (Sprint 21'de kararlaştırıldığı gibi ayrı categories
+  tablosu YOK; custom_field_definitions/values tabloları P1.3'ün
+  kalanı olarak Sprint 28'de değerlendirilecek opsiyon — ilk sürümde
+  owner/eta/effort/impact sütunları yeterli).
+- 🔧 AI: post-sonrası işleme → Autopilot inbox (kaynak, güven skoru,
+  approve/reject/merge/spam, audit) (P5) → **Sprint 33**.
+- 🔧 Raporlama (rapor §1): dashboard analytics → **Sprint 29**.
+
+**Eklenecekler (yeni modeller/sayfalar):**
+- ➕ Changelog entry/post-link tabloları + public `/portal/changelog`
+  (P2.1) → **Sprint 25**.
+- ➕ `post_followers` / bildirim tercihleri / `email_deliveries`
+  (P2.3) → **Sprint 26**.
+- ➕ `companies` + `company_members` + müşteri sayacı (P3.1) →
+  **Sprint 30**.
+- ➕ Opportunities + gelir ağırlıklı öncelik (P3.2) → **Sprint 31**.
+- ➕ Widget SDK + imzalı JWT identify (P4.1 lite; domain gerektirmez)
+  → **Sprint 32**.
+- ➕ Public API `/api/v1` + scope'lu key + webhook'lar (P4.2) →
+  **Sprint 34**.
+
+**Domain + Resend ile en sona ertelenenler (kullanıcı kısıtı):**
+- ⏸️ P0.1 Workspace/Organization + Board veri modeli (çoklu tenancy).
+- ⏸️ P0.2 Board erişim politikaları — private comments (P1.1'in
+  board'a bağlı `private` visibility kısmı) bu modele bağlı.
+- ⏸️ P4.3 üçüncü taraf entegrasyonları (Slack/Intercom/Jira...).
+- ⏸️ Billing/plan limitleri, custom domain + markalama, Organizations
+  subdomain'leri.
+- ⏸️ Resend geçişi (tek env `RESEND_API_KEY`; domain doğrulaması ile).
+
 ### Sprint listesi (☐ = planlandı)
 
 - ✅ **Sprint 20 — Post Merge/Unmerge (P1.2)** (2026-09-01, commit 29aead5,
@@ -727,16 +794,22 @@ dediği yerler güncel değil:
   postType kabul eder; değişim otomatik iç not düşer). CSV'ye Tür +
   Etiketler kolonları. Eski 3 fikir için etiket backfill yapıldı
   (postType null — admin manuel set eder).
-- ☐ **Sprint 22 — Admin Bulk Actions + Kayıtlı Görünümler (P1.4):**
+- 🔧 **Sprint 22 — Admin Bulk Actions + Kayıtlı Görünümler (P1.4):**
   çoklu seçim ile toplu status/etiket; filtre kombinasyonlarını kaydet
-  (saved views); server-side pagination.
+  (saved views); server-side pagination. **Durum (2026-09-02): kod
+  kısmen hazır** — API rotaları (`app/api/admin/posts/bulk`,
+  `app/api/admin/views`), bileşenler (`posts-table.tsx`,
+  `saved-view-bar.tsx`) ve migration 0008 (saved_views) yazıldı;
+  dashboard sayfasına entegrasyon, build doğrulaması ve üretim testi
+  eksik. Sonraki oturum bu eksiklerle sprinti kapatacak.
 - ☐ **Sprint 23 — Status Yaşam Döngüsü Genişletme (P1.5):** `under-review`
   ve `closed` statüleri; `post_status_history` tablosu; status
   değişiminde açıklama notu → bildirim e-postasına dahil; roadmap'te
   gösterilecek kolon seçimi.
 - ☐ **Sprint 24 — Yorum Revizyonu (P1.1):** threaded reply
-  (`parentCommentId`), edit/delete, admin etiketi, yorum bildirimi
-  (post sahibine; admin cevabında oy verenlere).
+  (`parentCommentId`), edit/delete, admin etiketi, mention
+  (`@kullanıcı` — 2026-09-02 gözden geçirmesiyle eklendi), yorum
+  bildirimi (post sahibine; admin cevabında oy verenlere).
 - ☐ **Sprint 25 — Bağımsız Changelog (P2.1):** `changelog_entries` +
   `changelog_post_links`; markdown gövde, label, yayın tarihi; public
   `/portal/changelog` route; post detayından release note bağlantısı.
