@@ -6,17 +6,32 @@ import { z } from "zod";
 
 import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
-import { comments, postStatusEnum, posts, votes } from "@/lib/db/schema";
-import { statusLabels } from "@/lib/post-format";
+import {
+  comments,
+  postStatusEnum,
+  postTypeEnum,
+  posts,
+  votes,
+} from "@/lib/db/schema";
+import { statusLabels, typeLabels } from "@/lib/post-format";
 import { postStatusChangedEventSchema } from "@/lib/validations/events";
 import { inngest } from "@/inngest/client";
 
-const patchSchema = z.object({
-  postId: z.uuid("Geçersiz fikir kimliği."),
-  status: z.enum(postStatusEnum.enumValues, {
-    error: "Geçersiz durum.",
-  }),
-});
+// Sprint 21: status veya postType en az biri gönderilmeli — ikisi de
+// opsiyonel, tek istekte birlikte de gönderilebilir.
+const patchSchema = z
+  .object({
+    postId: z.uuid("Geçersiz fikir kimliği."),
+    status: z
+      .enum(postStatusEnum.enumValues, { error: "Geçersiz durum." })
+      .optional(),
+    postType: z
+      .enum(postTypeEnum.enumValues, { error: "Geçersiz tür." })
+      .optional(),
+  })
+  .refine((data) => data.status !== undefined || data.postType !== undefined, {
+    error: "Güncellenecek alan yok.",
+  });
 
 // GET /api/admin/posts?q=...&exclude=... — merge hedef seçici için başlık
 // araması (Sprint 20). Birleşmiş fikirler hedef olamaz; kaynak fikir de
@@ -105,9 +120,10 @@ export async function PATCH(req: Request) {
       );
     }
 
-    // Eski durum, event payload'ı için güncellemeden önce okunur.
+    // Eski durum/tür, event payload'ı ve iç not için güncellemeden önce
+    // okunur.
     const [existing] = await getDb()
-      .select({ id: posts.id, status: posts.status })
+      .select({ id: posts.id, status: posts.status, postType: posts.postType })
       .from(posts)
       .where(eq(posts.id, parsed.data.postId))
       .limit(1);
@@ -119,10 +135,21 @@ export async function PATCH(req: Request) {
       );
     }
 
+    const statusChanged =
+      parsed.data.status !== undefined && parsed.data.status !== existing.status;
+    const typeChanged =
+      parsed.data.postType !== undefined &&
+      parsed.data.postType !== existing.postType;
+
     const [updated] = await getDb()
       .update(posts)
       .set({
-        status: parsed.data.status,
+        ...(parsed.data.status !== undefined
+          ? { status: parsed.data.status }
+          : {}),
+        ...(parsed.data.postType !== undefined
+          ? { postType: parsed.data.postType }
+          : {}),
         updatedAt: new Date(),
       })
       .where(eq(posts.id, parsed.data.postId))
@@ -130,6 +157,7 @@ export async function PATCH(req: Request) {
         id: posts.id,
         title: posts.title,
         status: posts.status,
+        postType: posts.postType,
         updatedAt: posts.updatedAt,
       });
 
@@ -143,12 +171,13 @@ export async function PATCH(req: Request) {
     // Durum gerçekten değiştiyse Inngest event'i fırlat (plan.md Sprint 6);
     // "shipped"e geçişte yazar + oy verenlere bildirim gider. Event gönderimi
     // başarısız olsa bile durum güncellemesi başarılı kalmalıdır.
+    const newStatus = updated.status;
     const payload = postStatusChangedEventSchema.safeParse({
       postId: updated.id,
       oldStatus: existing.status,
-      newStatus: updated.status,
+      newStatus,
     });
-    if (payload.success && existing.status !== updated.status) {
+    if (payload.success && statusChanged) {
       try {
         await inngest.send({ name: "post/status.changed", data: payload.data });
       } catch (eventErr) {
@@ -159,17 +188,30 @@ export async function PATCH(req: Request) {
       }
     }
 
-    // Durum değişince detay sayfasına otomatik iç not düş (plan.md Sprint 10
-    // eki; Canny davranışı: durum değişiklikleri iz bırakır). Best-effort:
-    // not başarısız olsa bile durum güncellemesi başarılı kalmalıdır.
-    if (existing.status !== updated.status) {
+    // Durum/tür değişince detay sayfasına otomatik iç not düş (plan.md
+    // Sprint 10 eki; Canny davranışı: değişiklikler iz bırakır). Best-effort:
+    // not başarısız olsa bile güncelleme başarılı kalmalıdır.
+    if (statusChanged || typeChanged) {
       try {
-        const oldLabel = statusLabels[existing.status] ?? existing.status;
-        const newLabel = statusLabels[updated.status] ?? updated.status;
+        const notes: string[] = [];
+        if (statusChanged) {
+          const oldLabel = statusLabels[existing.status] ?? existing.status;
+          const newLabel = statusLabels[updated.status] ?? updated.status;
+          notes.push(`Durum güncellendi: ${oldLabel} → ${newLabel}`);
+        }
+        if (typeChanged) {
+          const oldType = existing.postType
+            ? (typeLabels[existing.postType] ?? existing.postType)
+            : "—";
+          const newType = updated.postType
+            ? (typeLabels[updated.postType] ?? updated.postType)
+            : "—";
+          notes.push(`Tür güncellendi: ${oldType} → ${newType}`);
+        }
         await getDb().insert(comments).values({
           postId: updated.id,
           userId: adminId,
-          body: `Durum güncellendi: ${oldLabel} → ${newLabel}`,
+          body: notes.join("\n"),
           isInternal: true,
         });
       } catch (noteErr) {

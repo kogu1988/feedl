@@ -50,6 +50,13 @@
       "when": 1788291445715,
       "tag": "0006_post_merge_from_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1788294110773,
+      "tag": "0007_post_tags_and_type",
+      "breakpoints": true
     }
   ]
 }

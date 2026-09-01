@@ -43,6 +43,15 @@ export const postSentimentEnum = pgEnum("post_sentiment", [
   "negatif",
 ]);
 
+// Sprint 21: fikir türü (Canny'nin "category" kavramının karşılığı —
+// yapılandırılmış, tek seçim). AI doldurur; admin detay sayfasından
+// değiştirebilir. Serbest form etiketler için tags tablosuna bak.
+export const postTypeEnum = pgEnum("post_type", [
+  "feature",
+  "bug",
+  "usability",
+]);
+
 // posts: Ana fikir tablosu (docs/README.md §3).
 // embedding_vector: nvidia/nemotron-3-embed-1b:free (2048 boyut). HNSW limiti
 // 2000 olduğu için index yok — MVP hacminde sıralı tarama yeterli (docs/README.md §3).
@@ -56,6 +65,7 @@ export const posts = pgTable(
     title: text("title").notNull(),
     description: text("description").notNull(),
     status: postStatusEnum("status").notNull().default("open"),
+    postType: postTypeEnum("post_type"),
     sentimentLabel: postSentimentEnum("sentiment_label"),
     aiKeywords: text("ai_keywords").array(),
     aiSummary: text("ai_summary"),
@@ -177,3 +187,42 @@ export const postMerges = pgTable(
 
 export type PostMerge = typeof postMerges.$inferSelect;
 export type NewPostMerge = typeof postMerges.$inferInsert;
+
+// tags: Sprint 21 serbest form etiketleri (AI keyword'lerinden türetilir,
+// normalize lowercase). Tek taksonomi: Canny'nin "category" kavramı
+// posts.postType enum'uyla karşılanır, ayrı categories tablosu yok.
+export const tags = pgTable("tags", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull().unique(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export type Tag = typeof tags.$inferSelect;
+export type NewTag = typeof tags.$inferInsert;
+
+// post_tags: fikir ↔ etiket bağlantısı (plan.md Sprint 21). AI autopilot
+// her yeni fikir için keyword'lerinden etiket üretip buraya bağlar.
+export const postTags = pgTable(
+  "post_tags",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    postId: uuid("post_id")
+      .notNull()
+      .references(() => posts.id, { onDelete: "cascade" }),
+    tagId: uuid("tag_id")
+      .notNull()
+      .references(() => tags.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    unique("post_tags_post_tag_unique").on(table.postId, table.tagId),
+    index("post_tags_tag_idx").on(table.tagId),
+  ],
+);
+
+export type PostTag = typeof postTags.$inferSelect;
+export type NewPostTag = typeof postTags.$inferInsert;

@@ -4,7 +4,7 @@
 
 **Kullanım Yeri:** Yeni bir `Post` oluşturulduğunda Inngest içinde çalışır.  
 **Model Önerisi:** `meta-llama/llama-3.1-70b-instruct` (OpenRouter üzerinden)  
-**Çıktı Doğrulaması:** LLM yanıtı Zod ile doğrulanmalı; `nötr` gibi varyantlar `notr`'a normalize edilmelidir. Parse edilemeyen yanıt hata sayılır ve Inngest retry ile tekrar denenir. JSON'daki `sentiment` değeri `sentiment_label` sütununa, `keywords` dizisi `ai_keywords` sütununa, `summary` ise `ai_summary` sütununa yazılır.
+**Çıktı Doğrulaması:** LLM yanıtı Zod ile doğrulanmalı; `nötr` gibi varyantlar `notr`'a normalize edilmelidir. Parse edilemeyen yanıt hata sayılır ve Inngest retry ile tekrar denenir. JSON'daki `sentiment` değeri `sentiment_label` sütununa, `type` değeri `post_type` sütununa (Sprint 21: Canny "category" karşılığı — feature/bug/usability), `keywords` dizisi `ai_keywords` sütununa ve normalize edilerek `tags`/`post_tags` tablolarına, `summary` ise `ai_summary` sütununa yazılır.
 
 **System Prompt:**
 
@@ -15,11 +15,12 @@ JSON dışında hiçbir açıklama, markdown veya ek metin yazma.
 
 {
   "sentiment": "pozitif" | "notr" | "negatif",
+  "type": "feature" | "bug" | "usability",
   "keywords": ["kelime1", "kelime2", "kelime3"],
   "summary": "Bu isteğin ne olduğunu 20 kelimeden kısa özetleyen cümle"
 }
 
-> Sentiment değeri kesinlikle `"pozitif"`, `"notr"` veya `"negatif"` olmalıdır; `"nötr"` veya başka bir yazım kabul edilmez. Keywords, `ai_keywords` sütununa kaydedilecek.
+> Sentiment değeri kesinlikle `"pozitif"`, `"notr"` veya `"negatif"` olmalıdır; `"nötr"` veya başka bir yazım kabul edilmez. Type değeri kesinlikle `"feature"` (yeni özellik isteği), `"bug"` (hata bildirimi) veya `"usability"` (kullanılabilirlik/UX iyileştirmesi) olmalıdır. Keywords, `ai_keywords` sütununa kaydedilecek ve etiketlere dönüştürülecek (2-3 kısa genel kelime, marka/durum bilgisi içermez).
 ```
 
 **User Prompt (Girdi):**

@@ -1,12 +1,13 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { DownloadIcon } from "lucide-react";
-import { count, desc, eq } from "drizzle-orm";
+import { count, desc, eq, inArray } from "drizzle-orm";
 
 import { KeywordChips } from "@/components/custom/keyword-chips";
 import { FilterTabs } from "@/components/custom/filter-tabs";
 import { SentimentBadge } from "@/components/custom/sentiment-badge";
 import { StatusSelect } from "@/components/custom/status-select";
+import { TypeBadge } from "@/components/custom/type-badge";
 import {
   Card,
   CardContent,
@@ -24,7 +25,7 @@ import {
 } from "@/components/ui/table";
 import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
-import { postStatusEnum, posts, votes } from "@/lib/db/schema";
+import { postStatusEnum, postTags, posts, tags, votes } from "@/lib/db/schema";
 import { statusLabels } from "@/lib/post-format";
 
 // Canlı veri: her istekte DB'den okunur.
@@ -33,7 +34,7 @@ export const dynamic = "force-dynamic";
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; tag?: string }>;
 }) {
   // Middleware girişi garanti eder; admin rolü tek kaynaktan (DB) doğrulanır.
   const adminId = await getAdminUserId();
@@ -44,15 +45,19 @@ export default async function DashboardPage({
   // plan.md Sprint 12: durum filtresi ?status= ile gelir; geçersiz değer
   // "Tümü"ne düşer. İstatistikler her zaman TÜM fikirlerden hesaplanır,
   // filtre yalnızca tabloyu etkiler.
-  const { status: rawStatus } = await searchParams;
+  const { status: rawStatus, tag: rawTag } = await searchParams;
   const statusFilter =
     postStatusEnum.enumValues.find((value) => value === rawStatus) ?? null;
+  // Sprint 21: etiket filtresi (portal ile aynı normalize kuralı).
+  const tagFilter = (rawTag ?? "").trim().toLocaleLowerCase("tr").slice(0, 30);
 
   let rows: Awaited<ReturnType<typeof loadPosts>> = [];
+  let tagOptions: Awaited<ReturnType<typeof loadTagOptions>> = [];
   let loadError = false;
 
   try {
-    rows = await loadPosts();
+    rows = await loadPosts(tagFilter);
+    tagOptions = await loadTagOptions();
   } catch (err) {
     console.error(
       "Dashboard list failed:",
@@ -121,11 +126,12 @@ export default async function DashboardPage({
                 : `Toplam ${rows.length} fikir — durumu satırdan değiştirebilirsin.`}
           </CardDescription>
           {!loadError && rows.length > 0 ? (
-            <div className="pt-2">
+            <div className="grid gap-2 pt-2">
               <FilterTabs
                 paramName="status"
                 basePath="/dashboard"
                 active={statusFilter ?? ""}
+                extraParams={tagFilter ? { tag: tagFilter } : undefined}
                 options={[
                   { value: "", label: "Tümü" },
                   ...postStatusEnum.enumValues.map((value) => ({
@@ -134,6 +140,23 @@ export default async function DashboardPage({
                   })),
                 ]}
               />
+              {tagOptions.length > 0 ? (
+                <FilterTabs
+                  paramName="tag"
+                  basePath="/dashboard"
+                  active={tagFilter}
+                  extraParams={
+                    statusFilter ? { status: statusFilter } : undefined
+                  }
+                  options={[
+                    { value: "", label: "Tüm Etiketler" },
+                    ...tagOptions.map((option) => ({
+                      value: option.name,
+                      label: `#${option.name} (${option.count})`,
+                    })),
+                  ]}
+                />
+              ) : null}
             </div>
           ) : null}
         </CardHeader>
@@ -176,6 +199,11 @@ export default async function DashboardPage({
                           {post.title}
                         </Link>
                       </div>
+                      {post.postType ? (
+                        <div className="mt-0.5">
+                          <TypeBadge type={post.postType} />
+                        </div>
+                      ) : null}
                       {post.mergedIntoId ? (
                         <div className="mt-0.5 inline-flex items-center gap-1 rounded-full border border-amber-600/30 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">
                           Birleştirildi
@@ -220,7 +248,8 @@ const dateFormatter = new Intl.DateTimeFormat("tr-TR", {
   year: "numeric",
 });
 
-async function loadPosts() {
+// Sprint 21: ?tag= filtresi — birleşmiş fikirler dahil (admin görür).
+async function loadPosts(tagFilter: string) {
   return getDb()
     .select({
       id: posts.id,
@@ -228,13 +257,37 @@ async function loadPosts() {
       status: posts.status,
       sentimentLabel: posts.sentimentLabel,
       aiKeywords: posts.aiKeywords,
+      postType: posts.postType,
       mergedIntoId: posts.mergedIntoId,
       createdAt: posts.createdAt,
       voteCount: count(votes.id),
     })
     .from(posts)
     .leftJoin(votes, eq(votes.postId, posts.id))
+    .where(
+      tagFilter
+        ? inArray(
+            posts.id,
+            getDb()
+              .select({ postId: postTags.postId })
+              .from(postTags)
+              .innerJoin(tags, eq(tags.id, postTags.tagId))
+              .where(eq(tags.name, tagFilter)),
+          )
+        : undefined,
+    )
     .groupBy(posts.id)
     .orderBy(desc(posts.createdAt))
     .limit(200);
+}
+
+// Sprint 21: etiket filtre sekmeleri — en çok kullanılan 8 etiket.
+async function loadTagOptions() {
+  return getDb()
+    .select({ name: tags.name, count: count(postTags.id) })
+    .from(tags)
+    .innerJoin(postTags, eq(postTags.tagId, tags.id))
+    .groupBy(tags.id)
+    .orderBy(desc(count(postTags.id)))
+    .limit(8);
 }

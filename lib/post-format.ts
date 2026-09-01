@@ -19,6 +19,14 @@ export const sentimentLabels: Record<string, string> = {
   negatif: "Negatif",
 };
 
+// Fikir türü etiketleri (posts.post_type; Sprint 21 — Canny "category"
+// karşılığı). Tek görsel kaynak TypeBadge bileşenidir.
+export const typeLabels: Record<string, string> = {
+  feature: "Özellik",
+  bug: "Hata",
+  usability: "Kullanılabilirlik",
+};
+
 export const trDateFormatter = new Intl.DateTimeFormat("tr-TR", {
   day: "numeric",
   month: "long",

@@ -1,12 +1,12 @@
 import "server-only";
 
 import { NextResponse } from "next/server";
-import { count, desc, eq } from "drizzle-orm";
+import { count, desc, eq, inArray } from "drizzle-orm";
 
 import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
-import { statusLabels } from "@/lib/post-format";
-import { posts, votes } from "@/lib/db/schema";
+import { statusLabels, typeLabels } from "@/lib/post-format";
+import { postTags, posts, tags, votes } from "@/lib/db/schema";
 
 // GET /api/admin/export — tüm fikirleri CSV olarak indir (plan.md Sprint 7).
 // Rota middleware'da korumalı; admin rolü burada DB'den doğrulanır.
@@ -25,6 +25,7 @@ export async function GET() {
         id: posts.id,
         title: posts.title,
         status: posts.status,
+        postType: posts.postType,
         createdAt: posts.createdAt,
         updatedAt: posts.updatedAt,
         voteCount: count(votes.id),
@@ -34,7 +35,27 @@ export async function GET() {
       .groupBy(posts.id)
       .orderBy(desc(posts.createdAt));
 
-    const csv = buildCsv(rows);
+    // Sprint 21: etiketler ikinci sorguyla (fan-out'suz) toplanır.
+    const tagRows = rows.length
+      ? await getDb()
+          .select({ postId: postTags.postId, name: tags.name })
+          .from(postTags)
+          .innerJoin(tags, eq(tags.id, postTags.tagId))
+          .where(
+            inArray(
+              postTags.postId,
+              rows.map((row) => row.id),
+            ),
+          )
+      : [];
+    const tagsByPost = tagRows.reduce((map, row) => {
+      const list = map.get(row.postId) ?? [];
+      list.push(row.name);
+      map.set(row.postId, list);
+      return map;
+    }, new Map<string, string[]>());
+
+    const csv = buildCsv(rows, tagsByPost);
 
     return new NextResponse(csv, {
       status: 200,
@@ -71,6 +92,7 @@ interface ExportRow {
   id: string;
   title: string;
   status: string;
+  postType: string | null;
   createdAt: Date;
   updatedAt: Date;
   voteCount: number;
@@ -79,8 +101,17 @@ interface ExportRow {
 // RFC 4180: virgül/tırnak/yeni satır içeren alanlar çift tırnağa alınır,
 // içindeki tırnaklar ikiye katlanır. Baştaki BOM, Excel'in Türkçe karakterleri
 // UTF-8 olarak açmasını garanti eder.
-function buildCsv(rows: ExportRow[]): string {
-  const header = ["Başlık", "Durum", "Oy Sayısı", "Oluşturma", "Güncelleme", "ID"];
+function buildCsv(rows: ExportRow[], tagsByPost: Map<string, string[]>): string {
+  const header = [
+    "Başlık",
+    "Durum",
+    "Tür",
+    "Etiketler",
+    "Oy Sayısı",
+    "Oluşturma",
+    "Güncelleme",
+    "ID",
+  ];
   const lines = [header.map(escapeCsvField).join(",")];
 
   for (const row of rows) {
@@ -88,6 +119,8 @@ function buildCsv(rows: ExportRow[]): string {
       [
         row.title,
         statusLabels[row.status] ?? row.status,
+        row.postType ? (typeLabels[row.postType] ?? row.postType) : "—",
+        (tagsByPost.get(row.id) ?? []).map((t) => `#${t}`).join(" "),
         String(row.voteCount),
         dateFormatter.format(row.createdAt),
         dateFormatter.format(row.updatedAt),

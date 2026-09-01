@@ -13,6 +13,9 @@ import { KeywordChips } from "@/components/custom/keyword-chips";
 import { MergeControls } from "@/components/custom/merge-controls";
 import { SentimentBadge } from "@/components/custom/sentiment-badge";
 import { StatusBadge } from "@/components/custom/status-badge";
+import { TagChips } from "@/components/custom/tag-chips";
+import { TypeBadge } from "@/components/custom/type-badge";
+import { TypeSelect } from "@/components/custom/type-select";
 import { VoteButton } from "@/components/custom/vote-button";
 import {
   Card,
@@ -23,7 +26,7 @@ import {
 } from "@/components/ui/card";
 import { getRole } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
-import { comments, posts, users, votes } from "@/lib/db/schema";
+import { comments, postTags, posts, tags, users, votes } from "@/lib/db/schema";
 import { trDateFormatter, trDateTimeFormatter } from "@/lib/post-format";
 
 // Fikir detay + yorumlar (plan.md Sprint 10). /portal(.*) middleware'da
@@ -69,6 +72,14 @@ export default async function PostDetailPage({
       mergedInto = target;
     }
   }
+
+  // Sprint 21: fikrin etiketleri (tags/post_tags).
+  const tagRows = await getDb()
+    .select({ name: tags.name })
+    .from(postTags)
+    .innerJoin(tags, eq(tags.id, postTags.tagId))
+    .where(eq(postTags.postId, postId));
+  const postTagsList = tagRows.map((row) => row.name);
 
   const commentRows = await loadComments(postId, isAdmin);
 
@@ -147,6 +158,7 @@ export default async function PostDetailPage({
           </div>
           <CardDescription className="flex flex-wrap items-center gap-2">
             <StatusBadge status={post.status} />
+            {post.postType ? <TypeBadge type={post.postType} /> : null}
             <span>{trDateFormatter.format(post.createdAt)}</span>
           </CardDescription>
         </CardHeader>
@@ -156,12 +168,15 @@ export default async function PostDetailPage({
           </p>
 
           {post.sentimentLabel ||
-          (post.aiKeywords && post.aiKeywords.length > 0) ? (
+          (post.aiKeywords && post.aiKeywords.length > 0) ||
+          postTagsList.length > 0 ? (
             <div className="flex flex-wrap items-center gap-1.5">
               {post.sentimentLabel ? (
                 <SentimentBadge sentiment={post.sentimentLabel} />
               ) : null}
-              {post.aiKeywords && post.aiKeywords.length > 0 ? (
+              {postTagsList.length > 0 ? (
+                <TagChips tags={postTagsList} />
+              ) : post.aiKeywords && post.aiKeywords.length > 0 ? (
                 <KeywordChips keywords={post.aiKeywords} max={6} />
               ) : null}
             </div>
@@ -174,6 +189,17 @@ export default async function PostDetailPage({
                 AI Özeti (yalnızca admin)
               </p>
               <p className="text-sm text-muted-foreground">{post.aiSummary}</p>
+            </div>
+          ) : null}
+
+          {isAdmin ? (
+            <div className="grid gap-2 rounded-md border border-dashed p-3">
+              <p className="text-xs font-medium text-muted-foreground">
+                Fikir türü (yalnızca admin)
+              </p>
+              <div>
+                <TypeSelect postId={post.id} type={post.postType} />
+              </div>
             </div>
           ) : null}
 
@@ -284,6 +310,7 @@ async function loadPost(postId: string, userId: string | null) {
       title: posts.title,
       description: posts.description,
       status: posts.status,
+      postType: posts.postType,
       sentimentLabel: posts.sentimentLabel,
       aiKeywords: posts.aiKeywords,
       aiSummary: posts.aiSummary,

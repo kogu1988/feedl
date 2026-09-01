@@ -1,4 +1,4 @@
-import { and, countDistinct, desc, eq, inArray, isNull, type SQL } from "drizzle-orm";
+import { and, count, countDistinct, desc, eq, inArray, isNull, type SQL } from "drizzle-orm";
 import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
 import { Show, SignInButton } from "@clerk/nextjs";
@@ -10,6 +10,8 @@ import { FilterTabs } from "@/components/custom/filter-tabs";
 import { KeywordChips } from "@/components/custom/keyword-chips";
 import { SentimentBadge } from "@/components/custom/sentiment-badge";
 import { StatusBadge } from "@/components/custom/status-badge";
+import { TagChips } from "@/components/custom/tag-chips";
+import { TypeBadge } from "@/components/custom/type-badge";
 import { VoteButton } from "@/components/custom/vote-button";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,7 +25,7 @@ import { Input } from "@/components/ui/input";
 import { getDb } from "@/lib/db";
 import { summarize, trDateFormatter } from "@/lib/post-format";
 import { buildPostSearch } from "@/lib/post-search";
-import { comments, posts, votes } from "@/lib/db/schema";
+import { comments, postTags, posts, tags, votes } from "@/lib/db/schema";
 
 // Canlı liste: her istekte DB'den okunur, build zamanında dondurulmaz.
 export const dynamic = "force-dynamic";
@@ -34,20 +36,44 @@ export const dynamic = "force-dynamic";
 export default async function PortalPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; sort?: string }>;
+  searchParams: Promise<{ q?: string; sort?: string; tag?: string }>;
 }) {
-  const { q: rawQuery, sort: rawSort } = await searchParams;
+  const { q: rawQuery, sort: rawSort, tag: rawTag } = await searchParams;
   const searchQuery = (rawQuery ?? "").trim().slice(0, 100);
   // plan.md Sprint 12: "top" varsayılan (Canny modeli — en çok istenen öne
   // çıkar), "new" en yeni; arama varken alaka sıralaması önceliklidir.
   const sort = rawSort === "new" ? "new" : "top";
+  // Sprint 21: ?tag= serbest form etiket filtresi (normalize lowercase).
+  const tagFilter = (rawTag ?? "").trim().toLocaleLowerCase("tr").slice(0, 30);
 
   let rows: Awaited<ReturnType<typeof loadPosts>> = [];
   let votedIds = new Set<string>();
+  let tagsByPost = new Map<string, string[]>();
+  let tagOptions: Awaited<ReturnType<typeof loadTagOptions>> = [];
   let loadError = false;
 
   try {
-    rows = await loadPosts(searchQuery, sort);
+    rows = await loadPosts(searchQuery, sort, tagFilter);
+    tagOptions = await loadTagOptions();
+
+    if (rows.length > 0) {
+      const tagRows = await getDb()
+        .select({ postId: postTags.postId, name: tags.name })
+        .from(postTags)
+        .innerJoin(tags, eq(tags.id, postTags.tagId))
+        .where(
+          inArray(
+            postTags.postId,
+            rows.map((row) => row.id),
+          ),
+        );
+      tagsByPost = tagRows.reduce((map, row) => {
+        const list = map.get(row.postId) ?? [];
+        list.push(row.name);
+        map.set(row.postId, list);
+        return map;
+      }, new Map<string, string[]>());
+    }
 
     const { userId } = await auth();
     if (userId && rows.length > 0) {
@@ -137,17 +163,37 @@ export default async function PortalPage({
       </form>
 
       {!searchQuery ? (
-        <div className="mt-4">
-          <FilterTabs
-            paramName="sort"
-            basePath="/portal"
-            active={sort === "new" ? "new" : ""}
-            options={[
-              { value: "", label: "En Çok Oy Alan" },
-              { value: "new", label: "En Yeni" },
-            ]}
-          />
-        </div>
+        <>
+          <div className="mt-4">
+            <FilterTabs
+              paramName="sort"
+              basePath="/portal"
+              active={sort === "new" ? "new" : ""}
+              extraParams={tagFilter ? { tag: tagFilter } : undefined}
+              options={[
+                { value: "", label: "En Çok Oy Alan" },
+                { value: "new", label: "En Yeni" },
+              ]}
+            />
+          </div>
+          {tagOptions.length > 0 ? (
+            <div className="mt-2">
+              <FilterTabs
+                paramName="tag"
+                basePath="/portal"
+                active={tagFilter}
+                extraParams={sort === "new" ? { sort } : undefined}
+                options={[
+                  { value: "", label: "Tüm Etiketler" },
+                  ...tagOptions.map((option) => ({
+                    value: option.name,
+                    label: `#${option.name} (${option.count})`,
+                  })),
+                ]}
+              />
+            </div>
+          ) : null}
+        </>
       ) : null}
 
       <div className="mt-8 grid gap-4">
@@ -155,7 +201,7 @@ export default async function PortalPage({
           <p className="rounded-md border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
             Fikirler yüklenemedi. Sayfayı yenilemeyi dene.
           </p>
-        ) : rows.length === 0 && searchQuery ? (
+        ) : rows.length === 0 && (searchQuery || tagFilter) ? (
           <div className="rounded-lg border border-dashed p-10 text-center">
             <p className="font-medium">Aramanla eşleşen fikir yok</p>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -219,9 +265,12 @@ export default async function PortalPage({
                           {post.title}
                         </Link>
                       </CardTitle>
-                      <CardDescription className="flex items-center gap-2">
+                      <CardDescription className="flex flex-wrap items-center gap-2">
                         {trDateFormatter.format(post.updatedAt)}
                         <StatusBadge status={post.status} />
+                        {post.postType ? (
+                          <TypeBadge type={post.postType} />
+                        ) : null}
                         <CommentCountBadge
                           postId={post.id}
                           count={post.commentCount}
@@ -230,12 +279,16 @@ export default async function PortalPage({
                     </CardHeader>
                     <CardContent className="grid gap-2">
                         {post.sentimentLabel ||
-                        (post.aiKeywords && post.aiKeywords.length > 0) ? (
+                        (post.aiKeywords && post.aiKeywords.length > 0) ||
+                        (tagsByPost.get(post.id) ?? []).length > 0 ? (
                           <div className="flex flex-wrap items-center gap-1.5">
                             {post.sentimentLabel ? (
                               <SentimentBadge sentiment={post.sentimentLabel} />
                             ) : null}
-                            {post.aiKeywords && post.aiKeywords.length > 0 ? (
+                            {(tagsByPost.get(post.id) ?? []).length > 0 ? (
+                              <TagChips tags={tagsByPost.get(post.id) ?? []} />
+                            ) : post.aiKeywords &&
+                              post.aiKeywords.length > 0 ? (
                               <KeywordChips keywords={post.aiKeywords} max={4} />
                             ) : null}
                           </div>
@@ -284,9 +337,12 @@ export default async function PortalPage({
                           </SignInButton>
                         </Show>
                       </div>
-                      <CardDescription className="flex items-center gap-2">
+                      <CardDescription className="flex flex-wrap items-center gap-2">
                         {trDateFormatter.format(post.createdAt)}
                         <StatusBadge status={post.status} />
+                        {post.postType ? (
+                          <TypeBadge type={post.postType} />
+                        ) : null}
                         <CommentCountBadge
                           postId={post.id}
                           count={post.commentCount}
@@ -295,12 +351,16 @@ export default async function PortalPage({
                     </CardHeader>
                     <CardContent className="grid gap-2">
                         {post.sentimentLabel ||
-                        (post.aiKeywords && post.aiKeywords.length > 0) ? (
+                        (post.aiKeywords && post.aiKeywords.length > 0) ||
+                        (tagsByPost.get(post.id) ?? []).length > 0 ? (
                           <div className="flex flex-wrap items-center gap-1.5">
                             {post.sentimentLabel ? (
                               <SentimentBadge sentiment={post.sentimentLabel} />
                             ) : null}
-                            {post.aiKeywords && post.aiKeywords.length > 0 ? (
+                            {(tagsByPost.get(post.id) ?? []).length > 0 ? (
+                              <TagChips tags={tagsByPost.get(post.id) ?? []} />
+                            ) : post.aiKeywords &&
+                              post.aiKeywords.length > 0 ? (
                               <KeywordChips keywords={post.aiKeywords} max={4} />
                             ) : null}
                           </div>
@@ -324,8 +384,25 @@ export default async function PortalPage({
 // (lib/post-search); sıralama — arama varken alaka (skor → oy → tarih),
 // yoksa sekme seçimi: "top" oy sayısına göre, "new" en yeni. Kartlar oy
 // + yorum (iç notlar hariç) sayısını countDistinct ile gösterir.
-async function loadPosts(searchQuery: string, sort: "top" | "new") {
+async function loadPosts(
+  searchQuery: string,
+  sort: "top" | "new",
+  tagFilter: string,
+) {
   const search = buildPostSearch(searchQuery);
+
+  // Sprint 21: etiket filtresi — posts.id, etiket adıyla eşleşen
+  // post_tags bağlantılarıyla sınırlandırılır (normalize lowercase).
+  const tagCondition = tagFilter
+    ? inArray(
+        posts.id,
+        getDb()
+          .select({ postId: postTags.postId })
+          .from(postTags)
+          .innerJoin(tags, eq(tags.id, postTags.tagId))
+          .where(eq(tags.name, tagFilter)),
+      )
+    : undefined;
 
   const orderBys: SQL[] = [];
   if (search.tokens.length > 0) {
@@ -343,6 +420,7 @@ async function loadPosts(searchQuery: string, sort: "top" | "new") {
       status: posts.status,
       sentimentLabel: posts.sentimentLabel,
       aiKeywords: posts.aiKeywords,
+      postType: posts.postType,
       createdAt: posts.createdAt,
       updatedAt: posts.updatedAt,
       // İki leftJoin satır çoğaltır (fan-out): count yerine countDistinct
@@ -358,8 +436,21 @@ async function loadPosts(searchQuery: string, sort: "top" | "new") {
       and(eq(comments.postId, posts.id), eq(comments.isInternal, false)),
     )
     // Sprint 20: birleşmiş fikirler listede görünmez (kaynak arşivlenir).
-    .where(and(search.condition, isNull(posts.mergedIntoId)))
+    .where(
+      and(search.condition, isNull(posts.mergedIntoId), tagCondition),
+    )
     .groupBy(posts.id)
     .orderBy(...orderBys)
     .limit(100);
+}
+
+// Sprint 21: etiket filtre sekmeleri — en çok kullanılan 8 etiket.
+async function loadTagOptions() {
+  return getDb()
+    .select({ name: tags.name, count: count(postTags.id) })
+    .from(tags)
+    .innerJoin(postTags, eq(postTags.tagId, tags.id))
+    .groupBy(tags.id)
+    .orderBy(desc(count(postTags.id)))
+    .limit(8);
 }

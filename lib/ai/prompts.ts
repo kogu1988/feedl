@@ -7,11 +7,12 @@ JSON dışında hiçbir açıklama, markdown veya ek metin yazma.
 
 {
   "sentiment": "pozitif" | "notr" | "negatif",
+  "type": "feature" | "bug" | "usability",
   "keywords": ["kelime1", "kelime2", "kelime3"],
   "summary": "Bu isteğin ne olduğunu 20 kelimeden kısa özetleyen cümle"
 }
 
-Sentiment değeri kesinlikle "pozitif", "notr" veya "negatif" olmalıdır; "nötr" veya başka bir yazım kabul edilmez. Keywords, ai_keywords sütununa kaydedilecek.`;
+Sentiment değeri kesinlikle "pozitif", "notr" veya "negatif" olmalıdır; "nötr" veya başka bir yazım kabul edilmez. Type değeri kesinlikle "feature" (yeni özellik isteği), "bug" (hata bildirimi) veya "usability" (kullanılabilirlik/UX iyileştirmesi) olmalıdır. Keywords, ai_keywords sütununa kaydedilecek ve etiketlere dönüştürülecek (2-3 kısa genel kelime, marka/durum bilgisi içermez).`;
 
 export function analyzeIdeaUserPrompt(
   title: string,

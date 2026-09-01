@@ -1,13 +1,13 @@
-import { eq, sql } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 import { NonRetriableError } from "inngest";
 
-import { analyzeIdea, compareIdeas } from "@/lib/ai/analysis";
+import { analyzeIdea, compareIdeas, normalizeTags } from "@/lib/ai/analysis";
 import { embedText } from "@/lib/ai/openrouter";
 import { sendEmails } from "@/lib/email/send";
 import { renderAdminNewPostEmail } from "@/lib/email/admin-new-post";
 import { renderShippedEmail } from "@/lib/email/shipped";
 import { getDb } from "@/lib/db";
-import { posts, users, votes } from "@/lib/db/schema";
+import { postTags, posts, tags, users, votes } from "@/lib/db/schema";
 import {
   postCreatedEventSchema,
   postStatusChangedEventSchema,
@@ -139,11 +139,45 @@ export const aiAutopilot = inngest.createFunction(
           aiSummary: analysis.summary,
           sentimentLabel: analysis.sentiment,
           aiKeywords: analysis.keywords,
+          postType: analysis.type,
           embeddingVector: embedding,
           ...(duplicateOf ? { duplicateOf, duplicateNote } : {}),
           updatedAt: new Date(),
         })
         .where(eq(posts.id, payload.postId));
+    });
+
+    // 6) Sprint 21: keyword'leri normalize edip tags + post_tags'e yaz.
+    //    Upsert idempotent; eski bağlantılar temizlenip yenilenir (retry
+    //    sonrası tekrar çalışsa bile sonuç aynı kalır).
+    await step.run("sync-tags", async () => {
+      const names = normalizeTags(analysis.keywords);
+      if (names.length === 0) {
+        return { tags: 0 };
+      }
+
+      await getDb()
+        .insert(tags)
+        .values(names.map((name) => ({ name })))
+        .onConflictDoNothing();
+
+      const tagRows = await getDb()
+        .select({ id: tags.id, name: tags.name })
+        .from(tags)
+        .where(inArray(tags.name, names));
+
+      await getDb()
+        .delete(postTags)
+        .where(eq(postTags.postId, payload.postId));
+
+      await getDb()
+        .insert(postTags)
+        .values(
+          tagRows.map((tag) => ({ postId: payload.postId, tagId: tag.id })),
+        )
+        .onConflictDoNothing();
+
+      return { tags: tagRows.length };
     });
 
     return { duplicateOf, sentiment: analysis.sentiment };
