@@ -45,7 +45,10 @@ Do not duplicate these docs in code comments; point to them.
 
 ```
 app/api/{posts,votes,admin/export,webhooks,inngest}   API routes
-app/{dashboard,portal,sign-in/[[...sign-in]],sign-up/[[...sign-up]]}
+app/{dashboard,roadmap,portal,portal/[id],portal/oyladiklarim,
+  sign-in/[[...sign-in]],sign-up/[[...sign-up]]}       Pages (portal/[id]:
+                                                       detail; oyladiklarim:
+                                                       static, shadows [id])
 lib/{db,ai,email}                                     db schema+client, AI helpers, email templates
 lib/{post-format,post-search,validations}.ts          status labels+dates, Turkish search, zod schemas
 components/{ui,custom}                                shadcn ui + project components

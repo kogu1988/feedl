@@ -21,21 +21,15 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { getDb } from "@/lib/db";
+import { summarize, trDateFormatter } from "@/lib/post-format";
 import { buildPostSearch } from "@/lib/post-search";
 import { comments, posts, votes } from "@/lib/db/schema";
 
 // Canlı liste: her istekte DB'den okunur, build zamanında dondurulmaz.
 export const dynamic = "force-dynamic";
 
-const dateFormatter = new Intl.DateTimeFormat("tr-TR", {
-  day: "numeric",
-  month: "long",
-  year: "numeric",
-});
-
-function summarize(text: string, maxLength = 160) {
-  return text.length > maxLength ? `${text.slice(0, maxLength).trimEnd()}…` : text;
-}
+// plan.md Sprint 15: yerel dateFormatter + summarize kopyaları lib/
+// post-format'a taşındı (tek kaynak kuralı — Sprint 9 statusLabels dersi).
 
 export default async function PortalPage({
   searchParams,
@@ -100,6 +94,14 @@ export default async function PortalPage({
           >
             Yol Haritası →
           </a>
+          <Show when="signed-in">
+            <Link
+              href="/portal/oyladiklarim"
+              className="mt-2 ml-4 inline-block text-sm font-medium text-primary underline-offset-4 hover:underline"
+            >
+              Oyladıklarım →
+            </Link>
+          </Show>
         </div>
 
         <Show when="signed-in">
@@ -218,7 +220,7 @@ export default async function PortalPage({
                         </Link>
                       </CardTitle>
                       <CardDescription className="flex items-center gap-2">
-                        {dateFormatter.format(post.updatedAt)}
+                        {trDateFormatter.format(post.updatedAt)}
                         <StatusBadge status={post.status} />
                         <CommentCountBadge
                           postId={post.id}
@@ -283,7 +285,7 @@ export default async function PortalPage({
                         </Show>
                       </div>
                       <CardDescription className="flex items-center gap-2">
-                        {dateFormatter.format(post.createdAt)}
+                        {trDateFormatter.format(post.createdAt)}
                         <StatusBadge status={post.status} />
                         <CommentCountBadge
                           postId={post.id}

@@ -508,6 +508,33 @@ Yapılacaklar:
 
 ---
 
+## Sprint 15: "Oyladıklarım" Sayfası (Faz 2)
+
+> **Durum (2026-09-01):** 🚧 Uygulandı — üretim doğrulaması bekleniyor.
+>
+> - **/portal/oyladiklarim:** kullanıcının oy verdiği fikirler, en son
+>   oyladığı üstte. Oy geri çekme mevcut VoteButton + DELETE /api/votes
+>   ile çalışır; geri çekilen fikir listeden sonraki yenilemede kalkar.
+> - İki sorgu: kullanıcının oyları (unique(user_id, post_id) sayesinde
+>   fikir başına tek satır) + bu fikirlerin toplam oy/yorum sayıları
+>   (countDistinct, iç notlar hariç — Sprint 13 pattern'i).
+> - Giriş yapılmamışsa giriş CTA'lı boş durum; hiç oy yoksa "Fikirlere
+>   göz at" CTA'lı boş durum.
+> - Portal başlığına "Oyladıklarım →" linki (yalnızca girişli kullanıcıya
+>   görünür — Show when="signed-in").
+> - Portal'daki yerel dateFormatter + summarize lib/post-format'a
+>   taşındı (tek kaynak kuralı — Sprint 9 statusLabels dersi).
+
+**Hedef:** Kullanıcının kendi oyunu takip edebilmesi (Canny "My votes";
+docs/oxalpha.txt §2.A votes veri modeli).
+
+Yapılacaklar:
+- Statik rota /portal/oyladiklarim (/portal/[id] ile çakışmasız: statik
+  segment önceliği + [id] uuid doğrulaması); liste + iki boş durum;
+  portal linki; summarize/dateFormatter tek kaynağa taşındı.
+
+---
+
 ## 🗺️ Faz 2 Yol Haritası (2026-09-01 güncellemesi)
 
 Canny araştırmasına (docs/deepseek.txt, docs/oxalpha.txt) dayalı plan;

@@ -1,5 +1,6 @@
-// Post durumu etiketleri ve tarih formatı — portal, roadmap, dialog ve CSV
-// export'un ortak kaynağı (durum etiketleri canny.md §2'deki akışa karşılık gelir).
+// Post durumu etiketleri, tarih formatı ve kart metin yardımcıları —
+// portal, roadmap, dialog ve CSV export'un ortak kaynağı (durum etiketleri
+// canny.md §2'deki akışa karşılık gelir).
 
 export const statusLabels: Record<string, string> = {
   open: "Açık",
@@ -31,3 +32,11 @@ export const trDateTimeFormatter = new Intl.DateTimeFormat("tr-TR", {
   hour: "2-digit",
   minute: "2-digit",
 });
+
+// Kartlardaki uzun açıklamaları kısaltır (portal + oyladıklarım sayfası
+// aynı kaynağı kullanır — plan.md Sprint 15).
+export function summarize(text: string, maxLength = 160) {
+  return text.length > maxLength
+    ? `${text.slice(0, maxLength).trimEnd()}…`
+    : text;
+}
