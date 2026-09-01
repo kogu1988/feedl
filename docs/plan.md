@@ -609,6 +609,27 @@ Yapılacaklar:
 
 ---
 
+## Sprint 19: Markalı Hata Sayfası (Faz 2)
+
+> **Durum (2026-09-01):** 🚧 Uygulandı — üretim doğrulaması bekleniyor.
+>
+> - **app/error.tsx (client component):** beklenmeyen çalışma zamanı
+>   hatalarında 404 ile aynı görsel dili kullanan karşılama (uyarı
+>   ikonu + "Bir şeyler ters gitti" + açıklama). "Tekrar dene" butonu
+>   reset() ile segmenti yeniden render eder; "Portala dön" çıkışı var.
+> - Hata detayı kullanıcıya gösterilmez; yalnızca tarayıcı konsoluna
+>   yazılır (docs/standarts.md sızıntı kuralı).
+> - Kapsam notu: root layout'un kendisindeki hatalar için global-error
+>   gerekir; MVP'de gerek görülmedi (üst bar statik, risk düşük).
+
+**Hedef:** Çalışma zamanı hatalarında bile marka deneyiminin bozulmaması
+(404'ün kardeşi; Faz 2 tasarım cilası).
+
+Yapılacaklar:
+- app/error.tsx eklendi; planlanmış tek dosyalık değişiklik.
+
+---
+
 ## 🗺️ Faz 2 Yol Haritası (2026-09-01 güncellemesi)
 
 Canny araştırmasına (docs/deepseek.txt, docs/oxalpha.txt) dayalı plan;
