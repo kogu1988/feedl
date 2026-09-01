@@ -1,4 +1,5 @@
 import { and, count, desc, eq, inArray, sql } from "drizzle-orm";
+import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
 import { Show, SignInButton } from "@clerk/nextjs";
 import { RocketIcon, SearchIcon, ThumbsUpIcon } from "lucide-react";
@@ -156,7 +157,14 @@ export default async function PortalPage({
                 {shippedPosts.map((post) => (
                   <Card key={post.id}>
                     <CardHeader>
-                      <CardTitle className="leading-snug">{post.title}</CardTitle>
+                      <CardTitle className="leading-snug">
+                        <Link
+                          href={`/portal/${post.id}`}
+                          className="underline-offset-4 transition-colors hover:text-primary hover:underline"
+                        >
+                          {post.title}
+                        </Link>
+                      </CardTitle>
                       <CardDescription className="flex items-center gap-2">
                         {dateFormatter.format(post.updatedAt)}
                         <StatusBadge status={post.status} />
@@ -179,7 +187,14 @@ export default async function PortalPage({
                   <Card key={post.id}>
                     <CardHeader>
                       <div className="flex items-start justify-between gap-3">
-                        <CardTitle className="leading-snug">{post.title}</CardTitle>
+                        <CardTitle className="leading-snug">
+                          <Link
+                            href={`/portal/${post.id}`}
+                            className="underline-offset-4 transition-colors hover:text-primary hover:underline"
+                          >
+                            {post.title}
+                          </Link>
+                        </CardTitle>
                         <Show when="signed-in">
                           <VoteButton
                             postId={post.id}

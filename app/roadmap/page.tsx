@@ -84,7 +84,12 @@ export default async function RoadmapPage() {
                     <Card key={post.id}>
                       <CardHeader>
                         <CardTitle className="text-base leading-snug">
-                          {post.title}
+                          <Link
+                            href={`/portal/${post.id}`}
+                            className="underline-offset-4 transition-colors hover:text-primary hover:underline"
+                          >
+                            {post.title}
+                          </Link>
                         </CardTitle>
                         <CardDescription className="flex items-center gap-2">
                           <StatusBadge status={post.status} />

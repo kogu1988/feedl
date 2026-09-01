@@ -1,4 +1,5 @@
 import {
+  boolean,
   index,
   pgEnum,
   pgTable,
@@ -99,3 +100,28 @@ export const votes = pgTable(
 
 export type Vote = typeof votes.$inferSelect;
 export type NewVote = typeof votes.$inferInsert;
+
+// comments: Fikir altı yorumlar (plan.md Sprint 10). is_internal=true olanlar
+// Canny'deki "internal note" modelidir: sadece admin görür, müşteriye
+// asla render edilmez (filtre hem sayfada hem API'de uygulanır).
+export const comments = pgTable(
+  "comments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    postId: uuid("post_id")
+      .notNull()
+      .references(() => posts.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    body: text("body").notNull(),
+    isInternal: boolean("is_internal").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [index("comments_post_created_idx").on(table.postId, table.createdAt)],
+);
+
+export type Comment = typeof comments.$inferSelect;
+export type NewComment = typeof comments.$inferInsert;

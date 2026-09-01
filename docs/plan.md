@@ -382,6 +382,36 @@ Yapılacaklar:
 
 ---
 
+## Sprint 10: Yorumlar + Post Detay Sayfası (Faz 2 adım 3)
+
+> **Durum (2026-09-01):** 🚧 Kod tamamlandı — üretim testi bekliyor.
+>
+> - **comments tablosu:** post_id (FK cascade) + user_id (FK cascade) +
+>   body + is_internal + created_at; index (post_id, created_at).
+>   Migration 0004 canlı DB'ye drizzle-kit generate+migrate ile
+>   uygulandı. Duplicate test postu "Fikir önerisi" kullanıcı onayıyla
+>   DB'den silindi.
+> - **POST /api/posts/[id]/comments:** giriş zorunlu; gövde 2-2000
+>   karakter (Zod). is_internal bayrağı yalnızca admin oturumunda
+>   dikkate alınır — istemciden gelen bayrağa güvenilmez.
+> - **Post detay sayfası /portal/[id]:** tam açıklama, durum etiketi,
+>   oy butonu; admin'e ai_summary kutusu ("AI Özeti — yalnızca admin").
+>   Yorum listesi kronolojik; iç notlar amber "İç not" rozetiyle
+>   yalnızca admin'e görünür (hem sayfa sorgusu hem render filtreli).
+>   Geçersiz/uuid olmayan id → 404.
+> - **Yorum formu** (components/custom/comment-form.tsx): RHF + Zod;
+>   admin için "İç not" checkbox'ı (shadcn checkbox ilk kez registry'den
+>   eklendi); başarıda reset + router.refresh().
+> - Portal ve roadmap kart başlıkları detay sayfasına link oldu.
+> - Opsiyonel sonraki adım (ertelendi): durum değişince admin'e
+>   otomatik "durum güncellemesi" iç notu düşme (Canny davranışı).
+
+**Hedef:** Fikirlere yorum yazma + admin iç notları (canny.md "MVP
+sonrası"; docs/oxalpha.txt §2.A yorumlar + §G internal notes; kritik UX:
+yorum yazmak etkileşimi canlandırır, internal note müşteriye görünmez).
+
+---
+
 ## 🗺️ Faz 2 Yol Haritası (2026-09-01 güncellemesi)
 
 Canny araştırmasına (docs/deepseek.txt, docs/oxalpha.txt) dayalı plan;
