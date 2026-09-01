@@ -115,6 +115,19 @@ docs/                                                 planning docs (source of t
   `is_internal = false` in the JOIN condition itself;
   `CommentCountBadge` is the single visual source (renders nothing at
   0, links to `/portal/[id]#yorumlar`).
+- **"Benzer fikirler" (Sprint 17)**: cosine similarity runs IN Postgres
+  via scalar subquery (`1 - (embedding <=> (select ...))`) — never ship
+  the 2048-dim vector through JS. Display threshold 0.5 (duplicate
+  calibration: generic ≤ 0.489, near-dup ≥ 0.547, see
+  inngest/functions.ts). Two-query load: similarity ids (no joins),
+  then hydrate with countDistinct. Best-effort: failure hides the
+  section. Embedding-less posts get no section.
+- **Inngest has 3 functions** since Sprint 18: `ai-autopilot`,
+  `notify-shipped`, `notify-admin-post-created` (emails
+  `users.role=admin` on post/created; the author's own email is
+  excluded). Email templates share `escapeHtml` from
+  `lib/email/html.ts`; branded boundaries: `app/not-found.tsx` (404) +
+  `app/error.tsx` (500, client, reset()).
 - **FilterTabs** (components/custom/filter-tabs.tsx) is the shared
   pattern for server-side tab navigation via URL params (?sort=, ?status=).
   Reuse it for new filter/tab UI - no client state, links stay shareable.

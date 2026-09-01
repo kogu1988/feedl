@@ -537,8 +537,8 @@ Yapılacaklar:
 
 ## Sprint 16: Özel 404 Sayfası (Faz 2 — tasarım cilası)
 
-> **Durum (2026-09-01):** 🚧 Uygulandı — üretim doğrulaması bekleniyor.
->
+> **Durum (2026-09-01):** ✅ Tamamlandı — üretimde doğrulandı (kullanıcı
+> testi "hepsi tamam").
 > - **app/not-found.tsx:** feedl üst barı root layout'tan otomatik gelir;
 >   görsel dil portaldaki boş durumlarla aynı (kesikli kenarlık,
 >   merkezli metin). Büyük 404 + "Sayfa bulunamadı" açıklaması +
@@ -558,8 +558,8 @@ Yapılacaklar:
 
 ## Sprint 17: "Benzer Fikirler" Bölümü (Faz 2)
 
-> **Durum (2026-09-01):** 🚧 Uygulandı — üretim doğrulaması bekleniyor.
->
+> **Durum (2026-09-01):** ✅ Tamamlandı — üretimde doğrulandı (kullanıcı
+> testi "hepsi tamam").
 > - **Detay sayfası /portal/[id] altında "Benzer fikirler":** embedding
 >   altyapısı (pgvector cosine) ile en benzer en fazla 3 fikir; Canny
 >   related posts modeli.
@@ -584,8 +584,8 @@ Yapılacaklar:
 
 ## Sprint 18: Admin'e Yeni Fikir Bildirimi (Faz 2)
 
-> **Durum (2026-09-01):** 🚧 Uygulandı — üretim doğrulaması bekleniyor.
->
+> **Durum (2026-09-01):** ✅ Tamamlandı — üretimde doğrulandı (kullanıcı
+> testi "hepsi tamam").
 > - **Yeni Inngest fonksiyonu notify-admin-post-created:** post/created
 >   event'ini dinler (ai-autopilot ile aynı event — çoklu tüketici).
 > - **Alıcılar DB'den:** users.role=admin (tek kaynak); yazarın kendi
@@ -611,8 +611,8 @@ Yapılacaklar:
 
 ## Sprint 19: Markalı Hata Sayfası (Faz 2)
 
-> **Durum (2026-09-01):** 🚧 Uygulandı — üretim doğrulaması bekleniyor.
->
+> **Durum (2026-09-01):** ✅ Tamamlandı — üretimde doğrulandı (kullanıcı
+> testi "hepsi tamam").
 > - **app/error.tsx (client component):** beklenmeyen çalışma zamanı
 >   hatalarında 404 ile aynı görsel dili kullanan karşılama (uyarı
 >   ikonu + "Bir şeyler ters gitti" + açıklama). "Tekrar dene" butonu
