@@ -337,6 +337,30 @@ docs/oxalpha.txt §6 kritik UX detayları).
 
 ---
 
+## Sprint 9: Tasarım/UI Cilası (Faz 2 adım 2)
+
+> **Durum (2026-09-01):** 🚧 Devam ediyor — ilk iki parça tamam: ortak üst
+> bar + landing page. Sırada portal görsel cilası.
+
+**Hedef:** Arayüzü "ürün" görünümüne kavuşturmak (referans: `DESIGN.md` —
+Base UI dokümantasyonu; docs/deepseek.txt §1 Feedback Portal, docs/
+oxalpha.txt §6 kritik UX detayları).
+
+Yapılacaklar:
+- **Ortak site üst barı (layout.tsx):** "feedl" markası + Portal / Yol
+  Haritası linkleri + sağda Giriş/Kayıt/UserButton; Sprint 2'deki geçici
+  barın yerine geçti.
+- **Landing page ("/"):** Kayıt olmayan ziyaretçiye hero + özellik
+  kartları + CTA gösterir; giriş yapmış kullanıcı Sprint 2'deki role
+  bazlı yönlendirmeyle dashboard/portala düşer. Bu vesileyle gerçek bir
+  hata giderildi: redirect() try bloğu içindeydi; NEXT_REDIRECT hatası
+  catch tarafından yakalanıp admin "/" üzerinden dashboard yerine
+  portala düşüyordu. Hedef artık try DIŞINDA redirect ediliyor.
+- **Portal görsel cilası:** kart düzeni, durum etiketi renkleri ve boş
+  durumların tutarlılığı — sıradaki parça.
+
+---
+
 ## 🗺️ Faz 2 Yol Haritası (2026-09-01 güncellemesi)
 
 Canny araştırmasına (docs/deepseek.txt, docs/oxalpha.txt) dayalı plan;
