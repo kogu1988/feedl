@@ -711,10 +711,22 @@ dediği yerler güncel değil:
   kaynak oyu taşınmaz (unique kısıt korunur). Admin arayüzü: detay
   sayfasında aramalı hedef seçici (GET /api/admin/posts?q=) + geri alma
   butonu (merged_from_post_id iziyle yalnızca taşınan satırlar döner).
-- ☐ **Sprint 21 — Etiketler + Kategoriler + Post Tipi (P1.3 lite):**
-  `tags` + `categories` + `post_tags` + `post_type` (feature/bug/
-  usability); AI keyword'leri etiketlerle eşleşir; portalda etiket
-  filtresi; dashboard'da etikete göre gruplama.
+- ✅ **Sprint 21 — Etiketler + Kategoriler + Post Tipi (P1.3 lite)**
+  (2026-09-01, commit 303a189, üretimde doğrulandı): `posts.postType`
+  enum (feature/bug/usability — Canny "category" kavramının karşılığı)
+  + `tags`/`post_tags` serbest form etiketleri. Kapsam kararı: ayrı
+  categories tablosu YOK — tek taksonomi (postType yapılandırılmış tür,
+  tags serbest etiket). AI prompt'a `type` alanı eklendi
+  (docs/prompts.md §1 + lib/ai/prompts.ts senkron); autopilot yeni
+  fikirde postType doldurup keyword'leri normalizeTags ile (Türkçe
+  lowercase, max 5, 2-30 krk) tags'a yazıyor. Portal + dashboard'da
+  ?tag= filtre sekmeleri (FilterTabs artık extraParams ile diğer
+  parametreleri koruyor); kartlarda TypeBadge + tıklanabilir TagChips
+  (etiketi olmayan eski fikirlerde KeywordChips fallback). Admin detay
+  sayfasında tür seçici (PATCH /api/admin/posts artık status ve/veya
+  postType kabul eder; değişim otomatik iç not düşer). CSV'ye Tür +
+  Etiketler kolonları. Eski 3 fikir için etiket backfill yapıldı
+  (postType null — admin manuel set eder).
 - ☐ **Sprint 22 — Admin Bulk Actions + Kayıtlı Görünümler (P1.4):**
   çoklu seçim ile toplu status/etiket; filtre kombinasyonlarını kaydet
   (saved views); server-side pagination.

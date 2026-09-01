@@ -134,8 +134,24 @@ docs/                                                 planning docs (source of t
   `lib/email/html.ts`; branded boundaries: `app/not-found.tsx` (404) +
   `app/error.tsx` (500, client, reset()).
 - **FilterTabs** (components/custom/filter-tabs.tsx) is the shared
-  pattern for server-side tab navigation via URL params (?sort=, ?status=).
-  Reuse it for new filter/tab UI - no client state, links stay shareable.
+  pattern for server-side tab navigation via URL params (?sort=, ?status=,
+  ?tag=). Reuse it for new filter/tab UI - no client state, links stay
+  shareable. Since Sprint 21 it takes `extraParams` to preserve other
+  filter params when switching tabs (multi-filter pages MUST pass it,
+  or switching one filter silently clears the others).
+- **Tags / post type model (Sprint 21)**: `posts.postType` enum
+  (feature/bug/usability) = Canny's structured "category"; `tags` +
+  `post_tags` = freeform tags. NO separate categories table (single
+  taxonomy decision, Sprint 21). Tag names are normalized lowercase via
+  `toLocaleLowerCase("tr")` (`normalizeTags` in lib/ai/analysis.ts -
+  max 5, 2-30 chars); ai-autopilot step "sync-tags" upserts them from
+  keywords and relinks post_tags idempotently. Tag chips: **TagChips**
+  (linked ?tag= filter) is primary; KeywordChips only as fallback for
+  old posts without tags. Read pattern for per-post tags: two queries
+  (main list, then post_tags join filtered by page ids) - never a third
+  join (fan-out). Per-post type badge = TypeBadge, admin picker =
+  TypeSelect; PATCH /api/admin/posts accepts status and/or postType
+  (at least one required) and drops an internal note for each change.
 - **Portal default sort is "top" (vote count) since Sprint 12** - this
   SUPERSEDES plan.md Sprint 2's "en son eklenen en üstte" default
   (documented as BEHAVIOR CHANGE in plan.md). While a search query is
