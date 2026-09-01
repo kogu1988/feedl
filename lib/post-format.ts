@@ -11,6 +11,13 @@ export const statusLabels: Record<string, string> = {
 // Roadmap kolon sırası (plan.md Sprint 8): planlanan → geliştirilen → yayında.
 export const roadmapStatuses = ["planned", "in-progress", "shipped"] as const;
 
+// AI duygu analizi etiketleri (posts.sentiment_label; prompts.md §sentiment).
+export const sentimentLabels: Record<string, string> = {
+  pozitif: "Pozitif",
+  notr: "Nötr",
+  negatif: "Negatif",
+};
+
 export const trDateFormatter = new Intl.DateTimeFormat("tr-TR", {
   day: "numeric",
   month: "long",

@@ -419,6 +419,26 @@ yorum yazmak etkileşimi canlandırır, internal note müşteriye görünmez).
 
 ---
 
+## Sprint 11: AI Etiketleri + Dashboard Cilası (Faz 2)
+
+> **Durum (2026-09-01):** 🚧 Kod tamamlandı — üretim testi bekliyor.
+>
+> - **SentimentBadge + KeywordChips** ortak bileşenleri; sentiment
+>   etiketleri lib/post-format'a eklendi (pozitif yeşil / notr nötr /
+>   negatif gül kurusu).
+> - **Portal + detay sayfası AI satırı:** duygu + anahtar kelimeler
+>   herkese açık (kullanıcı kararı); aiSummary admin'de kalır.
+>   AI verisi olmayan postlarda satır hiç render edilmez.
+> - **Dashboard cilası:** istatistik satırı (Toplam Fikir / Toplam Oy /
+>   Açık / Yayınlanan — tek sorgudan JS'te hesaplanır), AI kolonu
+>   (duygu + ilk 2 anahtar kelime), başlıklar detay sayfasına link.
+
+**Hedef:** AI analizinin görünür olması (docs/oxalpha.txt §H otomatik
+etiketleme; dashboard'a admin için tek bakışta durum) — docs/deepseek.txt
+§2 "Analiz" adımının UI karşılığı.
+
+---
+
 ## 🗺️ Faz 2 Yol Haritası (2026-09-01 güncellemesi)
 
 Canny araştırmasına (docs/deepseek.txt, docs/oxalpha.txt) dayalı plan;

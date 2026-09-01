@@ -5,6 +5,8 @@ import { Show, SignInButton } from "@clerk/nextjs";
 import { RocketIcon, SearchIcon, ThumbsUpIcon } from "lucide-react";
 
 import { NewPostDialog } from "@/components/custom/new-post-dialog";
+import { KeywordChips } from "@/components/custom/keyword-chips";
+import { SentimentBadge } from "@/components/custom/sentiment-badge";
 import { StatusBadge } from "@/components/custom/status-badge";
 import { VoteButton } from "@/components/custom/vote-button";
 import { Button } from "@/components/ui/button";
@@ -170,7 +172,18 @@ export default async function PortalPage({
                         <StatusBadge status={post.status} />
                       </CardDescription>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="grid gap-2">
+                        {post.sentimentLabel ||
+                        (post.aiKeywords && post.aiKeywords.length > 0) ? (
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            {post.sentimentLabel ? (
+                              <SentimentBadge sentiment={post.sentimentLabel} />
+                            ) : null}
+                            {post.aiKeywords && post.aiKeywords.length > 0 ? (
+                              <KeywordChips keywords={post.aiKeywords} max={4} />
+                            ) : null}
+                          </div>
+                        ) : null}
                       <p className="whitespace-pre-line text-sm text-muted-foreground">
                         {summarize(post.description)}
                       </p>
@@ -220,7 +233,18 @@ export default async function PortalPage({
                         <StatusBadge status={post.status} />
                       </CardDescription>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="grid gap-2">
+                        {post.sentimentLabel ||
+                        (post.aiKeywords && post.aiKeywords.length > 0) ? (
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            {post.sentimentLabel ? (
+                              <SentimentBadge sentiment={post.sentimentLabel} />
+                            ) : null}
+                            {post.aiKeywords && post.aiKeywords.length > 0 ? (
+                              <KeywordChips keywords={post.aiKeywords} max={4} />
+                            ) : null}
+                          </div>
+                        ) : null}
                       <p className="whitespace-pre-line text-sm text-muted-foreground">
                         {summarize(post.description)}
                       </p>
@@ -247,6 +271,8 @@ async function loadPosts(searchQuery: string) {
       title: posts.title,
       description: posts.description,
       status: posts.status,
+      sentimentLabel: posts.sentimentLabel,
+      aiKeywords: posts.aiKeywords,
       createdAt: posts.createdAt,
       updatedAt: posts.updatedAt,
       voteCount: count(votes.id),

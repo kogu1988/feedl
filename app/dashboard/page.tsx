@@ -1,7 +1,10 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { DownloadIcon } from "lucide-react";
 import { count, desc, eq } from "drizzle-orm";
 
+import { KeywordChips } from "@/components/custom/keyword-chips";
+import { SentimentBadge } from "@/components/custom/sentiment-badge";
 import { StatusSelect } from "@/components/custom/status-select";
 import {
   Card,
@@ -45,6 +48,18 @@ export default async function DashboardPage() {
     loadError = true;
   }
 
+  // İstatistik satırı (plan.md Sprint 11): tek sorgudan JS tarafında hesaplanır.
+  const totalVotes = rows.reduce((sum, row) => sum + row.voteCount, 0);
+  const openCount = rows.filter((row) => row.status === "open").length;
+  const shippedCount = rows.filter((row) => row.status === "shipped").length;
+
+  const stats = [
+    { label: "Toplam Fikir", value: rows.length },
+    { label: "Toplam Oy", value: totalVotes },
+    { label: "Açık (bekleyen)", value: openCount },
+    { label: "Yayınlanan", value: shippedCount },
+  ];
+
   return (
     <main className="container mx-auto max-w-5xl p-4 sm:p-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -64,6 +79,19 @@ export default async function DashboardPage() {
           CSV İndir
         </a>
       </div>
+
+      {!loadError ? (
+        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {stats.map((stat) => (
+            <div key={stat.label} className="rounded-lg border p-4">
+              <p className="text-xs font-medium text-muted-foreground">
+                {stat.label}
+              </p>
+              <p className="mt-1 text-2xl font-bold tabular-nums">{stat.value}</p>
+            </div>
+          ))}
+        </div>
+      ) : null}
 
       <Card className="mt-8">
         <CardHeader>
@@ -87,25 +115,43 @@ export default async function DashboardPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[110px]">Oy</TableHead>
+                  <TableHead className="w-[60px]">Oy</TableHead>
                   <TableHead>Başlık</TableHead>
-                  <TableHead className="w-[150px]">Tarih</TableHead>
+                  <TableHead className="w-[200px]">AI</TableHead>
+                  <TableHead className="w-[140px]">Tarih</TableHead>
                   <TableHead className="w-[170px] text-right">Durum</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {rows.map((post) => (
                   <TableRow key={post.id}>
-                    <TableCell className="font-medium">
+                    <TableCell className="font-medium tabular-nums">
                       {post.voteCount}
                     </TableCell>
                     <TableCell>
-                      <div className="max-w-[420px] truncate font-medium">
-                        {post.title}
+                      <div className="max-w-[360px] truncate font-medium">
+                        <Link
+                          href={`/portal/${post.id}`}
+                          className="underline-offset-4 transition-colors hover:text-primary hover:underline"
+                        >
+                          {post.title}
+                        </Link>
                       </div>
                       <div className="font-mono text-xs text-muted-foreground">
                         {post.id}
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      {post.sentimentLabel ? (
+                        <div className="grid gap-1">
+                          <SentimentBadge sentiment={post.sentimentLabel} />
+                          {post.aiKeywords && post.aiKeywords.length > 0 ? (
+                            <KeywordChips keywords={post.aiKeywords} max={2} />
+                          ) : null}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {dateFormatter.format(post.createdAt)}
@@ -136,6 +182,8 @@ async function loadPosts() {
       id: posts.id,
       title: posts.title,
       status: posts.status,
+      sentimentLabel: posts.sentimentLabel,
+      aiKeywords: posts.aiKeywords,
       createdAt: posts.createdAt,
       voteCount: count(votes.id),
     })

@@ -7,6 +7,8 @@ import { z } from "zod";
 import { ArrowLeftIcon, EyeOffIcon, SparklesIcon } from "lucide-react";
 
 import { CommentForm } from "@/components/custom/comment-form";
+import { KeywordChips } from "@/components/custom/keyword-chips";
+import { SentimentBadge } from "@/components/custom/sentiment-badge";
 import { StatusBadge } from "@/components/custom/status-badge";
 import { VoteButton } from "@/components/custom/vote-button";
 import {
@@ -97,6 +99,18 @@ export default async function PostDetailPage({
             {post.description}
           </p>
 
+          {post.sentimentLabel ||
+          (post.aiKeywords && post.aiKeywords.length > 0) ? (
+            <div className="flex flex-wrap items-center gap-1.5">
+              {post.sentimentLabel ? (
+                <SentimentBadge sentiment={post.sentimentLabel} />
+              ) : null}
+              {post.aiKeywords && post.aiKeywords.length > 0 ? (
+                <KeywordChips keywords={post.aiKeywords} max={6} />
+              ) : null}
+            </div>
+          ) : null}
+
           {isAdmin && post.aiSummary ? (
             <div className="grid gap-1 rounded-md border border-primary/20 bg-primary/5 p-3">
               <p className="flex items-center gap-1.5 text-xs font-medium text-primary">
@@ -180,6 +194,8 @@ async function loadPost(postId: string, userId: string | null) {
       title: posts.title,
       description: posts.description,
       status: posts.status,
+      sentimentLabel: posts.sentimentLabel,
+      aiKeywords: posts.aiKeywords,
       aiSummary: posts.aiSummary,
       createdAt: posts.createdAt,
       voteCount: count(votes.id),
