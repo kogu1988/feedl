@@ -90,6 +90,9 @@ export function StatusSelect({
 
       setPendingStatus(null);
       setNote("");
+      // Optimistik değeri bırak, sunucudan gelen prop'a dön (aksi halde
+      // optimistic !== null kalır ve sonraki dialog butonu kilitli kalır).
+      setOptimistic(null);
       startTransition(() => router.refresh());
     } catch {
       setOptimistic(null);
