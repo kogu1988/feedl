@@ -139,6 +139,15 @@ docs/                                                 planning docs (source of t
   shareable. Since Sprint 21 it takes `extraParams` to preserve other
   filter params when switching tabs (multi-filter pages MUST pass it,
   or switching one filter silently clears the others).
+- **Admin table pattern (Sprint 22)**: dashboard table lives in
+  components/custom/posts-table.tsx (PostsTable - client component
+  with row checkboxes + bulk status/tag bar) and saved-view-bar.tsx
+  (SavedViewBar - save/open/delete filter combos). Bulk API:
+  POST /api/admin/posts/bulk (only emits post/status.changed for rows
+  whose status actually changed + one summary internal note per post);
+  saved views: /api/admin/views (params stored as query string in
+  `saved_views`, applied via plain /dashboard?... links). StatusSelect
+  per-row stays intact - import it in new tables, not the whole markup.
 - **Tags / post type model (Sprint 21)**: `posts.postType` enum
   (feature/bug/usability) = Canny's structured "category"; `tags` +
   `post_tags` = freeform tags. NO separate categories table (single
