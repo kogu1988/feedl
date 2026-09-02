@@ -825,10 +825,21 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   güncellenir). **Not:** bildirim testi ikinci kullanıcı (retha10@
   ethereal.email kaydı) ile yapılacak; tek kullanıcılı DB'de mail
   yalnızca yazar/oy verene gider (admin'e gitmez).
-- ☐ **Sprint 24 — Yorum Revizyonu (P1.1):** threaded reply
-  (`parentCommentId`), edit/delete, admin etiketi, mention
-  (`@kullanıcı` — 2026-09-02 gözden geçirmesiyle eklendi), yorum
-  bildirimi (post sahibine; admin cevabında oy verenlere).
+- ✅ **Sprint 24 — Yorum Revizyonu (P1.1)** (2026-09-02, commit
+  8ad6cd4 + migration düzeltmesi be8ba2f, üretimde doğrulandı —
+  kullanıcı testi, iki kullanıcıyla): `comments.parent_id` (TEK SEVİYE
+  thread; parent'a parent olamaz — API 400) + `comments.edited_at`
+  (migration 0010); `PATCH/DELETE /api/comments/[commentId]` (kendi
+  yorumu herkes, admin herkesinki; silmede cascade yanıt); CommentCard
+  bileşeni (düzenle/sil/yanıt, "(düzenlendi)", silme onayı) + CommentForm
+  yanıtı modu (parentId + İptal); portal detayında girintili yanıt
+  render'ı. **Bildirim:** Inngest `notify-comment-created`
+  (post/comment.created; alıcılar DB'den: fikir yazarı + parent yorum
+  yazarı, yorumcu hariç; iç notlara bildirim yok) + lib/email/comment.ts
+  ("Fikrine yeni yorum" / "Yorumuna yanıt geldi", ideaUrl detay linki).
+  **Kapsam dışı (ileride):** @mention etiketleme; satır-bazlı status
+  değişiminde not girişi (not yalnızca bulk çubuğunda — kullanıcı testi
+  bu yolla: satırı seç → açıklama yaz → durumu değiştir).
 - ☐ **Sprint 25 — Bağımsız Changelog (P2.1):** `changelog_entries` +
   `changelog_post_links`; markdown gövde, label, yayın tarihi; public
   `/portal/changelog` route; post detayından release note bağlantısı.

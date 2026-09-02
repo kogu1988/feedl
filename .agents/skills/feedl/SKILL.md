@@ -127,12 +127,31 @@ docs/                                                 planning docs (source of t
   inngest/functions.ts). Two-query load: similarity ids (no joins),
   then hydrate with countDistinct. Best-effort: failure hides the
   section. Embedding-less posts get no section.
-- **Inngest has 3 functions** since Sprint 18: `ai-autopilot`,
+- **Inngest has 4 functions** since Sprint 24: `ai-autopilot`,
   `notify-shipped`, `notify-admin-post-created` (emails
   `users.role=admin` on post/created; the author's own email is
-  excluded). Email templates share `escapeHtml` from
+  excluded), `notify-comment-created` (post/comment.created; emails
+  post author + parent-comment author, commenter excluded, internal
+  notes skipped). Email templates share `escapeHtml` from
   `lib/email/html.ts`; branded boundaries: `app/not-found.tsx` (404) +
   `app/error.tsx` (500, client, reset()).
+- **Schema change checklist (hard rule)**: after editing
+  lib/db/schema.ts ALWAYS run `npx drizzle-kit generate` then
+  `npx drizzle-kit migrate` BEFORE committing. `migrate` prints
+  "applied successfully" even when nothing is new - that output does
+  NOT prove the new columns exist. Sprint 24 shipped code referencing
+  comments.edited_at with no migration -> every post detail page
+  500'd in production until migration 0010 was generated and applied.
+- **Ethereal.email is a virtual inbox reachable ONLY via its own SMTP**
+  - third-party mail (Clerk verification codes) NEVER arrives there.
+  Clerk sign-up with an @ethereal.email address requires disabling
+  email verification in Clerk Dashboard. Users who signed up BEFORE
+  the Clerk webhook endpoint existed are NOT in the DB
+  (posts.user_id FK fails -> "Fikir kaydedilemedi") - fix: create
+  webhook (user.created/updated/deleted -> /api/webhooks/clerk),
+  update CLERK_WEBHOOK_SIGNING_SECRET in Vercel (regenerated when the
+  endpoint was recreated, 2026-09-02), manually insert the pre-existing
+  user with their Clerk user ID from the dashboard.
 - **FilterTabs** (components/custom/filter-tabs.tsx) is the shared
   pattern for server-side tab navigation via URL params (?sort=, ?status=,
   ?tag=). Reuse it for new filter/tab UI - no client state, links stay
