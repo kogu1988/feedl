@@ -808,10 +808,23 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   state'i, işlem sonrası router.refresh(). Server-side pagination
   kapsam dışı bırakıldı (mevcut limit(200) yeterli — ileride
   gerekirse ayrı sprint).
-- ☐ **Sprint 23 — Status Yaşam Döngüsü Genişletme (P1.5):** `under-review`
-  ve `closed` statüleri; `post_status_history` tablosu; status
-  değişiminde açıklama notu → bildirim e-postasına dahil; roadmap'te
-  gösterilecek kolon seçimi.
+- ✅ **Sprint 23 — Status Yaşam Döngüsü Genişletme (P1.5)**
+  (2026-09-02, commit 8fef6e5 + UX düzeltmesi 9087e79, üretimde
+  doğrulandı — kullanıcı testi "her şey tamam"): `under-review`
+  (İncelemede, menekşe rozet) + `closed` (Kapatıldı, üstü çizili)
+  statüleri (migration 0009); `post_status_history` tablosu — tekil
+  PATCH ve bulk rotalarında best-effort yazım; değişim açıklaması
+  (bulk çubuğunda 500 krk textarea) → event'in opsiyonel `note` alanı
+  → shipped e-postasında "Ekibin notu" bloğu (html + text, escapeHtml).
+  StatusBadge/FilterTabs/CSV etiketleri yeni statülerle genişledi.
+  **Roadmap kararı:** kolonlar planned/in-progress/shipped kaldı;
+  under-review ve closed roadmap dışında (Canny modeli). Dashboard
+  filtre sekmeleri enum'dan otomatik geldi. **UX düzeltmesi:**
+  StatusSelect stale local state yerine optimistik + prop-tabanlı
+  değer + RadioGroup key remount (dropdown işareti sayfa yenilemeden
+  güncellenir). **Not:** bildirim testi ikinci kullanıcı (retha10@
+  ethereal.email kaydı) ile yapılacak; tek kullanıcılı DB'de mail
+  yalnızca yazar/oy verene gider (admin'e gitmez).
 - ☐ **Sprint 24 — Yorum Revizyonu (P1.1):** threaded reply
   (`parentCommentId`), edit/delete, admin etiketi, mention
   (`@kullanıcı` — 2026-09-02 gözden geçirmesiyle eklendi), yorum
