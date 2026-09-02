@@ -9,6 +9,7 @@ import { NewPostDialog } from "@/components/custom/new-post-dialog";
 import { FilterTabs } from "@/components/custom/filter-tabs";
 import { KeywordChips } from "@/components/custom/keyword-chips";
 import { SentimentBadge } from "@/components/custom/sentiment-badge";
+import { embedText } from "@/lib/ai/openrouter";
 import { StatusBadge } from "@/components/custom/status-badge";
 import { TagChips } from "@/components/custom/tag-chips";
 import { TypeBadge } from "@/components/custom/type-badge";
@@ -53,7 +54,23 @@ export default async function PortalPage({
   let loadError = false;
 
   try {
-    rows = await loadPosts(searchQuery, sort, tagFilter);
+    // Sprint 27: arama varsa sorguyu vektöre çevir (best-effort — embedding
+    // başarısız olursa arama FTS+trigram ile devam eder).
+    let queryEmbedding: number[] | undefined;
+    if (searchQuery) {
+      try {
+        const vector = await embedText(searchQuery);
+        if (vector.length === 2048) {
+          queryEmbedding = vector;
+        }
+      } catch (embedErr) {
+        console.error(
+          "Search query embedding failed (FTS fallback):",
+          embedErr instanceof Error ? embedErr.message : embedErr,
+        );
+      }
+    }
+    rows = await loadPosts(searchQuery, sort, tagFilter, queryEmbedding);
     tagOptions = await loadTagOptions();
 
     if (rows.length > 0) {
@@ -388,8 +405,9 @@ async function loadPosts(
   searchQuery: string,
   sort: "top" | "new",
   tagFilter: string,
+  queryEmbedding?: number[],
 ) {
-  const search = buildPostSearch(searchQuery);
+  const search = buildPostSearch(searchQuery, queryEmbedding);
 
   // Sprint 21: etiket filtresi — posts.id, etiket adıyla eşleşen
   // post_tags bağlantılarıyla sınırlandırılır (normalize lowercase).

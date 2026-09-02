@@ -1,5 +1,6 @@
 import {
   boolean,
+  customType,
   index,
   jsonb,
   pgEnum,
@@ -11,6 +12,15 @@ import {
   vector,
   type AnyPgColumn,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+
+// Sprint 27: tsvector özel tipi — drizzle pg-core'da yerleşik yok;
+// generated kolon (posts.search_vector) bu tiple tanımlanır.
+const tsvector = customType<{ data: string; driverData: string }>({
+  dataType() {
+    return "tsvector";
+  },
+});
 
 export const userRoleEnum = pgEnum("user_role", ["admin", "customer"]);
 
@@ -92,6 +102,12 @@ export const posts = pgTable(
       { onDelete: "set null" },
     ),
     mergedAt: timestamp("merged_at", { withTimezone: true }),
+    // Sprint 27: Türkçe full-text arama kolonu (GENERATED ALWAYS STORED).
+    // İki-argümanlı to_tsvector('turkish', ...) immutable olduğu için
+    // generated kolonda kullanılabilir.
+    searchVector: tsvector("search_vector").generatedAlwaysAs(
+      sql`to_tsvector('turkish', coalesce(title, '') || ' ' || coalesce(description, ''))`,
+    ),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -99,7 +115,10 @@ export const posts = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (table) => [index("posts_created_at_idx").on(table.createdAt)],
+  (table) => [
+    index("posts_created_at_idx").on(table.createdAt),
+    index("posts_search_vector_idx").using("gin", table.searchVector),
+  ],
 );
 
 export type User = typeof users.$inferSelect;
