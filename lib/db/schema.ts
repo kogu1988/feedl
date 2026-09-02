@@ -280,3 +280,52 @@ export const savedViews = pgTable("saved_views", {
 
 export type SavedView = typeof savedViews.$inferSelect;
 export type NewSavedView = typeof savedViews.$inferInsert;
+
+// changelog_entries: Sprint 25 — roadmap'ten BAĞIMSIZ duyuru alanı
+// (Canny changelog modeli; docs/oxalpha.txt §2D). Post ilişkisi
+// changelog_post_links üzerinden çoktan çoğa (bir duyuru birden fazla
+// fikri kapsayabilir). Gövde markdown saklanır; MVP'de düz metin gibi
+// render edilir (whitespace-pre-line), markdown parser sonraki sprintte.
+export const changelogEntries = pgTable("changelog_entries", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  // label: örn. "yeni", "iyileştirme", "düzeltme" — filtreleme için.
+  label: text("label"),
+  publishedAt: timestamp("published_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  createdBy: text("created_by")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+});
+
+export type ChangelogEntry = typeof changelogEntries.$inferSelect;
+export type NewChangelogEntry = typeof changelogEntries.$inferInsert;
+
+// changelog_post_links: duyuru <-> fikir ilişkisi. Fikir silinirse link
+// gider ama duyuru kalır (set null + cascade link tablosunda).
+export const changelogPostLinks = pgTable(
+  "changelog_post_links",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    entryId: uuid("entry_id")
+      .notNull()
+      .references((): AnyPgColumn => changelogEntries.id, {
+        onDelete: "cascade",
+      }),
+    postId: uuid("post_id")
+      .notNull()
+      .references((): AnyPgColumn => posts.id, { onDelete: "cascade" }),
+  },
+  (table) => [
+    unique("changelog_post_links_entry_post_unique").on(
+      table.entryId,
+      table.postId,
+    ),
+    index("changelog_post_links_post_idx").on(table.postId),
+  ],
+);
+
+export type ChangelogPostLink = typeof changelogPostLinks.$inferSelect;
+export type NewChangelogPostLink = typeof changelogPostLinks.$inferInsert; 

@@ -1,8 +1,10 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { DownloadIcon } from "lucide-react";
 import { count, desc, eq, inArray, asc } from "drizzle-orm";
 
 import { FilterTabs } from "@/components/custom/filter-tabs";
+import { ChangelogAdmin } from "@/components/custom/changelog-admin";
 import { PostsTable } from "@/components/custom/posts-table";
 import { SavedViewBar } from "@/components/custom/saved-view-bar";
 import {
@@ -15,6 +17,7 @@ import {
 import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import {
+  changelogEntries,
   postStatusEnum,
   postTags,
   posts,
@@ -22,7 +25,7 @@ import {
   tags,
   votes,
 } from "@/lib/db/schema";
-import { statusLabels } from "@/lib/post-format";
+import { statusLabels, trDateTimeFormatter } from "@/lib/post-format";
 
 // Canlı veri: her istekte DB'den okunur.
 export const dynamic = "force-dynamic";
@@ -50,12 +53,17 @@ export default async function DashboardPage({
   let rows: Awaited<ReturnType<typeof loadPosts>> = [];
   let tagOptions: Awaited<ReturnType<typeof loadTagOptions>> = [];
   let views: Awaited<ReturnType<typeof loadSavedViews>> = [];
+  let changelogData: Awaited<ReturnType<typeof loadChangelogData>> = {
+    entries: [],
+    shippedPosts: [],
+  };
   let loadError = false;
 
   try {
     rows = await loadPosts(tagFilter);
     tagOptions = await loadTagOptions();
     views = await loadSavedViews();
+    changelogData = await loadChangelogData();
   } catch (err) {
     console.error(
       "Dashboard list failed:",
@@ -112,6 +120,27 @@ export default async function DashboardPage({
           ))}
         </div>
       ) : null}
+
+      <Card className="mt-8">
+        <CardHeader>
+          <CardTitle>Güncellemeler (Changelog)</CardTitle>
+          <CardDescription>
+            Portalın herkese açık duyuru sayfasına içerik yaz —{" "}
+            <Link
+              href="/portal/changelog"
+              className="underline underline-offset-4 hover:text-foreground"
+            >
+              /portal/changelog
+            </Link>
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ChangelogAdmin
+            entries={changelogData.entries}
+            shippedPosts={changelogData.shippedPosts}
+          />
+        </CardContent>
+      </Card>
 
       <Card className="mt-8">
         <CardHeader>
@@ -270,4 +299,37 @@ async function loadSavedViews() {
     .from(savedViews)
     .orderBy(desc(savedViews.createdAt))
     .limit(12);
+}
+
+// Sprint 25: changelog paneli verisi — mevcut duyurular + shipped fikirler.
+async function loadChangelogData() {
+  const entryRows = await getDb()
+    .select({
+      id: changelogEntries.id,
+      title: changelogEntries.title,
+      body: changelogEntries.body,
+      label: changelogEntries.label,
+      publishedAt: changelogEntries.publishedAt,
+    })
+    .from(changelogEntries)
+    .orderBy(desc(changelogEntries.publishedAt))
+    .limit(50);
+
+  const shippedRows = await getDb()
+    .select({ id: posts.id, title: posts.title })
+    .from(posts)
+    .where(eq(posts.status, "shipped"))
+    .orderBy(desc(posts.updatedAt))
+    .limit(30);
+
+  return {
+    entries: entryRows.map((row) => ({
+      id: row.id,
+      title: row.title,
+      body: row.body,
+      label: row.label,
+      publishedAtLabel: trDateTimeFormatter.format(row.publishedAt),
+    })),
+    shippedPosts: shippedRows,
+  };
 }

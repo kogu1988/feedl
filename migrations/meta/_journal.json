@@ -78,6 +78,13 @@
       "when": 1788352867905,
       "tag": "0010_steep_stepford_cuckoos",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1788355760369,
+      "tag": "0011_changelog",
+      "breakpoints": true
     }
   ]
 }

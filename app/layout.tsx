@@ -63,6 +63,12 @@ export default function RootLayout({
                   >
                     Yol Haritası
                   </Link>
+                  <Link
+                    href="/portal/changelog"
+                    className="rounded-md px-2 py-1 font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  >
+                    Güncellemeler
+                  </Link>
                 </nav>
               </div>
               <div className="flex items-center gap-3">

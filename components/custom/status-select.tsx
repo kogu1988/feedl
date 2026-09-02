@@ -6,6 +6,15 @@ import { CheckIcon, ChevronDownIcon, Loader2Icon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuRadioGroup,
@@ -45,11 +54,17 @@ export function StatusSelect({
   const [optimistic, setOptimistic] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [pendingStatus, setPendingStatus] = useState<string | null>(null);
+  const [note, setNote] = useState("");
   const router = useRouter();
 
   const current = optimistic ?? status;
 
-  const changeStatus = async (next: string) => {
+  // Menüden durum seçilince doğrudan PATCH atmak yerine dialog açılır:
+  // opsiyonel açıklama girilebilir (Sprint 25a) — shipped bildiriminde
+  // "Ekibin notu" olarak gösterilir. Dialog"u boş geçmek tek tıkla
+  // değiştirmeye yakın hızda kalır.
+  const changeStatus = async (next: string, noteText?: string) => {
     setError(null);
     setOptimistic(next);
 
@@ -57,7 +72,13 @@ export function StatusSelect({
       const res = await fetch("/api/admin/posts", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ postId, status: next }),
+        body: JSON.stringify({
+          postId,
+          status: next,
+          ...(noteText && noteText.trim()
+            ? { note: noteText.trim() }
+            : {}),
+        }),
       });
       const json = (await res.json()) as { success?: boolean; error?: string };
 
@@ -67,6 +88,8 @@ export function StatusSelect({
         return;
       }
 
+      setPendingStatus(null);
+      setNote("");
       startTransition(() => router.refresh());
     } catch {
       setOptimistic(null);
@@ -92,7 +115,11 @@ export function StatusSelect({
           <DropdownMenuRadioGroup
             key={current}
             value={current}
-            onValueChange={(value) => void changeStatus(value)}
+            onValueChange={(value) => {
+              if (value !== current) {
+                setPendingStatus(value);
+              }
+            }}
           >
             {POST_STATUS_OPTIONS.map((option) => (
               <DropdownMenuRadioItem key={option.value} value={option.value}>
@@ -106,6 +133,56 @@ export function StatusSelect({
         </DropdownMenuContent>
       </DropdownMenu>
       {error ? <span className="text-xs text-destructive">{error}</span> : null}
+
+      <Dialog
+        open={pendingStatus !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPendingStatus(null);
+            setNote("");
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              Durum: {statusLabel(current)} → {statusLabel(pendingStatus ?? "")}
+            </DialogTitle>
+            <DialogDescription>
+              Açıklama eklemek isterseniz yazın — shipped bildiriminde
+              &quot;Ekibin notu&quot; olarak gösterilir. Boş bırakabilirsiniz.
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            value={note}
+            onChange={(event) => setNote(event.target.value)}
+            rows={3}
+            maxLength={500}
+            placeholder="Değişim açıklaması (opsiyonel, en fazla 500 karakter)"
+            aria-label="Değişim açıklaması"
+          />
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setPendingStatus(null);
+                setNote("");
+              }}
+            >
+              İptal
+            </Button>
+            <Button
+              onClick={() => void changeStatus(pendingStatus ?? current, note)}
+              disabled={isPending || optimistic !== null}
+            >
+              {isPending || optimistic !== null ? (
+                <Loader2Icon className="size-4 animate-spin" />
+              ) : null}
+              Durumu güncelle
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </span>
   );
 }
