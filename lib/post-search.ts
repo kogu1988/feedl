@@ -101,7 +101,31 @@ export function buildPostSearch(
   const tsQuery = sql`websearch_to_tsquery('turkish', ${rawQuery.trim()})`;
   const ftsCondition = sql`${posts.searchVector} @@ ${tsQuery}`;
 
-  const condition = sql`(${foldCondition} or ${ftsCondition})`;
+  // Trigram koşulu: yalnızca 4+ karakterli token'lar için word_similarity
+  // (yazım hatası toleransı — 'kqytları' -> 'kayıtları'). Kısa token'lar
+  // zaten ILIKE ile yakalanır; kısa token'da word_similarity aşırı genişler.
+  const foldedText = sql`(${foldTitle} || ' ' || ${foldDescription})`;
+  const trigramConditions = tokens
+    .filter((token) => token.length >= 4)
+    .map((token) => sql`word_similarity(${token}, ${foldedText}) > 0.55`);
+
+  // Vektör koşulu (Sprint 27 revizyonu): sorgu embedding'i verildiyse
+  // anlamsal benzerlik de eşleşme sayılır — 'günce tutma' -> 'Log kayıtları'.
+  // Eşik 0.32: near-dup eşiği (0.5) altında, gürültü üstünde.
+  const vectorCondition = queryEmbedding
+    ? sql`(coalesce(1 - (${posts.embeddingVector} <=> ${`[${queryEmbedding.join(",")}]`}::vector), 0) >= 0.32)`
+    : undefined;
+
+  const conditionParts: SQL[] = [foldCondition, ftsCondition];
+  if (trigramConditions.length > 0) {
+    conditionParts.push(
+      sql`(${sql.join(trigramConditions, sql` or `)})`,
+    );
+  }
+  if (vectorCondition) {
+    conditionParts.push(vectorCondition);
+  }
+  const condition = sql`(${sql.join(conditionParts, sql` or `)})`;
 
   const foldScore = sql.join(
     patterns.map(
@@ -113,12 +137,12 @@ export function buildPostSearch(
 
   const ftsScore = sql`(ts_rank(${posts.searchVector}, ${tsQuery}) * ${W_FTS})`;
 
-  const trigramScore = sql`(
-    similarity(
-      lower(${posts.title} || ' ' || ${posts.description}),
-      lower(${rawQuery.trim()})
-    ) * ${W_TRIGRAM}
-  )`;
+  // Trigram skoru: tüm ifade benzerliği uzun açıklamalarda sulanır;
+  // token başına en iyi kelime benzerliği daha isabetli sinyal verir.
+  const wordSims = tokens.map((token) =>
+    sql`word_similarity(${token}, ${foldedText})`,
+  );
+  const trigramScore = sql`(greatest(${sql.join(wordSims, sql`, `)}) * ${W_TRIGRAM})`;
 
   // Vektör: yalnızca sorgu embedding'i 2048 boyutla geldiğinde katılır;
   // embedding'siz fikirlerde mesafe null -> coalesce ile 0.

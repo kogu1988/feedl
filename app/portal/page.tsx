@@ -54,14 +54,17 @@ export default async function PortalPage({
   let loadError = false;
 
   try {
-    // Sprint 27: arama varsa sorguyu vektöre çevir (best-effort — embedding
-    // başarısız olursa arama FTS+trigram ile devam eder).
-    let queryEmbedding: number[] | undefined;
-    if (searchQuery) {
+    rows = await loadPosts(searchQuery, sort, tagFilter);
+
+    // Sprint 27 (maliyet optimizasyonu): vektör katmanı YALNIZCA ilk
+    // arama boş dönerse devreye girer — fold/FTS/trigram sonuç bulduğunda
+    // OpenRouter hiç çağrılmaz. Embedding başarısız olursa sonuçlar boş
+    // kalır, sayfa hata vermez.
+    if (rows.length === 0 && searchQuery) {
       try {
         const vector = await embedText(searchQuery);
         if (vector.length === 2048) {
-          queryEmbedding = vector;
+          rows = await loadPosts(searchQuery, sort, tagFilter, vector);
         }
       } catch (embedErr) {
         console.error(
@@ -70,7 +73,6 @@ export default async function PortalPage({
         );
       }
     }
-    rows = await loadPosts(searchQuery, sort, tagFilter, queryEmbedding);
     tagOptions = await loadTagOptions();
 
     if (rows.length > 0) {
