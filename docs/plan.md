@@ -867,9 +867,20 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   "Bildirimleri kapat" linki (her alıcı için ayrı render).
   **Not:** Unsubscribe URL'si /api/... görünümünde — ileride şık route'a
   taşınabilir (estetik).
-- ☐ **Sprint 27 — Arama Güçlendirme (rapor §5):** PostgreSQL full-text
-  (Türkçe) + trigram; mevcut vector skorla hybrid sıralama;
-  `lib/post-search.ts` tek kaynak kalır.
+- ✅ **Sprint 27 — Arama Güçlendirme (rapor §5)** (2026-09-02, commit
+  494ed6a + koşul düzeltmeleri ff95b60/28e05c6, üretimde terminal ile
+  doğrulandı): 4 katmanlı hibrit arama, lib/post-search.ts tek kaynak:
+  (1) fold-ILIKE (mevcut), (2) PostgreSQL full-text — posts.search_vector
+  GENERATED kolon to_tsvector('turkish',...) + GIN index (migration 0013,
+  oluşum DB'de doğrulandı), (3) pg_trgm — extension + trigram index
+  MANUEL uygulandı (drizzle üretmez); koşulda 4+ krk token'larda
+  word_similarity > 0.55, skorda token başına greatest(word_similarity),
+  (4) pgvector — YALNIZCA ilk arama boş dönerse fallback: sorgu embed
+  edilir, en yakın 5 fikir + 0.10 tabanı (bu modelin mutlak benzerlik
+  dağılımı düşük: anlamlı çiftler 0.10-0.25 bandında; sabit eşik
+  çalışmıyor). Portal iki aşamalı: boş sonuç olmadıkça OpenRouter
+  çağrılmaz. **Not:** pg_trgm extension/index yeni ortamda manuel
+  kurulmalı; arama sırasında filtre sekmeleri gizli (Sprint 12 davranışı).
 - ☐ **Sprint 28 — Internal Roadmap + Scoring (P2.2):** admin'de owner,
   target date, effort/impact, basit RICE skoru; public roadmap'ten ayrı
   internal görünüm.

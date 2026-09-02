@@ -112,7 +112,16 @@ docs/                                                 planning docs (source of t
   /api/posts GET + portal): multi-token AND, diacritic folding via SQL
   `translate+lower` mirrored in JS `foldTr`, relevance score (title 2 /
   description 1). SQL and JS fold mappings MUST stay in sync
-  (TR_FOLD_SOURCE/TARGET ↔ TR_FOLD_MAP).
+  (TR_FOLD_SOURCE/TARGET ↔ TR_FOLD_MAP). Since Sprint 27 it is HYBRID:
+  fold-ILIKE OR full-text (`posts.search_vector` generated tsvector
+  'turkish' config + GIN) OR trigram (`word_similarity > 0.55` for 4+
+  char tokens only - shorter tokens over-match) OR vector (top-5
+  nearest by distance + 0.10 floor, ABSOLUTE thresholds fail - this
+  embedding model's meaningful pairs sit at 0.10-0.25 cosine). Vector
+  stage is FALLBACK-ONLY: portal searches without embedding first and
+  embeds the query only when zero rows - keeps OpenRouter usage near
+  zero. pg_trgm extension + trigram index are NOT in drizzle migrations
+  (apply manually on new environments).
 - **Dual leftJoin aggregates (votes + comments) MUST use `countDistinct`,
   not `count`** — join fan-out multiplies rows and silently inflates
   every count on the page (found while adding comment counts, Sprint
