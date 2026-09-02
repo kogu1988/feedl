@@ -840,9 +840,18 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   **Kapsam dışı (ileride):** @mention etiketleme; satır-bazlı status
   değişiminde not girişi (not yalnızca bulk çubuğunda — kullanıcı testi
   bu yolla: satırı seç → açıklama yaz → durumu değiştir).
-- ☐ **Sprint 25 — Bağımsız Changelog (P2.1):** `changelog_entries` +
-  `changelog_post_links`; markdown gövde, label, yayın tarihi; public
-  `/portal/changelog` route; post detayından release note bağlantısı.
+- ✅ **Sprint 25 — Bağımsız Changelog (P2.1)** (2026-09-02, commit
+  6b86248 + buton kilidi düzeltmesi 3b77c19, üretimde doğrulandı):
+  `changelog_entries` + `changelog_post_links` (migration 0011,
+  oluşum DB'de ayrıca doğrulandı); public `/portal/changelog` (iki
+  aşamalı yükleme, fan-out yok; label rozetleri yeni/iyileştirme/
+  düzeltme); admin panel dashboard'da (duyuru yaz + shipped fikirlere
+  bağla + sil) + header'a "Güncellemeler" linki. **25a:** StatusSelect
+  durum değişiminde opsiyonel açıklama dialog'u (bulk ile aynı `note`
+  kanalı → history + shipped e-postası). **UX düzeltmesi:** optimistic
+  state başarıdan sonra sıfırlanmadığı için dialog butonu kilitli
+  kalıyordu — sıfırlama eklendi. **Kapsam dışı:** markdown render
+  (şimdilik pre-line düz metin).
 - ☐ **Sprint 26 — Bildirim Merkezi + Post Takibi (P2.3):**
   `post_followers`; status/yorum bildirimleri; e-posta tercihleri +
   token'lı unsubscribe; `email_deliveries` idempotency.
