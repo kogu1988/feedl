@@ -21,6 +21,14 @@ export const users = pgTable("users", {
   email: text("email").notNull(),
   name: text("name"),
   role: userRoleEnum("role").notNull().default("customer"),
+  // Sprint 26: e-posta tercihleri + token'lı unsubscribe (bildirim
+  // e-postalarının altındaki link bu token ile çalışır).
+  emailStatusUpdates: boolean("email_status_updates").notNull().default(true),
+  emailComments: boolean("email_comments").notNull().default(true),
+  unsubscribeToken: uuid("unsubscribe_token")
+    .notNull()
+    .defaultRandom()
+    .unique(),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -328,4 +336,58 @@ export const changelogPostLinks = pgTable(
 );
 
 export type ChangelogPostLink = typeof changelogPostLinks.$inferSelect;
-export type NewChangelogPostLink = typeof changelogPostLinks.$inferInsert; 
+export type NewChangelogPostLink = typeof changelogPostLinks.$inferInsert;
+
+// post_followers: Sprint 26 — fikir takipçileri (Canny modeli). Yazar
+// oluştururken, oy veren ve yorum yazan otomatik takipçi olur; status
+// ve yorum bildirimleri bu tablodan çözülür.
+export const postFollowers = pgTable(
+  "post_followers",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    postId: uuid("post_id")
+      .notNull()
+      .references((): AnyPgColumn => posts.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    unique("post_followers_post_user_unique").on(table.postId, table.userId),
+    index("post_followers_user_idx").on(table.userId),
+  ],
+);
+
+export type PostFollower = typeof postFollowers.$inferSelect;
+export type NewPostFollower = typeof postFollowers.$inferInsert;
+
+// email_deliveries: Sprint 26 — gönderim kaydı + idempotency.
+// (user_id, type, entity_id) unique: aynı fikrin tekrar shipped'e
+// çekilmesi ya da event replay'i mükerrer mail göndermez.
+export const emailDeliveries = pgTable(
+  "email_deliveries",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    type: text("type").notNull(), // 'shipped' | 'status' | 'comment'
+    entityId: uuid("entity_id").notNull(),
+    sentAt: timestamp("sent_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    unique("email_deliveries_unique").on(
+      table.userId,
+      table.type,
+      table.entityId,
+    ),
+  ],
+);
+
+export type EmailDelivery = typeof emailDeliveries.$inferSelect;
+export type NewEmailDelivery = typeof emailDeliveries.$inferInsert; 

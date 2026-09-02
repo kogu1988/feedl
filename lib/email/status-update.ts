@@ -1,17 +1,14 @@
-// "Shipped" bildirim e-postası şablonu (plan.md Sprint 6).
-// E-posta istemcileri CSS sınıflarını desteklemediği için inline stil kullanılır.
-// Alıcı e-postası buraya yazılmaz; gönderici katmanı (lib/email/send.ts) zaten
-// alıcı listesini ayrı tutar — şablon yalnızca içerik üretir.
+// Status güncelleme bildirimi e-postası (plan.md Sprint 26) — shipped
+// harici durum geçişlerinde takipçilere gider. shipped şablonuyla aynı
+// inline-stil görsel dil; alıcı e-postası şablona yazılmaz.
 import { escapeHtml } from "./html";
 
-const PORTAL_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://getfeedl.vercel.app/portal";
-
-export interface ShippedEmailInput {
-  title: string;
-  // Sprint 23: admin'in durum değişim açıklaması — varsa e-postada gösterilir.
+export interface StatusUpdateEmailInput {
+  ideaTitle: string;
+  ideaUrl: string;
+  oldStatusLabel: string;
+  newStatusLabel: string;
   note?: string;
-  // Sprint 26: alıcıya özel abonelikten çıkma linki (her alıcı için ayrı
-  // render edilir).
   unsubscribeUrl?: string;
 }
 
@@ -21,10 +18,15 @@ export interface RenderedEmail {
   text: string;
 }
 
-export function renderShippedEmail(input: ShippedEmailInput): RenderedEmail {
-  const title = escapeHtml(input.title);
+export function renderStatusUpdateEmail(
+  input: StatusUpdateEmailInput,
+): RenderedEmail {
+  const title = escapeHtml(input.ideaTitle);
+  const oldLabel = escapeHtml(input.oldStatusLabel);
+  const newLabel = escapeHtml(input.newStatusLabel);
   const note = input.note?.trim() ? escapeHtml(input.note.trim()) : null;
-  const subject = `🎉 İsteğin yayına alındı: ${input.title}`;
+
+  const subject = `Fikrin güncellendi: ${input.ideaTitle}`;
 
   const html = `<!doctype html>
 <html lang="tr">
@@ -40,9 +42,9 @@ export function renderShippedEmail(input: ShippedEmailInput): RenderedEmail {
             </tr>
             <tr>
               <td style="padding:32px;">
-                <h1 style="margin:0 0 16px;font-size:20px;line-height:1.4;color:#18181b;">🎉 İsteğin yayına alındı!</h1>
+                <h1 style="margin:0 0 16px;font-size:20px;line-height:1.4;color:#18181b;">📌 Takip ettiğin fikir güncellendi</h1>
                 <p style="margin:0 0 12px;font-size:15px;line-height:1.6;color:#3f3f46;">
-                  Takip ettiğin şu özellik kullanıma açıldı:
+                  Şu fikrin durumu <strong style="color:#18181b;">${oldLabel}</strong> → <strong style="color:#18181b;">${newLabel}</strong> olarak güncellendi:
                 </p>
                 <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#18181b;font-weight:600;">${title}</p>
                 ${
@@ -50,19 +52,16 @@ export function renderShippedEmail(input: ShippedEmailInput): RenderedEmail {
                     ? `<div style="margin:0 0 16px;padding:12px 16px;border-left:3px solid #18181b;background-color:#fafafa;font-size:14px;line-height:1.6;color:#3f3f46;">${note}</div>`
                     : ""
                 }
-                <p style="margin:0 0 28px;font-size:15px;line-height:1.6;color:#3f3f46;">
-                  Geri bildirimin ürünü doğrudan şekillendiriyor. Destek için teşekkürler!
-                </p>
-                <a href="${PORTAL_URL}"
+                <a href="${input.ideaUrl}"
                    style="display:inline-block;padding:12px 24px;background-color:#18181b;color:#ffffff;text-decoration:none;border-radius:6px;font-size:14px;font-weight:600;">
-                  Portalda görüntüle
+                  Fikri görüntüle
                 </a>
               </td>
             </tr>
             <tr>
               <td style="padding:20px 32px;border-top:1px solid #e4e4e7;">
                 <p style="margin:0;font-size:12px;line-height:1.5;color:#71717a;">
-                  Bu bildirimi isteği desteklediğin veya gönderdiğin için alıyorsun.
+                  Bu bildirimi fikri takip ettiğin için alıyorsun.
                   ${
                     input.unsubscribeUrl
                       ? `<a href="${input.unsubscribeUrl}" style="color:#71717a;">Durum bildirimlerini kapat</a>.`
@@ -78,27 +77,19 @@ export function renderShippedEmail(input: ShippedEmailInput): RenderedEmail {
   </body>
 </html>`;
 
-  const text = `Isteğin yayına alındı!
+  const text = `Takip ettiğin fikir güncellendi
 
-Takip ettiğin şu özellik kullanıma açıldı:
+${input.ideaTitle}
 
-${input.title}
-${
-  note
-    ? `
-Ekibin notu:
+Durum: ${input.oldStatusLabel} → ${input.newStatusLabel}${
+    note ? `\n\nEkibin notu:\n\n${note}` : ""
+  }
 
-${note}
-`
-    : ""
-}
-Geri bildirimin ürünü doğrudan şekillendiriyor. Destek için teşekkürler!
+Fikri görüntüle: ${input.ideaUrl}
 
-Portalda görüntüle: ${PORTAL_URL}
-
-Bu bildirimi isteği desteklediğin veya gönderdiğin için alıyorsun.${
-  input.unsubscribeUrl ? `\nDurum bildirimlerini kapat: ${input.unsubscribeUrl}` : ""
-}`;
+Bu bildirimi fikri takip ettiğin için alıyorsun.${
+    input.unsubscribeUrl ? `\nDurum bildirimlerini kapat: ${input.unsubscribeUrl}` : ""
+  }`;
 
   return { subject, html, text };
 }

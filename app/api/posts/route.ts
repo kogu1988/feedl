@@ -3,7 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import { count, desc, eq, sql } from "drizzle-orm";
 
 import { getDb } from "@/lib/db";
-import { posts, votes } from "@/lib/db/schema";
+import { postFollowers, posts, votes } from "@/lib/db/schema";
 import { createPostSchema } from "@/lib/validations/post";
 import { inngest } from "@/inngest/client";
 import { buildPostSearch } from "@/lib/post-search";
@@ -103,6 +103,19 @@ export async function POST(req: Request) {
         status: posts.status,
         createdAt: posts.createdAt,
       });
+
+    // Sprint 26: yazar fikrini otomatik takip eder.
+    try {
+      await getDb()
+        .insert(postFollowers)
+        .values({ postId: created.id, userId })
+        .onConflictDoNothing();
+    } catch (followErr) {
+      console.error(
+        "author auto-follow failed:",
+        followErr instanceof Error ? followErr.message : followErr,
+      );
+    }
 
     // AI analizi arka planda Inngest ile çalışır (plan.md Sprint 5). Event
     // gönderimi başarısız olsa bile fikir kaydı başarılı kalmalıdır; lokalde

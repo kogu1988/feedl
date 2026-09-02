@@ -5,7 +5,7 @@ import { z } from "zod";
 
 import { getRole } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
-import { comments, posts } from "@/lib/db/schema";
+import { comments, postFollowers, posts } from "@/lib/db/schema";
 import { createCommentSchema } from "@/lib/validations/comment";
 import { commentCreatedEventSchema } from "@/lib/validations/events";
 import { inngest } from "@/inngest/client";
@@ -123,6 +123,12 @@ export async function POST(
         isInternal: comments.isInternal,
         createdAt: comments.createdAt,
       });
+
+    // Sprint 26: yorum yazan otomatik takipçi olur (bildirim zinciri için).
+    await getDb()
+      .insert(postFollowers)
+      .values({ postId: parsedId.data, userId })
+      .onConflictDoNothing();
 
     // Sprint 24: iç notlar için bildirim gönderilmez; normal yorumlarda
     // yazar + yanıtlanan kişiye haber ver. Event gönderimi başarısız olsa

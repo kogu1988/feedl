@@ -4,7 +4,7 @@ import { and, count, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { getDb } from "@/lib/db";
-import { posts, votes } from "@/lib/db/schema";
+import { postFollowers, posts, votes } from "@/lib/db/schema";
 import { voteSchema } from "@/lib/validations/vote";
 
 async function countVotes(postId: string): Promise<number> {
@@ -71,6 +71,12 @@ export async function POST(req: Request) {
     await getDb()
       .insert(votes)
       .values({ userId, postId: parsed.data.postId })
+      .onConflictDoNothing();
+
+    // Sprint 26: oy veren otomatik takipçi olur (Canny modeli).
+    await getDb()
+      .insert(postFollowers)
+      .values({ postId: parsed.data.postId, userId })
       .onConflictDoNothing();
 
     const voteCount = await countVotes(parsed.data.postId);

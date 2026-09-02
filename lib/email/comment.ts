@@ -10,6 +10,8 @@ export interface CommentEmailInput {
   commentBody: string;
   // Yanıt bildiriminde "yanıt olarak" metni gösterilir.
   isReply: boolean;
+  // Sprint 26: alıcıya özel abonelikten çıkma linki.
+  unsubscribeUrl?: string;
 }
 
 export interface RenderedEmail {
@@ -60,6 +62,11 @@ export function renderCommentEmail(input: CommentEmailInput): RenderedEmail {
               <td style="padding:20px 32px;border-top:1px solid #e4e4e7;">
                 <p style="margin:0;font-size:12px;line-height:1.5;color:#71717a;">
                   Bu bildirimi fikrin sana ait olduğu veya yorum yaptığın için alıyorsun.
+                  ${
+                    input.unsubscribeUrl
+                      ? `<a href="${input.unsubscribeUrl}" style="color:#71717a;">Yorum bildirimlerini kapat</a>.`
+                      : ""
+                  }
                 </p>
               </td>
             </tr>
@@ -78,7 +85,9 @@ ${input.ideaTitle}
 
 "${input.commentBody}"
 
-Fikri görüntüle: ${input.ideaUrl}`;
+Fikri görüntüle: ${input.ideaUrl}${
+  input.unsubscribeUrl ? `\nYorum bildirimlerini kapat: ${input.unsubscribeUrl}` : ""
+}`;
 
   return { subject, html, text };
 }

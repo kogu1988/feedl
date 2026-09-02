@@ -1,4 +1,4 @@
-import { eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { NonRetriableError } from "inngest";
 
 import { analyzeIdea, compareIdeas, normalizeTags } from "@/lib/ai/analysis";
@@ -6,9 +6,20 @@ import { embedText } from "@/lib/ai/openrouter";
 import { sendEmails } from "@/lib/email/send";
 import { renderAdminNewPostEmail } from "@/lib/email/admin-new-post";
 import { renderCommentEmail } from "@/lib/email/comment";
+import { renderStatusUpdateEmail } from "@/lib/email/status-update";
 import { renderShippedEmail } from "@/lib/email/shipped";
+import { statusLabels } from "@/lib/post-format";
 import { getDb } from "@/lib/db";
-import { comments, postTags, posts, tags, users, votes } from "@/lib/db/schema";
+import {
+  comments,
+  emailDeliveries,
+  postFollowers,
+  postTags,
+  posts,
+  tags,
+  users,
+  votes,
+} from "@/lib/db/schema";
 import {
   commentCreatedEventSchema,
   postCreatedEventSchema,
@@ -187,9 +198,11 @@ export const aiAutopilot = inngest.createFunction(
   },
 );
 
-// plan.md Sprint 6: durum "shipped"e geçince postun yazarına ve oy veren
-// herkese bildirim gider. Diğer durum değişimlerinde sessizce çıkılır; event
-// her değişimde tetiklenir ancak e-posta yalnızca shipped'e geçiştir.
+// plan.md Sprint 6 + Sprint 26: durum değişikliği bildirimi. Alıcılar
+// artık post_followers tablosundan (yazar + oy veren + yorum yazanlar
+// otomatik takipçi). shipped geçişi kutlama maili; diğer geçişler bilgilendirme
+// maili alır. Tercihler (users.email_status_updates) ve email_deliveries
+// idempotency uygulanır; her alıcı için kişisel unsubscribe linki render edilir.
 export const notifyShipped = inngest.createFunction(
   { id: "notify-shipped", retries: 3, triggers: { event: "post/status.changed" } },
   async ({ event, step }) => {
@@ -197,14 +210,13 @@ export const notifyShipped = inngest.createFunction(
       event.data,
     );
 
-    if (payload.newStatus !== "shipped") {
-      return { skipped: true, newStatus: payload.newStatus };
-    }
+    const isShipped = payload.newStatus === "shipped";
+    const deliveryType = isShipped ? "shipped" : "status";
 
-    // 1) Post + alıcılar (yazar + oy verenler, tekil). E-postalar loglanmaz.
+    // 1) Alıcılar: takipçiler + tercih + idempotency filtresi (tek step).
     const recipients = await step.run("fetch-recipients", async () => {
       const [post] = await getDb()
-        .select({ id: posts.id, title: posts.title, authorId: posts.userId })
+        .select({ id: posts.id, title: posts.title })
         .from(posts)
         .where(eq(posts.id, payload.postId))
         .limit(1);
@@ -214,49 +226,100 @@ export const notifyShipped = inngest.createFunction(
         throw new NonRetriableError(`Post not found: ${payload.postId}`);
       }
 
-      const voterRows = await getDb()
-        .selectDistinct({ email: users.email })
-        .from(votes)
-        .innerJoin(users, eq(users.id, votes.userId))
-        .where(eq(votes.postId, payload.postId));
+      const followerRows = await getDb()
+        .selectDistinct({
+          userId: users.id,
+          email: users.email,
+          token: users.unsubscribeToken,
+          emailStatusUpdates: users.emailStatusUpdates,
+        })
+        .from(postFollowers)
+        .innerJoin(users, eq(users.id, postFollowers.userId))
+        .where(eq(postFollowers.postId, payload.postId));
 
-      const authorRows = await getDb()
-        .select({ email: users.email })
-        .from(users)
-        .where(eq(users.id, post.authorId))
-        .limit(1);
+      // Idempotency: bu (kullanıcı, tip, fikir) için daha önce mail
+      // gönderildiyse tekrar gönderme (event replay / tekrar shipped).
+      const delivered = await getDb()
+        .select({ userId: emailDeliveries.userId })
+        .from(emailDeliveries)
+        .where(
+          and(
+            eq(emailDeliveries.type, deliveryType),
+            eq(emailDeliveries.entityId, payload.postId),
+          ),
+        );
+      const deliveredIds = new Set(delivered.map((row) => row.userId));
 
-      const emails = [
-        ...new Set([...authorRows.map((row) => row.email), ...voterRows.map((row) => row.email)]),
-      ];
-
-      return { postId: post.id, title: post.title, emails };
+      return {
+        postId: post.id,
+        title: post.title,
+        recipients: followerRows
+          .filter((row) => !deliveredIds.has(row.userId))
+          // Sprint 26: kullanıcı tercihine saygı — status bildirimleri
+          // kapalıysa (shipped dahil) mail yok.
+          .filter((row) => row.emailStatusUpdates)
+          .map((row) => ({
+            userId: row.userId,
+            email: row.email,
+            token: row.token,
+          })),
+      };
     });
 
-    if (recipients.emails.length === 0) {
+    if (recipients.recipients.length === 0) {
       return { skipped: true, reason: "no-recipients" };
     }
 
-    // 2) Şablonu hazırla ve toplu gönder. Provider (Resend/Ethereal) env'e göre
-    // lib/email/send.ts içinde seçilir.
-    const result = await step.run("send-shipped-emails", async () => {
-      const message = renderShippedEmail({
-        title: recipients.title,
-        note: payload.note,
-      });
-      return sendEmails(
-        recipients.emails.map((email) => ({
-          to: email,
+    // 2) Her alıcı için kişisel unsubscribe linkiyle render et ve gönder.
+    // Provider (Resend/Ethereal) env'e göre lib/email/send.ts'te seçilir.
+    const result = await step.run("send-status-emails", async () => {
+      const appUrl =
+        process.env.NEXT_PUBLIC_APP_URL ?? "https://getfeedl.vercel.app";
+      const messages = recipients.recipients.map((recipient) => {
+        const unsubscribeUrl = `${appUrl}/api/unsubscribe?token=${recipient.token}&type=status`;
+        const message = isShipped
+          ? renderShippedEmail({
+              title: recipients.title,
+              note: payload.note,
+              unsubscribeUrl,
+            })
+          : renderStatusUpdateEmail({
+              ideaTitle: recipients.title,
+              ideaUrl: `${appUrl}/portal/${recipients.postId}`,
+              oldStatusLabel:
+                statusLabels[payload.oldStatus] ?? payload.oldStatus,
+              newStatusLabel:
+                statusLabels[payload.newStatus] ?? payload.newStatus,
+              note: payload.note,
+              unsubscribeUrl,
+            });
+        return {
+          to: recipient.email,
           subject: message.subject,
           html: message.html,
           text: message.text,
-        })),
-      );
+        };
+      });
+      return sendEmails(messages);
+    });
+
+    // 3) Gönderim kaydı (idempotency) — best-effort, hata akışı bozmaz.
+    await step.run("record-deliveries", async () => {
+      await getDb()
+        .insert(emailDeliveries)
+        .values(
+          recipients.recipients.map((recipient) => ({
+            userId: recipient.userId,
+            type: deliveryType,
+            entityId: payload.postId,
+          })),
+        )
+        .onConflictDoNothing();
     });
 
     return {
       provider: result.provider,
-      recipients: recipients.emails.length,
+      recipients: recipients.recipients.length,
       sent: result.sent,
       failed: result.failed,
       previewUrls: result.previewUrls,
@@ -326,9 +389,10 @@ export const notifyAdminNewPost = inngest.createFunction(
   },
 );
 
-// plan.md Sprint 24: fikre yeni (iç olmayan) yorum geldiğinde fikir
-// yazarına; yanıt ise yanıtlanan yorumun yazarına da bildirim. Yorumun
-// kendi yazarına mail gitmez. Alıcılar DB'den çözülür.
+// plan.md Sprint 24 + 26: fikre yeni (iç olmayan) yorum geldiğinde
+// takipçilere bildirim (yazar + oy veren + yorum yazanlar otomatik takipçi).
+// Yorumcuya mail gitmez; email_comments tercihi kapalı olanlara da gitmez.
+// email_deliveries ile mükerrer gönderim engellenir.
 export const notifyCommentCreated = inngest.createFunction(
   { id: "notify-comment-created", retries: 3, triggers: { event: "post/comment.created" } },
   async ({ event, step }) => {
@@ -342,8 +406,8 @@ export const notifyCommentCreated = inngest.createFunction(
           id: comments.id,
           postId: comments.postId,
           userId: comments.userId,
-          parentId: comments.parentId,
           body: comments.body,
+          parentId: comments.parentId,
         })
         .from(comments)
         .where(eq(comments.id, payload.commentId))
@@ -355,7 +419,7 @@ export const notifyCommentCreated = inngest.createFunction(
       }
 
       const [post] = await getDb()
-        .select({ id: posts.id, title: posts.title, userId: posts.userId })
+        .select({ id: posts.id, title: posts.title })
         .from(posts)
         .where(eq(posts.id, comment.postId))
         .limit(1);
@@ -369,47 +433,41 @@ export const notifyCommentCreated = inngest.createFunction(
         .where(eq(users.id, comment.userId))
         .limit(1);
 
-      // Yanıt varsa parent yorumun yazarı da alıcı adayıdır.
-      let parentAuthorEmail: string | null = null;
-      if (comment.parentId) {
-        const [parent] = await getDb()
-          .select({ userId: comments.userId })
-          .from(comments)
-          .where(eq(comments.id, comment.parentId))
-          .limit(1);
-        if (parent) {
-          const [parentUser] = await getDb()
-            .select({ email: users.email })
-            .from(users)
-            .where(eq(users.id, parent.userId))
-            .limit(1);
-          parentAuthorEmail = parentUser?.email ?? null;
-        }
-      }
+      const followerRows = await getDb()
+        .selectDistinct({
+          userId: users.id,
+          email: users.email,
+          token: users.unsubscribeToken,
+          emailComments: users.emailComments,
+        })
+        .from(postFollowers)
+        .innerJoin(users, eq(users.id, postFollowers.userId))
+        .where(eq(postFollowers.postId, comment.postId));
 
-      const [postAuthor] = await getDb()
-        .select({ email: users.email })
-        .from(users)
-        .where(eq(users.id, post.userId))
-        .limit(1);
-
-      const [commenterEmail] = await getDb()
-        .select({ email: users.email })
-        .from(users)
-        .where(eq(users.id, comment.userId))
-        .limit(1);
-      const commenterEmailValue = commenterEmail?.email ?? "";
-
-      // Yorumcu hariç, tekil alıcı listesi. Fikir yazarı yoksa (silinmiş
-      // kullanıcı) yalnızca parent alıcısına düşer; ikisi de yoksa skip.
-      const recipients = [
-        ...new Set(
-          [postAuthor?.email ?? null, parentAuthorEmail].filter(
-            (email): email is string =>
-              Boolean(email) && email !== commenterEmailValue,
+      // Idempotency: aynı yorum için daha önce gönderilmişse tekrar yok.
+      const delivered = await getDb()
+        .select({ userId: emailDeliveries.userId })
+        .from(emailDeliveries)
+        .where(
+          and(
+            eq(emailDeliveries.type, "comment"),
+            eq(emailDeliveries.entityId, comment.id),
           ),
-        ),
-      ];
+        );
+      const deliveredIds = new Set(delivered.map((row) => row.userId));
+
+      const recipients = followerRows
+        .filter((row) => row.userId !== comment.userId)
+        .filter((row) => !deliveredIds.has(row.userId))
+        .filter((row) => row.emailComments)
+        .map((row) => ({
+          userId: row.userId,
+          email: row.email,
+          token: row.token,
+        }));
+
+      // Yanıt metni: parent yorumu varsa "yanıt" olarak gösterilir.
+      const isReply = Boolean(comment.parentId);
 
       return {
         recipients,
@@ -417,7 +475,7 @@ export const notifyCommentCreated = inngest.createFunction(
         ideaUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? "https://getfeedl.vercel.app"}/portal/${post.id}`,
         commenterName: commenter?.name ?? null,
         commentBody: comment.body,
-        isReply: Boolean(comment.parentId),
+        isReply,
       };
     });
 
@@ -426,21 +484,39 @@ export const notifyCommentCreated = inngest.createFunction(
     }
 
     const result = await step.run("send-comment-emails", async () => {
-      const message = renderCommentEmail({
-        ideaTitle: context.ideaTitle,
-        ideaUrl: context.ideaUrl,
-        commenterName: context.commenterName,
-        commentBody: context.commentBody,
-        isReply: context.isReply,
-      });
-      return sendEmails(
-        context.recipients.map((email) => ({
-          to: email,
+      const appUrl =
+        process.env.NEXT_PUBLIC_APP_URL ?? "https://getfeedl.vercel.app";
+      const messages = context.recipients.map((recipient) => {
+        const message = renderCommentEmail({
+          ideaTitle: context.ideaTitle,
+          ideaUrl: context.ideaUrl,
+          commenterName: context.commenterName,
+          commentBody: context.commentBody,
+          isReply: context.isReply,
+          unsubscribeUrl: `${appUrl}/api/unsubscribe?token=${recipient.token}&type=comment`,
+        });
+        return {
+          to: recipient.email,
           subject: message.subject,
           html: message.html,
           text: message.text,
-        })),
-      );
+        };
+      });
+      return sendEmails(messages);
+    });
+
+    // Gönderim kaydı (idempotency) — best-effort.
+    await step.run("record-deliveries", async () => {
+      await getDb()
+        .insert(emailDeliveries)
+        .values(
+          context.recipients.map((recipient) => ({
+            userId: recipient.userId,
+            type: "comment",
+            entityId: payload.commentId,
+          })),
+        )
+        .onConflictDoNothing();
     });
 
     return {
