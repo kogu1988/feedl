@@ -852,9 +852,21 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   state başarıdan sonra sıfırlanmadığı için dialog butonu kilitli
   kalıyordu — sıfırlama eklendi. **Kapsam dışı:** markdown render
   (şimdilik pre-line düz metin).
-- ☐ **Sprint 26 — Bildirim Merkezi + Post Takibi (P2.3):**
-  `post_followers`; status/yorum bildirimleri; e-posta tercihleri +
-  token'lı unsubscribe; `email_deliveries` idempotency.
+- ✅ **Sprint 26 — Bildirim Merkezi + Post Takibi (P2.3)** (2026-09-02,
+  commit 5e08f99, üretimde doğrulandı — kullanıcı testi, iki kullanıcıyla):
+  `post_followers` (yazar + oy veren + yorum yazan otomatik takipçi;
+  mevcut veri backfill edildi); bildirim alıcıları artık takipçilerden
+  gelir (Canny modeli); **tüm** durum geçişleri bildirir — shipped kutlama
+  maili, diğerleri "📌 Takip ettiğin fikir güncellendi" (yeni şablon
+  lib/email/status-update.ts, not bloğu dahil); `email_deliveries`
+  (user_id+type+entity_id unique) ile idempotency — event replay/tekrar
+  shipped mükerrer mail göndermez; users tablosuna tercih kolonları
+  (email_status_updates/email_comments) + unsubscribe_token (migration
+  0012); token'lı unsubscribe `/api/unsubscribe?token&type` — tercihi
+  kapatır, markalı onay sayfası döner; tüm şablonlarda alıcıya özel
+  "Bildirimleri kapat" linki (her alıcı için ayrı render).
+  **Not:** Unsubscribe URL'si /api/... görünümünde — ileride şık route'a
+  taşınabilir (estetik).
 - ☐ **Sprint 27 — Arama Güçlendirme (rapor §5):** PostgreSQL full-text
   (Türkçe) + trigram; mevcut vector skorla hybrid sıralama;
   `lib/post-search.ts` tek kaynak kalır.

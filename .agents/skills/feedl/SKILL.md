@@ -128,11 +128,20 @@ docs/                                                 planning docs (source of t
   then hydrate with countDistinct. Best-effort: failure hides the
   section. Embedding-less posts get no section.
 - **Inngest has 4 functions** since Sprint 24: `ai-autopilot`,
-  `notify-shipped`, `notify-admin-post-created` (emails
+  `notify-shipped` (Sprint 26: handles ALL status changes — shipped =
+  celebration mail, others = "fikir güncellendi" info mail; recipients
+  come from `post_followers`, not votes; respects
+  `users.email_status_updates`; records `email_deliveries`
+  (user+type+entity unique) for idempotency — re-shipping a post does
+  NOT re-mail), `notify-admin-post-created` (emails
   `users.role=admin` on post/created; the author's own email is
   excluded), `notify-comment-created` (post/comment.created; emails
-  post author + parent-comment author, commenter excluded, internal
-  notes skipped). Email templates share `escapeHtml` from
+  followers, commenter excluded, internal notes skipped, respects
+  `users.email_comments`). Unsubscribe: token per user
+  (`users.unsubscribe_token`) + `/api/unsubscribe?token&type=status|comment`
+  closes the pref and returns branded HTML; email templates take
+  per-recipient `unsubscribeUrl` (render once per recipient, then one
+  sendEmails call). Email templates share `escapeHtml` from
   `lib/email/html.ts`; branded boundaries: `app/not-found.tsx` (404) +
   `app/error.tsx` (500, client, reset()).
 - **Schema change checklist (hard rule)**: after editing
