@@ -38,15 +38,20 @@ export function StatusSelect({
   postId: string;
   status: string;
 }) {
-  const [current, setCurrent] = useState(status);
+  // Optimistik gösterim: seçim anında yeni değere geçer, hata/refresh
+  // sonrası sunucudan gelen `status` prop'una döner (Sprint 23 UX düzeltmesi:
+  // dropdown'daki işaret her zaman prop'tan türetilir, stale local state
+  // kalmasın diye RadioGroup value değişiminde remount edilir).
+  const [optimistic, setOptimistic] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
+  const current = optimistic ?? status;
+
   const changeStatus = async (next: string) => {
     setError(null);
-    const previous = current;
-    setCurrent(next);
+    setOptimistic(next);
 
     try {
       const res = await fetch("/api/admin/posts", {
@@ -57,14 +62,14 @@ export function StatusSelect({
       const json = (await res.json()) as { success?: boolean; error?: string };
 
       if (!res.ok || !json.success) {
-        setCurrent(previous);
+        setOptimistic(null);
         setError(json.error ?? "Durum güncellenemedi.");
         return;
       }
 
       startTransition(() => router.refresh());
     } catch {
-      setCurrent(previous);
+      setOptimistic(null);
       setError("Bağlantı hatası.");
     }
   };
@@ -85,6 +90,7 @@ export function StatusSelect({
         />
         <DropdownMenuContent align="end">
           <DropdownMenuRadioGroup
+            key={current}
             value={current}
             onValueChange={(value) => void changeStatus(value)}
           >
