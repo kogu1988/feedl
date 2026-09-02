@@ -12,6 +12,7 @@ import {
   postStatusHistory,
   postTypeEnum,
   posts,
+  users,
   votes,
 } from "@/lib/db/schema";
 import { statusLabels, typeLabels } from "@/lib/post-format";
@@ -29,9 +30,18 @@ const patchSchema = z
     postType: z
       .enum(postTypeEnum.enumValues, { error: "Geçersiz tür." })
       .optional(),
-    // Sprint 23: status değişiminde opsiyonel açıklama — post_status_history
+    // Sprint 25a: status değişiminde opsiyonel açıklama — post_status_history
     //'ye yazılır ve bildirim e-postasında gösterilir.
     note: z.string().max(500, "Açıklama en fazla 500 karakter.").optional(),
+    // Sprint 28: iç roadmap alanları — her biri opsiyonel.
+    ownerId: z.uuid("Geçersiz sahip.").nullable().optional(),
+    targetDate: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Geçersiz tarih (YYYY-AA-GG).")
+      .nullable()
+      .optional(),
+    impact: z.number().int().min(1).max(3).nullable().optional(),
+    effort: z.number().int().min(1).max(3).nullable().optional(),
   })
   .refine((data) => data.status !== undefined || data.postType !== undefined, {
     error: "Güncellenecek alan yok.",
@@ -127,7 +137,11 @@ export async function PATCH(req: Request) {
     // Eski durum/tür, event payload'ı ve iç not için güncellemeden önce
     // okunur.
     const [existing] = await getDb()
-      .select({ id: posts.id, status: posts.status, postType: posts.postType })
+      .select({
+        id: posts.id,
+        status: posts.status,
+        postType: posts.postType,
+      })
       .from(posts)
       .where(eq(posts.id, parsed.data.postId))
       .limit(1);
@@ -137,6 +151,22 @@ export async function PATCH(req: Request) {
         { success: false, error: "Fikir bulunamadı." },
         { status: 404 },
       );
+    }
+
+    // Sprint 28: owner atanıyorsa kullanıcının varlığını doğrula (FK hatası
+    // yerine anlaşılır 400).
+    if (parsed.data.ownerId) {
+      const [owner] = await getDb()
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.id, parsed.data.ownerId))
+        .limit(1);
+      if (!owner) {
+        return NextResponse.json(
+          { success: false, error: "Sahip olarak atanacak kullanıcı bulunamadı." },
+          { status: 400 },
+        );
+      }
     }
 
     const statusChanged =
@@ -153,6 +183,19 @@ export async function PATCH(req: Request) {
           : {}),
         ...(parsed.data.postType !== undefined
           ? { postType: parsed.data.postType }
+          : {}),
+        // Sprint 28: iç roadmap alanları — null açıkça "temizle" demektir.
+        ...(parsed.data.ownerId !== undefined
+          ? { ownerId: parsed.data.ownerId }
+          : {}),
+        ...(parsed.data.targetDate !== undefined
+          ? { targetDate: parsed.data.targetDate } // date kolonu: YYYY-AA-GG string
+          : {}),
+        ...(parsed.data.impact !== undefined
+          ? { impact: parsed.data.impact }
+          : {}),
+        ...(parsed.data.effort !== undefined
+          ? { effort: parsed.data.effort }
           : {}),
         updatedAt: new Date(),
       })

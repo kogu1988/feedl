@@ -1,11 +1,12 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { DownloadIcon } from "lucide-react";
-import { count, desc, eq, inArray, asc } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, isNull } from "drizzle-orm";
 
 import { FilterTabs } from "@/components/custom/filter-tabs";
 import { ChangelogAdmin } from "@/components/custom/changelog-admin";
 import { PostsTable } from "@/components/custom/posts-table";
+import { RoadmapPlanner } from "@/components/custom/roadmap-planner";
 import { SavedViewBar } from "@/components/custom/saved-view-bar";
 import {
   Card,
@@ -23,6 +24,7 @@ import {
   posts,
   savedViews,
   tags,
+  users,
   votes,
 } from "@/lib/db/schema";
 import { statusLabels, trDateTimeFormatter } from "@/lib/post-format";
@@ -57,6 +59,10 @@ export default async function DashboardPage({
     entries: [],
     shippedPosts: [],
   };
+  let plannerData: Awaited<ReturnType<typeof loadPlannerData>> = {
+    rows: [],
+    admins: [],
+  };
   let loadError = false;
 
   try {
@@ -64,6 +70,7 @@ export default async function DashboardPage({
     tagOptions = await loadTagOptions();
     views = await loadSavedViews();
     changelogData = await loadChangelogData();
+    plannerData = await loadPlannerData();
   } catch (err) {
     console.error(
       "Dashboard list failed:",
@@ -138,6 +145,22 @@ export default async function DashboardPage({
           <ChangelogAdmin
             entries={changelogData.entries}
             shippedPosts={changelogData.shippedPosts}
+          />
+        </CardContent>
+      </Card>
+
+      <Card className="mt-8">
+        <CardHeader>
+          <CardTitle>İç Roadmap (Planlama)</CardTitle>
+          <CardDescription>
+            Planlanan ve geliştirilen fikirlere sahip ata, hedef tarih ve
+            etki/efor puanı ver — skor = etki ÷ efor. Müşteri bunu görmez.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <RoadmapPlanner
+            rows={plannerData.rows}
+            admins={plannerData.admins}
           />
         </CardContent>
       </Card>
@@ -331,5 +354,53 @@ async function loadChangelogData() {
       publishedAtLabel: trDateTimeFormatter.format(row.publishedAt),
     })),
     shippedPosts: shippedRows,
+  };
+}
+
+// Sprint 28: iç roadmap planlayıcı verisi — planned/in-progress fikirler
+// + owner seçenekleri (tüm adminler).
+async function loadPlannerData() {
+  const rows = await getDb()
+    .select({
+      id: posts.id,
+      title: posts.title,
+      status: posts.status,
+      ownerId: posts.ownerId,
+      ownerName: users.name,
+      targetDate: posts.targetDate,
+      impact: posts.impact,
+      effort: posts.effort,
+    })
+    .from(posts)
+    .leftJoin(users, eq(users.id, posts.ownerId))
+    .where(
+      and(
+        isNull(posts.mergedIntoId),
+        inArray(posts.status, ["planned", "in-progress"]),
+      ),
+    )
+    .orderBy(desc(posts.updatedAt))
+    .limit(50);
+
+  const admins = await getDb()
+    .select({ id: users.id, name: users.name })
+    .from(users)
+    .where(eq(users.role, "admin"));
+
+  return {
+    rows: rows.map((row) => ({
+      id: row.id,
+      title: row.title,
+      status: row.status,
+      ownerId: row.ownerId,
+      ownerName: row.ownerName,
+      targetDate: row.targetDate ? row.targetDate.slice(0, 10) : null,
+      impact: row.impact,
+      effort: row.effort,
+    })),
+    admins: admins.map((admin) => ({
+      id: admin.id,
+      name: admin.name ?? admin.id,
+    })),
   };
 }

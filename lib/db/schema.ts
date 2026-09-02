@@ -1,7 +1,9 @@
 import {
   boolean,
   customType,
+  date,
   index,
+  integer,
   jsonb,
   pgEnum,
   pgTable,
@@ -102,6 +104,14 @@ export const posts = pgTable(
       { onDelete: "set null" },
     ),
     mergedAt: timestamp("merged_at", { withTimezone: true }),
+    // Sprint 28: iç roadmap + scoring (P2.2). owner = atanan admin;
+    // impact/effort 1-3 (admin girer); skor = impact/effort (UI hesaplar).
+    ownerId: text("owner_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    targetDate: date("target_date"),
+    impact: integer("impact"),
+    effort: integer("effort"),
     // Sprint 27: Türkçe full-text arama kolonu (GENERATED ALWAYS STORED).
     // İki-argümanlı to_tsvector('turkish', ...) immutable olduğu için
     // generated kolonda kullanılabilir.
