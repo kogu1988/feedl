@@ -71,6 +71,13 @@
       "when": 1788346781423,
       "tag": "0009_fat_the_fury",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1788352867905,
+      "tag": "0010_steep_stepford_cuckoos",
+      "breakpoints": true
     }
   ]
 }
