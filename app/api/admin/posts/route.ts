@@ -33,8 +33,9 @@ const patchSchema = z
     // Sprint 25a: status değişiminde opsiyonel açıklama — post_status_history
     //'ye yazılır ve bildirim e-postasında gösterilir.
     note: z.string().max(500, "Açıklama en fazla 500 karakter.").optional(),
-    // Sprint 28: iç roadmap alanları — her biri opsiyonel.
-    ownerId: z.uuid("Geçersiz sahip.").nullable().optional(),
+    // Sprint 28: iç roadmap alanları — her biri opsiyonel. ownerId Clerk
+    // kullanıcı kimliğidir (user_... formatı — UUID DEĞİL, z.uuid() kullanma!).
+    ownerId: z.string().min(1, "Geçersiz sahip.").nullable().optional(),
     targetDate: z
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}$/, "Geçersiz tarih (YYYY-AA-GG).")
