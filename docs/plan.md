@@ -794,14 +794,20 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   postType kabul eder; değişim otomatik iç not düşer). CSV'ye Tür +
   Etiketler kolonları. Eski 3 fikir için etiket backfill yapıldı
   (postType null — admin manuel set eder).
-- 🔧 **Sprint 22 — Admin Bulk Actions + Kayıtlı Görünümler (P1.4):**
-  çoklu seçim ile toplu status/etiket; filtre kombinasyonlarını kaydet
-  (saved views); server-side pagination. **Durum (2026-09-02): kod
-  kısmen hazır** — API rotaları (`app/api/admin/posts/bulk`,
-  `app/api/admin/views`), bileşenler (`posts-table.tsx`,
-  `saved-view-bar.tsx`) ve migration 0008 (saved_views) yazıldı;
-  dashboard sayfasına entegrasyon, build doğrulaması ve üretim testi
-  eksik. Sonraki oturum bu eksiklerle sprinti kapatacak.
+- ✅ **Sprint 22 — Admin Bulk Actions + Kayıtlı Görünümler (P1.4)**
+  (2026-09-02, commit c352fa4, üretimde doğrulandı — kullanıcı testi
+  "hepsi tamam"): `saved_views` tablosu (migration 0008, params
+  query-string olarak saklanır); `POST /api/admin/posts/bulk`
+  (postIds + status/addTagId; yalnızca gerçekten değişenlere
+  post/status.changed event'i + özet iç notu; etiket bağlama
+  onConflictDoNothing); `GET/POST/DELETE /api/admin/views`.
+  Dashboard: `PostsTable` (satır checkbox'ı + seçili çubukta toplu
+  durum/etiket dropdown'ları + Seçimi temizle) ve `SavedViewBar`
+  (aktif filtre kombinasyonunu adla kaydet, tek tıkla aç, X ile sil).
+  Tekil StatusSelect satırda korunur; selection yalnızca istemci
+  state'i, işlem sonrası router.refresh(). Server-side pagination
+  kapsam dışı bırakıldı (mevcut limit(200) yeterli — ileride
+  gerekirse ayrı sprint).
 - ☐ **Sprint 23 — Status Yaşam Döngüsü Genişletme (P1.5):** `under-review`
   ve `closed` statüleri; `post_status_history` tablosu; status
   değişiminde açıklama notu → bildirim e-postasına dahil; roadmap'te
