@@ -9,6 +9,7 @@ import { SentimentBadge } from "@/components/custom/sentiment-badge";
 import { TypeBadge } from "@/components/custom/type-badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -58,6 +59,7 @@ export function PostsTable({
   tagOptions: BulkTagOption[];
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [note, setNote] = useState("");
   const [isWorking, setIsWorking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -90,7 +92,11 @@ export function PostsTable({
       const res = await fetch("/api/admin/posts/bulk", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ postIds: [...selected], ...payload }),
+        body: JSON.stringify({
+          postIds: [...selected],
+          ...(note.trim() ? { note: note.trim() } : {}),
+          ...payload,
+        }),
       });
       const json = (await res.json()) as { success?: boolean; error?: string };
       if (!res.ok || !json.success) {
@@ -98,6 +104,7 @@ export function PostsTable({
         return;
       }
       setSelected(new Set());
+      setNote("");
       startTransition(() => router.refresh());
     } catch {
       setError("Bağlantı hatası.");
@@ -115,6 +122,15 @@ export function PostsTable({
           <span className="text-sm font-medium">
             {selected.size} fikir seçili
           </span>
+          <Textarea
+            value={note}
+            onChange={(event) => setNote(event.target.value)}
+            placeholder="Değişim açıklaması (opsiyonel) — yayına alma bildiriminde gösterilir"
+            rows={2}
+            maxLength={500}
+            className="min-h-0 w-56 text-xs sm:w-72"
+            disabled={busy}
+          />
           <DropdownMenu>
             <DropdownMenuTrigger
               render={

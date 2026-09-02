@@ -15,9 +15,11 @@ import {
 
 export const POST_STATUS_OPTIONS = [
   { value: "open", label: "Açık" },
+  { value: "under-review", label: "İncelemede" },
   { value: "planned", label: "Planlandı" },
   { value: "in-progress", label: "Geliştiriliyor" },
   { value: "shipped", label: "Yayınlandı" },
+  { value: "closed", label: "Kapatıldı" },
 ] as const;
 
 export function statusLabel(status: string): string {

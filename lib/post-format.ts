@@ -4,9 +4,11 @@
 
 export const statusLabels: Record<string, string> = {
   open: "Açık",
+  "under-review": "İncelemede",
   planned: "Planlandı",
   "in-progress": "Geliştiriliyor",
   shipped: "Yayınlandı",
+  closed: "Kapatıldı",
 };
 
 // Roadmap kolon sırası (plan.md Sprint 8): planlanan → geliştirilen → yayında.

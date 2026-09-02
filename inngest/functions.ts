@@ -237,7 +237,10 @@ export const notifyShipped = inngest.createFunction(
     // 2) Şablonu hazırla ve toplu gönder. Provider (Resend/Ethereal) env'e göre
     // lib/email/send.ts içinde seçilir.
     const result = await step.run("send-shipped-emails", async () => {
-      const message = renderShippedEmail({ title: recipients.title });
+      const message = renderShippedEmail({
+        title: recipients.title,
+        note: payload.note,
+      });
       return sendEmails(
         recipients.emails.map((email) => ({
           to: email,

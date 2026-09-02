@@ -9,6 +9,7 @@ import { getDb } from "@/lib/db";
 import {
   comments,
   postStatusEnum,
+  postStatusHistory,
   postTypeEnum,
   posts,
   votes,
@@ -28,6 +29,9 @@ const patchSchema = z
     postType: z
       .enum(postTypeEnum.enumValues, { error: "Geçersiz tür." })
       .optional(),
+    // Sprint 23: status değişiminde opsiyonel açıklama — post_status_history
+    //'ye yazılır ve bildirim e-postasında gösterilir.
+    note: z.string().max(500, "Açıklama en fazla 500 karakter.").optional(),
   })
   .refine((data) => data.status !== undefined || data.postType !== undefined, {
     error: "Güncellenecek alan yok.",
@@ -172,10 +176,12 @@ export async function PATCH(req: Request) {
     // "shipped"e geçişte yazar + oy verenlere bildirim gider. Event gönderimi
     // başarısız olsa bile durum güncellemesi başarılı kalmalıdır.
     const newStatus = updated.status;
+    const note = parsed.data.note?.trim() || undefined;
     const payload = postStatusChangedEventSchema.safeParse({
       postId: updated.id,
       oldStatus: existing.status,
       newStatus,
+      ...(note ? { note } : {}),
     });
     if (payload.success && statusChanged) {
       try {
@@ -184,6 +190,24 @@ export async function PATCH(req: Request) {
         console.error(
           "post/status.changed event could not be sent:",
           eventErr instanceof Error ? eventErr.message : eventErr,
+        );
+      }
+    }
+
+    // Sprint 23: status değişimi post_status_history'ye yazılır (best-effort).
+    if (statusChanged) {
+      try {
+        await getDb().insert(postStatusHistory).values({
+          postId: updated.id,
+          oldStatus: existing.status,
+          newStatus: updated.status,
+          note: note ?? null,
+          createdBy: adminId,
+        });
+      } catch (historyErr) {
+        console.error(
+          "post status history could not be saved:",
+          historyErr instanceof Error ? historyErr.message : historyErr,
         );
       }
     }

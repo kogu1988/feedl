@@ -31,9 +31,11 @@ export const users = pgTable("users", {
 
 export const postStatusEnum = pgEnum("post_status", [
   "open",
+  "under-review",
   "planned",
   "in-progress",
   "shipped",
+  "closed",
 ]);
 
 // prompts.md'deki LLM çıktısı; AI fonksiyonları dolana kadar null kalır.
@@ -186,6 +188,35 @@ export const postMerges = pgTable(
 );
 
 export type PostMerge = typeof postMerges.$inferSelect;
+
+// post_status_history: Sprint 23 — her status değişiminin izi (Canny
+// status history modeli). oldStatus null olabilir (ilk kayıt senaryosu);
+// note admin'in değişim açıklamasıdır ve bildirim e-postasına dahil
+// edilir. Değişimler dashboard PATCH ve bulk rotasında yazılır.
+export const postStatusHistory = pgTable(
+  "post_status_history",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    postId: uuid("post_id")
+      .notNull()
+      .references((): AnyPgColumn => posts.id, { onDelete: "cascade" }),
+    oldStatus: postStatusEnum("old_status"),
+    newStatus: postStatusEnum("new_status").notNull(),
+    note: text("note"),
+    createdBy: text("created_by")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("post_status_history_post_idx").on(table.postId, table.createdAt),
+  ],
+);
+
+export type PostStatusHistory = typeof postStatusHistory.$inferSelect;
+export type NewPostStatusHistory = typeof postStatusHistory.$inferInsert;
 export type NewPostMerge = typeof postMerges.$inferInsert;
 
 // tags: Sprint 21 serbest form etiketleri (AI keyword'lerinden türetilir,

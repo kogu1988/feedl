@@ -15,11 +15,14 @@ export const postCreatedEventSchema = z.object({
 
 export type PostCreatedEvent = z.infer<typeof postCreatedEventSchema>;
 
-// prompts.md §4.2: admin fikir durumunu değiştirdiğinde.
+// prompts.md §4.2: admin fikir durumunu değiştirdiğinde. note (Sprint
+// 23): admin'in değişim açıklaması — bildirim e-postasında kullanıcıya
+// gösterilir; yoksa e-posta mevcut metinle gönderilir.
 export const postStatusChangedEventSchema = z.object({
   postId: z.uuid(),
   oldStatus: z.enum(postStatusEnum.enumValues),
   newStatus: z.enum(postStatusEnum.enumValues),
+  note: z.string().max(500).optional(),
 });
 
 export type PostStatusChangedEvent = z.infer<typeof postStatusChangedEventSchema>;

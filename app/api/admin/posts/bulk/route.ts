@@ -9,6 +9,7 @@ import { getDb } from "@/lib/db";
 import {
   comments,
   postStatusEnum,
+  postStatusHistory,
   postTags,
   posts,
   tags as tagsTable,
@@ -29,6 +30,9 @@ const bulkSchema = z
       .enum(postStatusEnum.enumValues, { error: "Geçersiz durum." })
       .optional(),
     addTagId: z.uuid("Geçersiz etiket.").optional(),
+    // Sprint 23: status değişiminde opsiyonel açıklama — geçmişe yazılır ve
+    // bildirim e-postasında gösterilir.
+    note: z.string().max(500, "Açıklama en fazla 500 karakter.").optional(),
   })
   .refine((data) => data.status !== undefined || data.addTagId !== undefined, {
     error: "Uygulanacak işlem yok.",
@@ -62,6 +66,7 @@ export async function POST(req: Request) {
       );
     }
     const { postIds, status, addTagId } = parsed.data;
+    const note = parsed.data.note?.trim() || undefined;
 
     let statusChanged = 0;
     if (status !== undefined) {
@@ -86,6 +91,7 @@ export async function POST(req: Request) {
             postId: row.id,
             oldStatus: row.status,
             newStatus: status,
+            ...(note ? { note } : {}),
           });
           if (!payload.success) {
             continue;
@@ -101,6 +107,24 @@ export async function POST(req: Request) {
               eventErr instanceof Error ? eventErr.message : eventErr,
             );
           }
+        }
+
+        // Sprint 23: toplu değişim de geçmişe yazılır (best-effort).
+        try {
+          await getDb().insert(postStatusHistory).values(
+            toChange.map((row) => ({
+              postId: row.id,
+              oldStatus: row.status,
+              newStatus: status,
+              note: note ?? null,
+              createdBy: adminId,
+            })),
+          );
+        } catch (historyErr) {
+          console.error(
+            "bulk status history could not be saved:",
+            historyErr instanceof Error ? historyErr.message : historyErr,
+          );
         }
 
         // Toplu iç not: tek tek kaydetmek yerine özet not her fikre düşer

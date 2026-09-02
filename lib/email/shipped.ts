@@ -8,6 +8,8 @@ const PORTAL_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://getfeedl.vercel.a
 
 export interface ShippedEmailInput {
   title: string;
+  // Sprint 23: admin'in durum değişim açıklaması — varsa e-postada gösterilir.
+  note?: string;
 }
 
 export interface RenderedEmail {
@@ -18,6 +20,7 @@ export interface RenderedEmail {
 
 export function renderShippedEmail(input: ShippedEmailInput): RenderedEmail {
   const title = escapeHtml(input.title);
+  const note = input.note?.trim() ? escapeHtml(input.note.trim()) : null;
   const subject = `🎉 İsteğin yayına alındı: ${input.title}`;
 
   const html = `<!doctype html>
@@ -39,6 +42,11 @@ export function renderShippedEmail(input: ShippedEmailInput): RenderedEmail {
                   Takip ettiğin şu özellik kullanıma açıldı:
                 </p>
                 <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#18181b;font-weight:600;">${title}</p>
+                ${
+                  note
+                    ? `<div style="margin:0 0 16px;padding:12px 16px;border-left:3px solid #18181b;background-color:#fafafa;font-size:14px;line-height:1.6;color:#3f3f46;">${note}</div>`
+                    : ""
+                }
                 <p style="margin:0 0 28px;font-size:15px;line-height:1.6;color:#3f3f46;">
                   Geri bildirimin ürünü doğrudan şekillendiriyor. Destek için teşekkürler!
                 </p>
@@ -67,7 +75,15 @@ export function renderShippedEmail(input: ShippedEmailInput): RenderedEmail {
 Takip ettiğin şu özellik kullanıma açıldı:
 
 ${input.title}
+${
+  note
+    ? `
+Ekibin notu:
 
+${note}
+`
+    : ""
+}
 Geri bildirimin ürünü doğrudan şekillendiriyor. Destek için teşekkürler!
 
 Portalda görüntüle: ${PORTAL_URL}
