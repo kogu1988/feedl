@@ -148,6 +148,12 @@ export const comments = pgTable(
       (): AnyPgColumn => posts.id,
       { onDelete: "set null" },
     ),
+    // Sprint 24: yanıt zinciri — yalnızca TEK SEVİYE (yanıtın yanıtına
+    // parentId verilmez); parent silinince yanıtlar da cascade ile gider.
+    parentId: uuid("parent_id").references((): AnyPgColumn => comments.id, {
+      onDelete: "cascade",
+    }),
+    editedAt: timestamp("edited_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

@@ -5,12 +5,15 @@ import { analyzeIdea, compareIdeas, normalizeTags } from "@/lib/ai/analysis";
 import { embedText } from "@/lib/ai/openrouter";
 import { sendEmails } from "@/lib/email/send";
 import { renderAdminNewPostEmail } from "@/lib/email/admin-new-post";
+import { renderCommentEmail } from "@/lib/email/comment";
 import { renderShippedEmail } from "@/lib/email/shipped";
 import { getDb } from "@/lib/db";
-import { postTags, posts, tags, users, votes } from "@/lib/db/schema";
+import { comments, postTags, posts, tags, users, votes } from "@/lib/db/schema";
 import {
+  commentCreatedEventSchema,
   postCreatedEventSchema,
   postStatusChangedEventSchema,
+  type CommentCreatedEvent,
   type PostCreatedEvent,
   type PostStatusChangedEvent,
 } from "@/lib/validations/events";
@@ -316,6 +319,133 @@ export const notifyAdminNewPost = inngest.createFunction(
     return {
       provider: result.provider,
       recipients: context.adminEmails.length,
+      sent: result.sent,
+      failed: result.failed,
+      previewUrls: result.previewUrls,
+    };
+  },
+);
+
+// plan.md Sprint 24: fikre yeni (iç olmayan) yorum geldiğinde fikir
+// yazarına; yanıt ise yanıtlanan yorumun yazarına da bildirim. Yorumun
+// kendi yazarına mail gitmez. Alıcılar DB'den çözülür.
+export const notifyCommentCreated = inngest.createFunction(
+  { id: "notify-comment-created", retries: 3, triggers: { event: "post/comment.created" } },
+  async ({ event, step }) => {
+    const payload: CommentCreatedEvent = commentCreatedEventSchema.parse(
+      event.data,
+    );
+
+    const context = await step.run("fetch-comment-recipients", async () => {
+      const [comment] = await getDb()
+        .select({
+          id: comments.id,
+          postId: comments.postId,
+          userId: comments.userId,
+          parentId: comments.parentId,
+          body: comments.body,
+        })
+        .from(comments)
+        .where(eq(comments.id, payload.commentId))
+        .limit(1);
+      if (!comment) {
+        throw new NonRetriableError(
+          `Comment not found: ${payload.commentId}`,
+        );
+      }
+
+      const [post] = await getDb()
+        .select({ id: posts.id, title: posts.title, userId: posts.userId })
+        .from(posts)
+        .where(eq(posts.id, comment.postId))
+        .limit(1);
+      if (!post) {
+        throw new NonRetriableError(`Post not found: ${comment.postId}`);
+      }
+
+      const [commenter] = await getDb()
+        .select({ name: users.name })
+        .from(users)
+        .where(eq(users.id, comment.userId))
+        .limit(1);
+
+      // Yanıt varsa parent yorumun yazarı da alıcı adayıdır.
+      let parentAuthorEmail: string | null = null;
+      if (comment.parentId) {
+        const [parent] = await getDb()
+          .select({ userId: comments.userId })
+          .from(comments)
+          .where(eq(comments.id, comment.parentId))
+          .limit(1);
+        if (parent) {
+          const [parentUser] = await getDb()
+            .select({ email: users.email })
+            .from(users)
+            .where(eq(users.id, parent.userId))
+            .limit(1);
+          parentAuthorEmail = parentUser?.email ?? null;
+        }
+      }
+
+      const [postAuthor] = await getDb()
+        .select({ email: users.email })
+        .from(users)
+        .where(eq(users.id, post.userId))
+        .limit(1);
+
+      const [commenterEmail] = await getDb()
+        .select({ email: users.email })
+        .from(users)
+        .where(eq(users.id, comment.userId))
+        .limit(1);
+      const commenterEmailValue = commenterEmail?.email ?? "";
+
+      // Yorumcu hariç, tekil alıcı listesi. Fikir yazarı yoksa (silinmiş
+      // kullanıcı) yalnızca parent alıcısına düşer; ikisi de yoksa skip.
+      const recipients = [
+        ...new Set(
+          [postAuthor?.email ?? null, parentAuthorEmail].filter(
+            (email): email is string =>
+              Boolean(email) && email !== commenterEmailValue,
+          ),
+        ),
+      ];
+
+      return {
+        recipients,
+        ideaTitle: post.title,
+        ideaUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? "https://getfeedl.vercel.app"}/portal/${post.id}`,
+        commenterName: commenter?.name ?? null,
+        commentBody: comment.body,
+        isReply: Boolean(comment.parentId),
+      };
+    });
+
+    if (context.recipients.length === 0) {
+      return { skipped: true, reason: "no-recipients" };
+    }
+
+    const result = await step.run("send-comment-emails", async () => {
+      const message = renderCommentEmail({
+        ideaTitle: context.ideaTitle,
+        ideaUrl: context.ideaUrl,
+        commenterName: context.commenterName,
+        commentBody: context.commentBody,
+        isReply: context.isReply,
+      });
+      return sendEmails(
+        context.recipients.map((email) => ({
+          to: email,
+          subject: message.subject,
+          html: message.html,
+          text: message.text,
+        })),
+      );
+    });
+
+    return {
+      provider: result.provider,
+      recipients: context.recipients.length,
       sent: result.sent,
       failed: result.failed,
       previewUrls: result.previewUrls,

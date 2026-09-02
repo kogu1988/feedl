@@ -25,4 +25,15 @@ export const postStatusChangedEventSchema = z.object({
   note: z.string().max(500).optional(),
 });
 
+// Sprint 24: fikre yeni (iç olmayan) yorum geldiğinde — alıcılar (fikir
+// yazarı + yanıtlanan yorumun yazarı) fonksiyon içinde DB'den çözülür;
+// event yalnızca kimlikler taşır, e-posta adresi taşımaz.
+export const commentCreatedEventSchema = z.object({
+  commentId: z.uuid(),
+  postId: z.uuid(),
+  commenterUserId: z.string().min(1),
+});
+
+export type CommentCreatedEvent = z.infer<typeof commentCreatedEventSchema>;
+
 export type PostStatusChangedEvent = z.infer<typeof postStatusChangedEventSchema>;

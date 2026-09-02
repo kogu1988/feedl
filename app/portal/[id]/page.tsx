@@ -5,8 +5,9 @@ import { auth } from "@clerk/nextjs/server";
 import { and, asc, count, countDistinct, desc, eq, gt, inArray, isNotNull, isNull, ne, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { z } from "zod";
-import { ArrowLeftIcon, EyeOffIcon, GitMergeIcon, SparklesIcon } from "lucide-react";
+import { ArrowLeftIcon, GitMergeIcon, SparklesIcon } from "lucide-react";
 
+import { CommentCard } from "@/components/custom/comment-card";
 import { CommentForm } from "@/components/custom/comment-form";
 import { CommentCountBadge } from "@/components/custom/comment-count-badge";
 import { KeywordChips } from "@/components/custom/keyword-chips";
@@ -27,7 +28,7 @@ import {
 import { getRole } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { comments, postTags, posts, tags, users, votes } from "@/lib/db/schema";
-import { trDateFormatter, trDateTimeFormatter } from "@/lib/post-format";
+import { trDateFormatter } from "@/lib/post-format";
 
 // Fikir detay + yorumlar (plan.md Sprint 10). /portal(.*) middleware'da
 // public: okuma herkese açık, yazma işlemleri handler'da auth kontrolü yapar.
@@ -239,36 +240,54 @@ export default async function PostDetailPage({
             Henüz yorum yok — ilk yorumu sen yaz.
           </p>
         ) : (
-          commentRows.map((comment) => (
-            <Card
-              key={comment.id}
-              className={
-                comment.isInternal
-                  ? "border-amber-600/30 bg-amber-500/5"
-                  : undefined
-              }
-            >
-              <CardHeader>
-                <CardDescription className="flex flex-wrap items-center gap-2">
-                  <span className="font-medium text-foreground">
-                    {comment.authorName ?? "Üye"}
-                  </span>
-                  <span>{trDateTimeFormatter.format(comment.createdAt)}</span>
-                  {comment.isInternal ? (
-                    <span className="inline-flex items-center gap-1 rounded-full border border-amber-600/30 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">
-                      <EyeOffIcon className="size-3" aria-hidden="true" />
-                      İç not
-                    </span>
+          commentRows
+            .filter((comment) => !comment.parentId)
+            .map((comment) => {
+              const replies = commentRows.filter(
+                (row) => row.parentId === comment.id,
+              );
+              return (
+                <div key={comment.id} className="grid gap-3">
+                  <CommentCard
+                    postId={post.id}
+                    isAdmin={isAdmin}
+                    isSignedIn={Boolean(userId)}
+                    currentUserId={userId}
+                    comment={{
+                      id: comment.id,
+                      body: comment.body,
+                      isInternal: comment.isInternal,
+                      createdAt: comment.createdAt,
+                      editedAt: comment.editedAt,
+                      authorName: comment.authorName,
+                      authorUserId: comment.authorUserId,
+                    }}
+                  />
+                  {replies.length > 0 ? (
+                    <div className="ml-4 grid gap-3 border-l-2 pl-4 sm:ml-8 sm:pl-6">
+                      {replies.map((reply) => (
+                        <CommentCard
+                          key={reply.id}
+                          postId={post.id}
+                          isAdmin={isAdmin}
+                          isSignedIn={Boolean(userId)}
+                          currentUserId={userId}
+                          comment={{
+                            id: reply.id,
+                            body: reply.body,
+                            isInternal: reply.isInternal,
+                            createdAt: reply.createdAt,
+                            editedAt: reply.editedAt,
+                            authorName: reply.authorName,
+                            authorUserId: reply.authorUserId,
+                          }}
+                        />
+                      ))}
+                    </div>
                   ) : null}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="whitespace-pre-line text-sm leading-relaxed">
-                  {comment.body}
-                </p>
-              </CardContent>
-            </Card>
-          ))
+                </div>
+              );
+            })
         )}
       </section>
 
@@ -348,7 +367,10 @@ async function loadComments(postId: string, isAdmin: boolean) {
       body: comments.body,
       isInternal: comments.isInternal,
       createdAt: comments.createdAt,
+      editedAt: comments.editedAt,
+      parentId: comments.parentId,
       authorName: users.name,
+      authorUserId: comments.userId,
     })
     .from(comments)
     .innerJoin(users, eq(comments.userId, users.id))

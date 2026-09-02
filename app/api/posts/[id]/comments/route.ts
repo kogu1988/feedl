@@ -7,6 +7,8 @@ import { getRole } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { comments, posts } from "@/lib/db/schema";
 import { createCommentSchema } from "@/lib/validations/comment";
+import { commentCreatedEventSchema } from "@/lib/validations/events";
+import { inngest } from "@/inngest/client";
 
 // POST /api/posts/[id]/comments — fikre yorum yazar (plan.md Sprint 10).
 // Rota middleware'da /api/posts(.*) public deseniyle eşleşir; giriş
@@ -77,6 +79,36 @@ export async function POST(
     const role = await getRole(userId);
     const isInternal = role === "admin" && parsed.data.isInternal;
 
+    // Sprint 24: yanıt hedefi doğrulaması — parent aynı fikirde olmalı ve
+    // TEK SEVİYE thread (parent'ın da parentId'si olamaz).
+    if (parsed.data.parentId) {
+      const [parent] = await getDb()
+        .select({
+          id: comments.id,
+          postId: comments.postId,
+          parentId: comments.parentId,
+          userId: comments.userId,
+        })
+        .from(comments)
+        .where(eq(comments.id, parsed.data.parentId))
+        .limit(1);
+      if (!parent || parent.postId !== parsedId.data) {
+        return NextResponse.json(
+          { success: false, error: "Yanıtlanacak yorum bulunamadı." },
+          { status: 400 },
+        );
+      }
+      if (parent.parentId) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Yanıtlar yalnızca bir seviye derinlikte olabilir.",
+          },
+          { status: 400 },
+        );
+      }
+    }
+
     const [created] = await getDb()
       .insert(comments)
       .values({
@@ -84,12 +116,37 @@ export async function POST(
         userId,
         body: parsed.data.body,
         isInternal,
+        ...(parsed.data.parentId ? { parentId: parsed.data.parentId } : {}),
       })
       .returning({
         id: comments.id,
         isInternal: comments.isInternal,
         createdAt: comments.createdAt,
       });
+
+    // Sprint 24: iç notlar için bildirim gönderilmez; normal yorumlarda
+    // yazar + yanıtlanan kişiye haber ver. Event gönderimi başarısız olsa
+    // bile yorum kaydedilmiş kalır.
+    if (!isInternal) {
+      const eventPayload = commentCreatedEventSchema.safeParse({
+        commentId: created.id,
+        postId: parsedId.data,
+        commenterUserId: userId,
+      });
+      if (eventPayload.success) {
+        try {
+          await inngest.send({
+            name: "post/comment.created",
+            data: eventPayload.data,
+          });
+        } catch (eventErr) {
+          console.error(
+            "post/comment.created event could not be sent:",
+            eventErr instanceof Error ? eventErr.message : eventErr,
+          );
+        }
+      }
+    }
 
     return NextResponse.json({ success: true, data: created }, { status: 201 });
   } catch (err) {

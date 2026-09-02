@@ -16,12 +16,17 @@ import {
 // Post detay sayfasındaki yorum formu (plan.md Sprint 10). shadcn form
 // bileşeni registry'den kalktığı için elle kompoze edilir (new-post-dialog
 // ile aynı desen). Admin olmayanlara "İç not" kutusu hiç gösterilmez.
+// Sprint 24: parentId verilirse kompakt "yanıt" moduna geçer.
 export function CommentForm({
   postId,
   isAdmin,
+  parentId,
+  onCancel,
 }: {
   postId: string;
   isAdmin: boolean;
+  parentId?: string;
+  onCancel?: () => void;
 }) {
   const [formError, setFormError] = useState<string | null>(null);
   const router = useRouter();
@@ -35,10 +40,11 @@ export function CommentForm({
     formState: { errors, isSubmitting },
   } = useForm<CreateCommentInput>({
     resolver: zodResolver(createCommentSchema),
-    defaultValues: { body: "", isInternal: false },
+    defaultValues: { body: "", isInternal: false, parentId },
   });
 
   const isInternal = watch("isInternal");
+  const isReply = Boolean(parentId);
 
   const onSubmit = async (values: CreateCommentInput) => {
     setFormError(null);
@@ -56,7 +62,8 @@ export function CommentForm({
         return;
       }
 
-      reset({ body: "", isInternal: false });
+      reset({ body: "", isInternal: false, parentId });
+      onCancel?.();
       router.refresh();
     } catch {
       setFormError("Bağlantı hatası. Lütfen tekrar deneyin.");
@@ -64,10 +71,13 @@ export function CommentForm({
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="grid gap-3">
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className={isReply ? "grid gap-2" : "grid gap-3"}
+    >
       <Textarea
-        rows={3}
-        placeholder="Düşünceni yaz..."
+        rows={isReply ? 2 : 3}
+        placeholder={isReply ? "Yanıtını yaz..." : "Düşünceni yaz..."}
         aria-label="Yorum"
         aria-invalid={Boolean(errors.body)}
         {...register("body")}
@@ -98,10 +108,21 @@ export function CommentForm({
         </p>
       ) : null}
 
-      <div>
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Gönderiliyor..." : "Yorum Yap"}
+      <div className="flex items-center gap-2">
+        <Button type="submit" disabled={isSubmitting} size={isReply ? "sm" : "default"}>
+          {isSubmitting ? "Gönderiliyor..." : isReply ? "Yanıtla" : "Yorum Yap"}
         </Button>
+        {isReply && onCancel ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={onCancel}
+            disabled={isSubmitting}
+          >
+            İptal
+          </Button>
+        ) : null}
       </div>
     </form>
   );
