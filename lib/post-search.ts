@@ -109,11 +109,23 @@ export function buildPostSearch(
     .filter((token) => token.length >= 4)
     .map((token) => sql`word_similarity(${token}, ${foldedText}) > 0.55`);
 
-  // Vektör koşulu (Sprint 27 revizyonu): sorgu embedding'i verildiyse
-  // anlamsal benzerlik de eşleşme sayılır — 'günce tutma' -> 'Log kayıtları'.
-  // Eşik 0.32: near-dup eşiği (0.5) altında, gürültü üstünde.
-  const vectorCondition = queryEmbedding
-    ? sql`(coalesce(1 - (${posts.embeddingVector} <=> ${`[${queryEmbedding.join(",")}]`}::vector), 0) >= 0.32)`
+  // Vektör koşulu (Sprint 27 revizyon 2): mutlak eşik yerine GÖRELİ seçim —
+  // bu modelin mutlak benzerlik dağılımı düşük (anlamlı çiftler bile
+  // 0.10-0.25 bandında). Fallback aşamasında: en yakın 5 fikir, 0.10
+  // gürültü tabanı altındakiler hariç.
+  const vectorLiteral = queryEmbedding
+    ? sql`${`[${queryEmbedding.join(",")}]`}::vector`
+    : undefined;
+  const vectorCondition = vectorLiteral
+    ? sql`(
+        ${posts.id} in (
+          select id from posts
+          where embedding_vector is not null
+          order by embedding_vector <=> ${vectorLiteral}
+          limit 5
+        )
+        and coalesce(1 - (${posts.embeddingVector} <=> ${vectorLiteral}), 0) >= 0.10
+      )`
     : undefined;
 
   const conditionParts: SQL[] = [foldCondition, ftsCondition];
