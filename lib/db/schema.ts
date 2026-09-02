@@ -226,3 +226,20 @@ export const postTags = pgTable(
 
 export type PostTag = typeof postTags.$inferSelect;
 export type NewPostTag = typeof postTags.$inferInsert;
+
+// saved_views: Sprint 22 — admin'in kaydettiği filtre kombinasyonları
+// (?status=...&tag=...). MVP'de tek admin olduğu için userId kolonu yok;
+// çoklu admin gelirse eklenir (bkz. plan.md P0.1 ertelenen blok).
+export const savedViews = pgTable("saved_views", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  // Query string olarak saklanır (örn. "status=open&tag=arama") —
+  // dashboard ?v= yerine doğrudan filtre parametreleriyle açılır.
+  params: text("params").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export type SavedView = typeof savedViews.$inferSelect;
+export type NewSavedView = typeof savedViews.$inferInsert;

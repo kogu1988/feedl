@@ -1,13 +1,10 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { DownloadIcon } from "lucide-react";
 import { count, desc, eq, inArray } from "drizzle-orm";
 
-import { KeywordChips } from "@/components/custom/keyword-chips";
 import { FilterTabs } from "@/components/custom/filter-tabs";
-import { SentimentBadge } from "@/components/custom/sentiment-badge";
-import { StatusSelect } from "@/components/custom/status-select";
-import { TypeBadge } from "@/components/custom/type-badge";
+import { PostsTable } from "@/components/custom/posts-table";
+import { SavedViewBar } from "@/components/custom/saved-view-bar";
 import {
   Card,
   CardContent,
@@ -15,17 +12,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
-import { postStatusEnum, postTags, posts, tags, votes } from "@/lib/db/schema";
+import {
+  postStatusEnum,
+  postTags,
+  posts,
+  savedViews,
+  tags,
+  votes,
+} from "@/lib/db/schema";
 import { statusLabels } from "@/lib/post-format";
 
 // Canlı veri: her istekte DB'den okunur.
@@ -53,11 +49,13 @@ export default async function DashboardPage({
 
   let rows: Awaited<ReturnType<typeof loadPosts>> = [];
   let tagOptions: Awaited<ReturnType<typeof loadTagOptions>> = [];
+  let views: Awaited<ReturnType<typeof loadSavedViews>> = [];
   let loadError = false;
 
   try {
     rows = await loadPosts(tagFilter);
     tagOptions = await loadTagOptions();
+    views = await loadSavedViews();
   } catch (err) {
     console.error(
       "Dashboard list failed:",
@@ -157,6 +155,18 @@ export default async function DashboardPage({
                   ]}
                 />
               ) : null}
+              <SavedViewBar
+                views={views}
+                currentParams={Object.fromEntries(
+                  [
+                    ["status", statusFilter],
+                    ["tag", tagFilter],
+                  ].filter(
+                    (pair): pair is [string, string] =>
+                      pair[1] !== null && pair[1] !== "",
+                  ),
+                )}
+              />
             </div>
           ) : null}
         </CardHeader>
@@ -174,67 +184,23 @@ export default async function DashboardPage({
               Bu durumda fikir yok.
             </p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[60px]">Oy</TableHead>
-                  <TableHead>Başlık</TableHead>
-                  <TableHead className="w-[200px]">AI</TableHead>
-                  <TableHead className="w-[140px]">Tarih</TableHead>
-                  <TableHead className="w-[170px] text-right">Durum</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {visibleRows.map((post) => (
-                  <TableRow key={post.id}>
-                    <TableCell className="font-medium tabular-nums">
-                      {post.voteCount}
-                    </TableCell>
-                    <TableCell>
-                      <div className="max-w-[360px] truncate font-medium">
-                        <Link
-                          href={`/portal/${post.id}`}
-                          className="underline-offset-4 transition-colors hover:text-primary hover:underline"
-                        >
-                          {post.title}
-                        </Link>
-                      </div>
-                      {post.postType ? (
-                        <div className="mt-0.5">
-                          <TypeBadge type={post.postType} />
-                        </div>
-                      ) : null}
-                      {post.mergedIntoId ? (
-                        <div className="mt-0.5 inline-flex items-center gap-1 rounded-full border border-amber-600/30 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">
-                          Birleştirildi
-                        </div>
-                      ) : null}
-                      <div className="font-mono text-xs text-muted-foreground">
-                        {post.id}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {post.sentimentLabel ? (
-                        <div className="grid gap-1">
-                          <SentimentBadge sentiment={post.sentimentLabel} />
-                          {post.aiKeywords && post.aiKeywords.length > 0 ? (
-                            <KeywordChips keywords={post.aiKeywords} max={2} />
-                          ) : null}
-                        </div>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {dateFormatter.format(post.createdAt)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <StatusSelect postId={post.id} status={post.status} />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <PostsTable
+              rows={visibleRows.map((row) => ({
+                id: row.id,
+                title: row.title,
+                status: row.status,
+                postType: row.postType,
+                mergedIntoId: row.mergedIntoId,
+                sentimentLabel: row.sentimentLabel,
+                aiKeywords: row.aiKeywords,
+                createdAtLabel: dateFormatter.format(row.createdAt),
+                voteCount: row.voteCount,
+              }))}
+              tagOptions={tagOptions.map((option) => ({
+                id: option.id,
+                name: option.name,
+              }))}
+            />
           )}
         </CardContent>
       </Card>
@@ -282,12 +248,26 @@ async function loadPosts(tagFilter: string) {
 }
 
 // Sprint 21: etiket filtre sekmeleri — en çok kullanılan 8 etiket.
+// Sprint 22: id de dönülüyor (bulk etiket işlemi için).
 async function loadTagOptions() {
   return getDb()
-    .select({ name: tags.name, count: count(postTags.id) })
+    .select({ id: tags.id, name: tags.name, count: count(postTags.id) })
     .from(tags)
     .innerJoin(postTags, eq(postTags.tagId, tags.id))
     .groupBy(tags.id)
     .orderBy(desc(count(postTags.id)))
     .limit(8);
+}
+
+// Sprint 22: kayıtlı görünümler — en yeniden.
+async function loadSavedViews() {
+  return getDb()
+    .select({
+      id: savedViews.id,
+      name: savedViews.name,
+      params: savedViews.params,
+    })
+    .from(savedViews)
+    .orderBy(desc(savedViews.createdAt))
+    .limit(12);
 }
