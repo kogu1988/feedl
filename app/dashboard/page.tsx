@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { DownloadIcon } from "lucide-react";
-import { count, desc, eq, inArray } from "drizzle-orm";
+import { count, desc, eq, inArray, asc } from "drizzle-orm";
 
 import { FilterTabs } from "@/components/custom/filter-tabs";
 import { PostsTable } from "@/components/custom/posts-table";
@@ -255,8 +255,8 @@ async function loadTagOptions() {
     .from(tags)
     .innerJoin(postTags, eq(postTags.tagId, tags.id))
     .groupBy(tags.id)
-    .orderBy(desc(count(postTags.id)))
-    .limit(8);
+    .orderBy(desc(count(postTags.id)), asc(tags.name))
+    .limit(20);
 }
 
 // Sprint 22: kayıtlı görünümler — en yeniden.

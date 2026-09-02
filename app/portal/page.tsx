@@ -1,4 +1,4 @@
-import { and, count, countDistinct, desc, eq, inArray, isNull, type SQL } from "drizzle-orm";
+import { and, asc, count, countDistinct, desc, eq, inArray, isNull, type SQL } from "drizzle-orm";
 import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
 import { Show, SignInButton } from "@clerk/nextjs";
@@ -446,11 +446,13 @@ async function loadPosts(
 
 // Sprint 21: etiket filtre sekmeleri — en çok kullanılan 8 etiket.
 async function loadTagOptions() {
+  // Sprint 24 sonrası: limit 8 -> 20 (yeni etiketler sekmelerde görünmez
+  // oluyordu); eşit kullanımda alfabetik sıra öngörülebilirlik sağlar.
   return getDb()
     .select({ name: tags.name, count: count(postTags.id) })
     .from(tags)
     .innerJoin(postTags, eq(postTags.tagId, tags.id))
     .groupBy(tags.id)
-    .orderBy(desc(count(postTags.id)))
-    .limit(8);
+    .orderBy(desc(count(postTags.id)), asc(tags.name))
+    .limit(20);
 }
