@@ -1093,6 +1093,13 @@ Manrope (latin-ext, Türkçe destekli; Geist Mono korunur).
 - Plan modeli (canny.md §F temelli): Free katmanı + tracked-user
   tabanlı ücretli planlar; "Powered by feedl" free planda kalır.
   Fiyat/paket detayı uygulama sprint'inde netleşir.
+- **İsimlendirme çakışması:** Paddle hesabında başka bir projeye ait
+  mevcut veriler/ayarlar var. feedl'e ait her şey `feedl_` önekiyle
+  adlandırılır (ürün/fiyat/indirim adları, webhook adları, custom_data
+  anahtarları); mevcut projenin kayıtlarına dokunulmaz. Sandbox hesabı
+  iki proje tarafından paylaşıldığından hesap geneli ayarlarda
+  (varsayılan checkout, payment link domain vb.) değişiklik yapılmadan
+  önce kullanıcıya sorulur.
 
 ---
 
