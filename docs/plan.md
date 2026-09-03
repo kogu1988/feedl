@@ -881,9 +881,20 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   çalışmıyor). Portal iki aşamalı: boş sonuç olmadıkça OpenRouter
   çağrılmaz. **Not:** pg_trgm extension/index yeni ortamda manuel
   kurulmalı; arama sırasında filtre sekmeleri gizli (Sprint 12 davranışı).
-- ☐ **Sprint 28 — Internal Roadmap + Scoring (P2.2):** admin'de owner,
-  target date, effort/impact, basit RICE skoru; public roadmap'ten ayrı
-  internal görünüm.
+- ✅ **Sprint 28 — Internal Roadmap + Scoring (P2.2)** (2026-09-03,
+  commit b90e7c3 + ownerId düzeltmesi 5de97ad, üretimde terminal ile
+  doğrulandı): posts tablosuna owner_id (FK users, set null),
+  target_date (date), impact/effort (int 1-3) kolonları (migration
+  0014, DB'de doğrulandı); PATCH /api/admin/posts ownerId/targetDate/
+  impact/effort kabul eder (hepsi opsiyonel, null = temizle; ownerId
+  için kullanıcı varlık kontrolü); dashboard'da "İç Roadmap
+  (Planlama)" kartı + components/custom/roadmap-planner.tsx (owner
+  seçimi, hedef tarih, etki/efor 1-3, skor = etki/efor gösterge;
+  alan değişimi anında tek PATCH atar). Müşteri tarafına sızmaz
+  (portal/roadmap değişmedi). **Ders:** Clerk user ID'ler UUID
+  değildir (`user_...`) — ownerId önce z.uuid() ile doğrulanınca
+  PATCH 400 döndü ("Geçersiz fikir kimliği veya durum.");
+  z.string().min(1) + varlık kontrolü ile düzeltildi.
 - ☐ **Sprint 29 — Temel Analytics (rapor §1):** dashboard özet
   metrikleri (haftalık yeni fikir/oy/yorum, en çok istenenler,
   sentiment dağılımı); CSV export'u genişlet.

@@ -108,6 +108,11 @@ docs/                                                 planning docs (source of t
   your own catch swallows it and redirects to the fallback (admin "/" →
   portal bug, fixed 2026-09-01). Compute the target inside try, call
   `redirect()` after the block.
+- **Clerk user IDs are NOT UUIDs** (format `user_...`). Never validate
+  text columns holding Clerk IDs with `z.uuid()` — the request 400s
+  even though the DB FK accepts it (Sprint 28: ownerId PATCH returned
+  "Geçersiz fikir kimliği veya durum."). Use `z.string().min(1)` and,
+  when the field is a FK, verify the referenced user exists in the DB.
 - **Search lives in `lib/post-search.ts`** (Turkish-aware, used by
   /api/posts GET + portal): multi-token AND, diacritic folding via SQL
   `translate+lower` mirrored in JS `foldTr`, relevance score (title 2 /
