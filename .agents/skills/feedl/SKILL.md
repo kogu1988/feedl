@@ -1,13 +1,15 @@
 ---
 name: feedl
-description: feedl (feedl.co) MVP development guide - AI feedback platform (Canny clone) on Next.js 15 + Clerk + Neon/Drizzle + Inngest + OpenRouter (LLM + embeddings). Use when continuing development in this repo it locates the source-of-truth docs in docs/ defines the sprint workflow and conventions and lists hard-won pitfalls (OpenRouter free-model quirks pgvector 2000-dim index cap shadcn form removal svix typing Clerk React pin).
+description: feedl (feedl.co) development guide - AI feedback platform (Canny clone) on Next.js 15 + Clerk + Neon/Drizzle + Inngest + OpenRouter (LLM + embeddings), LIVE at getfeedl.vercel.app. Use when continuing development in this repo it locates the source-of-truth docs in docs/ defines the sprint workflow and conventions and lists hard-won pitfalls (OpenRouter free-model quirks pgvector 2000-dim cap Clerk v7 split exports neon-http CTE pattern widget iframe/JWT origin rules Windows file-tool quirks).
 ---
 
 # feedl - Project Development Guide
 
-feedl (domain: feedl.co, planned) is an AI-supported customer feedback platform -
-a Canny clone MVP built solo. This skill encodes everything learned so far so
-future sessions do not repeat mistakes.
+feedl (domain feedl.co is PLANNED, not bought - do not wire domains) is an
+AI-supported customer feedback platform - a Canny clone MVP built solo. It is
+LIVE at https://getfeedl.vercel.app (Vercel, project "feedl", team
+ogukis-vercel-projects); pushing to main deploys to production. This skill
+encodes everything learned so far so future sessions do not repeat mistakes.
 
 Git: `github.com/kogu1988/feedl` (main) - commit + push after each validated sprint.
 
@@ -45,20 +47,33 @@ Do not duplicate these docs in code comments; point to them.
 - Inngest for background jobs; OpenRouter for BOTH LLM (`minimax/minimax-m3:free`)
   and embeddings (`nvidia/nemotron-3-embed-1b:free`, 2048 dims) - single API key
 - Email: Resend (production) / Ethereal.email (dev/test)
+- Widget SDK (Sprint 32): zero-dependency HS256 JWT via node:crypto in
+  `lib/widget/jwt.ts` - jose was NOT installed on purpose
 
 ## Repo layout
 
 ```
-app/api/{posts,votes,admin/export,webhooks,inngest}   API routes
-app/{dashboard,roadmap,portal,portal/[id],portal/oyladiklarim,
-  sign-in/[[...sign-in]],sign-up/[[...sign-up]]}       Pages (portal/[id]:
-                                                       detail; oyladiklarim:
-                                                       static, shadows [id])
-lib/{db,ai,email}                                     db schema+client, AI helpers, email templates
+app/layout.tsx                                        Root layout: BARE (html/body
+                                                      only, NO ClerkProvider)
+app/(main)/layout.tsx                                 ClerkProvider + top bar live HERE
+app/(main)/{page,dashboard,dashboard/widget,roadmap,  App pages: admin dashboard,
+  sign-in/[[...sign-in]],sign-up/[[...sign-up]]}      widget setup, roadmap, auth
+app/(main)/portal{,/[id],/oyladiklarim,/changelog}    Public portal (detail;
+                                                      oyladiklarim: static, shadows [id])
+app/widget/page.tsx                                   Iframe embed page (bare shell)
+app/not-found.tsx + app/(main)/{not-found,error}.tsx  404/500 share not-found-view
+app/api/{posts,posts/[id]/comments,comments/[commentId],votes}
+                                                      Core CRUD APIs
+app/api/admin/{posts,posts/bulk,merge,views,export,changelog,widget-token}
+                                                      Admin APIs
+app/api/{webhooks/clerk,inngest,unsubscribe}          svix + Inngest serve + opt-out
+app/api/widget/{session,posts,votes}                  Widget SDK endpoints
+lib/{db,ai,email,widget}                              db schema+client, AI, email, widget JWT/http
 lib/{post-format,post-search,validations}.ts          status labels+dates, Turkish search, zod schemas
 components/{ui,custom}                                shadcn ui + project components
 inngest/                                              Inngest function definitions
 migrations/                                           drizzle-kit output
+public/widget.js                                      Embeddable <script> launcher
 docs/                                                 planning docs (source of truth)
 ```
 
@@ -72,7 +87,12 @@ docs/                                                 planning docs (source of t
 - DB client: lazy `getDb()` from `lib/db/index.ts` - never instantiate at module
   top level (keeps `next build` working without DATABASE_URL)
 - Public routes in middleware: `/`, `/sign-in(.*)`, `/sign-up(.*)`, `/portal(.*)`,
-  `/api/posts(.*)` (GET public, POST checks auth in handler), `/api/webhooks(.*)`
+  `/roadmap(.*)`, `/widget`, `/api/posts(.*)` (GET public, POST checks auth in
+  handler), `/api/widget(.*)`, `/api/webhooks(.*)`
+- **Dual layout (Sprint 32)**: root `app/layout.tsx` is BARE; `ClerkProvider`
+  + top bar live in `app/(main)/layout.tsx`. Pages that must render without a
+  Clerk session (widget iframe) sit OUTSIDE `(main)`. New normal pages go
+  under `app/(main)/`
 - **Comments / internal notes** (Sprint 10): `comments.is_internal=true`
   olanlar HER okuma yolunda server-side filtrelenir (sayfa sorgusu + API);
   flag yalnızca admin oturumunda set edilir, istemciden gelen bayrağa
@@ -158,6 +178,31 @@ docs/                                                 planning docs (source of t
   sendEmails call). Email templates share `escapeHtml` from
   `lib/email/html.ts`; branded boundaries: `app/not-found.tsx` (404) +
   `app/error.tsx` (500, client, reset()).
+- **Widget SDK rules (Sprint 32)**: widget JWT (HS256, short-lived,
+  node:crypto in `lib/widget/jwt.ts`) rides an httpOnly cookie; inside an
+  iframe it is a third-party context, so the cookie needs SameSite=None and
+  Safari ITP can still block it (warning shown on /dashboard/widget). The
+  origin allowlist (`FEEDL_WIDGET_ALLOWED_ORIGINS`) is enforced per request
+  in `lib/widget/http.ts` `requestOrigin()` - handlers using it MUST be typed
+  `NextRequest` (plain `Request` fails the build); GET-only handlers may stay
+  `Request`. Widget session POST = signed JWT in, cookie + CORS out; anonim
+  widget API calls get 401. `posts.widgetOrigin` (migration 0015) records the
+  embed origin per post (also a CSV export column).
+- **Vercel env changes need a REDEPLOY** (adding FEEDL_WIDGET_SECRET to an
+  already-deployed project changed nothing until `vercel --prod` re-ran).
+  Create secrets with `vercel env add <KEY> production` and paste the value -
+  NEVER echo secret values into chat (widget secret, API keys...).
+- **File tools choke on parenthesized route groups**: `move_path` /
+  `create_directory` reject `app/(main)/...` as "outside the project". Use
+  terminal `mkdir` + `git mv`; if directory-level `git mv` hits "Permission
+  denied" (tsserver holds locks), move FILE BY FILE. `write_file` cannot
+  create missing directories - `mkdir` first.
+- **Widget debugging (Sprint 32 E2E)**: `vercel logs <deployment-url> --json`
+  shows the real error behind API 500s (fetching via the alias URL can hang).
+  A widget 500 "Fikir kaydedilemedi" was a DOUBLE prefix: the session cookie
+  `sub` is already `widget_`-prefixed, so `verifySessionPayload` must NOT call
+  `toWidgetUserId` again (fixed in 04d6b02). Widget vote DELETE takes postId
+  as a QUERY param (`/api/widget/votes?postId=...`), not a body.
 - **Schema change checklist (hard rule)**: after editing
   lib/db/schema.ts ALWAYS run `npx drizzle-kit generate` then
   `npx drizzle-kit migrate` BEFORE committing. `migrate` prints
@@ -296,10 +341,24 @@ docs/                                                 planning docs (source of t
    update the docs in the same change.
 3. Validate with `npm run build` (types + lint).
 4. Report the sprint's **Kontrol** checklist to the user for manual verification.
-5. External services: Neon via `npx neonctl`; Clerk app exists ("feedl",
-   `app_3Ih0Ue3SHQLk5HOOFnWEM7LD6Ze`, CLI linked, authed as oguzkir@gmail.com);
-   forward webhooks with `clerk webhooks listen` (see pitfalls); Vercel at the
-   deploy sprint.
+5. External services: Neon via `npx neonctl` (project feedl, bold-flower-95043158);
+   Clerk app exists ("feedl", `app_3Ih0Ue3SHQLk5HOOFnWEM7LD6Ze`, CLI linked,
+   authed as oguzkir@gmail.com); forward local webhooks with `clerk webhooks
+   listen` (see pitfalls); Inngest runs CLOUD via the official Vercel
+   integration (serve path /api/inngest; the Vercel "Protection Bypass for
+   Automation" key is registered in Inngest - deleting it in Vercel breaks
+   syncs); deploys are automatic on push to main (`vercel --prod` only when
+   env vars changed). Users test on PRODUCTION; `npm run build` is the only
+   in-session validation.
 6. **NEVER name anything** (Neon project, Vercel project, Clerk app, database,
    skill, etc.) without asking the user first - the user explicitly requires
     being consulted on every name.
+
+**Position (2026-09-03):** Sprint 32 (Widget SDK) is coded and deployed
+(`b188c51` + double-prefix fix `04d6b02`); agent-side E2E passed all 6 steps
+(session/cookie/CORS, anonim 401, fikir 201, liste+authenticated, oy
+ver/çek, geçersiz jeton 401). Remaining: the user's manual browser check,
+then mark Sprint 32 ✅ in docs/plan.md, then Sprint 33 (Autopilot Inbox) ->
+Sprint 34 (Public API + Webhooks); Sprints 29-31 (analytics, companies,
+opportunities) sit in backlog. Domain-bound work (custom domain,
+Organizations/subdomain) stays deferred until a domain is bought.
