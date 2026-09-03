@@ -5,7 +5,9 @@ import { and, asc, count, desc, eq, inArray, isNull } from "drizzle-orm";
 
 import { FilterTabs } from "@/components/custom/filter-tabs";
 import { AutopilotInbox } from "@/components/custom/autopilot-inbox";
+import { ApiKeysManager } from "@/components/custom/api-keys-manager";
 import { ChangelogAdmin } from "@/components/custom/changelog-admin";
+import { WebhooksManager } from "@/components/custom/webhooks-manager";
 import { PostsTable } from "@/components/custom/posts-table";
 import { RoadmapPlanner } from "@/components/custom/roadmap-planner";
 import { SavedViewBar } from "@/components/custom/saved-view-bar";
@@ -20,6 +22,7 @@ import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import {
   aiSuggestions,
+  apiKeys,
   changelogEntries,
   postStatusEnum,
   postTags,
@@ -28,6 +31,7 @@ import {
   tags,
   users,
   votes,
+  webhookEndpoints,
 } from "@/lib/db/schema";
 import { statusLabels, trDateTimeFormatter } from "@/lib/post-format";
 
@@ -66,6 +70,8 @@ export default async function DashboardPage({
     admins: [],
   };
   let inboxSuggestions: Awaited<ReturnType<typeof loadInboxSuggestions>> = [];
+  let apiKeyItems: Awaited<ReturnType<typeof loadApiKeys>> = [];
+  let webhookItems: Awaited<ReturnType<typeof loadWebhooks>> = [];
   let loadError = false;
 
   try {
@@ -75,6 +81,8 @@ export default async function DashboardPage({
     changelogData = await loadChangelogData();
     plannerData = await loadPlannerData();
     inboxSuggestions = await loadInboxSuggestions();
+    apiKeyItems = await loadApiKeys();
+    webhookItems = await loadWebhooks();
   } catch (err) {
     console.error(
       "Dashboard list failed:",
@@ -289,6 +297,34 @@ export default async function DashboardPage({
           )}
         </CardContent>
       </Card>
+
+      <Card className="mt-8">
+        <CardHeader>
+          <CardTitle>API Anahtarları</CardTitle>
+          <CardDescription>
+            Public API (/api/v1) uçlarını programatik kullanım için üret.
+            Anahtarlar SHA-256 karmasıyla saklanır; tam değer yalnızca
+            oluşturma anında gösterilir.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ApiKeysManager items={apiKeyItems} />
+        </CardContent>
+      </Card>
+
+      <Card className="mt-8">
+        <CardHeader>
+          <CardTitle>Webhook&apos;lar</CardTitle>
+          <CardDescription>
+            Seçtiğin olaylar gerçekleşince URL&apos;ne HMAC-SHA256 imzalı POST
+            gönderilir (X-Feedl-Signature başlığı). Teslimat Inngest ile
+            otomatik yeniden denenir.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <WebhooksManager items={webhookItems} />
+        </CardContent>
+      </Card>
     </main>
   );
 }
@@ -479,6 +515,55 @@ async function loadInboxSuggestions() {
     targetId: row.payload.duplicateOf,
     targetTitle: targetTitles.get(row.payload.duplicateOf) ?? null,
     sourceTitle: row.sourceTitle,
+    createdAtLabel: trDateTimeFormatter.format(row.createdAt),
+  }));
+}
+
+// Sprint 34: API anahtarları — prefix listesi (tam anahtar DB'de yok).
+async function loadApiKeys() {
+  const rows = await getDb()
+    .select({
+      id: apiKeys.id,
+      name: apiKeys.name,
+      prefix: apiKeys.prefix,
+      revokedAt: apiKeys.revokedAt,
+      lastUsedAt: apiKeys.lastUsedAt,
+      createdAt: apiKeys.createdAt,
+    })
+    .from(apiKeys)
+    .orderBy(desc(apiKeys.createdAt))
+    .limit(50);
+
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    prefix: row.prefix,
+    revoked: row.revokedAt !== null,
+    lastUsedLabel: row.lastUsedAt
+      ? trDateTimeFormatter.format(row.lastUsedAt)
+      : null,
+    createdAtLabel: trDateTimeFormatter.format(row.createdAt),
+  }));
+}
+
+// Sprint 34: webhook endpoint'leri — secret gösterilmez.
+async function loadWebhooks() {
+  const rows = await getDb()
+    .select({
+      id: webhookEndpoints.id,
+      url: webhookEndpoints.url,
+      events: webhookEndpoints.events,
+      createdAt: webhookEndpoints.createdAt,
+    })
+    .from(webhookEndpoints)
+    .orderBy(desc(webhookEndpoints.createdAt))
+    .limit(20);
+
+  return rows.map((row) => ({
+    id: row.id,
+    url: row.url,
+    events: row.events,
+    active: true,
     createdAtLabel: trDateTimeFormatter.format(row.createdAt),
   }));
 }

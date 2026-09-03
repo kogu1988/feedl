@@ -9,6 +9,11 @@ import { renderCommentEmail } from "@/lib/email/comment";
 import { renderStatusUpdateEmail } from "@/lib/email/status-update";
 import { renderShippedEmail } from "@/lib/email/shipped";
 import { statusLabels } from "@/lib/post-format";
+import {
+  deliverWebhook,
+  loadWebhookEndpoints,
+  type WebhookEventName,
+} from "@/lib/webhooks/dispatch";
 import { getDb } from "@/lib/db";
 import {
   comments,
@@ -560,5 +565,50 @@ export const notifyCommentCreated = inngest.createFunction(
       failed: result.failed,
       previewUrls: result.previewUrls,
     };
+  },
+);
+
+// Sprint 34 — webhook teslimatı: kaynak Inngest olaylarını noktalı webhook
+// olay adlarına çevirip abone endpoint'lere imzalı POST atar (analiz raporu
+// P4.2). Her endpoint ayrı step: tek hata yalnızca kendi teslimatını retry
+// eder. Kaynak olaylar zaten emitter'larda doğrulanmış payload taşır.
+const WEBHOOK_EVENT_MAP: Record<string, WebhookEventName> = {
+  "post/created": "post.created",
+  "post/status.changed": "post.status_changed",
+  "post/comment.created": "comment.created",
+};
+
+export const sendWebhooks = inngest.createFunction(
+  {
+    id: "send-webhooks",
+    retries: 3,
+    triggers: [
+      { event: "post/created" },
+      { event: "post/status.changed" },
+      { event: "post/comment.created" },
+    ],
+  },
+  async ({ event, step }) => {
+    const webhookEvent = WEBHOOK_EVENT_MAP[event.name];
+    if (!webhookEvent) {
+      throw new NonRetriableError(`Bilinmeyen webhook olayı: ${event.name}`);
+    }
+
+    const endpoints = await step.run("load-endpoints", () =>
+      loadWebhookEndpoints(webhookEvent),
+    );
+    if (endpoints.length === 0) {
+      return { event: webhookEvent, delivered: 0 };
+    }
+
+    let delivered = 0;
+    for (const endpoint of endpoints) {
+      await step.run(`deliver-${endpoint.id}`, async () => {
+        await deliverWebhook(endpoint, webhookEvent, event.data);
+      });
+      delivered += 1;
+    }
+
+    return { event: webhookEvent, delivered };
   },
 );

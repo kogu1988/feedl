@@ -29,6 +29,10 @@ const isPublicRoute = createRouteMatcher([
   "/widget",
   "/api/posts(.*)",
 
+  // Public API (Sprint 34): kimlik Bearer API key ile handler içinde
+  // doğrulanır (lib/api-keys.ts), Clerk oturumu gerekmez
+  "/api/v1(.*)",
+
   "/api/widget(.*)",
   "/api/webhooks(.*)",
 

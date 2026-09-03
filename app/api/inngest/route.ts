@@ -6,6 +6,7 @@ import {
   notifyAdminNewPost,
   notifyCommentCreated,
   notifyShipped,
+  sendWebhooks,
 } from "@/inngest/functions";
 
 // Inngest serve endpoint. Lokal geliştirmede Dev Server (localhost:8288),
@@ -13,5 +14,11 @@ import {
 // çağırır. Middleware bu rotayı public tutar (middleware.ts).
 export const { GET, POST, PUT } = serve({
   client: inngest,
-  functions: [aiAutopilot, notifyShipped, notifyAdminNewPost, notifyCommentCreated],
+  functions: [
+    aiAutopilot,
+    notifyShipped,
+    notifyAdminNewPost,
+    notifyCommentCreated,
+    sendWebhooks,
+  ],
 });
