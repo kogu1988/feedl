@@ -12,6 +12,10 @@ import { CommentForm } from "@/components/custom/comment-form";
 import { CommentCountBadge } from "@/components/custom/comment-count-badge";
 import { KeywordChips } from "@/components/custom/keyword-chips";
 import { MergeControls } from "@/components/custom/merge-controls";
+import {
+  OpportunityLinkControls,
+  type LinkableOpportunity,
+} from "@/components/custom/opportunity-link-controls";
 import { SentimentBadge } from "@/components/custom/sentiment-badge";
 import { StatusBadge } from "@/components/custom/status-badge";
 import { TagChips } from "@/components/custom/tag-chips";
@@ -28,7 +32,17 @@ import {
 import { getRole } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { loadCustomerCounts } from "@/lib/db/customer-counts";
-import { comments, postTags, posts, tags, users, votes } from "@/lib/db/schema";
+import {
+  comments,
+  companies,
+  opportunities,
+  postOpportunities,
+  postTags,
+  posts,
+  tags,
+  users,
+  votes,
+} from "@/lib/db/schema";
 import { trDateFormatter } from "@/lib/post-format";
 
 // Fikir detay + yorumlar (plan.md Sprint 10). /portal(.*) middleware'da
@@ -67,6 +81,31 @@ export default async function PostDetailPage({
   if (isAdmin) {
     customerCount =
       (await loadCustomerCounts([post.id]))?.get(post.id) ?? 0;
+  }
+
+  // Sprint 31: fırsat bağlama verileri (yalnızca admin kutusunda kullanılır).
+  let opportunityItems: LinkableOpportunity[] = [];
+  let linkedOpportunityIds: string[] = [];
+  if (isAdmin) {
+    const [opportunityRows, linkRows] = await Promise.all([
+      getDb()
+        .select({
+          id: opportunities.id,
+          title: opportunities.title,
+          stage: opportunities.stage,
+          dealValue: opportunities.dealValue,
+          companyName: companies.name,
+        })
+        .from(opportunities)
+        .innerJoin(companies, eq(companies.id, opportunities.companyId))
+        .orderBy(desc(opportunities.createdAt)),
+      getDb()
+        .select({ opportunityId: postOpportunities.opportunityId })
+        .from(postOpportunities)
+        .where(eq(postOpportunities.postId, postId)),
+    ]);
+    opportunityItems = opportunityRows;
+    linkedOpportunityIds = linkRows.map((row) => row.opportunityId);
   }
 
   // Sprint 20: birleşmiş fikir hedefinin başlığını banner'da gösterir.
@@ -225,6 +264,14 @@ export default async function PostDetailPage({
 
           {isAdmin ? (
             <MergeControls postId={post.id} mergedInto={mergedInto} />
+          ) : null}
+
+          {isAdmin ? (
+            <OpportunityLinkControls
+              postId={post.id}
+              opportunities={opportunityItems}
+              linkedIds={linkedOpportunityIds}
+            />
           ) : null}
         </CardContent>
       </Card>
