@@ -22,9 +22,16 @@ import { comments, posts, votes } from "@/lib/db/schema";
 export const dynamic = "force-dynamic";
 
 const columnTitles: Record<string, string> = {
-  planned: "🗓️ Planlandı",
-  "in-progress": "🔨 Geliştiriliyor",
-  shipped: "🚀 Yayında",
+  planned: "Planlandı",
+  "in-progress": "Geliştiriliyor",
+  shipped: "Yayında",
+};
+
+// Kolon noktası StatusBadge renkleriyle aynı dil (Sprint 36).
+const columnDotStyles: Record<string, string> = {
+  planned: "bg-sky-500",
+  "in-progress": "bg-amber-500",
+  shipped: "bg-emerald-500",
 };
 
 export default async function RoadmapPage() {
@@ -71,7 +78,13 @@ export default async function RoadmapPage() {
             return (
               <section key={status} className="grid content-start gap-3">
                 <h2 className="flex items-center justify-between text-lg font-semibold">
-                  {columnTitles[status]}
+                  <span className="flex items-center gap-2">
+                    <span
+                      className={`size-2 rounded-full ${columnDotStyles[status]}`}
+                      aria-hidden="true"
+                    />
+                    {columnTitles[status]}
+                  </span>
                   <span className="rounded-full border px-2 py-0.5 text-xs font-medium text-muted-foreground">
                     {columnPosts.length}
                   </span>

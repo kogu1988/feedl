@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { CompassIcon } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
+
 // Ortak 404 görünümü (plan.md Sprint 16). İki bağlamda kullanılır:
 // app/not-found.tsx (eşleşmeyen URL'ler — bare root layout, üst bar yok)
 // ve app/(main)/not-found.tsx (route içindeki notFound() — üst barlı).
@@ -27,18 +29,10 @@ export function NotFoundView() {
         Adresi kontrol et ya da aşağıdaki yollardan devam et.
       </p>
       <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
-        <Link
-          href="/portal"
-          className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-        >
-          Portala dön
-        </Link>
-        <Link
-          href="/roadmap"
-          className="inline-flex h-9 items-center justify-center rounded-md border px-4 text-sm font-medium hover:bg-accent"
-        >
+        <Button render={<Link href="/portal" />}>Portala dön</Button>
+        <Button variant="outline" render={<Link href="/roadmap" />}>
           Yol Haritasına göz at
-        </Link>
+        </Button>
       </div>
     </div>
   );

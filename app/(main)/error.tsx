@@ -37,12 +37,9 @@ export default function ErrorPage({
           <Button type="button" onClick={reset}>
             Tekrar dene
           </Button>
-          <Link
-            href="/portal"
-            className="inline-flex h-9 items-center justify-center rounded-md border px-4 text-sm font-medium hover:bg-accent"
-          >
+          <Button variant="outline" render={<Link href="/portal" />}>
             Portala dön
-          </Link>
+          </Button>
         </div>
       </div>
     </main>
