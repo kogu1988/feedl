@@ -5,6 +5,7 @@ import {
   index,
   integer,
   jsonb,
+  numeric,
   pgEnum,
   pgTable,
   text,
@@ -523,3 +524,51 @@ export const webhookEndpoints = pgTable(
 
 export type WebhookEndpoint = typeof webhookEndpoints.$inferSelect;
 export type NewWebhookEndpoint = typeof webhookEndpoints.$inferInsert;
+
+// companies: Sprint 30 — müşteri şirketleri (P3.1). MRR opsiyonel; Sprint 31
+// opportunities bu tabloya bağlanacak.
+export const companies = pgTable("companies", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: varchar("name", { length: 120 }).notNull(),
+  domain: varchar("domain", { length: 200 }),
+  mrr: numeric("mrr", { precision: 12, scale: 2 }),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export type Company = typeof companies.$inferSelect;
+export type NewCompany = typeof companies.$inferInsert;
+
+// company_members: kullanıcı ↔ şirket eşleşmesi. Clerk user id metin olduğu
+// için FK users.id (text). Aynı kullanıcı aynı şirkete bir kez eklenir.
+export const companyMembers = pgTable(
+  "company_members",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
+    userId: varchar("user_id", { length: 64 })
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    jobTitle: varchar("job_title", { length: 120 }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    unique("company_members_company_user_unique").on(
+      table.companyId,
+      table.userId,
+    ),
+    index("company_members_user_idx").on(table.userId),
+  ],
+);
+
+export type CompanyMember = typeof companyMembers.$inferSelect;
+export type NewCompanyMember = typeof companyMembers.$inferInsert;

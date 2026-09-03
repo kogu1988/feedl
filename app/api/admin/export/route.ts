@@ -5,6 +5,7 @@ import { and, count, desc, eq, inArray } from "drizzle-orm";
 
 import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
+import { loadCustomerCounts } from "@/lib/db/customer-counts";
 import { sentimentLabels, statusLabels, typeLabels } from "@/lib/post-format";
 import { comments, postTags, posts, tags, votes } from "@/lib/db/schema";
 
@@ -79,7 +80,12 @@ export async function GET() {
       commentRows.map((row) => [row.postId, row.value]),
     );
 
-    const csv = buildCsv(rows, tagsByPost, commentCountByPost);
+    // Sprint 30: kaç şirket istedi — aynı ikinci-sorgu deseni.
+    const customerCountByPost = await loadCustomerCounts(
+      rows.map((row) => row.id),
+    );
+
+    const csv = buildCsv(rows, tagsByPost, commentCountByPost, customerCountByPost);
 
     return new NextResponse(csv, {
       status: 200,
@@ -132,6 +138,7 @@ function buildCsv(
   rows: ExportRow[],
   tagsByPost: Map<string, string[]>,
   commentCountByPost: Map<string, number>,
+  customerCountByPost: Map<string, number>,
 ): string {
   const header = [
     "Başlık",
@@ -143,6 +150,7 @@ function buildCsv(
     "Anahtar Kelimeler",
     "Oy Sayısı",
     "Yorum Sayısı",
+    "Müşteri Sayısı",
     "Oluşturma",
     "Güncelleme",
     "ID",
@@ -163,6 +171,7 @@ function buildCsv(
         (row.aiKeywords ?? []).join(" "),
         String(row.voteCount),
         String(commentCountByPost.get(row.id) ?? 0),
+        String(customerCountByPost.get(row.id) ?? 0),
         dateFormatter.format(row.createdAt),
         dateFormatter.format(row.updatedAt),
         row.id,

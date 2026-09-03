@@ -41,6 +41,7 @@ export interface PostsTableRow {
   aiKeywords: string[] | null;
   createdAtLabel: string;
   voteCount: number;
+  customerCount: number;
 }
 
 export interface BulkTagOption {
@@ -206,6 +207,9 @@ export function PostsTable({
               />
             </TableHead>
             <TableHead className="w-[60px]">Oy</TableHead>
+            <TableHead className="w-[80px] text-center">
+              Müşteri
+            </TableHead>
             <TableHead>Başlık</TableHead>
             <TableHead className="w-[200px]">AI</TableHead>
             <TableHead className="w-[140px]">Tarih</TableHead>
@@ -226,6 +230,9 @@ export function PostsTable({
               </TableCell>
               <TableCell className="font-medium tabular-nums">
                 {post.voteCount}
+              </TableCell>
+              <TableCell className="text-center tabular-nums text-muted-foreground" title="Fikre oy veren şirket sayısı">
+                {post.customerCount}
               </TableCell>
               <TableCell>
                 <div className="max-w-[320px] truncate font-medium">

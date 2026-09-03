@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { DownloadIcon, PuzzleIcon } from "lucide-react";
+import { BuildingIcon, DownloadIcon, PuzzleIcon } from "lucide-react";
 import { and, asc, count, desc, eq, gte, inArray, isNull } from "drizzle-orm";
 
 import { FilterTabs } from "@/components/custom/filter-tabs";
@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/card";
 import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
+import { loadCustomerCounts } from "@/lib/db/customer-counts";
 import {
   aiSuggestions,
   apiKeys,
@@ -91,10 +92,12 @@ export default async function DashboardPage({
   let apiKeyItems: Awaited<ReturnType<typeof loadApiKeys>> = [];
   let webhookItems: Awaited<ReturnType<typeof loadWebhooks>> = [];
   let weeklyCounts = { ideas: 0, votes: 0, comments: 0 };
+  let customerCountByPost: Map<string, number> = new Map();
   let loadError = false;
 
   try {
     rows = await loadPosts(tagFilter);
+    customerCountByPost = await loadCustomerCounts(rows.map((row) => row.id));
     tagOptions = await loadTagOptions();
     views = await loadSavedViews();
     changelogData = await loadChangelogData();
@@ -160,6 +163,13 @@ export default async function DashboardPage({
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
+          <Link
+            href="/dashboard/companies"
+            className="inline-flex h-9 items-center gap-2 rounded-md border bg-background px-4 text-sm font-medium hover:bg-accent"
+          >
+            <BuildingIcon className="size-4" aria-hidden="true" />
+            Şirketler
+          </Link>
           <Link
             href="/dashboard/widget"
             className="inline-flex h-9 items-center gap-2 rounded-md border bg-background px-4 text-sm font-medium hover:bg-accent"
@@ -363,6 +373,7 @@ export default async function DashboardPage({
                 aiKeywords: row.aiKeywords,
                 createdAtLabel: dateFormatter.format(row.createdAt),
                 voteCount: row.voteCount,
+                customerCount: customerCountByPost.get(row.id) ?? 0,
               }))}
               tagOptions={tagOptions.map((option) => ({
                 id: option.id,

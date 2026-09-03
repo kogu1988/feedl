@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/card";
 import { getRole } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
+import { loadCustomerCounts } from "@/lib/db/customer-counts";
 import { comments, postTags, posts, tags, users, votes } from "@/lib/db/schema";
 import { trDateFormatter } from "@/lib/post-format";
 
@@ -59,6 +60,13 @@ export default async function PostDetailPage({
   const post = await loadPost(postId, userId);
   if (!post) {
     notFound();
+  }
+
+  // Sprint 30: kaç şirket istedi (yalnızca admin kutusunda gösterilir).
+  let customerCount = 0;
+  if (isAdmin) {
+    customerCount =
+      (await loadCustomerCounts([post.id]))?.get(post.id) ?? 0;
   }
 
   // Sprint 20: birleşmiş fikir hedefinin başlığını banner'da gösterir.
@@ -190,6 +198,17 @@ export default async function PostDetailPage({
                 AI Özeti (yalnızca admin)
               </p>
               <p className="text-sm text-muted-foreground">{post.aiSummary}</p>
+            </div>
+          ) : null}
+
+          {isAdmin ? (
+            <div className="grid gap-2 rounded-md border border-dashed p-3">
+              <p className="text-xs font-medium text-muted-foreground">
+                Müşteri (yalnızca admin)
+              </p>
+              <p className="text-sm tabular-nums">
+                {customerCount} müşteri bu fikre oy verdi
+              </p>
             </div>
           ) : null}
 
