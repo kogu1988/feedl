@@ -6,17 +6,34 @@ import type { NextRequest } from "next/server";
 // - GET /api/posts public; POST handler içinde auth zorunlu tutulur
 // - /api/webhooks/* imza doğrulamasıyla public
 // - /api/inngest Inngest Cloud/Dev Server tarafından çağrılır (production'da
+
 //   signing key doğrulaması serve() içinde yapılır)
+
+// - /widget sayfası + /api/widget/* widget SDK'sıdır (plan.md Sprint 32):
+//   iframe içinde Clerk oturumu taşınmaz; kimlik feedl'in kendi widget
+//   çerezinden (lib/widget/jwt) handler içinde çözülür
 // Fikir gönderme, oy verme ve admin işlemleri korumalıdır.
+
 const isPublicRoute = createRouteMatcher([
+
   "/",
+
   "/sign-in(.*)",
+
   "/sign-up(.*)",
+
   "/portal(.*)",
+
   "/roadmap(.*)",
+
+  "/widget",
   "/api/posts(.*)",
+
+  "/api/widget(.*)",
   "/api/webhooks(.*)",
+
   "/api/inngest(.*)",
+
 ]);
 
 // Middleware SADECE giriş kontrolü yapar. Admin yetkisi tek kaynak olarak

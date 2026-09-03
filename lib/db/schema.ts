@@ -112,6 +112,9 @@ export const posts = pgTable(
     targetDate: date("target_date"),
     impact: integer("impact"),
     effort: integer("effort"),
+    // Sprint 32: fikir widget (gömülü script) üzerinden gönderildiyse kaynak
+    // origin/URL buraya yazılır; portal gönderilerinde null kalır.
+    widgetOrigin: text("widget_origin"),
     // Sprint 27: Türkçe full-text arama kolonu (GENERATED ALWAYS STORED).
     // İki-argümanlı to_tsvector('turkish', ...) immutable olduğu için
     // generated kolonda kullanılabilir.

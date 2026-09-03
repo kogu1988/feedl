@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { DownloadIcon } from "lucide-react";
+import { DownloadIcon, PuzzleIcon } from "lucide-react";
 import { and, asc, count, desc, eq, inArray, isNull } from "drizzle-orm";
 
 import { FilterTabs } from "@/components/custom/filter-tabs";
@@ -105,14 +105,23 @@ export default async function DashboardPage({
           </p>
         </div>
 
-        <a
-          href="/api/admin/export"
-          download
-          className="inline-flex h-9 shrink-0 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-        >
-          <DownloadIcon className="size-4" aria-hidden="true" />
-          CSV İndir
-        </a>
+        <div className="flex shrink-0 items-center gap-2">
+          <Link
+            href="/dashboard/widget"
+            className="inline-flex h-9 items-center gap-2 rounded-md border bg-background px-4 text-sm font-medium hover:bg-accent"
+          >
+            <PuzzleIcon className="size-4" aria-hidden="true" />
+            Widget
+          </Link>
+          <a
+            href="/api/admin/export"
+            download
+            className="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          >
+            <DownloadIcon className="size-4" aria-hidden="true" />
+            CSV İndir
+          </a>
+        </div>
       </div>
 
       {!loadError ? (
