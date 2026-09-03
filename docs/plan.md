@@ -932,10 +932,26 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   veri düzeltmesiyle açıldı. **UX:** FilterTabs client bileşeni oldu —
   sekme/etiket filtreleri sayfa yenilenmeden ve kaydırma olmadan
   güncellenir (useTransition + optimistik vurgu).
-- ☐ **Sprint 34 — Public API + Webhooks (P4.2):** scope'lu API key;
-  `/api/v1` altında posts/votes/comments okuma; `post.created`,
-  `post.status_changed`, `comment.created` webhook'ları; imza + rate
-  limit + pagination.
+- ✅ **Sprint 34 — Public API + Webhooks (P4.2)** (2026-09-03, commit
+  f7fca9f + 1771503; kullanıcı kontrol listesiyle doğrulandı):
+  api_keys (SHA-256 key_hash + prefix + scopes=['read'], revoke =
+  revokedAt) ve webhook_endpoints (url, events varchar[], secret,
+  active) tabloları (migration 0017). lib/api-keys.ts: fk_live_<32hex>
+  üretim, Bearer doğrulama, süreç-içi kayan pencere 60 ist/dk rate
+  limit (serverless'ta instance başına best-effort). Public okuma API'si:
+  GET /api/v1/posts (page/limit≤100/status/tag/sort=top|recent;
+  birleşmiş fikirler hariç, iç notlar hariç, aiSummary dışarı sızmaz)
+  ve GET /api/v1/posts/[id] (detay + herkese açık yorumlar; 404/401/429
+  envelope'lı). Admin API'ler: /api/admin/api-keys (tam anahtar YALNIZCA
+  oluşturma yanıtında) ve /api/admin/webhooks (secret sunucuda üretilir,
+  bir kez döner). Dashboard'a "API Anahtarları" + "Webhook'lar" kartları.
+  Inngest send-webhooks: post/created → post.created,
+  post/status.changed → post.status_changed, post/comment.created →
+  comment.created (WEBHOOK_EVENT_MAP); her endpoint ayrı step — tek hata
+  yalnızca kendi teslimatını retry eder. lib/webhooks/dispatch.ts:
+  HMAC-SHA256 imza `${timestamp}.${body}` üzerinden, header
+  X-Feedl-Signature: t=<ts>,v1=<hex>, 10s timeout, non-2xx throw.
+  Middleware'e /api/v1 public eklendi (kimlik handler'da Bearer ile).
 
 ### Ertelenen blok (en son — kullanıcının kısıtı)
 

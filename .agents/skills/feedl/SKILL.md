@@ -64,12 +64,15 @@ app/widget/page.tsx                                   Iframe embed page (bare sh
 app/not-found.tsx + app/(main)/{not-found,error}.tsx  404/500 share not-found-view
 app/api/{posts,posts/[id]/comments,comments/[commentId],votes}
                                                       Core CRUD APIs
-app/api/admin/{posts,posts/bulk,merge,views,export,changelog,widget-token}
-                                                      Admin APIs
+app/api/admin/{posts,posts/bulk,merge,views,export,changelog,widget-token,
+  inbox,api-keys,webhooks}                             Admin APIs
+app/api/v1/posts{,/[id]}                              Public read API (Bearer key, Sprint 34)
 app/api/{webhooks/clerk,inngest,unsubscribe}          svix + Inngest serve + opt-out
 app/api/widget/{session,posts,votes}                  Widget SDK endpoints
-lib/{db,ai,email,widget}                              db schema+client, AI, email, widget JWT/http
-lib/{post-format,post-search,validations}.ts          status labels+dates, Turkish search, zod schemas
+lib/{db,ai,email,widget,webhooks}                     db schema+client, AI, email, widget JWT/http,
+                                                      webhook dispatch
+lib/{post-format,post-search,validations,api-keys}.ts status labels+dates, Turkish search, zod
+                                                      schemas, API key auth/rate-limit
 components/{ui,custom}                                shadcn ui + project components
 inngest/                                              Inngest function definitions
 migrations/                                           drizzle-kit output
@@ -88,7 +91,8 @@ docs/                                                 planning docs (source of t
   top level (keeps `next build` working without DATABASE_URL)
 - Public routes in middleware: `/`, `/sign-in(.*)`, `/sign-up(.*)`, `/portal(.*)`,
   `/roadmap(.*)`, `/widget`, `/api/posts(.*)` (GET public, POST checks auth in
-  handler), `/api/widget(.*)`, `/api/webhooks(.*)`
+  handler), `/api/widget(.*)`, `/api/webhooks(.*)`, `/api/v1(.*)` (Bearer API
+  key auth inside the handler, Sprint 34)
 - **Dual layout (Sprint 32)**: root `app/layout.tsx` is BARE; `ClerkProvider`
   + top bar live in `app/(main)/layout.tsx`. Pages that must render without a
   Clerk session (widget iframe) sit OUTSIDE `(main)`. New normal pages go
@@ -161,7 +165,7 @@ docs/                                                 planning docs (source of t
   inngest/functions.ts). Two-query load: similarity ids (no joins),
   then hydrate with countDistinct. Best-effort: failure hides the
   section. Embedding-less posts get no section.
-- **Inngest has 4 functions** since Sprint 24: `ai-autopilot`,
+- **Inngest has 5 functions** since Sprint 34: `ai-autopilot`,
   `notify-shipped` (Sprint 26: handles ALL status changes — shipped =
   celebration mail, others = "fikir güncellendi" info mail; recipients
   come from `post_followers`, not votes; respects
@@ -171,13 +175,28 @@ docs/                                                 planning docs (source of t
   `users.role=admin` on post/created; the author's own email is
   excluded), `notify-comment-created` (post/comment.created; emails
   followers, commenter excluded, internal notes skipped, respects
-  `users.email_comments`). Unsubscribe: token per user
+  `users.email_comments`), `send-webhooks` (Sprint 34: maps
+  post/created→post.created, post/status.changed→post.status_changed,
+  post/comment.created→comment.created via WEBHOOK_EVENT_MAP; ONE
+  step.run PER webhook endpoint — a single failing delivery retries
+  alone, retries 3). Unsubscribe: token per user
   (`users.unsubscribe_token`) + `/api/unsubscribe?token&type=status|comment`
   closes the pref and returns branded HTML; email templates take
   per-recipient `unsubscribeUrl` (render once per recipient, then one
   sendEmails call). Email templates share `escapeHtml` from
   `lib/email/html.ts`; branded boundaries: `app/not-found.tsx` (404) +
   `app/error.tsx` (500, client, reset()).
+- **Public API + webhooks (Sprint 34)**: `/api/v1` is PUBLIC in
+  middleware; auth happens in the handler via `authenticateApiKey` +
+  `checkRateLimit` (60 req/min in-process sliding window, best-effort
+  on serverless) + best-effort `lastUsedAt` update (Drizzle `.update()`
+  REQUIRES `.set()` — a set-less call throws). API keys
+  (`fk_live_<32hex>`) are stored ONLY as SHA-256 hash + 12-char prefix;
+  the full key is returned exactly once at creation. Webhook secrets
+  (`whsec_...`) likewise server-generated, shown once. Delivery
+  signature: HMAC-SHA256 over `${timestamp}.${body}`, header
+  `X-Feedl-Signature: t=<ts>,v1=<hex>` (lib/webhooks/dispatch.ts);
+  10s timeout, non-2xx throws so Inngest retries.
 - **Widget SDK rules (Sprint 32)**: widget JWT (HS256, short-lived,
   node:crypto in `lib/widget/jwt.ts`) rides an httpOnly cookie; inside an
   iframe it is a third-party context, so the cookie needs SameSite=None and
@@ -366,10 +385,10 @@ docs/                                                 planning docs (source of t
    skill, etc.) without asking the user first - the user explicitly requires
     being consulted on every name.
 
-**Position (2026-09-03):** Sprint 32 (Widget SDK) and Sprint 33
-(Autopilot Inbox: `ai_suggestions` table, /api/admin/inbox + decision
-endpoint, dashboard card, unmerge→reopen, client FilterTabs) are ✅ in
-docs/plan.md, user-verified in production. Next: Sprint 34 (Public API
-+ Webhooks); Sprints 29-31 (analytics, companies, opportunities) sit in
-backlog. Domain-bound work (custom domain, Organizations/subdomain)
-stays deferred until a domain is bought.
+**Position (2026-09-03):** Sprints 32 (Widget SDK), 33 (Autopilot
+Inbox) and 34 (Public API + Webhooks: /api/v1 read endpoints, API key
+management, webhook delivery) are ✅ in docs/plan.md, user-verified in
+production. Next: user picks the next sprint — Sprints 29-31
+(analytics, companies, opportunities) sit in backlog. Domain-bound
+work (custom domain, Organizations/subdomain) stays deferred until a
+domain is bought.
