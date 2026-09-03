@@ -40,10 +40,18 @@ import { statusLabels, trDateTimeFormatter } from "@/lib/post-format";
 // Canlı veri: her istekte DB'den okunur.
 export const dynamic = "force-dynamic";
 
+// Sprint 29: analitik dönem seçenekleri (?range= gün cinsinden).
+const rangeOptions = [
+  { value: "7", label: "Son 7 Gün" },
+  { value: "14", label: "Son 14 Gün" },
+  { value: "30", label: "Son 1 Ay" },
+  { value: "365", label: "Son 1 Yıl" },
+];
+
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; tag?: string }>;
+  searchParams: Promise<{ status?: string; tag?: string; range?: string }>;
 }) {
   // Middleware girişi garanti eder; admin rolü tek kaynaktan (DB) doğrulanır.
   const adminId = await getAdminUserId();
@@ -54,11 +62,19 @@ export default async function DashboardPage({
   // plan.md Sprint 12: durum filtresi ?status= ile gelir; geçersiz değer
   // "Tümü"ne düşer. İstatistikler her zaman TÜM fikirlerden hesaplanır,
   // filtre yalnızca tabloyu etkiler.
-  const { status: rawStatus, tag: rawTag } = await searchParams;
+  const { status: rawStatus, tag: rawTag, range: rawRange } = await searchParams;
   const statusFilter =
     postStatusEnum.enumValues.find((value) => value === rawStatus) ?? null;
   // Sprint 21: etiket filtresi (portal ile aynı normalize kuralı).
   const tagFilter = (rawTag ?? "").trim().toLocaleLowerCase("tr").slice(0, 30);
+  // Sprint 29: analitik dönemi (?range=); geçersiz değer 7 güne düşer.
+  const rangeDays =
+    rawRange === "14" || rawRange === "30" || rawRange === "365"
+      ? Number(rawRange)
+      : 7;
+  const rangeLabel =
+    rangeOptions.find((option) => option.value === String(rangeDays))?.label ??
+    "Son 7 Gün";
 
   let rows: Awaited<ReturnType<typeof loadPosts>> = [];
   let tagOptions: Awaited<ReturnType<typeof loadTagOptions>> = [];
@@ -86,7 +102,7 @@ export default async function DashboardPage({
     inboxSuggestions = await loadInboxSuggestions();
     apiKeyItems = await loadApiKeys();
     webhookItems = await loadWebhooks();
-    weeklyCounts = await loadWeeklyCounts();
+    weeklyCounts = await loadWeeklyCounts(rangeDays);
   } catch (err) {
     console.error(
       "Dashboard list failed:",
@@ -180,12 +196,29 @@ export default async function DashboardPage({
           <CardHeader>
             <CardTitle>Analitik</CardTitle>
             <CardDescription>
-              Son 7 günün özeti, duygu dağılımı ve en çok oy alan fikirler.
+              Seçili dönemin özeti, duygu dağılımı ve en çok oy alan fikirler.
             </CardDescription>
+            <div className="pt-2">
+              <FilterTabs
+                paramName="range"
+                basePath="/dashboard"
+                active={String(rangeDays)}
+                extraParams={{
+                  ...(statusFilter ? { status: statusFilter } : {}),
+                  ...(tagFilter ? { tag: tagFilter } : {}),
+                }}
+                options={rangeOptions}
+              />
+            </div>
           </CardHeader>
           <CardContent>
             <AnalyticsOverview
-              data={{ weekly: weeklyCounts, sentiment: sentimentCounts, topPosts }}
+              data={{
+                rangeLabel,
+                weekly: weeklyCounts,
+                sentiment: sentimentCounts,
+                topPosts,
+              }}
             />
           </CardContent>
         </Card>
@@ -610,26 +643,26 @@ async function loadWebhooks() {
   }));
 }
 
-// Sprint 29: son 7 günün yeni fikir/oy/yorum sayaçları. Üç bağımsız
+// Sprint 29: seçili dönemin yeni fikir/oy/yorum sayaçları. Üç bağımsız
 // count sorgusu paralel çalışır (neon-http her sorguyu ayrı HTTP isteği
 // olarak gönderir); iç notlar "yorum" sayacına girmez.
-async function loadWeeklyCounts() {
-  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+async function loadWeeklyCounts(days: number) {
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
   const db = getDb();
   const [ideaRows, voteRows, commentRows] = await Promise.all([
     db
       .select({ value: count() })
       .from(posts)
-      .where(gte(posts.createdAt, weekAgo)),
+      .where(gte(posts.createdAt, since)),
     db
       .select({ value: count() })
       .from(votes)
-      .where(gte(votes.createdAt, weekAgo)),
+      .where(gte(votes.createdAt, since)),
     db
       .select({ value: count() })
       .from(comments)
       .where(
-        and(gte(comments.createdAt, weekAgo), eq(comments.isInternal, false)),
+        and(gte(comments.createdAt, since), eq(comments.isInternal, false)),
       ),
   ]);
   return {

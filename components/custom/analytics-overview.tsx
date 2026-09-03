@@ -4,6 +4,7 @@ import { SentimentBadge } from "@/components/custom/sentiment-badge";
 import { StatusBadge } from "@/components/custom/status-badge";
 
 export interface AnalyticsData {
+  rangeLabel: string;
   weekly: { ideas: number; votes: number; comments: number };
   sentiment: { pozitif: number; notr: number; negatif: number; unanalyzed: number };
   topPosts: { id: string; title: string; status: string; voteCount: number }[];
@@ -29,7 +30,7 @@ export function AnalyticsOverview({ data }: { data: AnalyticsData }) {
     <div className="grid gap-6">
       <div>
         <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Son 7 gün
+          {data.rangeLabel}
         </p>
         <div className="mt-2 grid grid-cols-3 gap-3">
           {weeklyTiles.map((tile) => (
