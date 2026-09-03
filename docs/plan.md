@@ -895,9 +895,17 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   değildir (`user_...`) — ownerId önce z.uuid() ile doğrulanınca
   PATCH 400 döndü ("Geçersiz fikir kimliği veya durum.");
   z.string().min(1) + varlık kontrolü ile düzeltildi.
-- ☐ **Sprint 29 — Temel Analytics (rapor §1):** dashboard özet
-  metrikleri (haftalık yeni fikir/oy/yorum, en çok istenenler,
-  sentiment dağılımı); CSV export'u genişlet.
+- ✅ **Sprint 29 — Temel Analytics (rapor §1)** (2026-09-03, commit
+  dfdbc7d + 0932fa9; kullanıcı kontrol listesiyle doğrulandı):
+  dashboard'a "Analitik" kartı eklendi (components/custom/
+  analytics-overview.tsx — salt sunum). Son N gün sayaçları (yeni
+  fikir/oy/yorum; iç notlar hariç) üç paralel count sorgusuyla
+  (loadWeeklyCounts); duygu dağılımı ve en çok istenenler top 5 mevcut
+  fikir listesinden JS'te hesaplanır (ekstra sorgu yok; birleşmiş
+  fikirler hariç). Dönem seçici FilterTabs ile ?range=7|14|30|365
+  (durum/etiket filtreleri extraParams ile korunur). CSV export'a
+  Açıklama, Duygu, Anahtar Kelimeler ve Yorum Sayısı (iç notlar
+  hariç) sütunları eklendi.
 - ☐ **Sprint 30 — Company/Segment Profili (P3.1):** `companies` +
   `company_members` + user profil alanları; fikir başına "kaç müşteri
   istedi" sayacı (Canny kritik UX'i).
