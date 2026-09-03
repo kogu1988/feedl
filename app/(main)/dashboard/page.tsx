@@ -19,6 +19,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { loadCustomerCounts } from "@/lib/db/customer-counts";
@@ -172,28 +173,21 @@ export default async function DashboardPage({
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
-          <Link
-            href="/dashboard/companies"
-            className="inline-flex h-9 items-center gap-2 rounded-md border bg-background px-4 text-sm font-medium hover:bg-accent"
+          <Button
+            variant="outline"
+            render={<Link href="/dashboard/companies" />}
           >
-            <BuildingIcon className="size-4" aria-hidden="true" />
+            <BuildingIcon aria-hidden="true" />
             Şirketler
-          </Link>
-          <Link
-            href="/dashboard/widget"
-            className="inline-flex h-9 items-center gap-2 rounded-md border bg-background px-4 text-sm font-medium hover:bg-accent"
-          >
-            <PuzzleIcon className="size-4" aria-hidden="true" />
+          </Button>
+          <Button variant="outline" render={<Link href="/dashboard/widget" />}>
+            <PuzzleIcon aria-hidden="true" />
             Widget
-          </Link>
-          <a
-            href="/api/admin/export"
-            download
-            className="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-          >
-            <DownloadIcon className="size-4" aria-hidden="true" />
+          </Button>
+          <Button render={<a href="/api/admin/export" download />}>
+            <DownloadIcon aria-hidden="true" />
             CSV İndir
-          </a>
+          </Button>
         </div>
       </div>
 
@@ -204,7 +198,9 @@ export default async function DashboardPage({
               <p className="text-xs font-medium text-muted-foreground">
                 {stat.label}
               </p>
-              <p className="mt-1 text-2xl font-bold tabular-nums">{stat.value}</p>
+              <p className="mt-1 font-mono text-2xl font-bold tabular-nums">
+                {stat.value}
+              </p>
             </div>
           ))}
         </div>

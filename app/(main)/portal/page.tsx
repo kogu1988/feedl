@@ -133,20 +133,22 @@ export default async function PortalPage({
           <p className="mt-2 text-muted-foreground">
             Özellik isteklerini paylaş, oy ver, öne çıkanları belirle.
           </p>
-          <a
-            href="/roadmap"
-            className="mt-2 inline-block text-sm font-medium text-primary underline-offset-4 hover:underline"
-          >
-            Yol Haritası →
-          </a>
-          <Show when="signed-in">
-            <Link
-              href="/portal/oyladiklarim"
-              className="mt-2 ml-4 inline-block text-sm font-medium text-primary underline-offset-4 hover:underline"
+          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
+            <a
+              href="/roadmap"
+              className="text-sm font-medium text-primary underline-offset-4 hover:underline"
             >
-              Oyladıklarım →
-            </Link>
-          </Show>
+              Yol Haritası
+            </a>
+            <Show when="signed-in">
+              <Link
+                href="/portal/oyladiklarim"
+                className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+              >
+                Oyladıklarım
+              </Link>
+            </Show>
+          </div>
         </div>
 
         <Show when="signed-in">
@@ -154,9 +156,7 @@ export default async function PortalPage({
         </Show>
         <Show when="signed-out">
           <SignInButton>
-            <button className="inline-flex h-9 cursor-pointer items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90">
-              Fikir göndermek için giriş yap
-            </button>
+            <Button>Fikir göndermek için giriş yap</Button>
           </SignInButton>
         </Show>
       </div>
@@ -233,17 +233,12 @@ export default async function PortalPage({
               </Show>
               <Show when="signed-out">
                 <SignInButton>
-                  <button className="inline-flex h-9 cursor-pointer items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90">
-                    Bu fikri ilk sen gönder
-                  </button>
+                  <Button>Bu fikri ilk sen gönder</Button>
                 </SignInButton>
               </Show>
-              <Link
-                href="/portal"
-                className="inline-flex h-9 items-center justify-center rounded-md border px-4 text-sm font-medium hover:bg-accent"
-              >
+              <Button variant="outline" render={<Link href="/portal" />}>
                 Aramayı temizle
-              </Link>
+              </Button>
             </div>
           </div>
         ) : rows.length === 0 ? (
@@ -258,9 +253,7 @@ export default async function PortalPage({
               </Show>
               <Show when="signed-out">
                 <SignInButton>
-                  <button className="inline-flex h-9 cursor-pointer items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90">
-                    İlk fikri sen gönder
-                  </button>
+                  <Button>İlk fikri sen gönder</Button>
                 </SignInButton>
               </Show>
             </div>
@@ -297,21 +290,21 @@ export default async function PortalPage({
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="grid gap-2">
-                        {post.sentimentLabel ||
-                        (post.aiKeywords && post.aiKeywords.length > 0) ||
-                        (tagsByPost.get(post.id) ?? []).length > 0 ? (
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            {post.sentimentLabel ? (
-                              <SentimentBadge sentiment={post.sentimentLabel} />
-                            ) : null}
-                            {(tagsByPost.get(post.id) ?? []).length > 0 ? (
-                              <TagChips tags={tagsByPost.get(post.id) ?? []} />
-                            ) : post.aiKeywords &&
-                              post.aiKeywords.length > 0 ? (
-                              <KeywordChips keywords={post.aiKeywords} max={4} />
-                            ) : null}
-                          </div>
-                        ) : null}
+                      {post.sentimentLabel ||
+                      (post.aiKeywords && post.aiKeywords.length > 0) ||
+                      (tagsByPost.get(post.id) ?? []).length > 0 ? (
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {post.sentimentLabel ? (
+                            <SentimentBadge sentiment={post.sentimentLabel} />
+                          ) : null}
+                          {(tagsByPost.get(post.id) ?? []).length > 0 ? (
+                            <TagChips tags={tagsByPost.get(post.id) ?? []} />
+                          ) : post.aiKeywords &&
+                            post.aiKeywords.length > 0 ? (
+                            <KeywordChips keywords={post.aiKeywords} max={4} />
+                          ) : null}
+                        </div>
+                      ) : null}
                       <p className="whitespace-pre-line text-sm text-muted-foreground">
                         {summarize(post.description)}
                       </p>
@@ -369,21 +362,21 @@ export default async function PortalPage({
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="grid gap-2">
-                        {post.sentimentLabel ||
-                        (post.aiKeywords && post.aiKeywords.length > 0) ||
-                        (tagsByPost.get(post.id) ?? []).length > 0 ? (
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            {post.sentimentLabel ? (
-                              <SentimentBadge sentiment={post.sentimentLabel} />
-                            ) : null}
-                            {(tagsByPost.get(post.id) ?? []).length > 0 ? (
-                              <TagChips tags={tagsByPost.get(post.id) ?? []} />
-                            ) : post.aiKeywords &&
-                              post.aiKeywords.length > 0 ? (
-                              <KeywordChips keywords={post.aiKeywords} max={4} />
-                            ) : null}
-                          </div>
-                        ) : null}
+                      {post.sentimentLabel ||
+                      (post.aiKeywords && post.aiKeywords.length > 0) ||
+                      (tagsByPost.get(post.id) ?? []).length > 0 ? (
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {post.sentimentLabel ? (
+                            <SentimentBadge sentiment={post.sentimentLabel} />
+                          ) : null}
+                          {(tagsByPost.get(post.id) ?? []).length > 0 ? (
+                            <TagChips tags={tagsByPost.get(post.id) ?? []} />
+                          ) : post.aiKeywords &&
+                            post.aiKeywords.length > 0 ? (
+                            <KeywordChips keywords={post.aiKeywords} max={4} />
+                          ) : null}
+                        </div>
+                      ) : null}
                       <p className="whitespace-pre-line text-sm text-muted-foreground">
                         {summarize(post.description)}
                       </p>
