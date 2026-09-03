@@ -1,12 +1,13 @@
 import "server-only";
 
 import { NextResponse } from "next/server";
-import { eq, inArray, sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { postMerges, posts } from "@/lib/db/schema";
+import { mergePosts } from "@/lib/post-merge";
 
 // Drizzle execute sonuç şekli sürücüye göre değişebilir (neon-http satır
 // dizisi döndürür); güvenli normalizasyon.
@@ -72,85 +73,37 @@ export async function POST(req: Request) {
     }
     const { sourceId, targetId } = parsed.data;
 
-    // Her iki fikrin mevcudiyeti ve birleşme durumu önceden kontrol edilir.
-    const rows = await getDb()
-      .select({ id: posts.id, mergedIntoId: posts.mergedIntoId })
-      .from(posts)
-      .where(inArray(posts.id, [sourceId, targetId]));
+    const outcome = await mergePosts(sourceId, targetId);
 
-    const source = rows.find((row) => row.id === sourceId);
-    const target = rows.find((row) => row.id === targetId);
-
-    if (!source) {
-      return NextResponse.json(
-        { success: false, error: "Kaynak fikir bulunamadı." },
-        { status: 404 },
-      );
-    }
-    if (!target) {
-      return NextResponse.json(
-        { success: false, error: "Hedef fikir bulunamadı." },
-        { status: 404 },
-      );
-    }
-    if (source.mergedIntoId) {
-      return NextResponse.json(
-        { success: false, error: "Kaynak fikir zaten birleştirilmiş." },
-        { status: 409 },
-      );
-    }
-    if (target.mergedIntoId) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Hedef fikir başka bir fikre birleştirilmiş; zincir oluşmaz.",
+    if (!outcome.ok) {
+      const messages: Record<string, { error: string; status: number }> = {
+        source_not_found: {
+          error: "Kaynak fikir bulunamadı.",
+          status: 404,
         },
-        { status: 400 },
-      );
-    }
-
-    const result = await getDb().execute(sql`
-      WITH moved_votes AS (
-        UPDATE votes
-        SET post_id = ${targetId}, merged_from_post_id = ${sourceId}
-        WHERE post_id = ${sourceId}
-          AND user_id NOT IN (
-            SELECT user_id FROM votes WHERE post_id = ${targetId}
-          )
-        RETURNING id
-      ),
-      moved_comments AS (
-        UPDATE comments
-        SET post_id = ${targetId}, merged_from_post_id = ${sourceId}
-        WHERE post_id = ${sourceId}
-        RETURNING id
-      ),
-      merged AS (
-        UPDATE posts
-        SET merged_into_id = ${targetId}, merged_at = now(), updated_at = now()
-        WHERE id = ${sourceId} AND merged_into_id IS NULL
-        RETURNING id
-      )
-      INSERT INTO ${postMerges} (
-        source_post_id, target_post_id, moved_vote_ids, moved_comment_ids
-      )
-      SELECT ${sourceId}, ${targetId},
-        COALESCE((SELECT json_agg(id) FROM moved_votes), '[]'::json),
-        COALESCE((SELECT json_agg(id) FROM moved_comments), '[]'::json)
-      WHERE EXISTS (SELECT 1 FROM merged)
-      RETURNING moved_vote_ids, moved_comment_ids;
-    `);
-
-    const mergeRows = toRows<{
-      moved_vote_ids: string[];
-      moved_comment_ids: string[];
-    }>(result);
-
-    // WHERE EXISTS (merged) satır üretmediyse birleşme gerçekleşmedi (yarış).
-    if (mergeRows.length === 0) {
+        target_not_found: {
+          error: "Hedef fikir bulunamadı.",
+          status: 404,
+        },
+        source_merged: {
+          error: "Kaynak fikir zaten birleştirilmiş.",
+          status: 409,
+        },
+        target_merged: {
+          error:
+            "Hedef fikir başka bir fikre birleştirilmiş; zincir oluşmaz.",
+          status: 400,
+        },
+        no_op: {
+          error: "Fikir zaten birleştirilmiş.",
+          status: 409,
+        },
+      };
+      const failure =
+        messages[outcome.reason ?? "no_op"] ?? messages["no_op"];
       return NextResponse.json(
-        { success: false, error: "Fikir zaten birleştirilmiş." },
-        { status: 409 },
+        { success: false, error: failure.error },
+        { status: failure.status },
       );
     }
 
@@ -159,8 +112,8 @@ export async function POST(req: Request) {
       data: {
         sourceId,
         targetId,
-        movedVotes: mergeRows[0].moved_vote_ids.length,
-        movedComments: mergeRows[0].moved_comment_ids.length,
+        movedVotes: outcome.movedVotes,
+        movedComments: outcome.movedComments,
       },
     });
   } catch (err) {

@@ -18,7 +18,6 @@ import {
   posts,
   tags,
   users,
-  votes,
   aiSuggestions,
 } from "@/lib/db/schema";
 import {

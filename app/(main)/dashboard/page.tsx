@@ -4,6 +4,7 @@ import { DownloadIcon, PuzzleIcon } from "lucide-react";
 import { and, asc, count, desc, eq, inArray, isNull } from "drizzle-orm";
 
 import { FilterTabs } from "@/components/custom/filter-tabs";
+import { AutopilotInbox } from "@/components/custom/autopilot-inbox";
 import { ChangelogAdmin } from "@/components/custom/changelog-admin";
 import { PostsTable } from "@/components/custom/posts-table";
 import { RoadmapPlanner } from "@/components/custom/roadmap-planner";
@@ -18,6 +19,7 @@ import {
 import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import {
+  aiSuggestions,
   changelogEntries,
   postStatusEnum,
   postTags,
@@ -63,6 +65,7 @@ export default async function DashboardPage({
     rows: [],
     admins: [],
   };
+  let inboxSuggestions: Awaited<ReturnType<typeof loadInboxSuggestions>> = [];
   let loadError = false;
 
   try {
@@ -71,6 +74,7 @@ export default async function DashboardPage({
     views = await loadSavedViews();
     changelogData = await loadChangelogData();
     plannerData = await loadPlannerData();
+    inboxSuggestions = await loadInboxSuggestions();
   } catch (err) {
     console.error(
       "Dashboard list failed:",
@@ -136,6 +140,26 @@ export default async function DashboardPage({
           ))}
         </div>
       ) : null}
+
+      <Card className="mt-8">
+        <CardHeader>
+          <CardTitle>Autopilot Inbox</CardTitle>
+          <CardDescription>
+            AI duplicate şüphelendiğinde artık otomatik birleştirmez — karar
+            senin. Onaylamak birleştirir (oylar/yorumlar taşınır), red ve
+            yoksay yalnızca öneriyi kapatır.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {!loadError ? (
+            <AutopilotInbox suggestions={inboxSuggestions} />
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Öneriler yüklenemedi.
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       <Card className="mt-8">
         <CardHeader>
@@ -412,4 +436,49 @@ async function loadPlannerData() {
       name: admin.name ?? admin.id,
     })),
   };
+}
+
+// Sprint 33: Autopilot Inbox verisi — bekleyen duplicate önerileri.
+// Hedef başlıkları payload.duplicateOf üzerinden ikinci sorguda çözülür.
+async function loadInboxSuggestions() {
+  const suggestionRows = await getDb()
+    .select({
+      id: aiSuggestions.id,
+      postId: aiSuggestions.postId,
+      type: aiSuggestions.type,
+      payload: aiSuggestions.payload,
+      confidence: aiSuggestions.confidence,
+      createdAt: aiSuggestions.createdAt,
+      sourceTitle: posts.title,
+    })
+    .from(aiSuggestions)
+    .innerJoin(posts, eq(posts.id, aiSuggestions.postId))
+    .where(eq(aiSuggestions.status, "pending"))
+    .orderBy(desc(aiSuggestions.createdAt))
+    .limit(20);
+
+  if (suggestionRows.length === 0) {
+    return [];
+  }
+
+  const targetIds = [
+    ...new Set(suggestionRows.map((row) => row.payload.duplicateOf)),
+  ];
+  const targetRows = await getDb()
+    .select({ id: posts.id, title: posts.title })
+    .from(posts)
+    .where(inArray(posts.id, targetIds));
+  const targetTitles = new Map(targetRows.map((row) => [row.id, row.title]));
+
+  return suggestionRows.map((row) => ({
+    id: row.id,
+    postId: row.postId,
+    type: row.type,
+    confidence: row.confidence,
+    note: row.payload.note,
+    targetId: row.payload.duplicateOf,
+    targetTitle: targetTitles.get(row.payload.duplicateOf) ?? null,
+    sourceTitle: row.sourceTitle,
+    createdAtLabel: trDateTimeFormatter.format(row.createdAt),
+  }));
 }
