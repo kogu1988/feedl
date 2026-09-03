@@ -1039,6 +1039,35 @@ Manrope (latin-ext, Türkçe destekli; Geist Mono korunur).
 - Doğrulama: `npm run build` ✓. Sonraki: canlıda kullanıcı onayı,
   ardından portal/dashboard polish (Sprint 36).
 
+### Sprint 36: Komple Tasarım Revizyonu ✅
+
+> `front_end.md` skill rehberliğinde, tek seferde değil küçük batch'ler
+> halinde; her batch ayrı commit + canlı doğrulama. Kullanıcı tüm listeyi
+> canlıda test etti.
+
+- **a) Kabuk** (`a85031c`): Yeni `components/custom/site-header.tsx`
+  (marka karosu + mercan zemin, `usePathname` ile aktif nav vurgusu;
+  `/portal/changelog` hariç `/portal*` Portal'ı aktif eder).
+  `(main)/layout.tsx`'e footer + `flex min-h-svh flex-col` iskeleti.
+  Landing asimetrik hero'ya çevrildi (sol metin / sağda mock kart +
+  Autopilot şeridi) + "Nasıl çalışır" 1-2-3 şeridi (Topla/Anla/Duyur).
+- **b) Portal + Dashboard** (`5abecb0`): Inline butonlar `Button`'a
+  bağlandı (dashboard aksiyonları `render` prop ile); istatistik
+  sayıları `font-mono`; portal kart girinti anomalisi giderildi.
+- **c) Roadmap + hata sayfaları** (`5dd9436`): Emoji kolon başlıkları
+  → `columnDotStyles` renkli noktalar (planned/in-progress/shipped;
+  StatusBadge renkleriyle eşleşir); 404 ve error sayfa butonları
+  `Button`'a bağlandı.
+- **d) Tema değiştirici** (`32e22e2`): `next-themes` kuruldu; üst bara
+  switch (açık: güneş / koyu: mercan zeminde ay). `ThemeProvider`
+  `(main)/layout.tsx`'te (`attribute="class"`, varsayılan: sistem) —
+  `/widget` bare layout'ta kaldığı için izole. Yeni dosyalar:
+  `theme-provider.tsx`, `theme-toggle.tsx`.
+- **e) Doğrulama:** `npm run build` ✓; `app/**` içinde inline `bg-primary`
+  buton kalıntısı yok; koyu mod mercan token'ları pariteli. Tema geçişi,
+  kalıcılık, sistem tercihi, koyu modda tüm ekranlar, Clerk ekranları ve
+  widget — canlıda hepsi çalışıyor.
+
 ---
 
 ## 🚨 Önemli Notlar (AI Ajanına Uyarı)
@@ -1052,11 +1081,12 @@ Manrope (latin-ext, Türkçe destekli; Geist Mono korunur).
 
 ## 📚 Referans Dokümanlar
 
-- **`DESIGN.md` (repo kökü) — TASARIM REFERANSI:** Planlamanın ilerleyen
-  bölümlerinde görsel/UX tasarım ve bileşen işlerine çalışırken bu dosyaya
-  bakılacak: `@base-ui/react` (Base UI) dokümantasyonu — shadcn/ui
-  bileşenlerinin altındaki headless kütüphane. Yeni bileşen/tasarım işinde
-  önce buradaki ilgili bileşen/handball sayfasına başvur.
+- **`DESIGN.md` (repo kökü) — TASARIM REFERANSI:** Sprint 35–36 tasarım
+  dilinin tek kaynağı — marka aksanı (mercan `#ff5c35` + koyu mürekkep),
+  tipografi (Manrope + Geist Mono), kabuk, bileşen envanteri, koyu mod
+  kuralları, dokunma kuralları. Yeni bileşen/ekran işinde önce buraya bak.
+  Bileşen primitive'leri için `@base-ui/react` (Base UI) dokümantasyonu,
+  görsel bakış için `.agents/skills/feedl/front_end.md` kullanılır.
 - **`docs/Feedl–Canny Fonksiyonel Parite Analizi.md` — PARİTE HARİTASI:**
   Canny resmi özellik kataloğuna dayalı P0–P5 önceliklendirilmiş analiz
   (mevcut konum değerlendirmesi, eksikler, kabul kriterleri §6, mimari
