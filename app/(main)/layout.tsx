@@ -3,6 +3,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { shadcn } from "@clerk/ui/themes";
 
 import { SiteHeader } from "@/components/custom/site-header";
+import { ThemeProvider } from "@/components/custom/theme-provider";
 
 // Sprint 32: site üst barı ClerkProvider ile birlikte (main) route group'una
 // taşındı. /widget iframe içinde bu layout'u KULLANMAZ — root layout bare
@@ -21,6 +22,12 @@ export default function MainLayout({
 }>) {
   return (
     <ClerkProvider appearance={{ theme: shadcn }}>
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="system"
+        enableSystem
+        disableTransitionOnChange
+      >
       <div className="flex min-h-svh flex-col">
         <SiteHeader />
         <div className="flex-1">{children}</div>
@@ -47,6 +54,7 @@ export default function MainLayout({
           </div>
         </footer>
       </div>
+      </ThemeProvider>
     </ClerkProvider>
   );
 }

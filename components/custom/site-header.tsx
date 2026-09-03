@@ -6,6 +6,7 @@ import { ChevronsUpIcon } from "lucide-react";
 import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/custom/theme-toggle";
 import { cn } from "@/lib/utils";
 
 // Sprint 36: üst bar site kabuğunun parçası — marka işareti ve aktif sayfa
@@ -70,6 +71,7 @@ export function SiteHeader() {
           </nav>
         </div>
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          <ThemeToggle />
           <Show when="signed-out">
             <SignInButton>
               <button className="hidden cursor-pointer rounded-md px-2 py-1.5 text-sm font-medium hover:bg-accent sm:block">
