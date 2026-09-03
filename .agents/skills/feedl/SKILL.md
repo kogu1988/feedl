@@ -290,6 +290,10 @@ docs/                                                 planning docs (source of t
   reopens the source post's APPROVED duplicate suggestion to pending
   (`reopened` CTE in DELETE /api/admin/merge) so the admin can reject it
   this time; rejected/ignored suggestions stay closed (Sprint 33).
+  Inbox reject vs ignore BOTH just close the suggestion today (no
+  behavioral difference) — kept as distinct statuses on purpose
+  (rejected = negative AI signal, ignored = neutral) for future AI
+  accuracy analytics / re-suggest blocking; do NOT merge the buttons.
 - **shadcn `form` component was removed from the registry** (404). Build forms
   with react-hook-form + zod + `@hookform/resolvers` and compose
   `input`/`textarea`/`button` manually.
