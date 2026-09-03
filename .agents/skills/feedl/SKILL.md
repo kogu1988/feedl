@@ -286,7 +286,10 @@ docs/                                                 planning docs (source of t
   post_id)). Merged posts excluded from portal/roadmap/similar lists +
   votes/comments APIs reject them (400), but STAY in dashboard with a
   "Birleştirildi" badge (that is the unmerge path). No merge chains:
-  target with mergedIntoId set cannot be a merge target.
+  target with mergedIntoId set cannot be a merge target. Unmerge ALSO
+  reopens the source post's APPROVED duplicate suggestion to pending
+  (`reopened` CTE in DELETE /api/admin/merge) so the admin can reject it
+  this time; rejected/ignored suggestions stay closed (Sprint 33).
 - **shadcn `form` component was removed from the registry** (404). Build forms
   with react-hook-form + zod + `@hookform/resolvers` and compose
   `input`/`textarea`/`button` manually.
@@ -359,11 +362,10 @@ docs/                                                 planning docs (source of t
    skill, etc.) without asking the user first - the user explicitly requires
     being consulted on every name.
 
-**Position (2026-09-03):** Sprint 32 (Widget SDK) is coded and deployed
-(`b188c51` + double-prefix fix `04d6b02`); agent-side E2E passed all 6 steps
-(session/cookie/CORS, anonim 401, fikir 201, liste+authenticated, oy
-ver/çek, geçersiz jeton 401). Remaining: the user's manual browser check,
-then mark Sprint 32 ✅ in docs/plan.md, then Sprint 33 (Autopilot Inbox) ->
-Sprint 34 (Public API + Webhooks); Sprints 29-31 (analytics, companies,
-opportunities) sit in backlog. Domain-bound work (custom domain,
-Organizations/subdomain) stays deferred until a domain is bought.
+**Position (2026-09-03):** Sprint 32 (Widget SDK) and Sprint 33
+(Autopilot Inbox: `ai_suggestions` table, /api/admin/inbox + decision
+endpoint, dashboard card, unmerge→reopen, client FilterTabs) are ✅ in
+docs/plan.md, user-verified in production. Next: Sprint 34 (Public API
++ Webhooks); Sprints 29-31 (analytics, companies, opportunities) sit in
+backlog. Domain-bound work (custom domain, Organizations/subdomain)
+stays deferred until a domain is bought.

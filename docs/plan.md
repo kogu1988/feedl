@@ -917,9 +917,21 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   boş = her origin kabul (MVP kararı). **Bug:** verifySessionPayload
   sub'a toWidgetUserId'i ikinci kez uyguluyordu → FK ihlali 500;
   tek satırla düzeltildi. /dashboard/widget'ta snippet üretici form.
-- ☐ **Sprint 33 — Autopilot Inbox (P5):** AI önerileri için admin
-  inbox (kaynak, güven skoru, önerilen aksiyon); approve/reject/edit/
-  merge/spam; audit log.
+- ✅ **Sprint 33 — Autopilot Inbox (P5)** (2026-09-03, commit 31a1247
+  + dashboard kartı 86ab4c2, unmerge iyileştirmesi 953d7eb, filtre UX
+  f31990a; kullanıcı kontrol listesiyle doğrulandı): ai_suggestions
+  tablosu (pending/approved/rejected/ignored; payload: duplicateOf,
+  similarity, note; confidence 0-100). ai-autopilot duplicate kararını
+  artık otomatik UYGULAMAZ — pending öneri olarak inbox'a düşer (Sprint
+  5 davranış değişikliği). GET /api/admin/inbox + POST
+  /api/admin/inbox/[suggestionId] (approve → mergePosts, reject,
+  ignore); dashboard'da Autopilot Inbox kartı (kaynak başlık, güven
+  skoru, önerilen hedef). Unmerge, approved duplicate önerisini
+  pending'e döndürür — admin bu kez reddedebilir (red/ignore geri
+  açılmaz); eski kodla geri alınıp yapışık kalan öneri tek seferlik
+  veri düzeltmesiyle açıldı. **UX:** FilterTabs client bileşeni oldu —
+  sekme/etiket filtreleri sayfa yenilenmeden ve kaydırma olmadan
+  güncellenir (useTransition + optimistik vurgu).
 - ☐ **Sprint 34 — Public API + Webhooks (P4.2):** scope'lu API key;
   `/api/v1` altında posts/votes/comments okuma; `post.created`,
   `post.status_changed`, `comment.created` webhook'ları; imza + rate
