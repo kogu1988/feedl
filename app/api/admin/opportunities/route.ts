@@ -58,6 +58,7 @@ export async function GET() {
       })
       .from(opportunities)
       .innerJoin(companies, eq(companies.id, opportunities.companyId))
+      .where(eq(opportunities.workspaceId, await getWorkspaceId()))
       .orderBy(desc(opportunities.createdAt));
 
     return NextResponse.json({ success: true, data: rows });

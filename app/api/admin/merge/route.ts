@@ -1,11 +1,12 @@
 import "server-only";
 
 import { NextResponse } from "next/server";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
+import { getWorkspaceId } from "@/lib/db/workspace";
 import { postMerges, posts } from "@/lib/db/schema";
 import { mergePosts } from "@/lib/post-merge";
 
@@ -166,7 +167,9 @@ export async function DELETE(req: Request) {
     const [source] = await getDb()
       .select({ id: posts.id, mergedIntoId: posts.mergedIntoId })
       .from(posts)
-      .where(eq(posts.id, sourceId))
+      .where(
+        and(eq(posts.workspaceId, await getWorkspaceId()), eq(posts.id, sourceId)),
+      )
       .limit(1);
 
     if (!source) {

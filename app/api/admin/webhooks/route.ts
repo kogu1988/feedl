@@ -48,6 +48,7 @@ export async function GET() {
         createdAt: webhookEndpoints.createdAt,
       })
       .from(webhookEndpoints)
+      .where(eq(webhookEndpoints.workspaceId, await getWorkspaceId()))
       .orderBy(desc(webhookEndpoints.createdAt));
 
     return NextResponse.json({ success: true, data: rows });

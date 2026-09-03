@@ -5,6 +5,7 @@ import { createHmac, randomUUID } from "node:crypto";
 import { and, eq, sql } from "drizzle-orm";
 
 import { getDb } from "@/lib/db";
+import { getWorkspaceId } from "@/lib/db/workspace";
 import { webhookEndpoints } from "@/lib/db/schema";
 
 // Sprint 34 — webhook teslimatı (analiz raporu P4.2). İmza şeması:
@@ -40,6 +41,7 @@ export async function loadWebhookEndpoints(
     .from(webhookEndpoints)
     .where(
       and(
+        eq(webhookEndpoints.workspaceId, await getWorkspaceId()),
         eq(webhookEndpoints.active, true),
         sql`${webhookEndpoints.events} @> ARRAY[${eventName}]::varchar[]`,
       ),

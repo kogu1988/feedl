@@ -22,6 +22,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
+import { getWorkspaceId } from "@/lib/db/workspace";
 import { loadCustomerCounts } from "@/lib/db/customer-counts";
 import {
   computeRevenueScore,
@@ -450,16 +451,24 @@ async function loadPosts(tagFilter: string) {
     .from(posts)
     .leftJoin(votes, eq(votes.postId, posts.id))
     .where(
-      tagFilter
-        ? inArray(
-            posts.id,
-            getDb()
-              .select({ postId: postTags.postId })
-              .from(postTags)
-              .innerJoin(tags, eq(tags.id, postTags.tagId))
-              .where(eq(tags.name, tagFilter)),
-          )
-        : undefined,
+      and(
+        eq(posts.workspaceId, await getWorkspaceId()),
+        tagFilter
+          ? inArray(
+              posts.id,
+              getDb()
+                .select({ postId: postTags.postId })
+                .from(postTags)
+                .innerJoin(tags, eq(tags.id, postTags.tagId))
+                .where(
+                  and(
+                    eq(tags.workspaceId, await getWorkspaceId()),
+                    eq(tags.name, tagFilter),
+                  ),
+                ),
+            )
+          : undefined,
+      ),
     )
     .groupBy(posts.id)
     .orderBy(desc(posts.createdAt))
@@ -473,6 +482,7 @@ async function loadTagOptions() {
     .select({ id: tags.id, name: tags.name, count: count(postTags.id) })
     .from(tags)
     .innerJoin(postTags, eq(postTags.tagId, tags.id))
+    .where(eq(tags.workspaceId, await getWorkspaceId()))
     .groupBy(tags.id)
     .orderBy(desc(count(postTags.id)), asc(tags.name))
     .limit(20);
@@ -487,6 +497,7 @@ async function loadSavedViews() {
       params: savedViews.params,
     })
     .from(savedViews)
+    .where(eq(savedViews.workspaceId, await getWorkspaceId()))
     .orderBy(desc(savedViews.createdAt))
     .limit(12);
 }
@@ -502,13 +513,19 @@ async function loadChangelogData() {
       publishedAt: changelogEntries.publishedAt,
     })
     .from(changelogEntries)
+    .where(eq(changelogEntries.workspaceId, await getWorkspaceId()))
     .orderBy(desc(changelogEntries.publishedAt))
     .limit(50);
 
   const shippedRows = await getDb()
     .select({ id: posts.id, title: posts.title })
     .from(posts)
-    .where(eq(posts.status, "shipped"))
+    .where(
+      and(
+        eq(posts.workspaceId, await getWorkspaceId()),
+        eq(posts.status, "shipped"),
+      ),
+    )
     .orderBy(desc(posts.updatedAt))
     .limit(30);
 
@@ -542,6 +559,7 @@ async function loadPlannerData() {
     .leftJoin(users, eq(users.id, posts.ownerId))
     .where(
       and(
+        eq(posts.workspaceId, await getWorkspaceId()),
         isNull(posts.mergedIntoId),
         inArray(posts.status, ["planned", "in-progress"]),
       ),
@@ -586,7 +604,13 @@ async function loadInboxSuggestions() {
       sourceTitle: posts.title,
     })
     .from(aiSuggestions)
-    .innerJoin(posts, eq(posts.id, aiSuggestions.postId))
+    .innerJoin(
+      posts,
+      and(
+        eq(posts.id, aiSuggestions.postId),
+        eq(posts.workspaceId, await getWorkspaceId()),
+      ),
+    )
     .where(eq(aiSuggestions.status, "pending"))
     .orderBy(desc(aiSuggestions.createdAt))
     .limit(20);
@@ -629,6 +653,7 @@ async function loadApiKeys() {
       createdAt: apiKeys.createdAt,
     })
     .from(apiKeys)
+    .where(eq(apiKeys.workspaceId, await getWorkspaceId()))
     .orderBy(desc(apiKeys.createdAt))
     .limit(50);
 
@@ -654,6 +679,7 @@ async function loadWebhooks() {
       createdAt: webhookEndpoints.createdAt,
     })
     .from(webhookEndpoints)
+    .where(eq(webhookEndpoints.workspaceId, await getWorkspaceId()))
     .orderBy(desc(webhookEndpoints.createdAt))
     .limit(20);
 
@@ -676,7 +702,12 @@ async function loadWeeklyCounts(days: number) {
     db
       .select({ value: count() })
       .from(posts)
-      .where(gte(posts.createdAt, since)),
+      .where(
+        and(
+          eq(posts.workspaceId, await getWorkspaceId()),
+          gte(posts.createdAt, since),
+        ),
+      ),
     db
       .select({ value: count() })
       .from(votes)

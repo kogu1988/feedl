@@ -9,6 +9,7 @@ import {
 } from "@/components/custom/companies-manager";
 import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
+import { getWorkspaceId } from "@/lib/db/workspace";
 import {
   companies,
   companyMembers,
@@ -36,7 +37,11 @@ export default async function CompaniesPage() {
   try {
     const [companyRows, memberRows, userRows, opportunityRows] =
       await Promise.all([
-        getDb().select().from(companies).orderBy(asc(companies.name)),
+        getDb()
+          .select()
+          .from(companies)
+          .where(eq(companies.workspaceId, await getWorkspaceId()))
+          .orderBy(asc(companies.name)),
         getDb()
           .select({
             id: companyMembers.id,
@@ -64,6 +69,7 @@ export default async function CompaniesPage() {
             notes: opportunities.notes,
           })
           .from(opportunities)
+          .where(eq(opportunities.workspaceId, await getWorkspaceId()))
           .orderBy(desc(opportunities.createdAt)),
       ]);
 

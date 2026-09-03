@@ -6,6 +6,7 @@ import { z } from "zod";
 
 import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
+import { getWorkspaceId } from "@/lib/db/workspace";
 import {
   comments,
   postStatusEnum,
@@ -83,6 +84,7 @@ export async function GET(req: Request) {
       .leftJoin(votes, eq(votes.postId, posts.id))
       .where(
         and(
+          eq(posts.workspaceId, await getWorkspaceId()),
           isNull(posts.mergedIntoId),
           excludeId ? ne(posts.id, excludeId) : undefined,
           ilike(posts.title, `%${q}%`),
@@ -144,7 +146,12 @@ export async function PATCH(req: Request) {
         postType: posts.postType,
       })
       .from(posts)
-      .where(eq(posts.id, parsed.data.postId))
+      .where(
+        and(
+          eq(posts.workspaceId, await getWorkspaceId()),
+          eq(posts.id, parsed.data.postId),
+        ),
+      )
       .limit(1);
 
     if (!existing) {

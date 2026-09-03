@@ -5,6 +5,7 @@ import { and, count, desc, eq, inArray } from "drizzle-orm";
 
 import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
+import { getWorkspaceId } from "@/lib/db/workspace";
 import { loadCustomerCounts } from "@/lib/db/customer-counts";
 import {
   computeRevenueScore,
@@ -40,6 +41,7 @@ export async function GET() {
       })
       .from(posts)
       .leftJoin(votes, eq(votes.postId, posts.id))
+      .where(eq(posts.workspaceId, await getWorkspaceId()))
       .groupBy(posts.id)
       .orderBy(desc(posts.createdAt));
 

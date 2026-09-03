@@ -1,6 +1,7 @@
 import { and, eq, inArray } from "drizzle-orm";
 
 import { getDb } from "./index";
+import { getWorkspaceId } from "./workspace";
 import {
   companies,
   companyMembers,
@@ -48,6 +49,7 @@ export async function loadRevenueContexts(postIds: string[]): Promise<{
       )
       .where(
         and(
+          eq(opportunities.workspaceId, await getWorkspaceId()),
           inArray(postOpportunities.postId, postIds),
           // won/lost skor dışı: kazanılmış fırsat MRR'de zaten var,
           // kaybedilen ise artık gelir vaadi taşımıyor.

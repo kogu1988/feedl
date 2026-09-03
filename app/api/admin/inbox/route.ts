@@ -1,10 +1,11 @@
 import "server-only";
 
 import { NextResponse } from "next/server";
-import { desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 
 import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
+import { getWorkspaceId } from "@/lib/db/workspace";
 import { aiSuggestions, posts } from "@/lib/db/schema";
 
 // GET /api/admin/inbox — bekleyen AI önerileri (sadece admin). Her öneride
@@ -32,7 +33,13 @@ export async function GET() {
         sourceStatus: posts.status,
       })
       .from(aiSuggestions)
-      .innerJoin(posts, eq(posts.id, aiSuggestions.postId))
+      .innerJoin(
+        posts,
+        and(
+          eq(posts.id, aiSuggestions.postId),
+          eq(posts.workspaceId, await getWorkspaceId()),
+        ),
+      )
       .where(eq(aiSuggestions.status, "pending"))
       .orderBy(desc(aiSuggestions.createdAt))
       .limit(50);

@@ -54,6 +54,7 @@ export async function GET() {
     const rows = await getDb()
       .select()
       .from(savedViews)
+      .where(eq(savedViews.workspaceId, await getWorkspaceId()))
       .orderBy(desc(savedViews.createdAt))
       .limit(20);
 

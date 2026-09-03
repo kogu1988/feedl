@@ -3,6 +3,7 @@ import "server-only";
 import { sql } from "drizzle-orm";
 
 import { getDb } from "@/lib/db";
+import { getWorkspaceId } from "@/lib/db/workspace";
 import { postMerges } from "@/lib/db/schema";
 
 // neon-http üzerindeki drizzle execute() sonucu sürüme göre ya satır dizisi
@@ -44,9 +45,12 @@ export async function mergePosts(
   sourceId: string,
   targetId: string,
 ): Promise<MergeOutcome> {
-  // Her iki fikrin mevcudiyeti ve birleşme durumu önceden kontrol edilir.
+  // Her iki fikrin mevcudiyeti ve birleşme durumu önceden kontrol edilir;
+  // scope aynı workspace ile sınırlıdır (çapraz workspace merge yok).
   const state = await getDb().execute(sql`
-    SELECT id, merged_into_id FROM posts WHERE id IN (${sourceId}, ${targetId})
+    SELECT id, merged_into_id FROM posts
+    WHERE workspace_id = ${await getWorkspaceId()}
+      AND id IN (${sourceId}, ${targetId})
   `);
 
   const found = toRows<{ id: string; merged_into_id: string | null }>(state);

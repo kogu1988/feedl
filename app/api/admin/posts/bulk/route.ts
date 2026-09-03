@@ -76,7 +76,12 @@ export async function POST(req: Request) {
       const existing = await getDb()
         .select({ id: posts.id, status: posts.status })
         .from(posts)
-        .where(inArray(posts.id, postIds));
+        .where(
+          and(
+            eq(posts.workspaceId, await getWorkspaceId()),
+            inArray(posts.id, postIds),
+          ),
+        );
 
       const toChange = existing.filter((row) => row.status !== status);
       if (toChange.length > 0) {

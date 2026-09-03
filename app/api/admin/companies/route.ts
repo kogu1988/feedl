@@ -44,6 +44,7 @@ export async function GET() {
     const companyRows = await getDb()
       .select()
       .from(companies)
+      .where(eq(companies.workspaceId, await getWorkspaceId()))
       .orderBy(asc(companies.name));
 
     const memberRows = await getDb()

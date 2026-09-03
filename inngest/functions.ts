@@ -262,7 +262,12 @@ export const notifyShipped = inngest.createFunction(
       const [post] = await getDb()
         .select({ id: posts.id, title: posts.title })
         .from(posts)
-        .where(eq(posts.id, payload.postId))
+        .where(
+          and(
+            eq(posts.workspaceId, await getWorkspaceId()),
+            eq(posts.id, payload.postId),
+          ),
+        )
         .limit(1);
 
       if (!post) {
@@ -465,7 +470,12 @@ export const notifyCommentCreated = inngest.createFunction(
       const [post] = await getDb()
         .select({ id: posts.id, title: posts.title })
         .from(posts)
-        .where(eq(posts.id, comment.postId))
+        .where(
+          and(
+            eq(posts.workspaceId, await getWorkspaceId()),
+            eq(posts.id, comment.postId),
+          ),
+        )
         .limit(1);
       if (!post) {
         throw new NonRetriableError(`Post not found: ${comment.postId}`);

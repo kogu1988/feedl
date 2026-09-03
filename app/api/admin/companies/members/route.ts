@@ -6,6 +6,7 @@ import { z } from "zod";
 
 import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
+import { getWorkspaceId } from "@/lib/db/workspace";
 import { companies, companyMembers, users } from "@/lib/db/schema";
 
 // Sprint 30 — şirket üyeleri: kullanıcı ↔ şirket eşleşmesi + ünvan.
@@ -55,7 +56,12 @@ export async function POST(req: Request) {
     const [company] = await getDb()
       .select({ id: companies.id })
       .from(companies)
-      .where(eq(companies.id, parsed.data.companyId));
+      .where(
+        and(
+          eq(companies.workspaceId, await getWorkspaceId()),
+          eq(companies.id, parsed.data.companyId),
+        ),
+      );
     if (!company) {
       return NextResponse.json(
         { success: false, error: "Şirket bulunamadı." },

@@ -40,6 +40,7 @@ export async function GET() {
         createdAt: apiKeys.createdAt,
       })
       .from(apiKeys)
+      .where(eq(apiKeys.workspaceId, await getWorkspaceId()))
       .orderBy(desc(apiKeys.createdAt));
 
     return NextResponse.json({ success: true, data: rows });

@@ -5,6 +5,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { and, eq, isNull } from "drizzle-orm";
 
 import { getDb } from "@/lib/db";
+import { getWorkspaceId } from "@/lib/db/workspace";
 import { apiKeys, type ApiKey } from "@/lib/db/schema";
 
 // Sprint 34 — Public API (P4.2). Anahtar biçimi fk_live_<32 hex>; tam
@@ -42,7 +43,11 @@ export async function authenticateApiKey(
     .select()
     .from(apiKeys)
     .where(
-      and(eq(apiKeys.keyHash, hashApiKey(match[1])), isNull(apiKeys.revokedAt)),
+      and(
+        eq(apiKeys.workspaceId, await getWorkspaceId()),
+        eq(apiKeys.keyHash, hashApiKey(match[1])),
+        isNull(apiKeys.revokedAt),
+      ),
     )
     .limit(1);
   return record ?? null;

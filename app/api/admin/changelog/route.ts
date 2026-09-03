@@ -43,6 +43,7 @@ export async function GET() {
         publishedAt: changelogEntries.publishedAt,
       })
       .from(changelogEntries)
+      .where(eq(changelogEntries.workspaceId, await getWorkspaceId()))
       .orderBy(desc(changelogEntries.publishedAt))
       .limit(50);
 
