@@ -1,14 +1,20 @@
 import { redirect } from "next/navigation";
-import { asc, eq } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 
 import {
   CompaniesManager,
   type CompanyView,
+  type OpportunityView,
   type UserOption,
 } from "@/components/custom/companies-manager";
 import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
-import { companies, companyMembers, users } from "@/lib/db/schema";
+import {
+  companies,
+  companyMembers,
+  opportunities,
+  users,
+} from "@/lib/db/schema";
 
 // Canlı veri: her istekte DB'den okunur.
 export const dynamic = "force-dynamic";
@@ -24,28 +30,42 @@ export default async function CompaniesPage() {
 
   let items: CompanyView[] = [];
   let userOptions: UserOption[] = [];
+  let opportunityItems: OpportunityView[] = [];
   let loadError = false;
 
   try {
-    const [companyRows, memberRows, userRows] = await Promise.all([
-      getDb().select().from(companies).orderBy(asc(companies.name)),
-      getDb()
-        .select({
-          id: companyMembers.id,
-          companyId: companyMembers.companyId,
-          userId: companyMembers.userId,
-          jobTitle: companyMembers.jobTitle,
-          userName: users.name,
-          userEmail: users.email,
-        })
-        .from(companyMembers)
-        .innerJoin(users, eq(users.id, companyMembers.userId))
-        .orderBy(asc(users.name)),
-      getDb()
-        .select({ id: users.id, name: users.name, email: users.email })
-        .from(users)
-        .orderBy(asc(users.name)),
-    ]);
+    const [companyRows, memberRows, userRows, opportunityRows] =
+      await Promise.all([
+        getDb().select().from(companies).orderBy(asc(companies.name)),
+        getDb()
+          .select({
+            id: companyMembers.id,
+            companyId: companyMembers.companyId,
+            userId: companyMembers.userId,
+            jobTitle: companyMembers.jobTitle,
+            userName: users.name,
+            userEmail: users.email,
+          })
+          .from(companyMembers)
+          .innerJoin(users, eq(users.id, companyMembers.userId))
+          .orderBy(asc(users.name)),
+        getDb()
+          .select({ id: users.id, name: users.name, email: users.email })
+          .from(users)
+          .orderBy(asc(users.name)),
+        getDb()
+          .select({
+            id: opportunities.id,
+            companyId: opportunities.companyId,
+            title: opportunities.title,
+            dealValue: opportunities.dealValue,
+            stage: opportunities.stage,
+            expectedCloseDate: opportunities.expectedCloseDate,
+            notes: opportunities.notes,
+          })
+          .from(opportunities)
+          .orderBy(desc(opportunities.createdAt)),
+      ]);
 
     const membersByCompany = new Map<string, CompanyView["members"]>();
     for (const member of memberRows) {
@@ -73,6 +93,16 @@ export default async function CompaniesPage() {
       id: user.id,
       label: user.name ? `${user.name} (${user.email})` : user.email,
     }));
+
+    opportunityItems = opportunityRows.map((row) => ({
+      id: row.id,
+      companyId: row.companyId,
+      title: row.title,
+      dealValue: row.dealValue ?? "0",
+      stage: row.stage,
+      expectedCloseDate: row.expectedCloseDate,
+      notes: row.notes,
+    }));
   } catch (err) {
     console.error(
       "Companies page load failed:",
@@ -95,7 +125,11 @@ export default async function CompaniesPage() {
             Şirketler yüklenemedi. Sayfayı yenilemeyi dene.
           </p>
         ) : (
-          <CompaniesManager items={items} userOptions={userOptions} />
+          <CompaniesManager
+            items={items}
+            userOptions={userOptions}
+            opportunities={opportunityItems}
+          />
         )}
       </div>
     </main>

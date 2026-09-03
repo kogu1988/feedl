@@ -572,3 +572,60 @@ export const companyMembers = pgTable(
 
 export type CompanyMember = typeof companyMembers.$inferSelect;
 export type NewCompanyMember = typeof companyMembers.$inferInsert;
+
+// opportunities: Sprint 31 — satış fırsatları (P3.2). Şirkete bağlı;
+// fikirle ilişki post_opportunities üzerinden kurulur. Gelir ağırlıklı
+// önceliklendirme yalnızca açık aşamaları (open/proposal) sayar.
+export const opportunities = pgTable(
+  "opportunities",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
+    title: varchar("title", { length: 160 }).notNull(),
+    dealValue: numeric("deal_value", { precision: 12, scale: 2 })
+      .notNull()
+      .default("0"),
+    stage: varchar("stage", { length: 20 }).notNull().default("open"),
+    expectedCloseDate: date("expected_close_date"),
+    notes: text("notes"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [index("opportunities_company_idx").on(table.companyId)],
+);
+
+export type Opportunity = typeof opportunities.$inferSelect;
+export type NewOpportunity = typeof opportunities.$inferInsert;
+
+// post_opportunities: fikir ↔ fırsat eşleşmesi. Şirket üyelerinin oyu
+// zaten müşteri sayacını verir; fırsat bağlantısı gelir skorunu besler.
+export const postOpportunities = pgTable(
+  "post_opportunities",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    postId: uuid("post_id")
+      .notNull()
+      .references(() => posts.id, { onDelete: "cascade" }),
+    opportunityId: uuid("opportunity_id")
+      .notNull()
+      .references(() => opportunities.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    unique("post_opportunities_post_opportunity_unique").on(
+      table.postId,
+      table.opportunityId,
+    ),
+  ],
+);
+
+export type PostOpportunity = typeof postOpportunities.$inferSelect;
+export type NewPostOpportunity = typeof postOpportunities.$inferInsert;

@@ -6,6 +6,10 @@ import { and, count, desc, eq, inArray } from "drizzle-orm";
 import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { loadCustomerCounts } from "@/lib/db/customer-counts";
+import {
+  computeRevenueScore,
+  loadRevenueContexts,
+} from "@/lib/db/revenue-scores";
 import { sentimentLabels, statusLabels, typeLabels } from "@/lib/post-format";
 import { comments, postTags, posts, tags, votes } from "@/lib/db/schema";
 
@@ -85,7 +89,33 @@ export async function GET() {
       rows.map((row) => row.id),
     );
 
-    const csv = buildCsv(rows, tagsByPost, commentCountByPost, customerCountByPost);
+    // Sprint 31: gelir skoru — dashboard tablosuyla aynı formül.
+    const revenueContexts = await loadRevenueContexts(
+      rows.map((row) => row.id),
+    );
+    const revenueScoreByPost = new Map(
+      rows.map((row) => {
+        const customerCount = customerCountByPost.get(row.id) ?? 0;
+        return [
+          row.id,
+          computeRevenueScore({
+            voteCount: row.voteCount,
+            customerCount,
+            mrrTotal: revenueContexts.mrrByPost.get(row.id) ?? 0,
+            openOpportunityValue:
+              revenueContexts.opportunityValueByPost.get(row.id) ?? 0,
+          }),
+        ] as const;
+      }),
+    );
+
+    const csv = buildCsv(
+      rows,
+      tagsByPost,
+      commentCountByPost,
+      customerCountByPost,
+      revenueScoreByPost,
+    );
 
     return new NextResponse(csv, {
       status: 200,
@@ -139,6 +169,7 @@ function buildCsv(
   tagsByPost: Map<string, string[]>,
   commentCountByPost: Map<string, number>,
   customerCountByPost: Map<string, number>,
+  revenueScoreByPost: Map<string, number>,
 ): string {
   const header = [
     "Başlık",
@@ -151,6 +182,7 @@ function buildCsv(
     "Oy Sayısı",
     "Yorum Sayısı",
     "Müşteri Sayısı",
+    "Gelir Skoru",
     "Oluşturma",
     "Güncelleme",
     "ID",
@@ -172,6 +204,7 @@ function buildCsv(
         String(row.voteCount),
         String(commentCountByPost.get(row.id) ?? 0),
         String(customerCountByPost.get(row.id) ?? 0),
+        String(revenueScoreByPost.get(row.id) ?? 0),
         dateFormatter.format(row.createdAt),
         dateFormatter.format(row.updatedAt),
         row.id,

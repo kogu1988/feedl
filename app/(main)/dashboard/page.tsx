@@ -23,6 +23,10 @@ import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { loadCustomerCounts } from "@/lib/db/customer-counts";
 import {
+  computeRevenueScore,
+  loadRevenueContexts,
+} from "@/lib/db/revenue-scores";
+import {
   aiSuggestions,
   apiKeys,
   changelogEntries,
@@ -93,11 +97,16 @@ export default async function DashboardPage({
   let webhookItems: Awaited<ReturnType<typeof loadWebhooks>> = [];
   let weeklyCounts = { ideas: 0, votes: 0, comments: 0 };
   let customerCountByPost: Map<string, number> = new Map();
+  let revenueContexts = {
+    mrrByPost: new Map<string, number>(),
+    opportunityValueByPost: new Map<string, number>(),
+  };
   let loadError = false;
 
   try {
     rows = await loadPosts(tagFilter);
     customerCountByPost = await loadCustomerCounts(rows.map((row) => row.id));
+    revenueContexts = await loadRevenueContexts(rows.map((row) => row.id));
     tagOptions = await loadTagOptions();
     views = await loadSavedViews();
     changelogData = await loadChangelogData();
@@ -374,6 +383,13 @@ export default async function DashboardPage({
                 createdAtLabel: dateFormatter.format(row.createdAt),
                 voteCount: row.voteCount,
                 customerCount: customerCountByPost.get(row.id) ?? 0,
+                revenueScore: computeRevenueScore({
+                  voteCount: row.voteCount,
+                  customerCount: customerCountByPost.get(row.id) ?? 0,
+                  mrrTotal: revenueContexts.mrrByPost.get(row.id) ?? 0,
+                  openOpportunityValue:
+                    revenueContexts.opportunityValueByPost.get(row.id) ?? 0,
+                }),
               }))}
               tagOptions={tagOptions.map((option) => ({
                 id: option.id,

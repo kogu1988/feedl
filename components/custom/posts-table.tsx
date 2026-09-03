@@ -42,6 +42,7 @@ export interface PostsTableRow {
   createdAtLabel: string;
   voteCount: number;
   customerCount: number;
+  revenueScore: number;
 }
 
 export interface BulkTagOption {
@@ -210,6 +211,12 @@ export function PostsTable({
             <TableHead className="w-[80px] text-center">
               Müşteri
             </TableHead>
+            <TableHead
+              className="w-[80px] text-center"
+              title="Skor = Oy + 10×Müşteri + (MRR + Açık Fırsat)/1000"
+            >
+              Skor
+            </TableHead>
             <TableHead>Başlık</TableHead>
             <TableHead className="w-[200px]">AI</TableHead>
             <TableHead className="w-[140px]">Tarih</TableHead>
@@ -233,6 +240,12 @@ export function PostsTable({
               </TableCell>
               <TableCell className="text-center tabular-nums text-muted-foreground" title="Fikre oy veren şirket sayısı">
                 {post.customerCount}
+              </TableCell>
+              <TableCell
+                className="text-center font-medium tabular-nums"
+                title="Skor = Oy + 10×Müşteri + (MRR + Açık Fırsat)/1000"
+              >
+                {post.revenueScore}
               </TableCell>
               <TableCell>
                 <div className="max-w-[320px] truncate font-medium">

@@ -134,6 +134,13 @@
       "when": 1788458927292,
       "tag": "0018_companies",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1788465616329,
+      "tag": "0019_opportunities",
+      "breakpoints": true
     }
   ]
 }
