@@ -906,9 +906,18 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   (durum/etiket filtreleri extraParams ile korunur). CSV export'a
   Açıklama, Duygu, Anahtar Kelimeler ve Yorum Sayısı (iç notlar
   hariç) sütunları eklendi.
-- ☐ **Sprint 30 — Company/Segment Profili (P3.1):** `companies` +
-  `company_members` + user profil alanları; fikir başına "kaç müşteri
-  istedi" sayacı (Canny kritik UX'i).
+- ✅ **Sprint 30 — Company/Segment Profili (P3.1)** (2026-09-03, commit
+  214c024; kullanıcı kontrol listesiyle doğrulandı): `companies` +
+  `company_members` tabloları (migration 0018, MRR `numeric(12,2)`)
+  ve CRUD API'leri (`app/api/admin/companies` + `members`).
+  Dashboard'a "Şirketler" sayfası (components/custom/
+  companies-manager.tsx — form dialog, üye ekleme, ünvan düzenleme,
+  silme onaylı). Ortak sayaç helper'ı (lib/db/customer-counts.ts):
+  `votes ⋈ companyMembers` ile fikir başına distinct şirket sayısı.
+  Dashboard fikirler tablosuna "Müşteri" kolonu; fikir detayda admin
+  kutusu ("X müşteri bu fikre oy verdi"); CSV export'a "Müşteri
+  Sayısı" sütunu. Widget ziyaretçileri (şirket üyeliği yok) bilinçli
+  olarak sayılmaz.
 - ☐ **Sprint 31 — Opportunities + Gelir Ağırlıklı Öncelik (P3.2):**
   fırsat/değer alanları; oy sayısı + MRR ağırlıklı skor raporu.
 - ✅ **Sprint 32 — Widget SDK (P4.1 lite)** (2026-09-03, commit b188c51

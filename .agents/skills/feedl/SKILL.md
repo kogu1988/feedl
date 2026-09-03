@@ -386,9 +386,10 @@ docs/                                                 planning docs (source of t
     being consulted on every name.
 
 **Position (2026-09-03):** Sprints 32 (Widget SDK), 33 (Autopilot
-Inbox), 34 (Public API + Webhooks) and 29 (Temel Analytics) are ✅ in
-docs/plan.md, user-verified in production. Next: user picks the next
-sprint — Sprint 30 (Company/Segment Profili, parity §P3.1) is the
-suggested next; Sprint 31 (opportunities) sits behind it in backlog.
-Domain-bound work (custom domain, Organizations/subdomain) stays
-deferred until a domain is bought.
+Inbox), 34 (Public API + Webhooks), 29 (Temel Analytics) and 30
+(Company/Segment Profili) are ✅ in docs/plan.md, user-verified in
+production. Next: **Sprint 31 — Opportunities + Gelir Ağırlıklı
+Öncelik (parity §P3.2)** — links companies/MRR to revenue-weighted
+prioritization (plan §6 kabul kriterlerini kullan). Domain-bound
+work (custom domain, Organizations/subdomain) stays deferred until
+a domain is bought.
