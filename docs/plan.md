@@ -984,15 +984,43 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   X-Feedl-Signature: t=<ts>,v1=<hex>, 10s timeout, non-2xx throw.
   Middleware'e /api/v1 public eklendi (kimlik handler'da Bearer ile).
 
+- ✅ **Sprint 37 — Workspace Hazırlık Migration'ı + Merkezi Tenant Scope
+  (PM raporu §8.1)** (2026-09-04, commit ae6bea0 + 1e0ac21 + 1ae5cf1):
+  P0.1'in UI'siz temel adımı — kullanıcı görünürlüğü değişmez,
+  Paddle plan limitlerinin (Faz 5) izleyeceği workspace bağlantısı
+  kurulur. Migration 0020_workspaces: workspaces tablosu (id, name,
+  slug unique, timestamps; seed satırı slug='feedl') + 8 üst düzey
+  tabloya workspace_id FK (posts, tags, saved_views,
+  changelog_entries, api_keys, webhook_endpoints, companies,
+  opportunities) + backfill (SET NOT NULL) + index'ler; tags'in global
+  unique(name)'i unique(workspace_id, name)'e dönüştü. Çocuk tablolar
+  (votes, comments, post_tags, followers, deliveries, merges,
+  status_history, ai_suggestions, post_opportunities, company_members,
+  changelog_post_links) workspace_id ALMAZ — parent üzerinden scope.
+  lib/db/workspace.ts getWorkspaceId(): süreç-içi cache'li singleton,
+  slug='feedl' satırını okur, yoksa migration uyarısıyla hata fırlatır.
+  Tüm yazma yolları insert'lere workspaceId ekler (posts ×2, tags,
+  api_keys, changelog, companies, opportunities, views, webhooks);
+  okuma yollarına scope filtresi: portal/widget/roadmap/oyladıklarım,
+  api/v1, votes, comments doğrulamaları, dashboard (tüm kart sorguları
+  + weekly counts), tüm admin route'ları, lib/api-keys auth,
+  lib/webhooks/dispatch, lib/db/revenue-scores, lib/post-merge (ham SQL
+  state sorgusu — çapraz workspace merge engellenir), inngest bildirim
+  post doğrulamaları, inngest sync-tags (tag insert + lookup scope'lu).
+  Bilinen not: migrations/meta/0019_snapshot.json eksik olduğundan
+  gelecekteki drizzle-kit generate diff'leri elle düzeltilecek (0020'de
+  olduğu gibi). DB doğrulandı: 1 workspace, 8 tabloda NULL yok.
+
 ### Ertelenen blok (en son — kullanıcının kısıtı)
 
 - **Resend geçişi:** tek env `RESEND_API_KEY`; kod otomatik geçer
   (`lib/email/send.ts`). Domain doğrulaması gerektiğinden domain ile
   birlikte yapılır.
-- **Domain gerektirenler:** Workspace/Organizations + çoklu tenancy
-  (P0.1) + subdomain yönlendirme, board erişim politikaları (P0.2),
+- **Domain gerektirenler:** Workspace/Organizations UI + çoklu tenancy
+  (P0.1'in veri temeli Sprint 37 ile kuruldu; Organizations UI,
+  subdomain yönlendirme, board erişim politikaları (P0.2),
   custom domain + markalama, üçüncü taraf entegrasyonları (P4.3:
-  Slack/Intercom/Jira...), billing/plan limitleri.
+  Slack/Intercom/Jira...), billing/plan limitleri hâlâ ertelenmiş.
 
 ### ⚠️ Mimari risk notu (P0.1 ertelenmesi hakkında)
 
