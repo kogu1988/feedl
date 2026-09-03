@@ -11,6 +11,7 @@ import {
   timestamp,
   unique,
   uuid,
+  varchar,
   vector,
   type AnyPgColumn,
 } from "drizzle-orm/pg-core";
@@ -475,4 +476,50 @@ export const aiSuggestions = pgTable(
 );
 
 export type AiSuggestion = typeof aiSuggestions.$inferSelect;
-export type NewAiSuggestion = typeof aiSuggestions.$inferInsert; 
+export type NewAiSuggestion = typeof aiSuggestions.$inferInsert;
+
+// api_keys: Sprint 34 — Public API (P4.2). Salt-okunur anahtarlar; tam
+// anahtar yalnızca oluşturma anında gösterilir, DB'de yalnızca SHA-256
+// karması tutulur. prefix liste görünümü için anahtarın ilk karakterleridir.
+export const apiKeys = pgTable(
+  "api_keys",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: varchar("name", { length: 100 }).notNull(),
+    prefix: varchar("prefix", { length: 16 }).notNull(),
+    keyHash: varchar("key_hash", { length: 64 }).notNull().unique(),
+    // Sprint 34 MVP'de yalnızca "read" kapsamı üretilir; yazma kapsamları
+    // ileride bu diziye eklenir (analiz raporu P4.2).
+    scopes: varchar("scopes", { length: 40 }).array().notNull().default(["read"]),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [index("api_keys_key_hash_idx").on(table.keyHash)],
+);
+
+export type ApiKey = typeof apiKeys.$inferSelect;
+export type NewApiKey = typeof apiKeys.$inferInsert;
+
+// webhook_endpoints: Sprint 34 — kayıtlı webhook alıcıları. secret alıcı
+// tarafında imza doğrulaması içindir; teslimat Inngest sendWebhooks
+// fonksiyonundan HMAC-SHA256 imzalı POST ile yapılır (retry Inngest'te).
+export const webhookEndpoints = pgTable(
+  "webhook_endpoints",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    url: text("url").notNull(),
+    // Abone olaylar: post.created | post.status_changed | comment.created
+    events: varchar("events", { length: 40 }).array().notNull(),
+    secret: text("secret").notNull(),
+    active: boolean("active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+);
+
+export type WebhookEndpoint = typeof webhookEndpoints.$inferSelect;
+export type NewWebhookEndpoint = typeof webhookEndpoints.$inferInsert;
