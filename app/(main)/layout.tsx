@@ -1,10 +1,19 @@
 import Link from "next/link";
-import { ClerkProvider, Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
+import { ClerkProvider } from "@clerk/nextjs";
 import { shadcn } from "@clerk/ui/themes";
 
+import { SiteHeader } from "@/components/custom/site-header";
+
 // Sprint 32: site üst barı ClerkProvider ile birlikte (main) route group'una
-// taşındı (plan.md Sprint 9 barının yerini korur). /widget iframe içinde
-// bu layout'u KULLANMAZ — root layout bare html/body verir.
+// taşındı. /widget iframe içinde bu layout'u KULLANMAZ — root layout bare
+// html/body verir. Sprint 36: üst bar SiteHeader'a taşındı (aktif nav durumu
+// client gerektirir), alt bar eklendi; flex iskelet footer'ı alta sabitler.
+const footerLinks = [
+  { href: "/portal", label: "Portal" },
+  { href: "/roadmap", label: "Yol Haritası" },
+  { href: "/portal/changelog", label: "Güncellemeler" },
+];
+
 export default function MainLayout({
   children,
 }: Readonly<{
@@ -12,53 +21,32 @@ export default function MainLayout({
 }>) {
   return (
     <ClerkProvider appearance={{ theme: shadcn }}>
-      <header className="border-b">
-        <div className="container mx-auto flex h-14 max-w-5xl items-center justify-between gap-4 px-4">
-          <div className="flex items-center gap-6">
-            <Link href="/" className="text-base font-bold tracking-tight">
-              feedl
-            </Link>
-            <nav className="flex items-center gap-1 text-sm">
-              <Link
-                href="/portal"
-                className="rounded-md px-2 py-1 font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-              >
-                Portal
-              </Link>
-              <Link
-                href="/roadmap"
-                className="rounded-md px-2 py-1 font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-              >
-                Yol Haritası
-              </Link>
-              <Link
-                href="/portal/changelog"
-                className="rounded-md px-2 py-1 font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-              >
-                Güncellemeler
-              </Link>
+      <div className="flex min-h-svh flex-col">
+        <SiteHeader />
+        <div className="flex-1">{children}</div>
+        <footer className="border-t">
+          <div className="container mx-auto flex max-w-5xl flex-col gap-4 px-4 py-8 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted-foreground">
+              <span className="font-semibold text-foreground">feedl</span>
+              {" "}— müşteri geri bildirimini ürün kararına dönüştürür.
+            </p>
+            <nav
+              className="flex items-center gap-4 text-sm text-muted-foreground"
+              aria-label="Alt menü"
+            >
+              {footerLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="transition-colors hover:text-foreground"
+                >
+                  {link.label}
+                </Link>
+              ))}
             </nav>
           </div>
-          <div className="flex items-center gap-3">
-            <Show when="signed-out">
-              <SignInButton>
-                <button className="cursor-pointer rounded-md px-3 py-1.5 text-sm font-medium hover:bg-accent">
-                  Giriş Yap
-                </button>
-              </SignInButton>
-              <SignUpButton>
-                <button className="cursor-pointer rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90">
-                  Kayıt Ol
-                </button>
-              </SignUpButton>
-            </Show>
-            <Show when="signed-in">
-              <UserButton />
-            </Show>
-          </div>
-        </div>
-      </header>
-      {children}
+        </footer>
+      </div>
     </ClerkProvider>
   );
 }
