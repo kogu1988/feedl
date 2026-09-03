@@ -422,4 +422,57 @@ export const emailDeliveries = pgTable(
 );
 
 export type EmailDelivery = typeof emailDeliveries.$inferSelect;
-export type NewEmailDelivery = typeof emailDeliveries.$inferInsert; 
+export type NewEmailDelivery = typeof emailDeliveries.$inferInsert;
+
+// ai_suggestions: Sprint 33 — Autopilot Inbox (P5). AI'ın ürettiği ancak
+// admin onayı bekleyen öneriler. Sprint 5'te duplicate kararı otomatik
+// uygulanıyordu; artık pending öneri olarak inbox'a düşer, admin approve
+// edince Sprint 20 merge CTE'si çalışır. Karar alanları audit izi bırakır.
+export const aiSuggestionTypeEnum = pgEnum("ai_suggestion_type", [
+  "duplicate",
+  // spam önerisi ileride eklenir (analiz raporu P5).
+]);
+
+export const aiSuggestionStatusEnum = pgEnum("ai_suggestion_status", [
+  "pending",
+  "approved",
+  "rejected",
+  "ignored",
+]);
+
+export const aiSuggestions = pgTable(
+  "ai_suggestions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    postId: uuid("post_id")
+      .notNull()
+      .references((): AnyPgColumn => posts.id, { onDelete: "cascade" }),
+    type: aiSuggestionTypeEnum("type").notNull(),
+    // Öneri bağlamı: duplicateOf (hedef fikir), similarity (cosine 0-1),
+    // note (insan-okur açıklama).
+    payload: jsonb("payload")
+      .$type<{
+        duplicateOf: string;
+        similarity: number;
+        note: string;
+      }>()
+      .notNull(),
+    // Güven skoru 0-100; cosine similarity'den türetilir.
+    confidence: integer("confidence").notNull(),
+    status: aiSuggestionStatusEnum("status").notNull().default("pending"),
+    decidedBy: text("decided_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    decidedAt: timestamp("decided_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("ai_suggestions_status_idx").on(table.status),
+    index("ai_suggestions_post_id_idx").on(table.postId),
+  ],
+);
+
+export type AiSuggestion = typeof aiSuggestions.$inferSelect;
+export type NewAiSuggestion = typeof aiSuggestions.$inferInsert; 

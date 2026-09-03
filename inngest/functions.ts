@@ -19,6 +19,7 @@ import {
   tags,
   users,
   votes,
+  aiSuggestions,
 } from "@/lib/db/schema";
 import {
   commentCreatedEventSchema,
@@ -120,10 +121,15 @@ export const aiAutopilot = inngest.createFunction(
       },
     );
 
-    let duplicateOf: string | null = null;
-    let duplicateNote: string | null = null;
+    // 3) Aday varsa LLM ile çift doğrula. Sprint 33: DUPLICATE kararı artık
+    // doğrudan uygulanmaz — pending öneri olarak Autopilot Inbox'a düşer;
+    // admin approve edince Sprint 20 merge CTE'si birleştirir.
+    let duplicateSuggestion: {
+      duplicateOf: string;
+      similarity: number;
+      note: string;
+    } | null = null;
 
-    // 3) Aday varsa LLM ile çift doğrula; %90+ aynıysa duplicate işaretle.
     if (candidate) {
       const relation = await step.run(
         "confirm-duplicate-with-llm",
@@ -135,8 +141,11 @@ export const aiAutopilot = inngest.createFunction(
       );
 
       if (relation === "DUPLICATE") {
-        duplicateOf = candidate.id;
-        duplicateNote = `Bu istek #${candidate.id} ile yüksek olasılıkla tekrar (duplicate, cosine ${candidate.similarity.toFixed(3)})`;
+        duplicateSuggestion = {
+          duplicateOf: candidate.id,
+          similarity: candidate.similarity,
+          note: `Bu istek "${candidate.title}" ile yüksek olasılıkla tekrar (cosine ${candidate.similarity.toFixed(3)}, LLM onaylı)`,
+        };
       }
     }
 
@@ -145,7 +154,8 @@ export const aiAutopilot = inngest.createFunction(
       analyzeIdea({ title: payload.title, description: payload.description }),
     );
 
-    // 5) Tüm sonuçları tek yazımda kaydet.
+    // 5) Tüm sonuçları tek yazımda kaydet. duplicateOf artık buraya yazılmaz
+    // (Sprint 33) — onay bekleyen öneri inbox'ta durur.
     await step.run("persist-ai-results", async () => {
       await getDb()
         .update(posts)
@@ -155,11 +165,33 @@ export const aiAutopilot = inngest.createFunction(
           aiKeywords: analysis.keywords,
           postType: analysis.type,
           embeddingVector: embedding,
-          ...(duplicateOf ? { duplicateOf, duplicateNote } : {}),
           updatedAt: new Date(),
         })
         .where(eq(posts.id, payload.postId));
     });
+
+    // 5b) Sprint 33: pending duplicate önerisini inbox'a yaz. Delete+insert
+    // idempotent: retry'da önceki pending kayıt silinip yeniden eklenir,
+    // sonuç aynı kalır.
+    if (duplicateSuggestion) {
+      await step.run("save-duplicate-suggestion", async () => {
+        await getDb()
+          .delete(aiSuggestions)
+          .where(
+            and(
+              eq(aiSuggestions.postId, payload.postId),
+              eq(aiSuggestions.type, "duplicate"),
+              eq(aiSuggestions.status, "pending"),
+            ),
+          );
+        await getDb().insert(aiSuggestions).values({
+          postId: payload.postId,
+          type: "duplicate",
+          payload: duplicateSuggestion,
+          confidence: Math.round(duplicateSuggestion.similarity * 100),
+        });
+      });
+    }
 
     // 6) Sprint 21: keyword'leri normalize edip tags + post_tags'e yaz.
     //    Upsert idempotent; eski bağlantılar temizlenip yenilenir (retry
@@ -194,7 +226,10 @@ export const aiAutopilot = inngest.createFunction(
       return { tags: tagRows.length };
     });
 
-    return { duplicateOf, sentiment: analysis.sentiment };
+    return {
+      duplicateSuggested: Boolean(duplicateSuggestion),
+      sentiment: analysis.sentiment,
+    };
   },
 );
 
