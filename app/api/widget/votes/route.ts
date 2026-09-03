@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { and, count, eq } from "drizzle-orm";
 
 import { getDb } from "@/lib/db";
+import { getWorkspaceId } from "@/lib/db/workspace";
 import { postFollowers, posts, votes } from "@/lib/db/schema";
 import { voteSchema } from "@/lib/validations/vote";
 import { getWidgetSession, isOriginAllowed } from "@/lib/widget/jwt";
@@ -62,7 +63,12 @@ export async function POST(req: NextRequest) {
     const [post] = await getDb()
       .select({ mergedIntoId: posts.mergedIntoId })
       .from(posts)
-      .where(eq(posts.id, parsed.data.postId))
+      .where(
+        and(
+          eq(posts.workspaceId, await getWorkspaceId()),
+          eq(posts.id, parsed.data.postId),
+        ),
+      )
       .limit(1);
     if (!post) {
       return NextResponse.json(

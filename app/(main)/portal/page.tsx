@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { getDb } from "@/lib/db";
+import { getWorkspaceId } from "@/lib/db/workspace";
 import { summarize, trDateFormatter } from "@/lib/post-format";
 import { buildPostSearch } from "@/lib/post-search";
 import { comments, postTags, posts, tags, votes } from "@/lib/db/schema";
@@ -403,6 +404,7 @@ async function loadPosts(
   queryEmbedding?: number[],
 ) {
   const search = buildPostSearch(searchQuery, queryEmbedding);
+  const workspaceId = await getWorkspaceId();
 
   // Sprint 21: etiket filtresi — posts.id, etiket adıyla eşleşen
   // post_tags bağlantılarıyla sınırlandırılır (normalize lowercase).
@@ -413,7 +415,9 @@ async function loadPosts(
           .select({ postId: postTags.postId })
           .from(postTags)
           .innerJoin(tags, eq(tags.id, postTags.tagId))
-          .where(eq(tags.name, tagFilter)),
+          .where(
+            and(eq(tags.name, tagFilter), eq(tags.workspaceId, workspaceId)),
+          ),
       )
     : undefined;
 
@@ -450,7 +454,12 @@ async function loadPosts(
     )
     // Sprint 20: birleşmiş fikirler listede görünmez (kaynak arşivlenir).
     .where(
-      and(search.condition, isNull(posts.mergedIntoId), tagCondition),
+      and(
+        eq(posts.workspaceId, workspaceId),
+        search.condition,
+        isNull(posts.mergedIntoId),
+        tagCondition,
+      ),
     )
     .groupBy(posts.id)
     .orderBy(...orderBys)
@@ -465,6 +474,7 @@ async function loadTagOptions() {
     .select({ name: tags.name, count: count(postTags.id) })
     .from(tags)
     .innerJoin(postTags, eq(postTags.tagId, tags.id))
+    .where(eq(tags.workspaceId, await getWorkspaceId()))
     .groupBy(tags.id)
     .orderBy(desc(count(postTags.id)), asc(tags.name))
     .limit(20);

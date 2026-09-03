@@ -32,6 +32,7 @@ import {
 import { getRole } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { loadCustomerCounts } from "@/lib/db/customer-counts";
+import { getWorkspaceId } from "@/lib/db/workspace";
 import {
   comments,
   companies,
@@ -98,6 +99,7 @@ export default async function PostDetailPage({
         })
         .from(opportunities)
         .innerJoin(companies, eq(companies.id, opportunities.companyId))
+        .where(eq(opportunities.workspaceId, await getWorkspaceId()))
         .orderBy(desc(opportunities.createdAt)),
       getDb()
         .select({ opportunityId: postOpportunities.opportunityId })
@@ -405,7 +407,7 @@ async function loadPost(postId: string, userId: string | null) {
     })
     .from(posts)
     .leftJoin(votes, eq(votes.postId, posts.id))
-    .where(eq(posts.id, postId))
+    .where(and(eq(posts.workspaceId, await getWorkspaceId()), eq(posts.id, postId)))
     .groupBy(posts.id)
     .limit(1);
 
@@ -468,6 +470,7 @@ async function loadSimilarPosts(postId: string) {
     .from(posts)
     .where(
       and(
+        eq(posts.workspaceId, await getWorkspaceId()),
         ne(posts.id, postId),
         isNotNull(posts.embeddingVector),
         // Sprint 20: birleşmiş fikirler benzer önerilerde de görünmez.

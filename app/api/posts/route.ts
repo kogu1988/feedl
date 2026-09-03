@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { count, desc, eq, sql } from "drizzle-orm";
+import { and, count, desc, eq, sql } from "drizzle-orm";
 
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
@@ -36,7 +36,12 @@ export async function GET(req: Request) {
       })
       .from(posts)
       .leftJoin(votes, eq(votes.postId, posts.id))
-      .where(search.condition)
+      .where(
+        and(
+          eq(posts.workspaceId, await getWorkspaceId()),
+          search.condition,
+        ),
+      )
       .groupBy(posts.id)
       .orderBy(
         // Arama varken alaka önce gelir: skor → oy sayısı → tarih.

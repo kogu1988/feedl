@@ -7,6 +7,7 @@ import { StatusBadge } from "@/components/custom/status-badge";
 import { WidgetPostForm } from "@/components/custom/widget-post-form";
 import { WidgetVoteButton } from "@/components/custom/widget-vote-button";
 import { getDb } from "@/lib/db";
+import { getWorkspaceId } from "@/lib/db/workspace";
 import { posts, votes } from "@/lib/db/schema";
 import { buildPostSearch } from "@/lib/post-search";
 import { summarize } from "@/lib/post-format";
@@ -53,7 +54,13 @@ export default async function WidgetPage({
       })
       .from(posts)
       .leftJoin(votes, eq(votes.postId, posts.id))
-      .where(and(isNull(posts.mergedIntoId), search.condition))
+      .where(
+        and(
+          eq(posts.workspaceId, await getWorkspaceId()),
+          isNull(posts.mergedIntoId),
+          search.condition,
+        ),
+      )
       .groupBy(posts.id)
       .orderBy(
         // Arama varken alaka önce gelir; aksi halde portal varsayılanı

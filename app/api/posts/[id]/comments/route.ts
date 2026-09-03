@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { getRole } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
+import { getWorkspaceId } from "@/lib/db/workspace";
 import { comments, postFollowers, posts } from "@/lib/db/schema";
 import { createCommentSchema } from "@/lib/validations/comment";
 import { commentCreatedEventSchema } from "@/lib/validations/events";
@@ -57,7 +58,9 @@ export async function POST(
     const [post] = await getDb()
       .select({ id: posts.id, mergedIntoId: posts.mergedIntoId })
       .from(posts)
-      .where(eq(posts.id, parsedId.data))
+      .where(
+        and(eq(posts.workspaceId, await getWorkspaceId()), eq(posts.id, parsedId.data)),
+      )
       .limit(1);
     if (!post) {
       return NextResponse.json(

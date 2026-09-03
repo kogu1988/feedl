@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/card";
 import { StatusBadge } from "@/components/custom/status-badge";
 import { getDb } from "@/lib/db";
+import { getWorkspaceId } from "@/lib/db/workspace";
 import { roadmapStatuses } from "@/lib/post-format";
 import { comments, posts, votes } from "@/lib/db/schema";
 
@@ -158,7 +159,9 @@ async function loadPosts() {
       and(eq(comments.postId, posts.id), eq(comments.isInternal, false)),
     )
     // Sprint 20: birleşmiş fikirler roadmap'te görünmez.
-    .where(isNull(posts.mergedIntoId))
+    .where(
+      and(eq(posts.workspaceId, await getWorkspaceId()), isNull(posts.mergedIntoId)),
+    )
     .groupBy(posts.id)
     .orderBy(desc(posts.createdAt))
     .limit(100);

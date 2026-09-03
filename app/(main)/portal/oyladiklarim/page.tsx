@@ -15,6 +15,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { getDb } from "@/lib/db";
+import { getWorkspaceId } from "@/lib/db/workspace";
 import { comments, posts, votes } from "@/lib/db/schema";
 import { summarize } from "@/lib/post-format";
 
@@ -175,7 +176,9 @@ async function loadMyVotes(userId: string) {
       comments,
       and(eq(comments.postId, posts.id), eq(comments.isInternal, false)),
     )
-    .where(inArray(posts.id, ids))
+    .where(
+      and(eq(posts.workspaceId, await getWorkspaceId()), inArray(posts.id, ids)),
+    )
     .groupBy(posts.id);
 
   const votedAtById = new Map(

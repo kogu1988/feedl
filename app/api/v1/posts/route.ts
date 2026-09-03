@@ -8,6 +8,7 @@ import {
   checkRateLimit,
 } from "@/lib/api-keys";
 import { getDb } from "@/lib/db";
+import { getWorkspaceId } from "@/lib/db/workspace";
 import { apiKeys } from "@/lib/db/schema";
 import {
   comments,
@@ -69,7 +70,10 @@ export async function GET(req: NextRequest) {
     const tagParam = params.get("tag");
     const tagLower = tagParam ? tagParam.toLocaleLowerCase("tr") : null;
 
-    const conditions = [isNull(posts.mergedIntoId)];
+    const conditions = [
+      eq(posts.workspaceId, await getWorkspaceId()),
+      isNull(posts.mergedIntoId),
+    ];
     if (statusFilter) {
       conditions.push(eq(posts.status, statusFilter));
     }
@@ -81,7 +85,12 @@ export async function GET(req: NextRequest) {
             .select({ id: postTags.postId })
             .from(postTags)
             .innerJoin(tags, eq(tags.id, postTags.tagId))
-            .where(eq(tags.name, tagLower)),
+            .where(
+              and(
+                eq(tags.workspaceId, await getWorkspaceId()),
+                eq(tags.name, tagLower),
+              ),
+            ),
         ),
       );
     }

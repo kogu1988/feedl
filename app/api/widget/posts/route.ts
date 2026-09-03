@@ -41,7 +41,13 @@ export async function GET(req: Request) {
       })
       .from(posts)
       .leftJoin(votes, eq(votes.postId, posts.id))
-      .where(and(isNull(posts.mergedIntoId), search.condition))
+      .where(
+        and(
+          eq(posts.workspaceId, await getWorkspaceId()),
+          isNull(posts.mergedIntoId),
+          search.condition,
+        ),
+      )
       .groupBy(posts.id)
       .orderBy(
         ...(search.tokens.length > 0

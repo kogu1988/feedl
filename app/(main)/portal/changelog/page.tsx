@@ -4,6 +4,7 @@ import { ArrowLeftIcon, MegaphoneIcon } from "lucide-react";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { getDb } from "@/lib/db";
+import { getWorkspaceId } from "@/lib/db/workspace";
 import { changelogEntries, changelogPostLinks, posts } from "@/lib/db/schema";
 import { trDateTimeFormatter } from "@/lib/post-format";
 
@@ -127,6 +128,7 @@ async function loadEntries() {
       publishedAt: changelogEntries.publishedAt,
     })
     .from(changelogEntries)
+    .where(eq(changelogEntries.workspaceId, await getWorkspaceId()))
     .orderBy(desc(changelogEntries.publishedAt))
     .limit(50);
 
