@@ -21,6 +21,7 @@ export function TagChips({
         <Link
           key={tag}
           href={`${basePath}?tag=${encodeURIComponent(tag)}`}
+          scroll={false}
           className="inline-flex items-center rounded-full border bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
         >
           #{tag}
