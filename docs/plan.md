@@ -1005,6 +1005,42 @@ tek migration ile `workspaceId` eklenebilecek şekilde tutulur (rapor
 
 ---
 
+## 🎨 Faz 4: Tasarım Dili (2026-09-04)
+
+> Dış kaynaklı tasarım referansı (e36376b) silindi; tasarım dili
+> sıfırdan tanımlanıyor. Yön: kategorideki rakipler (Canny, Frill,
+> Nolt, Featurebase, UserJot) mavi/mor denizinde — mercan accent ile
+> ayrışma; "geri bildirim = insan sesi" tonu.
+
+### Sprint 35: Marka Temeli — Renk + Font ✅
+
+**Karar (kullanıcı onaylı):** Accent = mercan `#ff5c35`, font =
+Manrope (latin-ext, Türkçe destekli; Geist Mono korunur).
+
+- `app/globals.css`:
+  - Marka token'ları: `--brand` (#ff5c35), `--brand-strong` (açık
+    zeminde AA metin #c7360f; koyu zeminde #ff8c66), `--brand-soft` /
+    `--brand-tint` (saydam zeminler) + `.dark` karşılıkları. `@theme
+    inline` üzerinden `text-brand`, `bg-brand-soft` vb. utility'ler
+    açıldı.
+  - `--primary` → mercan; **`--primary-foreground` → koyu mürekkep
+    `#2b0e04`** (white-on-coral 3.1:1 AA başarısız; ink-on-coral
+    5.9:1 ✓). Işık/koyu modda aynı buton işlemesi.
+  - `--ring` → mercan (`#ff8c66`) her iki modda.
+  - Başlıklara (h1–h4) `-0.02em` tracking.
+  - Düzeltme: `--font-sans: var(--font-sans)` self-referans hatası
+    giderildi → next/font değişkeni `--font-app-sans` olarak bağlandı;
+    font değişken sınıfları body'den html'e taşındı.
+- `app/layout.tsx`: Geist Sans → Manrope (latin + latin-ext).
+- Korunanlar: StatusBadge anlamsal renkleri, widget izole CSS'i,
+  e-posta şablonları (sistem fontu), Clerk bileşen teması.
+- Not: Destructive (kırmızı) mercanla aynı sıcak ailede — canlıda
+  karışıklık görülürse destructive derinleştirilecek.
+- Doğrulama: `npm run build` ✓. Sonraki: canlıda kullanıcı onayı,
+  ardından portal/dashboard polish (Sprint 36).
+
+---
+
 ## 🚨 Önemli Notlar (AI Ajanına Uyarı)
 
 - **Hata Yönetimi:** Her API route'unda `try-catch` kullan.
