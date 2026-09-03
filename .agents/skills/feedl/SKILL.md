@@ -385,11 +385,10 @@ docs/                                                 planning docs (source of t
    skill, etc.) without asking the user first - the user explicitly requires
     being consulted on every name.
 
-**Position (2026-09-03):** Sprints 32 (Widget SDK), 33 (Autopilot
-Inbox), 34 (Public API + Webhooks), 29 (Temel Analytics) and 30
-(Company/Segment Profili) are ✅ in docs/plan.md, user-verified in
-production. Next: **Sprint 31 — Opportunities + Gelir Ağırlıklı
-Öncelik (parity §P3.2)** — links companies/MRR to revenue-weighted
-prioritization (plan §6 kabul kriterlerini kullan). Domain-bound
-work (custom domain, Organizations/subdomain) stays deferred until
-a domain is bought.
+**Position (2026-09-04):** All parity sprints 20-34 are ✅ in
+docs/plan.md, user-verified in production (incl. Sprint 31 —
+opportunities + revenue scoring, closing commit adfbfe1). Remaining
+parity work is domain-bound, deferred until a domain is bought:
+P0.1 Workspace/Organization + Board model, P0.2 board access /
+private comments, P4.3 third-party integrations, billing/plans,
+custom domain + branding, Resend migration.

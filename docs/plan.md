@@ -918,8 +918,22 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   kutusu ("X müşteri bu fikre oy verdi"); CSV export'a "Müşteri
   Sayısı" sütunu. Widget ziyaretçileri (şirket üyeliği yok) bilinçli
   olarak sayılmaz.
-- ☐ **Sprint 31 — Opportunities + Gelir Ağırlıklı Öncelik (P3.2):**
-  fırsat/değer alanları; oy sayısı + MRR ağırlıklı skor raporu.
+- ✅ **Sprint 31 — Opportunities + Gelir Ağırlıklı Öncelik (P3.2)**
+  (2026-09-04, commit 072af7e + bağlama UI adfbfe1; terminal/DB testi +
+  kullanıcı kontrol listesiyle üretimde doğrulandı): `opportunities` +
+  `post_opportunities` tabloları (migration 0019 — companyId FK, title,
+  dealValue numeric(12,2), stage open/proposal/won/lost,
+  expectedCloseDate, notes). CRUD API (`app/api/admin/opportunities`)
+  + fikir↔fırsat bağlama API (`links/route.ts`, idempotent). Şirketler
+  sayfasında fırsat kartları + OpportunityFormDialog (create/edit).
+  Gelir skoru (lib/db/revenue-scores.ts): Skor = Oy + 10×Müşteri +
+  (MRR + Açık Fırsat)/1000; yalnızca open/proposal aşaması sayılır
+  (won → MRR'de zaten var, lost → gelir vaadi yok). Dashboard
+  fikirler tablosuna "Skor" kolonu (tooltip'te formül), fikir detay
+  sayfasına "Fırsatlar (yalnızca admin)" kutusu (bağla/kaldır —
+  opportunity-link-controls.tsx), CSV export'a "Gelir Skoru" sütunu.
+  Not: formül bin TL ölçeğinde — küçük fırsat değerleri (örn. 7 TL)
+  skoru kıpırdatmaz, tasarım gereği.
 - ✅ **Sprint 32 — Widget SDK (P4.1 lite)** (2026-09-03, commit b188c51
   + çift-prefix düzeltmesi 04d6b02, üretimde hem terminal E2E (6/6) hem
   kullanıcı tarayıcı testi ile doğrulandı): `public/widget.js` launcher
