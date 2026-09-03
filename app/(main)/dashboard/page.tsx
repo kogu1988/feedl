@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { DownloadIcon, PuzzleIcon } from "lucide-react";
-import { and, asc, count, desc, eq, inArray, isNull } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, inArray, isNull } from "drizzle-orm";
 
 import { FilterTabs } from "@/components/custom/filter-tabs";
+import { AnalyticsOverview } from "@/components/custom/analytics-overview";
 import { AutopilotInbox } from "@/components/custom/autopilot-inbox";
 import { ApiKeysManager } from "@/components/custom/api-keys-manager";
 import { ChangelogAdmin } from "@/components/custom/changelog-admin";
@@ -24,6 +25,7 @@ import {
   aiSuggestions,
   apiKeys,
   changelogEntries,
+  comments,
   postStatusEnum,
   postTags,
   posts,
@@ -72,6 +74,7 @@ export default async function DashboardPage({
   let inboxSuggestions: Awaited<ReturnType<typeof loadInboxSuggestions>> = [];
   let apiKeyItems: Awaited<ReturnType<typeof loadApiKeys>> = [];
   let webhookItems: Awaited<ReturnType<typeof loadWebhooks>> = [];
+  let weeklyCounts = { ideas: 0, votes: 0, comments: 0 };
   let loadError = false;
 
   try {
@@ -83,6 +86,7 @@ export default async function DashboardPage({
     inboxSuggestions = await loadInboxSuggestions();
     apiKeyItems = await loadApiKeys();
     webhookItems = await loadWebhooks();
+    weeklyCounts = await loadWeeklyCounts();
   } catch (err) {
     console.error(
       "Dashboard list failed:",
@@ -106,6 +110,28 @@ export default async function DashboardPage({
     { label: "Açık (bekleyen)", value: openCount },
     { label: "Yayınlanan", value: shippedCount },
   ];
+
+  // Sprint 29: duygu dağılımı ve en çok istenenler mevcut rows'tan
+  // hesaplanır (ekstra sorgu yok; birleşmiş fikirler listede 0 oy
+  // taşıdığı için top listeye de alınmaz).
+  const sentimentCounts = { pozitif: 0, notr: 0, negatif: 0, unanalyzed: 0 };
+  for (const row of rows) {
+    if (row.sentimentLabel === "pozitif") sentimentCounts.pozitif += 1;
+    else if (row.sentimentLabel === "notr") sentimentCounts.notr += 1;
+    else if (row.sentimentLabel === "negatif") sentimentCounts.negatif += 1;
+    else sentimentCounts.unanalyzed += 1;
+  }
+  const topPosts = rows
+    .filter((row) => !row.mergedIntoId)
+    .slice()
+    .sort((a, b) => b.voteCount - a.voteCount)
+    .slice(0, 5)
+    .map((row) => ({
+      id: row.id,
+      title: row.title,
+      status: row.status,
+      voteCount: row.voteCount,
+    }));
 
   return (
     <main className="container mx-auto max-w-5xl p-4 sm:p-8">
@@ -147,6 +173,22 @@ export default async function DashboardPage({
             </div>
           ))}
         </div>
+      ) : null}
+
+      {!loadError ? (
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle>Analitik</CardTitle>
+            <CardDescription>
+              Son 7 günün özeti, duygu dağılımı ve en çok oy alan fikirler.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AnalyticsOverview
+              data={{ weekly: weeklyCounts, sentiment: sentimentCounts, topPosts }}
+            />
+          </CardContent>
+        </Card>
       ) : null}
 
       <Card className="mt-8">
@@ -566,4 +608,33 @@ async function loadWebhooks() {
     active: true,
     createdAtLabel: trDateTimeFormatter.format(row.createdAt),
   }));
+}
+
+// Sprint 29: son 7 günün yeni fikir/oy/yorum sayaçları. Üç bağımsız
+// count sorgusu paralel çalışır (neon-http her sorguyu ayrı HTTP isteği
+// olarak gönderir); iç notlar "yorum" sayacına girmez.
+async function loadWeeklyCounts() {
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const db = getDb();
+  const [ideaRows, voteRows, commentRows] = await Promise.all([
+    db
+      .select({ value: count() })
+      .from(posts)
+      .where(gte(posts.createdAt, weekAgo)),
+    db
+      .select({ value: count() })
+      .from(votes)
+      .where(gte(votes.createdAt, weekAgo)),
+    db
+      .select({ value: count() })
+      .from(comments)
+      .where(
+        and(gte(comments.createdAt, weekAgo), eq(comments.isInternal, false)),
+      ),
+  ]);
+  return {
+    ideas: ideaRows[0]?.value ?? 0,
+    votes: voteRows[0]?.value ?? 0,
+    comments: commentRows[0]?.value ?? 0,
+  };
 }

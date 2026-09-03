@@ -1,12 +1,12 @@
 import "server-only";
 
 import { NextResponse } from "next/server";
-import { count, desc, eq, inArray } from "drizzle-orm";
+import { and, count, desc, eq, inArray } from "drizzle-orm";
 
 import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
-import { statusLabels, typeLabels } from "@/lib/post-format";
-import { postTags, posts, tags, votes } from "@/lib/db/schema";
+import { sentimentLabels, statusLabels, typeLabels } from "@/lib/post-format";
+import { comments, postTags, posts, tags, votes } from "@/lib/db/schema";
 
 // GET /api/admin/export — tüm fikirleri CSV olarak indir (plan.md Sprint 7).
 // Rota middleware'da korumalı; admin rolü burada DB'den doğrulanır.
@@ -24,8 +24,11 @@ export async function GET() {
       .select({
         id: posts.id,
         title: posts.title,
+        description: posts.description,
         status: posts.status,
         postType: posts.postType,
+        sentimentLabel: posts.sentimentLabel,
+        aiKeywords: posts.aiKeywords,
         createdAt: posts.createdAt,
         updatedAt: posts.updatedAt,
         voteCount: count(votes.id),
@@ -55,7 +58,28 @@ export async function GET() {
       return map;
     }, new Map<string, string[]>());
 
-    const csv = buildCsv(rows, tagsByPost);
+    // Sprint 29: herkese açık yorum sayaçları (iç notlar hariç) —
+    // etiketlerle aynı ikinci-sorgu deseni (fan-out'suz).
+    const commentRows = rows.length
+      ? await getDb()
+          .select({ postId: comments.postId, value: count() })
+          .from(comments)
+          .where(
+            and(
+              inArray(
+                comments.postId,
+                rows.map((row) => row.id),
+              ),
+              eq(comments.isInternal, false),
+            ),
+          )
+          .groupBy(comments.postId)
+      : [];
+    const commentCountByPost = new Map(
+      commentRows.map((row) => [row.postId, row.value]),
+    );
+
+    const csv = buildCsv(rows, tagsByPost, commentCountByPost);
 
     return new NextResponse(csv, {
       status: 200,
@@ -91,8 +115,11 @@ const dateFormatter = new Intl.DateTimeFormat("tr-TR", {
 interface ExportRow {
   id: string;
   title: string;
+  description: string;
   status: string;
   postType: string | null;
+  sentimentLabel: string | null;
+  aiKeywords: string[] | null;
   createdAt: Date;
   updatedAt: Date;
   voteCount: number;
@@ -101,13 +128,21 @@ interface ExportRow {
 // RFC 4180: virgül/tırnak/yeni satır içeren alanlar çift tırnağa alınır,
 // içindeki tırnaklar ikiye katlanır. Baştaki BOM, Excel'in Türkçe karakterleri
 // UTF-8 olarak açmasını garanti eder.
-function buildCsv(rows: ExportRow[], tagsByPost: Map<string, string[]>): string {
+function buildCsv(
+  rows: ExportRow[],
+  tagsByPost: Map<string, string[]>,
+  commentCountByPost: Map<string, number>,
+): string {
   const header = [
     "Başlık",
+    "Açıklama",
     "Durum",
     "Tür",
     "Etiketler",
+    "Duygu",
+    "Anahtar Kelimeler",
     "Oy Sayısı",
+    "Yorum Sayısı",
     "Oluşturma",
     "Güncelleme",
     "ID",
@@ -118,10 +153,16 @@ function buildCsv(rows: ExportRow[], tagsByPost: Map<string, string[]>): string 
     lines.push(
       [
         row.title,
+        row.description,
         statusLabels[row.status] ?? row.status,
         row.postType ? (typeLabels[row.postType] ?? row.postType) : "—",
         (tagsByPost.get(row.id) ?? []).map((t) => `#${t}`).join(" "),
+        row.sentimentLabel
+          ? (sentimentLabels[row.sentimentLabel] ?? row.sentimentLabel)
+          : "—",
+        (row.aiKeywords ?? []).join(" "),
         String(row.voteCount),
+        String(commentCountByPost.get(row.id) ?? 0),
         dateFormatter.format(row.createdAt),
         dateFormatter.format(row.updatedAt),
         row.id,
