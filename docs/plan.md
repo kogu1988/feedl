@@ -1070,6 +1070,32 @@ Manrope (latin-ext, Türkçe destekli; Geist Mono korunur).
 
 ---
 
+## 💳 Faz 5: Para Kazanma (Paddle) (2026-09-04)
+
+> Ödeme altyapısı kararı: **Paddle** — canny.md §F'deki "Polar.sh veya
+> Lemon Squeezy" notunun yerine geçer. Paddle merchant of record
+> olduğundan vergi/fatura yükünü da üstlenir. Sandbox ortamıyla başlanacak.
+
+### Kararlar ve ortam
+
+- Resmi doküman becerisi: `npx skills add https://developer.paddle.com/`
+  (Paddle dokümanlarından ajan skill'i kurulur).
+- **Sunucu tarafı** (API çağrıları, webhook, güvenilir entegrasyonlar):
+  API key → `PADDLE_API_KEY` (gizli; değer `.env.local`'de, repaya
+  yazılmaz).
+- **Ön yüz** (Paddle.js overlay checkout): client-side token →
+  `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN` (herkese açık by design).
+- Şu an **sandbox** ortamı: anahtar önekleri `pdl_sdbx_apikey_…` /
+  `test_…`. Canlıya geçişte production değerleri aynı değişkenlere
+  yazılır.
+- Webhook imza doğrulaması için ileride `PADDLE_WEBHOOK_SECRET`
+  eklenecek.
+- Plan modeli (canny.md §F temelli): Free katmanı + tracked-user
+  tabanlı ücretli planlar; "Powered by feedl" free planda kalır.
+  Fiyat/paket detayı uygulama sprint'inde netleşir.
+
+---
+
 ## 🚨 Önemli Notlar (AI Ajanına Uyarı)
 
 - **Hata Yönetimi:** Her API route'unda `try-catch` kullan.
