@@ -221,11 +221,16 @@ docs/                                                 planning docs (source of t
   endpoint was recreated, 2026-09-02), manually insert the pre-existing
   user with their Clerk user ID from the dashboard.
 - **FilterTabs** (components/custom/filter-tabs.tsx) is the shared
-  pattern for server-side tab navigation via URL params (?sort=, ?status=,
-  ?tag=). Reuse it for new filter/tab UI - no client state, links stay
-  shareable. Since Sprint 21 it takes `extraParams` to preserve other
-  filter params when switching tabs (multi-filter pages MUST pass it,
-  or switching one filter silently clears the others).
+  pattern for URL-param tab navigation (?sort=, ?status=, ?tag=).
+  Reuse it for new filter/tab UI - links stay shareable. Since Sprint 21
+  it takes `extraParams` to preserve other filter params when switching
+  tabs (multi-filter pages MUST pass it, or switching one filter
+  silently clears the others). Since 2026-09-03 it is a CLIENT
+  component (f31990a): click = `router.push(href, { scroll: false })`
+  inside `useTransition` + optimistic active highlight - no scroll jump,
+  stale list stays visible until new RSC arrives (user complaint:
+  filter clicks felt like full page reloads). Keep this behavior when
+  extending it; card-level TagChips links use `scroll={false}` too.
 - **Admin table pattern (Sprint 22)**: dashboard table lives in
   components/custom/posts-table.tsx (PostsTable - client component
   with row checkboxes + bulk status/tag bar) and saved-view-bar.tsx
