@@ -215,7 +215,10 @@ function verifySessionPayload(token: string): WidgetSession | null {
     typeof payload.o === "string" && payload.o.length > 0 && payload.o.length <= 200
       ? payload.o
       : null;
-  return { userId: toWidgetUserId(payload.sub), origin };
+  // sub zaten feedl widget kullanıcı kimliğidir (session route
+  // toWidgetUserId uygulanmış hâlini imzalar) - burada tekrar
+  // prefix'lenemez, aksi halde FK eşleşmez (widget_widget_... bug'ı).
+  return { userId: payload.sub, origin };
 }
 
 // İframe içindeki widget sayfası/API'leri için oturum kimliği.
