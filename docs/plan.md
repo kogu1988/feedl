@@ -903,9 +903,20 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   istedi" sayacı (Canny kritik UX'i).
 - ☐ **Sprint 31 — Opportunities + Gelir Ağırlıklı Öncelik (P3.2):**
   fırsat/değer alanları; oy sayısı + MRR ağırlıklı skor raporu.
-- ☐ **Sprint 32 — Widget SDK (P4.1 lite):** (domain gerektirmez —
-  önceki kararı koru) `<script>` + iframe overlay ile portal gömme;
-  güvenli identify için imzalı kısa ömürlü JWT + origin allowlist.
+- ✅ **Sprint 32 — Widget SDK (P4.1 lite)** (2026-09-03, commit b188c51
+  + çift-prefix düzeltmesi 04d6b02, üretimde hem terminal E2E (6/6) hem
+  kullanıcı tarayıcı testi ile doğrulandı): `public/widget.js` launcher
+  (sağ altta yüzen buton) + `/widget` sayfası iframe overlay olarak
+  portalı gömer; `data-feedl-url`, `data-token`, `data-button-text`
+  öznitelikleri. Kimlik: `/api/widget/session` imzalı kısa ömürlü JWT
+  payload'ı doğrular (FEEDL_WIDGET_SECRET), kullanıcıyı widget kullanıcı
+  id'si ile upsert eder, 12 saatlik httpOnly SameSite=None çerezi
+  verir; origin (widgetOrigin) posts'a kaydedilir. POST
+  `/api/widget/posts` + GET/POST/DELETE `/api/widget/votes` (DELETE
+  postId'yi query param alır). Allowlist (FEEDL_WIDGET_ALLOWED_ORIGINS)
+  boş = her origin kabul (MVP kararı). **Bug:** verifySessionPayload
+  sub'a toWidgetUserId'i ikinci kez uyguluyordu → FK ihlali 500;
+  tek satırla düzeltildi. /dashboard/widget'ta snippet üretici form.
 - ☐ **Sprint 33 — Autopilot Inbox (P5):** AI önerileri için admin
   inbox (kaynak, güven skoru, önerilen aksiyon); approve/reject/edit/
   merge/spam; audit log.
