@@ -130,7 +130,10 @@ export async function POST(req: Request) {
 
 // DELETE /api/admin/merge — birleşmeyi geri al (sadece admin). Taşınan
 // oy/yorum satırları merged_from_post_id işaretiyle geri taşınır; audit
-// kaydı unmerged_at ile kapatılır. Tek atomik statement.
+// kaydı unmerged_at ile kapatılır. Onaylanmış (approved) duplicate
+// önerisi pending'e döner — admin bu kez reddetme/mergi seçeneği için
+// Inbox'ta yeniden görür (red/ignore edilmişler geri açılmaz). Tek
+// atomik statement.
 export async function DELETE(req: Request) {
   try {
     const adminId = await getAdminUserId();
@@ -210,15 +213,25 @@ export async function DELETE(req: Request) {
         WHERE source_post_id = ${sourceId} AND unmerged_at IS NULL
           AND EXISTS (SELECT 1 FROM unmerged)
         RETURNING id
+      ),
+      reopened AS (
+        UPDATE ai_suggestions
+        SET status = 'pending', decided_by = NULL, decided_at = NULL
+        WHERE post_id = ${sourceId} AND type = 'duplicate'
+          AND status = 'approved'
+          AND EXISTS (SELECT 1 FROM unmerged)
+        RETURNING id
       )
       SELECT
         (SELECT count(*) FROM restored_votes) AS restored_votes,
-        (SELECT count(*) FROM restored_comments) AS restored_comments;
+        (SELECT count(*) FROM restored_comments) AS restored_comments,
+        (SELECT count(*) FROM reopened) AS reopened_suggestions;
     `);
 
     const unmergeRows = toRows<{
       restored_votes: number;
       restored_comments: number;
+      reopened_suggestions: number;
     }>(result);
 
     if (unmergeRows.length === 0) {
@@ -234,6 +247,7 @@ export async function DELETE(req: Request) {
         sourceId,
         restoredVotes: Number(unmergeRows[0].restored_votes),
         restoredComments: Number(unmergeRows[0].restored_comments),
+        reopenedSuggestions: Number(unmergeRows[0].reopened_suggestions),
       },
     });
   } catch (err) {
