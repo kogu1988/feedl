@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { and, count, desc, eq, isNull, sql } from "drizzle-orm";
 
 import { getDb } from "@/lib/db";
+import { getWorkspaceId } from "@/lib/db/workspace";
 import { postFollowers, posts, votes } from "@/lib/db/schema";
 import { createPostSchema } from "@/lib/validations/post";
 import { buildPostSearch } from "@/lib/post-search";
@@ -120,6 +121,7 @@ export async function POST(req: NextRequest) {
     const [created] = await getDb()
       .insert(posts)
       .values({
+        workspaceId: await getWorkspaceId(),
         userId: session.userId,
         title: parsed.data.title,
         description: parsed.data.description,

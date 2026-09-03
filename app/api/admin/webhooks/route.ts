@@ -7,6 +7,7 @@ import { z } from "zod";
 import { generateWebhookSecret } from "@/lib/api-keys";
 import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
+import { getWorkspaceId } from "@/lib/db/workspace";
 import { webhookEndpoints } from "@/lib/db/schema";
 
 // Sprint 34 — admin webhook endpoint yönetimi. Secret sunucuda üretilir ve
@@ -95,6 +96,7 @@ export async function POST(req: Request) {
     const [created] = await getDb()
       .insert(webhookEndpoints)
       .values({
+        workspaceId: await getWorkspaceId(),
         url: parsed.data.url,
         events: [...parsed.data.events],
         secret,

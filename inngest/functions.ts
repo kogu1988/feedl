@@ -15,6 +15,7 @@ import {
   type WebhookEventName,
 } from "@/lib/webhooks/dispatch";
 import { getDb } from "@/lib/db";
+import { getWorkspaceId } from "@/lib/db/workspace";
 import {
   comments,
   emailDeliveries,
@@ -206,15 +207,19 @@ export const aiAutopilot = inngest.createFunction(
         return { tags: 0 };
       }
 
+      const workspaceId = await getWorkspaceId();
+
       await getDb()
         .insert(tags)
-        .values(names.map((name) => ({ name })))
+        .values(names.map((name) => ({ name, workspaceId })))
         .onConflictDoNothing();
 
       const tagRows = await getDb()
         .select({ id: tags.id, name: tags.name })
         .from(tags)
-        .where(inArray(tags.name, names));
+        .where(
+          and(eq(tags.workspaceId, workspaceId), inArray(tags.name, names)),
+        );
 
       await getDb()
         .delete(postTags)

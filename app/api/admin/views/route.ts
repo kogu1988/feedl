@@ -6,6 +6,7 @@ import { z } from "zod";
 
 import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
+import { getWorkspaceId } from "@/lib/db/workspace";
 import { savedViews } from "@/lib/db/schema";
 
 // Sprint 22: admin saved views — kaydedilmiş filtre kombinasyonları.
@@ -100,7 +101,11 @@ export async function POST(req: Request) {
 
     const [created] = await getDb()
       .insert(savedViews)
-      .values({ name: parsed.data.name, params: parsed.data.params })
+      .values({
+        workspaceId: await getWorkspaceId(),
+        name: parsed.data.name,
+        params: parsed.data.params,
+      })
       .returning();
 
     return NextResponse.json({ success: true, data: created }, { status: 201 });

@@ -6,6 +6,7 @@ import { z } from "zod";
 
 import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
+import { getWorkspaceId } from "@/lib/db/workspace";
 import { companies, companyMembers, users } from "@/lib/db/schema";
 
 // Sprint 30 — müşteri şirket yönetimi (P3.1). Üyeler cascade silinir;
@@ -125,6 +126,7 @@ export async function POST(req: Request) {
     const [created] = await getDb()
       .insert(companies)
       .values({
+        workspaceId: await getWorkspaceId(),
         name: parsed.data.name,
         domain: parsed.data.domain,
         mrr: parsed.data.mrr == null ? null : String(parsed.data.mrr),

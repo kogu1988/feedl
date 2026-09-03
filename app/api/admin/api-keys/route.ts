@@ -7,6 +7,7 @@ import { z } from "zod";
 import { generateApiKey, hashApiKey } from "@/lib/api-keys";
 import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
+import { getWorkspaceId } from "@/lib/db/workspace";
 import { apiKeys } from "@/lib/db/schema";
 
 // Sprint 34 — admin API key yönetimi. Tam anahtar YALNIZCA oluşturma
@@ -86,7 +87,12 @@ export async function POST(req: Request) {
     const { key, prefix, keyHash } = generateApiKey();
     const [created] = await getDb()
       .insert(apiKeys)
-      .values({ name: parsed.data.name, prefix, keyHash })
+      .values({
+        workspaceId: await getWorkspaceId(),
+        name: parsed.data.name,
+        prefix,
+        keyHash,
+      })
       .returning({ id: apiKeys.id, prefix: apiKeys.prefix });
 
     return NextResponse.json(

@@ -79,10 +79,15 @@ export const postTypeEnum = pgEnum("post_type", [
 // posts: Ana fikir tablosu (docs/README.md §3).
 // embedding_vector: nvidia/nemotron-3-embed-1b:free (2048 boyut). HNSW limiti
 // 2000 olduğu için index yok — MVP hacminde sıralı tarama yeterli (docs/README.md §3).
+// workspaceId: Sprint 37 tenant hazırlığı — tüm üst düzey kaynak tablolar
+// workspace'e bağlıdır; listeler getWorkspaceId() ile filtrelenir.
 export const posts = pgTable(
   "posts",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
     userId: text("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
@@ -132,12 +137,36 @@ export const posts = pgTable(
   },
   (table) => [
     index("posts_created_at_idx").on(table.createdAt),
+    index("posts_workspace_created_idx").on(table.workspaceId, table.createdAt),
     index("posts_search_vector_idx").using("gin", table.searchVector),
   ],
 );
 
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
+
+// workspaces: Sprint 37 — tenant hazırlık migration'ı (PM raporu §8 madde 1).
+// Şu an tek workspace (migration ile seed: "feedl"); lib/db/workspace.ts'teki
+// getWorkspaceId() merkezi erişim noktasıdır. Çoklu workspace + board UI
+// (P0.1, domain ile birlikte) geldiğinde çözüm (slug/subdomain) burada
+// genişletilir; child tablolar (votes, comments, post_tags...) parent'ları
+// üzerinden scope edilir, workspace_id kolonu almaz.
+export const workspaces = pgTable("workspaces", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  // slug: gelecekte subdomain kaynağı ({slug}.feedl.co); şimdilik yalnızca
+  // seed satırını belirleyici yapmak için kullanılır.
+  slug: varchar("slug", { length: 63 }).notNull().unique(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export type Workspace = typeof workspaces.$inferSelect;
+export type NewWorkspace = typeof workspaces.$inferInsert;
 export type Post = typeof posts.$inferSelect;
 export type NewPost = typeof posts.$inferInsert;
 
@@ -270,13 +299,25 @@ export type NewPostMerge = typeof postMerges.$inferInsert;
 // tags: Sprint 21 serbest form etiketleri (AI keyword'lerinden türetilir,
 // normalize lowercase). Tek taksonomi: Canny'nin "category" kavramı
 // posts.postType enum'uyla karşılanır, ayrı categories tablosu yok.
-export const tags = pgTable("tags", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull().unique(),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const tags = pgTable(
+  "tags",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    // Sprint 37: etiket adı workspace başına benzersiz (global unique(name)
+    // çoklu workspace'te yanlış olurdu).
+    unique("tags_workspace_name_unique").on(table.workspaceId, table.name),
+    index("tags_workspace_idx").on(table.workspaceId),
+  ],
+);
 
 export type Tag = typeof tags.$inferSelect;
 export type NewTag = typeof tags.$inferInsert;
@@ -311,6 +352,9 @@ export type NewPostTag = typeof postTags.$inferInsert;
 // çoklu admin gelirse eklenir (bkz. plan.md P0.1 ertelenen blok).
 export const savedViews = pgTable("saved_views", {
   id: uuid("id").primaryKey().defaultRandom(),
+  workspaceId: uuid("workspace_id")
+    .notNull()
+    .references(() => workspaces.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   // Query string olarak saklanır (örn. "status=open&tag=arama") —
   // dashboard ?v= yerine doğrudan filtre parametreleriyle açılır.
@@ -330,6 +374,9 @@ export type NewSavedView = typeof savedViews.$inferInsert;
 // render edilir (whitespace-pre-line), markdown parser sonraki sprintte.
 export const changelogEntries = pgTable("changelog_entries", {
   id: uuid("id").primaryKey().defaultRandom(),
+  workspaceId: uuid("workspace_id")
+    .notNull()
+    .references(() => workspaces.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   body: text("body").notNull(),
   // label: örn. "yeni", "iyileştirme", "düzeltme" — filtreleme için.
@@ -486,6 +533,9 @@ export const apiKeys = pgTable(
   "api_keys",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
     name: varchar("name", { length: 100 }).notNull(),
     prefix: varchar("prefix", { length: 16 }).notNull(),
     keyHash: varchar("key_hash", { length: 64 }).notNull().unique(),
@@ -511,6 +561,9 @@ export const webhookEndpoints = pgTable(
   "webhook_endpoints",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
     url: text("url").notNull(),
     // Abone olaylar: post.created | post.status_changed | comment.created
     events: varchar("events", { length: 40 }).array().notNull(),
@@ -529,6 +582,9 @@ export type NewWebhookEndpoint = typeof webhookEndpoints.$inferInsert;
 // opportunities bu tabloya bağlanacak.
 export const companies = pgTable("companies", {
   id: uuid("id").primaryKey().defaultRandom(),
+  workspaceId: uuid("workspace_id")
+    .notNull()
+    .references(() => workspaces.id, { onDelete: "cascade" }),
   name: varchar("name", { length: 120 }).notNull(),
   domain: varchar("domain", { length: 200 }),
   mrr: numeric("mrr", { precision: 12, scale: 2 }),
@@ -580,6 +636,9 @@ export const opportunities = pgTable(
   "opportunities",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
     companyId: uuid("company_id")
       .notNull()
       .references(() => companies.id, { onDelete: "cascade" }),
@@ -597,7 +656,10 @@ export const opportunities = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (table) => [index("opportunities_company_idx").on(table.companyId)],
+  (table) => [
+    index("opportunities_company_idx").on(table.companyId),
+    index("opportunities_workspace_idx").on(table.workspaceId),
+  ],
 );
 
 export type Opportunity = typeof opportunities.$inferSelect;

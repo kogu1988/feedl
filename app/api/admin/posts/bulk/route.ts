@@ -1,11 +1,12 @@
 import "server-only";
 
 import { NextResponse } from "next/server";
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 
 import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
+import { getWorkspaceId } from "@/lib/db/workspace";
 import {
   comments,
   postStatusEnum,
@@ -157,7 +158,12 @@ export async function POST(req: Request) {
       const [tag] = await getDb()
         .select({ id: tagsTable.id })
         .from(tagsTable)
-        .where(eq(tagsTable.id, addTagId))
+        .where(
+          and(
+            eq(tagsTable.workspaceId, await getWorkspaceId()),
+            eq(tagsTable.id, addTagId),
+          ),
+        )
         .limit(1);
       if (!tag) {
         return NextResponse.json(

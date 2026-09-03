@@ -6,6 +6,7 @@ import { z } from "zod";
 
 import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
+import { getWorkspaceId } from "@/lib/db/workspace";
 import { changelogEntries, changelogPostLinks } from "@/lib/db/schema";
 
 // Sprint 25: bağımsız changelog yönetimi (admin). GET: liste (son 50),
@@ -91,6 +92,7 @@ export async function POST(req: Request) {
     const [created] = await getDb()
       .insert(changelogEntries)
       .values({
+        workspaceId: await getWorkspaceId(),
         title,
         body: entryBody,
         label: label ?? null,

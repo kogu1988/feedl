@@ -3,6 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import { count, desc, eq, sql } from "drizzle-orm";
 
 import { getDb } from "@/lib/db";
+import { getWorkspaceId } from "@/lib/db/workspace";
 import { postFollowers, posts, votes } from "@/lib/db/schema";
 import { createPostSchema } from "@/lib/validations/post";
 import { inngest } from "@/inngest/client";
@@ -92,6 +93,7 @@ export async function POST(req: Request) {
     const [created] = await getDb()
       .insert(posts)
       .values({
+        workspaceId: await getWorkspaceId(),
         userId,
         title: parsed.data.title,
         description: parsed.data.description,

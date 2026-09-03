@@ -141,6 +141,13 @@
       "when": 1788465616329,
       "tag": "0019_opportunities",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1788476948259,
+      "tag": "0020_workspaces",
+      "breakpoints": true
     }
   ]
 }

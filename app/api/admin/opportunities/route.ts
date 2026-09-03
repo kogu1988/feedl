@@ -6,6 +6,7 @@ import { z } from "zod";
 
 import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
+import { getWorkspaceId } from "@/lib/db/workspace";
 import { companies, opportunities } from "@/lib/db/schema";
 
 // Sprint 31 — satış fırsatı yönetimi (P3.2). Fırsatlar şirkete bağlı;
@@ -104,6 +105,7 @@ export async function POST(req: Request) {
     const [created] = await getDb()
       .insert(opportunities)
       .values({
+        workspaceId: await getWorkspaceId(),
         companyId: parsed.data.companyId,
         title: parsed.data.title,
         dealValue:
