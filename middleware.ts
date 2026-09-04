@@ -38,6 +38,10 @@ const isPublicRoute = createRouteMatcher([
 
   "/api/inngest(.*)",
 
+  // Sprint 40: changelog e-posta aboneliği — anonim ziyaretçiler de
+  // abone olabilir; e-posta formatı handler içinde doğrulanır
+  "/api/changelog(.*)",
+
 ]);
 
 // Middleware SADECE giriş kontrolü yapar. Admin yetkisi tek kaynak olarak

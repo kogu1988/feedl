@@ -1,12 +1,19 @@
 import Link from "next/link";
+import { auth } from "@clerk/nextjs/server";
 import { desc, eq, inArray } from "drizzle-orm";
 import { ArrowLeftIcon, MegaphoneIcon } from "lucide-react";
 
+import { ChangelogSubscribeForm } from "@/components/custom/changelog-subscribe-form";
 import { MarkdownContent } from "@/components/custom/markdown-content";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
-import { changelogEntries, changelogPostLinks, posts } from "@/lib/db/schema";
+import {
+  changelogEntries,
+  changelogPostLinks,
+  posts,
+  users,
+} from "@/lib/db/schema";
 import { trDateTimeFormatter } from "@/lib/post-format";
 
 // Sprint 25: public changelog — roadmap'ten bağımsız duyuru akışı
@@ -37,6 +44,23 @@ export default async function ChangelogPage() {
     loadError = true;
   }
 
+  // Abonelik kutusunda e-posta ön-dolu: girişli kullanıcının feedl'deki
+  // e-postası (Clerk webhook ile senkron). Lookup başarısızsa alan boş kalır.
+  let defaultEmail: string | undefined;
+  try {
+    const { userId } = await auth();
+    if (userId) {
+      const [row] = await getDb()
+        .select({ email: users.email })
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+      defaultEmail = row?.email;
+    }
+  } catch {
+    defaultEmail = undefined;
+  }
+
   return (
     <main className="container mx-auto max-w-3xl p-4 sm:p-8">
       <Link
@@ -54,6 +78,13 @@ export default async function ChangelogPage() {
       <p className="mt-1 text-muted-foreground">
         Yeni özellikler, iyileştirmeler ve düzeltmeler — en yeniden.
       </p>
+
+      <div className="mt-6 rounded-lg border bg-muted/40 p-4">
+        <h2 className="text-sm font-medium">Yeni duyurular için abone ol.</h2>
+        <div className="mt-3">
+          <ChangelogSubscribeForm defaultEmail={defaultEmail} />
+        </div>
+      </div>
 
       <div className="mt-8 grid gap-4">
         {loadError ? (
