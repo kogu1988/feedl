@@ -253,9 +253,9 @@
 > - Portal linki `NEXT_PUBLIC_APP_URL` ile override edilebilir (varsayılan
 >   https://feedl.app/portal). Gönderen: Resend'de feedl.app
 >   doğrulanana kadar `onboarding@resend.dev` (yalnızca hesap sahibine
->   teslim eder); `EMAIL_FROM` ile override edilebilir (feedl <no-reply@feedl.app>).
+>   teslim eder); `EMAIL_FROM` ile override edilebilir (feedl <no-reply@mail.feedl.app>).
 >   Resend'e geçiş için tek adım: Vercel + .env.local'a RESEND_API_KEY girmek
->   + feedl.app domainini doğrulamak (SPF/DKIM/DMARC).
+>   + feedl.app (sending: mail.feedl.app subdomaini) doğrulamak (SPF/DKIM/DMARC).
 
 **Hedef:** Admin durumu "shipped" yaptığında, o isteği açan ve oy veren herkese Resend (production) veya Ethereal.email (test) ile mail gitmeli.
 
@@ -644,7 +644,7 @@ Canny araştırmasına (docs/deepseek.txt, docs/oxalpha.txt) dayalı plan;
   kurumsal mail `hi@feedl.app` (Squarespace mail yönlendirme → kişisel adrese
   iletilir), mail gönderimi Resend ile bağlanacak (SPF/DKIM/DMARC DNS + Vercel
   domain + SSL gerekir — kod tarafı fallback'ler ve email from adresleri
-  feedl.app / no-reply@feedl.app olarak güncellendi).
+  feedl.app / no-reply@mail.feedl.app olarak güncellendi).
 - **Artık aktifleşen sprintler:** Domain bağlama (feedl.app + wildcard
   DNS), Organizations / çoklu müşteri + subdomain (`acme.feedl.app`),
   Widget SDK, custom domain + markalama, Resend geçişi. DNS/Vercel/Resend
@@ -1312,7 +1312,7 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
 
 - **Domain (feedl.app) alındı (2026-09-04).** Kod tarafı hazır: tüm
   URL fallback'leri + email footer + widget origin/CORS `feedl.app`'e ve
-  `no-reply@feedl.app`'e güncellendi; `NEXT_PUBLIC_APP_URL=https://feedl.app`
+  `no-reply@mail.feedl.app`'e güncellendi; `NEXT_PUBLIC_APP_URL=https://feedl.app`
   Vercel'e eklenmeli. Kalan işler artık DNS/Vercel/Resend wiring'i:
   Vercel'e feedl.app bağlama + SSL, Resend'de feedl.app domain
   doğrulaması (SPF/DKIM/DMARC) + `RESEND_API_KEY` + `EMAIL_FROM`,

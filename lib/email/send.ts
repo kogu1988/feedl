@@ -11,8 +11,8 @@ import { Resend } from "resend";
 const ETHEREAL_SMTP_HOST = "smtp.ethereal.email";
 const ETHEREAL_SMTP_PORT = 587;
 
-// Resend'de feedl.app domaini doğrulanana kadar test göndericisi;
-// EMAIL_FROM ile override edilebilir (feedl <no-reply@feedl.app>).
+// Resend'de mail.feedl.app subdomaini doğrulanana kadar test göndericisi;
+// EMAIL_FROM ile override edilebilir (feedl <no-reply@mail.feedl.app>).
 const DEFAULT_FROM = "feedl <onboarding@resend.dev>";
 
 export interface EmailMessage {
