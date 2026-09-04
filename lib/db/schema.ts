@@ -161,6 +161,12 @@ export const workspaces = pgTable("workspaces", {
   // slug: gelecekte subdomain kaynağı ({slug}.feedl.app); şimdilik yalnızca
   // seed satırını belirleyici yapmak için kullanılır.
   slug: varchar("slug", { length: 63 }).notNull().unique(),
+  // Sprint 48a (madde 8): workspace yönetimi + custom domain hazırlığı.
+  // customDomain: müşterinin kendi domaini (ör. feedback.acme.com);
+  // brandColor: kendi portal marka rengi; logoUrl: marka logosu.
+  customDomain: varchar("custom_domain", { length: 200 }),
+  brandColor: varchar("brand_color", { length: 20 }),
+  logoUrl: text("logo_url"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

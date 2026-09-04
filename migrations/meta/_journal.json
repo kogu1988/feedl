@@ -204,6 +204,13 @@
       "when": 1788548720488,
       "tag": "0028_company_revenue",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1788555799128,
+      "tag": "0029_workspace_settings",
+      "breakpoints": true
     }
   ]
 }
