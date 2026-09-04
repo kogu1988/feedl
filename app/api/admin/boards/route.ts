@@ -49,7 +49,7 @@ const createSchema = z.object({
     .string()
     .trim()
     .max(500)
-    .optional()
+    .nullish()
     .transform((value) => (value ? value : null)),
   visibility: visibilityEnum.default("public"),
   sortOrder: z.number().int().min(0).max(9999).default(0),
