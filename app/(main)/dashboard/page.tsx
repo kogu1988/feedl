@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { BuildingIcon, DownloadIcon, PuzzleIcon } from "lucide-react";
-import { and, asc, count, desc, eq, gte, inArray, isNull } from "drizzle-orm";
+import { and, asc, count, countDistinct, desc, eq, gte, inArray, isNull } from "drizzle-orm";
 
 import { FilterTabs } from "@/components/custom/filter-tabs";
+import { PaginationFooter } from "@/components/custom/pagination-footer";
 import { AnalyticsOverview } from "@/components/custom/analytics-overview";
 import { AutopilotInbox } from "@/components/custom/autopilot-inbox";
 import { ApiKeysManager } from "@/components/custom/api-keys-manager";
@@ -43,6 +44,7 @@ import {
   webhookEndpoints,
 } from "@/lib/db/schema";
 import { statusLabels, trDateTimeFormatter } from "@/lib/post-format";
+import { parsePagination } from "@/lib/pagination";
 
 // Canlı veri: her istekte DB'den okunur.
 export const dynamic = "force-dynamic";
@@ -58,7 +60,13 @@ const rangeOptions = [
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; tag?: string; range?: string }>;
+  searchParams: Promise<{
+    status?: string;
+    tag?: string;
+    range?: string;
+    per?: string;
+    page?: string;
+  }>;
 }) {
   // Middleware girişi garanti eder; admin rolü tek kaynaktan (DB) doğrulanır.
   const adminId = await getAdminUserId();
@@ -69,7 +77,7 @@ export default async function DashboardPage({
   // plan.md Sprint 12: durum filtresi ?status= ile gelir; geçersiz değer
   // "Tümü"ne düşer. İstatistikler her zaman TÜM fikirlerden hesaplanır,
   // filtre yalnızca tabloyu etkiler.
-  const { status: rawStatus, tag: rawTag, range: rawRange } = await searchParams;
+  const { status: rawStatus, tag: rawTag, range: rawRange, per: rawPer, page: rawPage } = await searchParams;
   const statusFilter =
     postStatusEnum.enumValues.find((value) => value === rawStatus) ?? null;
   // Sprint 21: etiket filtresi (portal ile aynı normalize kuralı).
@@ -82,8 +90,16 @@ export default async function DashboardPage({
   const rangeLabel =
     rangeOptions.find((option) => option.value === String(rangeDays))?.label ??
     "Son 7 Gün";
+  // Sprint 39: tablo sayfalaması — 5 varsayılan, 25/50/Tümü (ortak parse).
+  const { per, perSize, requestedPage } = parsePagination(rawPer, rawPage);
 
   let rows: Awaited<ReturnType<typeof loadPosts>> = [];
+  let totalCount = 0;
+  let currentPage = 1;
+  let totalPages = 1;
+  let postStats = { totalPosts: 0, totalVotes: 0, openCount: 0, shippedCount: 0 };
+  let sentimentCounts = { pozitif: 0, notr: 0, negatif: 0, unanalyzed: 0 };
+  let topPosts: Awaited<ReturnType<typeof loadPostStats>>["topPosts"] = [];
   let tagOptions: Awaited<ReturnType<typeof loadTagOptions>> = [];
   let views: Awaited<ReturnType<typeof loadSavedViews>> = [];
   let changelogData: Awaited<ReturnType<typeof loadChangelogData>> = {
@@ -106,7 +122,23 @@ export default async function DashboardPage({
   let loadError = false;
 
   try {
-    rows = await loadPosts(tagFilter);
+    // Sprint 39: istatistikler agregat sorgudan; tablo offset/limit ile
+    // tek sayfa çeker. Durum filtresi artık sunucuda uygulanır — client-
+    // tarafı filtre sayfalanmış listede yanlış sonuç verirdi.
+    const statsData = await loadPostStats(tagFilter);
+    postStats = statsData.stats;
+    sentimentCounts = statsData.sentimentCounts;
+    topPosts = statsData.topPosts;
+    totalCount = await countDashboardPosts(tagFilter, statusFilter);
+    totalPages =
+      per === "all" ? 1 : Math.max(1, Math.ceil(totalCount / perSize));
+    currentPage = Math.min(requestedPage, totalPages);
+    rows = await loadPosts(
+      tagFilter,
+      statusFilter,
+      perSize,
+      (currentPage - 1) * perSize,
+    );
     customerCountByPost = await loadCustomerCounts(rows.map((row) => row.id));
     revenueContexts = await loadRevenueContexts(rows.map((row) => row.id));
     tagOptions = await loadTagOptions();
@@ -125,43 +157,14 @@ export default async function DashboardPage({
     loadError = true;
   }
 
-  const visibleRows = statusFilter
-    ? rows.filter((row) => row.status === statusFilter)
-    : rows;
-
-  // İstatistik satırı (plan.md Sprint 11): tek sorgudan JS tarafında hesaplanır.
-  const totalVotes = rows.reduce((sum, row) => sum + row.voteCount, 0);
-  const openCount = rows.filter((row) => row.status === "open").length;
-  const shippedCount = rows.filter((row) => row.status === "shipped").length;
-
+  // İstatistik satırı (plan.md Sprint 11): artık agregat sorgudan
+  // (loadPostStats) — tablo sayfalansa da kartlar tüm fikirleri yansıtır.
   const stats = [
-    { label: "Toplam Fikir", value: rows.length },
-    { label: "Toplam Oy", value: totalVotes },
-    { label: "Açık (bekleyen)", value: openCount },
-    { label: "Yayınlanan", value: shippedCount },
+    { label: "Toplam Fikir", value: postStats.totalPosts },
+    { label: "Toplam Oy", value: postStats.totalVotes },
+    { label: "Açık (bekleyen)", value: postStats.openCount },
+    { label: "Yayınlanan", value: postStats.shippedCount },
   ];
-
-  // Sprint 29: duygu dağılımı ve en çok istenenler mevcut rows'tan
-  // hesaplanır (ekstra sorgu yok; birleşmiş fikirler listede 0 oy
-  // taşıdığı için top listeye de alınmaz).
-  const sentimentCounts = { pozitif: 0, notr: 0, negatif: 0, unanalyzed: 0 };
-  for (const row of rows) {
-    if (row.sentimentLabel === "pozitif") sentimentCounts.pozitif += 1;
-    else if (row.sentimentLabel === "notr") sentimentCounts.notr += 1;
-    else if (row.sentimentLabel === "negatif") sentimentCounts.negatif += 1;
-    else sentimentCounts.unanalyzed += 1;
-  }
-  const topPosts = rows
-    .filter((row) => !row.mergedIntoId)
-    .slice()
-    .sort((a, b) => b.voteCount - a.voteCount)
-    .slice(0, 5)
-    .map((row) => ({
-      id: row.id,
-      title: row.title,
-      status: row.status,
-      voteCount: row.voteCount,
-    }));
 
   return (
     <main className="container mx-auto max-w-5xl p-4 sm:p-8">
@@ -304,8 +307,8 @@ export default async function DashboardPage({
             {loadError
               ? "Liste yüklenemedi."
               : statusFilter
-                ? `Filtrede ${visibleRows.length} / toplam ${rows.length} fikir — durumu satırdan değiştirebilirsin.`
-                : `Toplam ${rows.length} fikir — durumu satırdan değiştirebilirsin.`}
+                ? `Filtrede ${totalCount} fikir — durumu satırdan değiştirebilirsin.`
+                : `Toplam ${totalCount} fikir — durumu satırdan değiştirebilirsin.`}
           </CardDescription>
           {!loadError && rows.length > 0 ? (
             <div className="grid gap-2 pt-2">
@@ -313,7 +316,10 @@ export default async function DashboardPage({
                 paramName="status"
                 basePath="/dashboard"
                 active={statusFilter ?? ""}
-                extraParams={tagFilter ? { tag: tagFilter } : undefined}
+                extraParams={{
+                  ...(tagFilter ? { tag: tagFilter } : {}),
+                  ...(per !== "5" ? { per } : {}),
+                }}
                 options={[
                   { value: "", label: "Tümü" },
                   ...postStatusEnum.enumValues.map((value) => ({
@@ -327,9 +333,10 @@ export default async function DashboardPage({
                   paramName="tag"
                   basePath="/dashboard"
                   active={tagFilter}
-                  extraParams={
-                    statusFilter ? { status: statusFilter } : undefined
-                  }
+                  extraParams={{
+                    ...(statusFilter ? { status: statusFilter } : {}),
+                    ...(per !== "5" ? { per } : {}),
+                  }}
                   options={[
                     { value: "", label: "Tüm Etiketler" },
                     ...tagOptions.map((option) => ({
@@ -359,17 +366,17 @@ export default async function DashboardPage({
             <p className="rounded-md border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
               Fikirler yüklenemedi. Sayfayı yenilemeyi dene.
             </p>
+          ) : rows.length === 0 && (statusFilter || tagFilter) ? (
+            <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+              Bu filtrede fikir yok.
+            </p>
           ) : rows.length === 0 ? (
             <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
               Henüz fikir yok. Portala gönderilen ilk fikir burada görünecek.
             </p>
-          ) : visibleRows.length === 0 ? (
-            <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
-              Bu durumda fikir yok.
-            </p>
           ) : (
             <PostsTable
-              rows={visibleRows.map((row) => ({
+              rows={rows.map((row) => ({
                 id: row.id,
                 title: row.title,
                 status: row.status,
@@ -394,6 +401,23 @@ export default async function DashboardPage({
               }))}
             />
           )}
+          {!loadError && rows.length > 0 ? (
+            <PaginationFooter
+              basePath="/dashboard"
+              page={currentPage}
+              totalPages={totalPages}
+              per={per}
+              extraParams={{
+                ...(statusFilter ? { status: statusFilter } : {}),
+                ...(tagFilter ? { tag: tagFilter } : {}),
+              }}
+              pageParams={{
+                ...(statusFilter ? { status: statusFilter } : {}),
+                ...(tagFilter ? { tag: tagFilter } : {}),
+                ...(per !== "5" ? { per } : {}),
+              }}
+            />
+          ) : null}
         </CardContent>
       </Card>
 
@@ -435,7 +459,14 @@ const dateFormatter = new Intl.DateTimeFormat("tr-TR", {
 });
 
 // Sprint 21: ?tag= filtresi — birleşmiş fikirler dahil (admin görür).
-async function loadPosts(tagFilter: string) {
+// Sprint 39: durum filtresi sunucuda uygulanır + offset/limit sayfalama.
+async function loadPosts(
+  tagFilter: string,
+  statusFilter: (typeof postStatusEnum.enumValues)[number] | null,
+  limit: number,
+  offset: number,
+) {
+  const workspaceId = await getWorkspaceId();
   return getDb()
     .select({
       id: posts.id,
@@ -450,9 +481,111 @@ async function loadPosts(tagFilter: string) {
     })
     .from(posts)
     .leftJoin(votes, eq(votes.postId, posts.id))
+    .where(dashboardPostConditions(workspaceId, tagFilter, statusFilter))
+    .groupBy(posts.id)
+    .orderBy(desc(posts.createdAt))
+    .limit(limit)
+    .offset(offset);
+}
+
+// Sprint 39: loadPosts + countDashboardPosts paylaşılan where koşulu
+// (tek kaynak kuralı). statusFilter undefined → istatistik sorgusu tüm
+// durumları kapsar (kartlar filtrelenmemiş toplamları gösterir).
+function dashboardPostConditions(
+  workspaceId: string,
+  tagFilter: string,
+  statusFilter: (typeof postStatusEnum.enumValues)[number] | null | undefined,
+) {
+  return and(
+    eq(posts.workspaceId, workspaceId),
+    tagFilter
+      ? inArray(
+          posts.id,
+          getDb()
+            .select({ postId: postTags.postId })
+            .from(postTags)
+            .innerJoin(tags, eq(tags.id, postTags.tagId))
+            .where(
+              and(
+                eq(tags.workspaceId, workspaceId),
+                eq(tags.name, tagFilter),
+              ),
+            ),
+        )
+      : undefined,
+    statusFilter ? eq(posts.status, statusFilter) : undefined,
+  );
+}
+
+async function countDashboardPosts(
+  tagFilter: string,
+  statusFilter: (typeof postStatusEnum.enumValues)[number] | null,
+) {
+  const [row] = await getDb()
+    .select({ value: count() })
+    .from(posts)
+    .where(
+      dashboardPostConditions(
+        await getWorkspaceId(),
+        tagFilter,
+        statusFilter,
+      ),
+    );
+  return row.value;
+}
+
+// Sprint 39: istatistikler sayfalanmış rows'tan DEĞİL, agregat sorgudan
+// hesaplanır — tablo sayfalansa da kartlar/analitik tüm fikirleri
+// yansıtır (eski davranış: rows limit(200) idi; toplamlar artık tam).
+// Durum filtresi burada uygulanmaz (eski davranış: rows filtre öncesiydi).
+async function loadPostStats(tagFilter: string) {
+  const workspaceId = await getWorkspaceId();
+  const statusRows = await getDb()
+    .select({
+      status: posts.status,
+      sentimentLabel: posts.sentimentLabel,
+      postCount: countDistinct(posts.id),
+      voteCount: count(votes.id),
+    })
+    .from(posts)
+    .leftJoin(votes, eq(votes.postId, posts.id))
+    .where(dashboardPostConditions(workspaceId, tagFilter, undefined))
+    .groupBy(posts.status, posts.sentimentLabel);
+
+  const stats = {
+    totalPosts: 0,
+    totalVotes: 0,
+    openCount: 0,
+    shippedCount: 0,
+  };
+  const sentimentCounts = { pozitif: 0, notr: 0, negatif: 0, unanalyzed: 0 };
+  for (const row of statusRows) {
+    stats.totalPosts += row.postCount;
+    stats.totalVotes += row.voteCount;
+    if (row.status === "open") stats.openCount += row.postCount;
+    if (row.status === "shipped") stats.shippedCount += row.postCount;
+    if (row.sentimentLabel === "pozitif") sentimentCounts.pozitif += row.postCount;
+    else if (row.sentimentLabel === "notr") sentimentCounts.notr += row.postCount;
+    else if (row.sentimentLabel === "negatif") sentimentCounts.negatif += row.postCount;
+    else sentimentCounts.unanalyzed += row.postCount;
+  }
+
+  // En çok oy alanlar — eski davranış: durum filtresinden bağımsız,
+  // birleşmiş fikirler hariç, en yüksek oydan 5 satır (beraberlikte
+  // en yeni üstte — eski JS sıralamasıyla aynı).
+  const topPosts = await getDb()
+    .select({
+      id: posts.id,
+      title: posts.title,
+      status: posts.status,
+      voteCount: countDistinct(votes.id),
+    })
+    .from(posts)
+    .leftJoin(votes, eq(votes.postId, posts.id))
     .where(
       and(
-        eq(posts.workspaceId, await getWorkspaceId()),
+        eq(posts.workspaceId, workspaceId),
+        isNull(posts.mergedIntoId),
         tagFilter
           ? inArray(
               posts.id,
@@ -462,7 +595,7 @@ async function loadPosts(tagFilter: string) {
                 .innerJoin(tags, eq(tags.id, postTags.tagId))
                 .where(
                   and(
-                    eq(tags.workspaceId, await getWorkspaceId()),
+                    eq(tags.workspaceId, workspaceId),
                     eq(tags.name, tagFilter),
                   ),
                 ),
@@ -471,8 +604,10 @@ async function loadPosts(tagFilter: string) {
       ),
     )
     .groupBy(posts.id)
-    .orderBy(desc(posts.createdAt))
-    .limit(200);
+    .orderBy(desc(countDistinct(votes.id)), desc(posts.createdAt))
+    .limit(5);
+
+  return { stats, sentimentCounts, topPosts };
 }
 
 // Sprint 21: etiket filtre sekmeleri — en çok kullanılan 8 etiket.

@@ -28,6 +28,7 @@ import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { summarize, trDateFormatter } from "@/lib/post-format";
 import { buildPostSearch, type PostSearch } from "@/lib/post-search";
+import { parsePagination } from "@/lib/pagination";
 import { comments, postTags, posts, tags, votes } from "@/lib/db/schema";
 
 // Canlı liste: her istekte DB'den okunur, build zamanında dondurulmaz.
@@ -60,15 +61,9 @@ export default async function PortalPage({
   const sort = rawSort === "new" ? "new" : "top";
   // Sprint 21: ?tag= serbest form etiket filtresi (normalize lowercase).
   const tagFilter = (rawTag ?? "").trim().toLocaleLowerCase("tr").slice(0, 30);
-  // Sprint 39: sayfa boyutu whitelist'i — 5 varsayılan, 25/50/Tümü.
-  // Geçersiz değer sessizce varsayılana döner; "all" makul üst sınıra
-  // (1000) oturur, sayfa param'ı devre dışı kalır.
-  const per =
-    rawPer === "25" || rawPer === "50" || rawPer === "all" ? rawPer : "5";
-  const perSize = per === "all" ? 1000 : Number(per);
-  const rawPageNumber = Number(rawPage);
-  const requestedPage =
-    Number.isInteger(rawPageNumber) && rawPageNumber >= 1 ? rawPageNumber : 1;
+  // Sprint 39: sayfa boyutu — 5 varsayılan, 25/50/Tümü (ortak parse;
+  // lib/pagination.ts whitelist + makul "Tümü" üst sınırı).
+  const { per, perSize, requestedPage } = parsePagination(rawPer, rawPage);
 
   let rows: Awaited<ReturnType<typeof loadPosts>> = [];
   let totalCount = 0;
