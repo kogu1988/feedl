@@ -422,6 +422,36 @@ export const changelogPostLinks = pgTable(
 export type ChangelogPostLink = typeof changelogPostLinks.$inferSelect;
 export type NewChangelogPostLink = typeof changelogPostLinks.$inferInsert;
 
+// changelog_subscribers: Sprint 40 — changelog e-posta aboneleri. Anonim
+// ziyaretçiler (ve oturum açmış kullanıcılar) portalda e-posta ile duyuru
+// abonesi olur; token unsubscribe içindir (users tablosuna bağlı değildir).
+export const changelogSubscribers = pgTable(
+  "changelog_subscribers",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references((): AnyPgColumn => workspaces.id, { onDelete: "cascade" }),
+    email: text("email").notNull(),
+    unsubscribeToken: uuid("unsubscribe_token")
+      .notNull()
+      .defaultRandom()
+      .unique(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    unique("changelog_subscribers_workspace_email_unique").on(
+      table.workspaceId,
+      table.email,
+    ),
+  ],
+);
+
+export type ChangelogSubscriber = typeof changelogSubscribers.$inferSelect;
+export type NewChangelogSubscriber = typeof changelogSubscribers.$inferInsert;
+
 // post_followers: Sprint 26 — fikir takipçileri (Canny modeli). Yazar
 // oluştururken, oy veren ve yorum yazan otomatik takipçi olur; status
 // ve yorum bildirimleri bu tablodan çözülür.

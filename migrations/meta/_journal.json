@@ -162,6 +162,13 @@
       "when": 1788567600000,
       "tag": "0022_changelog_image",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1788654000000,
+      "tag": "0023_changelog_subscribers",
+      "breakpoints": true
     }
   ]
 }
