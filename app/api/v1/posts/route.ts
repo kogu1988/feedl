@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
     if (!key) {
       return NextResponse.json(API_KEY_ERRORS.unauthorized, { status: 401 });
     }
-    const rl = checkRateLimit(key.id);
+    const rl = await checkRateLimit(key.id);
     if (!rl.allowed) {
       return NextResponse.json(API_KEY_ERRORS.rateLimited(rl.retryAfterSec), {
         status: 429,

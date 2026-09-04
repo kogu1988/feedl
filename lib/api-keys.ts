@@ -2,6 +2,8 @@ import "server-only";
 
 import { createHash, randomBytes } from "node:crypto";
 
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
 import { and, eq, isNull } from "drizzle-orm";
 
 import { getDb } from "@/lib/db";
@@ -53,17 +55,43 @@ export async function authenticateApiKey(
   return record ?? null;
 }
 
-// MVP rate limit: süreç-içi kayan pencere, dakikada 60 istek/anahtar.
-// Serverless'ta instance başına best-effort'tur (kesin sınır değildir);
-// ileride paylaşımlı store (Upstash vb.) bağlanabilir.
+// Rate limit: dakikada 60 istek/anahtar. Upstash Redis env'leri varsa
+// kayan pencere tüm serverless instance'lar arasında PAYLAŞILIR; yoksa
+// (veya Upstash erişimi hata verirse) davranış eski süreç-içi pencereye
+// düşer — aynı enveloğu korur, kesin sınır best-effort kalır.
 const RATE_LIMIT_MAX = 60;
 const RATE_LIMIT_WINDOW_MS = 60_000;
-const buckets = new Map<string, number[]>();
 
-export function checkRateLimit(keyId: string): {
+export type RateLimitResult = {
   allowed: boolean;
   retryAfterSec: number;
-} {
+};
+
+// Lazy singleton: env yoksa null, varsa Ratelimit. Modül başına bir kez
+// kurulur; serverless instance'ı boyunca önbelleklenir.
+let sharedLimiter: Ratelimit | null | undefined;
+function getSharedLimiter(): Ratelimit | null {
+  if (sharedLimiter !== undefined) return sharedLimiter;
+  const url = process.env.UPSTASH_REDIS_REST_URL?.trim();
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN?.trim();
+  sharedLimiter =
+    url && token
+      ? new Ratelimit({
+          redis: new Redis({ url, token }),
+          limiter: Ratelimit.slidingWindow(
+            RATE_LIMIT_MAX,
+            `${RATE_LIMIT_WINDOW_MS / 1000} s`,
+          ),
+          // Kullanıcı kuralı: paylaşılan Upstash alanında feedl öneki zorunlu.
+          prefix: "feedl:rl",
+        })
+      : null;
+  return sharedLimiter;
+}
+
+const buckets = new Map<string, number[]>();
+
+function inProcessRateLimit(keyId: string): RateLimitResult {
   const now = Date.now();
   const windowStart = now - RATE_LIMIT_WINDOW_MS;
   const hits = (buckets.get(keyId) ?? []).filter((t) => t > windowStart);
@@ -87,6 +115,28 @@ export function checkRateLimit(keyId: string): {
     }
   }
   return { allowed: true, retryAfterSec: 0 };
+}
+
+export async function checkRateLimit(keyId: string): Promise<RateLimitResult> {
+  const limiter = getSharedLimiter();
+  if (limiter) {
+    try {
+      const { success, reset } = await limiter.limit(keyId);
+      // reset: epoch saniye (unix timestamp).
+      return {
+        allowed: success,
+        retryAfterSec: success
+          ? 0
+          : Math.max(1, reset - Math.floor(Date.now() / 1000)),
+      };
+    } catch (err) {
+      console.error(
+        "Upstash rate limit failed, using in-process fallback:",
+        err instanceof Error ? err.message : err,
+      );
+    }
+  }
+  return inProcessRateLimit(keyId);
 }
 
 // v1 yanıtlarında ortak envelope kullanılır; 401/429 hataları için hazır
