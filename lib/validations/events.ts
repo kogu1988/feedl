@@ -50,3 +50,28 @@ export const changelogPublishedEventSchema = z.object({
 export type ChangelogPublishedEvent = z.infer<
   typeof changelogPublishedEventSchema
 >;
+
+// Sprint 43 (PM raporu §9 full API/webhook event matrix): oy ve yorum
+// silme olayları. Bildirim e-postası tetiklemezler — yalnızca webhook
+// matrix'ini tamamlamak için yayınlanır.
+export const voteCreatedEventSchema = z.object({
+  postId: z.uuid(),
+  userId: z.string().min(1),
+});
+
+export type VoteCreatedEvent = z.infer<typeof voteCreatedEventSchema>;
+
+export const voteDeletedEventSchema = z.object({
+  postId: z.uuid(),
+  userId: z.string().min(1),
+});
+
+export type VoteDeletedEvent = z.infer<typeof voteDeletedEventSchema>;
+
+export const commentDeletedEventSchema = z.object({
+  commentId: z.uuid(),
+  postId: z.uuid(),
+  deletedById: z.string().min(1),
+});
+
+export type CommentDeletedEvent = z.infer<typeof commentDeletedEventSchema>;

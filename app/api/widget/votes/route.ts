@@ -4,10 +4,15 @@ import { and, count, eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { postFollowers, posts, votes } from "@/lib/db/schema";
+import {
+  voteCreatedEventSchema,
+  voteDeletedEventSchema,
+} from "@/lib/validations/events";
 import { voteSchema } from "@/lib/validations/vote";
 import { getWidgetSession } from "@/lib/widget/jwt";
 import { isOriginAllowed } from "@/lib/widget/origins";
 import { requestOrigin } from "@/lib/widget/http";
+import { inngest } from "@/inngest/client";
 
 async function countVotes(postId: string): Promise<number> {
   const [row] = await getDb()
@@ -88,14 +93,33 @@ export async function POST(req: NextRequest) {
     }
 
     await getDb()
-      .insert(votes)
-      .values({ userId: session.userId, postId: parsed.data.postId })
-      .onConflictDoNothing();
-
-    await getDb()
       .insert(postFollowers)
       .values({ postId: parsed.data.postId, userId: session.userId })
       .onConflictDoNothing();
+
+    // Sprint 43: widget oyları da webhook matrix'ine dahildir.
+    const [inserted] = await getDb()
+      .insert(votes)
+      .values({ userId: session.userId, postId: parsed.data.postId })
+      .onConflictDoNothing()
+      .returning({ id: votes.id });
+
+    if (inserted) {
+      try {
+        await inngest.send({
+          name: "vote/created",
+          data: voteCreatedEventSchema.parse({
+            postId: parsed.data.postId,
+            userId: session.userId,
+          }),
+        });
+      } catch (eventErr) {
+        console.error(
+          "POST /api/widget/votes event send failed:",
+          eventErr instanceof Error ? eventErr.message : eventErr,
+        );
+      }
+    }
 
     const voteCount = await countVotes(parsed.data.postId);
     return NextResponse.json({
@@ -134,14 +158,33 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    await getDb()
+    const [deleted] = await getDb()
       .delete(votes)
       .where(
         and(
           eq(votes.userId, session.userId),
           eq(votes.postId, parsedPostId.data),
         ),
-      );
+      )
+      .returning({ id: votes.id });
+
+    // Sprint 43: widget oyu geri alma webhook matrix'ine dahildir.
+    if (deleted) {
+      try {
+        await inngest.send({
+          name: "vote/deleted",
+          data: voteDeletedEventSchema.parse({
+            postId: parsedPostId.data,
+            userId: session.userId,
+          }),
+        });
+      } catch (eventErr) {
+        console.error(
+          "DELETE /api/widget/votes event send failed:",
+          eventErr instanceof Error ? eventErr.message : eventErr,
+        );
+      }
+    }
 
     const voteCount = await countVotes(parsedPostId.data);
     return NextResponse.json({

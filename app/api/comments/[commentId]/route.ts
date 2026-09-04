@@ -8,7 +8,9 @@ import { z } from "zod";
 import { getRole } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { comments } from "@/lib/db/schema";
+import { commentDeletedEventSchema } from "@/lib/validations/events";
 import { editCommentSchema } from "@/lib/validations/comment";
+import { inngest } from "@/inngest/client";
 
 // Sprint 24: yorum düzenleme ve silme. Kendi yorumunu herkes yönetir;
 // admin her yorumu yönetebilir (Canny moderasyon modeli). İç notlar zaten
@@ -141,6 +143,23 @@ export async function DELETE(
     }
 
     await getDb().delete(comments).where(eq(comments.id, comment.id));
+
+    // Sprint 43: webhook matrix — yorum silme olayı (best-effort).
+    try {
+      await inngest.send({
+        name: "post/comment.deleted",
+        data: commentDeletedEventSchema.parse({
+          commentId: comment.id,
+          postId: comment.postId,
+          deletedById: userId,
+        }),
+      });
+    } catch (eventErr) {
+      console.error(
+        "DELETE /api/comments/[commentId] event send failed:",
+        eventErr instanceof Error ? eventErr.message : eventErr,
+      );
+    }
 
     return NextResponse.json({ success: true });
   } catch (err) {

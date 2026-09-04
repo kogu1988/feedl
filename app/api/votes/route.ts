@@ -6,7 +6,12 @@ import { z } from "zod";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { postFollowers, posts, votes } from "@/lib/db/schema";
+import {
+  voteCreatedEventSchema,
+  voteDeletedEventSchema,
+} from "@/lib/validations/events";
 import { voteSchema } from "@/lib/validations/vote";
+import { inngest } from "@/inngest/client";
 
 async function countVotes(postId: string): Promise<number> {
   const [row] = await getDb()
@@ -74,18 +79,38 @@ export async function POST(req: Request) {
       );
     }
 
-    await getDb()
-      .insert(votes)
-      .values({ userId, postId: parsed.data.postId })
-      .onConflictDoNothing();
-
     // Sprint 26: oy veren otomatik takipçi olur (Canny modeli).
     await getDb()
       .insert(postFollowers)
       .values({ postId: parsed.data.postId, userId })
       .onConflictDoNothing();
 
+    // Sprint 43: yalnızca gerçekten oy kaydedildiyse yayınla (çift oy değil).
+    const [inserted] = await getDb()
+      .insert(votes)
+      .values({ userId, postId: parsed.data.postId })
+      .onConflictDoNothing()
+      .returning({ id: votes.id });
+
+    if (inserted) {
+      try {
+        await inngest.send({
+          name: "vote/created",
+          data: voteCreatedEventSchema.parse({
+            postId: parsed.data.postId,
+            userId,
+          }),
+        });
+      } catch (eventErr) {
+        console.error(
+          "POST /api/votes event send failed:",
+          eventErr instanceof Error ? eventErr.message : eventErr,
+        );
+      }
+    }
+
     const voteCount = await countVotes(parsed.data.postId);
+
     return NextResponse.json({
       success: true,
       data: { voted: true, voteCount },
@@ -122,16 +147,36 @@ export async function DELETE(req: Request) {
       );
     }
 
-    await getDb()
+    const [deleted] = await getDb()
       .delete(votes)
       .where(
         and(
           eq(votes.userId, userId),
           eq(votes.postId, parsedPostId.data),
         ),
-      );
+      )
+      .returning({ id: votes.id });
 
     const voteCount = await countVotes(parsedPostId.data);
+
+    // Sprint 43: webhook matrix — oy geri alma olayı (best-effort).
+    if (deleted) {
+      try {
+        await inngest.send({
+          name: "vote/deleted",
+          data: voteDeletedEventSchema.parse({
+            postId: parsedPostId.data,
+            userId,
+          }),
+        });
+      } catch (eventErr) {
+        console.error(
+          "DELETE /api/votes event send failed:",
+          eventErr instanceof Error ? eventErr.message : eventErr,
+        );
+      }
+    }
+
     return NextResponse.json({
       success: true,
       data: { voted: false, voteCount },
