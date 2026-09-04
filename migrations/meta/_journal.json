@@ -148,6 +148,13 @@
       "when": 1788476948259,
       "tag": "0020_workspaces",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1788481200000,
+      "tag": "0021_widget_origins",
+      "breakpoints": true
     }
   ]
 }

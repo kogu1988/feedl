@@ -7,7 +7,8 @@ import { postFollowers, posts, votes } from "@/lib/db/schema";
 import { createPostSchema } from "@/lib/validations/post";
 import { buildPostSearch } from "@/lib/post-search";
 import { inngest } from "@/inngest/client";
-import { getWidgetSession, isOriginAllowed } from "@/lib/widget/jwt";
+import { getWidgetSession } from "@/lib/widget/jwt";
+import { isOriginAllowed } from "@/lib/widget/origins";
 import { requestOrigin } from "@/lib/widget/http";
 
 // Widget fikir listesi (plan.md Sprint 32): iframe içindeki kompakt arayüz
@@ -99,7 +100,7 @@ export async function POST(req: NextRequest) {
     }
 
     const origin = session.origin ?? requestOrigin(req);
-    if (!isOriginAllowed(origin)) {
+    if (!(await isOriginAllowed(origin))) {
       return NextResponse.json(
         { success: false, error: "Bu site için widget erişimi yok." },
         { status: 403 },

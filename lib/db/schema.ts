@@ -9,6 +9,7 @@ import {
   pgEnum,
   pgTable,
   text,
+  uniqueIndex,
   timestamp,
   unique,
   uuid,
@@ -577,6 +578,36 @@ export const webhookEndpoints = pgTable(
 
 export type WebhookEndpoint = typeof webhookEndpoints.$inferSelect;
 export type NewWebhookEndpoint = typeof webhookEndpoints.$inferInsert;
+
+// widget_origins: Sprint 38 — widget'ın gömülebileceği izinli origin'ler
+// (PM raporu §8.2: "env boşsa her origin kabul" riskini kapatır). Biçim:
+// protokol + host (+port), path yok — örn. https://example.com. Feedl'in
+// kendi origin'i kod tarafında daima izinlidir; bu tablo müşteri
+// siteleri içindir. Sahiplik doğrulaması (meta tag/DNS) custom domain
+// sprintinde; şimdilik ekleyen admin fiilen teyit sağlar.
+export const widgetOrigins = pgTable(
+  "widget_origins",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    origin: varchar("origin", { length: 200 }).notNull(),
+    label: varchar("label", { length: 120 }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("widget_origins_workspace_origin_key").on(
+      table.workspaceId,
+      table.origin,
+    ),
+  ],
+);
+
+export type WidgetOrigin = typeof widgetOrigins.$inferSelect;
+export type NewWidgetOrigin = typeof widgetOrigins.$inferInsert;
 
 // companies: Sprint 30 — müşteri şirketleri (P3.1). MRR opsiyonel; Sprint 31
 // opportunities bu tabloya bağlanacak.

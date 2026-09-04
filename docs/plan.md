@@ -1011,6 +1011,41 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   gelecekteki drizzle-kit generate diff'leri elle düzeltilecek (0020'de
   olduğu gibi). DB doğrulandı: 1 workspace, 8 tabloda NULL yok.
 
+### Sprint 38 (planlandı 2026-09-04): Widget Origin Yönetimi + Paylaşımlı Rate Limit
+
+PM raporu §8.2 — "şart, güvenlik" üçlüsü. (c) madde kod incelemesiyle
+çözüldü: API key SHA-256 key_hash ile saklanıyor, düz metin yok.
+
+- **Kararlar:**
+  - Widget origin kontrolü artık üç katmanlı: (1) self-origin
+    (NEXT_PUBLIC_APP_URL + canlı fallback) her zaman izinli — iframe
+    içi istekler feedl domaininden gelir; (2) env listesi
+    (FEEDL_WIDGET_ALLOWED_ORIGINS, mevcut davranış korunur); (3) yeni
+    widget_origins tablosu (workspace bazlı, admin panelinden yönetilir).
+    Hiçbiri boş origin'i kapsamıyorsa RED — "env boşsa herkes kabul"
+    davranışı biter.
+  - "Teyit" bu sprintte = admin'in kendisi ekler; meta tag/DNS
+    sahiplik doğrulaması custom domain sprintiyle (PM §8.8) gelir.
+  - Paylaşımlı rate limit: Upstash Redis (@upstash/ratelimit),
+    Vercel Marketplace > Upstash entegrasyonu; env isimleri
+    UPSTASH_REDIS_REST_URL/TOKEN (KV_REST_API_* da desteklenir).
+    Env yoksa mevcut süreç-içi limiter'a düşer — deploy kırılmaz.
+  - Upstash envanterinde feedl_ öneki ilkesi korunur.
+- **Adımlar (batch'ler):**
+  1. plan kaydı (bu blok)
+  2. widget_origins şeması + migration 0021 + lib/widget/origins.ts +
+     çağrı yerleri (session/posts/votes)
+  3. admin API (/api/admin/widget-origins) + dashboard/widget UI
+  4. @upstash/ratelimit entegrasyonu (lib/api-keys.ts async)
+  5. plan.md ✅ kaydı + PM raporu (c) maddesi güncellemesi
+- **Kabul kriterleri:**
+  - DB'de kayıtlı olmayan yabancı origin'den widget session isteği
+    reddedilir (403); self-origin ve kayıtlı origin çalışır.
+  - Env tanımlıysa davranış bugünküyle aynı kalır (geriye uyumlu).
+  - UPSTASH env'li ortamda 61. istek 429 döner; env'siz ortamda
+    mevcut davranış aynen sürer.
+  - `npm run build` temiz.
+
 ### Ertelenen blok (en son — kullanıcının kısıtı)
 
 - **Resend geçişi:** tek env `RESEND_API_KEY`; kod otomatik geçer

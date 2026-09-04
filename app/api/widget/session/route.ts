@@ -7,12 +7,12 @@ import { users } from "@/lib/db/schema";
 import {
   SESSION_TTL_SECONDS,
   WIDGET_SESSION_COOKIE,
-  isOriginAllowed,
   isWidgetConfigured,
   signSessionToken,
   toWidgetUserId,
   verifyWidgetToken,
 } from "@/lib/widget/jwt";
+import { isOriginAllowed } from "@/lib/widget/origins";
 import { requestOrigin } from "@/lib/widget/http";
 
 // Widget oturumu (plan.md Sprint 32): müşteri uygulaması imzaladığı kısa
@@ -23,8 +23,8 @@ import { requestOrigin } from "@/lib/widget/http";
 // CORS: çağrı parent siteden geldiği için cross-origin'dir — allowlist'i
 // geçen origin'e yansıtılır; aksi halde tarayıcı yanıtı bloklar.
 
-function corsHeaders(origin: string | null): Record<string, string> {
-  if (!origin || !isOriginAllowed(origin)) return {};
+async function corsHeaders(origin: string | null): Promise<Record<string, string>> {
+  if (!origin || !(await isOriginAllowed(origin))) return {};
   return {
     "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Credentials": "true",
@@ -34,7 +34,7 @@ function corsHeaders(origin: string | null): Record<string, string> {
 
 export async function OPTIONS(req: NextRequest) {
   const origin = requestOrigin(req);
-  const headers = corsHeaders(origin);
+  const headers = await corsHeaders(origin);
   return new NextResponse(null, {
     status: 204,
     headers: {
@@ -57,7 +57,7 @@ const sessionSchema = z.object({
 export async function POST(req: NextRequest) {
   try {
     const origin = requestOrigin(req);
-    const headers = corsHeaders(origin);
+    const headers = await corsHeaders(origin);
 
     if (!isWidgetConfigured()) {
       return NextResponse.json(
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
         { status: 503, headers },
       );
     }
-    if (!isOriginAllowed(origin)) {
+    if (!(await isOriginAllowed(origin))) {
       // Bu origin için CORS başlıkları YOK: tarayıcı yanıtı okuyamaz.
       return NextResponse.json(
         { success: false, error: "Bu site için widget erişimi yok." },

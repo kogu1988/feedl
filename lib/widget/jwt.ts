@@ -42,19 +42,8 @@ export function toWidgetUserId(sub: string): string {
   return `widget_${sub}`;
 }
 
-// FEEDL_WIDGET_ALLOWED_ORIGINS (virgüllü liste). Tanımsız/boşsa kısıtlama
-// yok (MVP); liste varken origin'siz veya listede olmayan origin reddedilir.
-export function isOriginAllowed(origin: string | null): boolean {
-  const raw = process.env.FEEDL_WIDGET_ALLOWED_ORIGINS?.trim();
-  if (!raw) return true;
-  const allowed = raw
-    .split(",")
-    .map((value) => value.trim().replace(/\/$/, ""))
-    .filter(Boolean);
-  if (allowed.length === 0) return true;
-  if (!origin) return false;
-  return allowed.includes(origin.replace(/\/$/, ""));
-}
+// Origin allowlist'i Sprint 38'den itibaren lib/widget/origins.ts'tedir:
+// self origin + env listesi + widget_origins tablosu (hepsinde yoksa red).
 
 function signHs256(payload: Record<string, unknown>, secret: string): string {
   const header = Buffer.from(

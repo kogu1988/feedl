@@ -5,7 +5,8 @@ import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { postFollowers, posts, votes } from "@/lib/db/schema";
 import { voteSchema } from "@/lib/validations/vote";
-import { getWidgetSession, isOriginAllowed } from "@/lib/widget/jwt";
+import { getWidgetSession } from "@/lib/widget/jwt";
+import { isOriginAllowed } from "@/lib/widget/origins";
 import { requestOrigin } from "@/lib/widget/http";
 
 async function countVotes(postId: string): Promise<number> {
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
     }
 
     const origin = session.origin ?? requestOrigin(req);
-    if (!isOriginAllowed(origin)) {
+    if (!(await isOriginAllowed(origin))) {
       return NextResponse.json(
         { success: false, error: "Bu site için widget erişimi yok." },
         { status: 403 },
