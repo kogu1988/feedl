@@ -79,8 +79,11 @@ export function WorkspaceSettings({
           value={name}
           onChange={(e) => setName(e.target.value)}
           maxLength={120}
-          placeholder="feedl"
+          placeholder="Örn: feedl"
         />
+        <p className="text-xs text-muted-foreground">
+          Portalda ve e-postalarda görünen isim.
+        </p>
       </div>
 
       <div className="grid gap-1.5">
@@ -95,7 +98,8 @@ export function WorkspaceSettings({
           <span>.feedl.app</span>
         </div>
         <p className="text-xs text-muted-foreground">
-          Subdomain, workspace bazlı portallar için kaynaktır; değiştirilemez.
+          Workspace bazlı portal adresi — başka bir uygulama için örn.
+          acme.feedl.app. Değiştirilemez.
         </p>
       </div>
 
@@ -105,11 +109,12 @@ export function WorkspaceSettings({
           id="ws-domain"
           value={customDomain}
           onChange={(e) => setCustomDomain(e.target.value)}
-          placeholder="feedback.acme.com"
+          placeholder="Örn: feedback.acme.com"
           maxLength={200}
         />
         <p className="text-xs text-muted-foreground">
-          Doğrulama (meta tag / DNS) bir sonraki adımda; buraya alan adını gir.
+          Kendi alan adın (http:// veya https:// olmadan yalnızca host).
+          Doğrulama bir sonraki adımda.
         </p>
       </div>
 
@@ -120,7 +125,7 @@ export function WorkspaceSettings({
             id="ws-color"
             value={brandColor}
             onChange={(e) => setBrandColor(e.target.value)}
-            placeholder="#ff5c35"
+            placeholder="Örn: #ff5c35"
             maxLength={20}
             className="max-w-[180px]"
           />
@@ -130,6 +135,10 @@ export function WorkspaceSettings({
             aria-hidden="true"
           />
         </div>
+        <p className="text-xs text-muted-foreground">
+          6 haneli hex renk kodu — # ile veya # olmadan yazabilirsin (örn.
+          #ff5c35). Boş bırakılırsa varsayılan mercan kullanılır.
+        </p>
       </div>
 
       <div className="grid gap-1.5">
@@ -138,9 +147,12 @@ export function WorkspaceSettings({
           id="ws-logo"
           value={logoUrl}
           onChange={(e) => setLogoUrl(e.target.value)}
-          placeholder="https://feedl.app/logo.png"
+          placeholder="Örn: https://cdn.example.com/logo.png"
           maxLength={500}
         />
+        <p className="text-xs text-muted-foreground">
+          Portal başlığında görüntülenecek marka logosu (tam URL).
+        </p>
       </div>
 
       <div className="flex items-center gap-2 pt-2">
