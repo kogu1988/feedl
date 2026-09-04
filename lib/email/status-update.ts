@@ -1,7 +1,7 @@
 // Status güncelleme bildirimi e-postası (plan.md Sprint 26) — shipped
 // harici durum geçişlerinde takipçilere gider. shipped şablonuyla aynı
 // inline-stil görsel dil; alıcı e-postası şablona yazılmaz.
-import { escapeHtml } from "./html";
+import { escapeHtml, oneWayFooterHtml, oneWayFooterText } from "./html";
 
 export interface StatusUpdateEmailInput {
   ideaTitle: string;
@@ -67,6 +67,8 @@ export function renderStatusUpdateEmail(
                       ? `<a href="${input.unsubscribeUrl}" style="color:#71717a;">Durum bildirimlerini kapat</a>.`
                       : ""
                   }
+                  <br />
+                  ${oneWayFooterHtml()}
                 </p>
               </td>
             </tr>
@@ -89,7 +91,8 @@ Fikri görüntüle: ${input.ideaUrl}
 
 Bu bildirimi fikri takip ettiğin için alıyorsun.${
     input.unsubscribeUrl ? `\nDurum bildirimlerini kapat: ${input.unsubscribeUrl}` : ""
-  }`;
+  }
+${oneWayFooterText()}`;
 
   return { subject, html, text };
 }

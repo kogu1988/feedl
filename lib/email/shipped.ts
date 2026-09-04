@@ -2,7 +2,7 @@
 // E-posta istemcileri CSS sınıflarını desteklemediği için inline stil kullanılır.
 // Alıcı e-postası buraya yazılmaz; gönderici katmanı (lib/email/send.ts) zaten
 // alıcı listesini ayrı tutar — şablon yalnızca içerik üretir.
-import { escapeHtml } from "./html";
+import { escapeHtml, oneWayFooterHtml, oneWayFooterText } from "./html";
 
 const PORTAL_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://feedl.app/portal";
 
@@ -68,6 +68,8 @@ export function renderShippedEmail(input: ShippedEmailInput): RenderedEmail {
                       ? `<a href="${input.unsubscribeUrl}" style="color:#71717a;">Durum bildirimlerini kapat</a>.`
                       : ""
                   }
+                  <br />
+                  ${oneWayFooterHtml()}
                 </p>
               </td>
             </tr>
@@ -98,7 +100,8 @@ Portalda görüntüle: ${PORTAL_URL}
 
 Bu bildirimi isteği desteklediğin veya gönderdiğin için alıyorsun.${
   input.unsubscribeUrl ? `\nDurum bildirimlerini kapat: ${input.unsubscribeUrl}` : ""
-}`;
+}
+${oneWayFooterText()}`;
 
   return { subject, html, text };
 }

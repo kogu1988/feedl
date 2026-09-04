@@ -3,7 +3,7 @@
 // için gövde düz metne indirgenir (lib/email/shipped.ts ile aynı desen);
 // alıcı e-postası buraya yazılmaz, gönderici katmanı alıcı listesini
 // ayrı tutar.
-import { escapeHtml } from "./html";
+import { escapeHtml, oneWayFooterHtml, oneWayFooterText } from "./html";
 
 const APP_URL =
   process.env.NEXT_PUBLIC_APP_URL ?? "https://feedl.app";
@@ -86,6 +86,8 @@ export function renderChangelogEmail(input: ChangelogEmailInput): RenderedEmail 
                 <p style="margin:0;font-size:12px;line-height:1.5;color:#71717a;">
                   Bu e-postayı feedl.app duyurularına abone olduğun için alıyorsun.
                   <a href="${input.unsubscribeUrl}" style="color:#71717a;">Feedl aboneliğinden çık</a>.
+                  <br />
+                  ${oneWayFooterHtml()}
                 </p>
               </td>
             </tr>
@@ -103,7 +105,8 @@ ${bodyText}
 Portalda görüntüle: ${input.entryUrl}
 
 Bu e-postayı feedl.app duyurularına abone olduğun için alıyorsun.
-Feedl aboneliğinden çık: ${input.unsubscribeUrl}`;
+Feedl aboneliğinden çık: ${input.unsubscribeUrl}
+${oneWayFooterText()}`;
 
   return { subject, html, text };
 }

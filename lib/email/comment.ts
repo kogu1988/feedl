@@ -1,6 +1,6 @@
 // Yorum bildirimi e-postası (plan.md Sprint 24). shipped şablonuyla aynı
 // inline-stil görsel dil; alıcı e-postası şablona yazılmaz.
-import { escapeHtml } from "./html";
+import { escapeHtml, oneWayFooterHtml, oneWayFooterText } from "./html";
 
 export interface CommentEmailInput {
   ideaTitle: string;
@@ -67,6 +67,8 @@ export function renderCommentEmail(input: CommentEmailInput): RenderedEmail {
                       ? `<a href="${input.unsubscribeUrl}" style="color:#71717a;">Yorum bildirimlerini kapat</a>.`
                       : ""
                   }
+                  <br />
+                  ${oneWayFooterHtml()}
                 </p>
               </td>
             </tr>
@@ -87,7 +89,8 @@ ${input.ideaTitle}
 
 Fikri görüntüle: ${input.ideaUrl}${
   input.unsubscribeUrl ? `\nYorum bildirimlerini kapat: ${input.unsubscribeUrl}` : ""
-}`;
+}
+${oneWayFooterText()}`;
 
   return { subject, html, text };
 }
