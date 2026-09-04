@@ -5,7 +5,12 @@ import { auth } from "@clerk/nextjs/server";
 import { and, asc, count, countDistinct, desc, eq, gt, inArray, isNotNull, isNull, ne, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { z } from "zod";
-import { ArrowLeftIcon, GitMergeIcon, SparklesIcon } from "lucide-react";
+import {
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  GitMergeIcon,
+  SparklesIcon,
+} from "lucide-react";
 
 import { CommentCard } from "@/components/custom/comment-card";
 import { FollowButton } from "@/components/custom/follow-button";
@@ -40,6 +45,7 @@ import {
   opportunities,
   postFollowers,
   postOpportunities,
+  postStatusHistory,
   postTags,
   posts,
   tags,
@@ -134,6 +140,20 @@ export default async function PostDetailPage({
   const postTagsList = tagRows.map((row) => row.name);
 
   const commentRows = await loadComments(postId, isAdmin);
+
+  // Sprint 40: durum geçmişi (post_status_history, Sprint 23). Herkese açık:
+  // değişim notları zaten takipçilere bildirim e-postasıyla gidiyor.
+  const statusHistoryRows = await getDb()
+    .select({
+      id: postStatusHistory.id,
+      oldStatus: postStatusHistory.oldStatus,
+      newStatus: postStatusHistory.newStatus,
+      note: postStatusHistory.note,
+      createdAt: postStatusHistory.createdAt,
+    })
+    .from(postStatusHistory)
+    .where(eq(postStatusHistory.postId, postId))
+    .orderBy(asc(postStatusHistory.createdAt));
 
   // Benzer fikirler best-effort: embedding/vektör sorgusu başarısız olsa
   // bile detay sayfası açılmaya devam eder, bölüm yalnızca gizlenir.
@@ -283,6 +303,43 @@ export default async function PostDetailPage({
           ) : null}
         </CardContent>
       </Card>
+
+      {statusHistoryRows.length > 0 ? (
+        <section className="mt-8 grid gap-3">
+          <h2 className="text-lg font-semibold">Durum Geçmişi</h2>
+          <Card>
+            <CardContent className="grid gap-4">
+              {statusHistoryRows.map((row) => (
+                <div
+                  key={row.id}
+                  className="grid gap-1.5 border-b pb-4 last:border-b-0 last:pb-0"
+                >
+                  <div className="flex flex-wrap items-center gap-2">
+                    {row.oldStatus ? (
+                      <>
+                        <StatusBadge status={row.oldStatus} />
+                        <ArrowRightIcon
+                          className="size-3.5 text-muted-foreground"
+                          aria-hidden="true"
+                        />
+                      </>
+                    ) : null}
+                    <StatusBadge status={row.newStatus} />
+                    <span className="text-xs text-muted-foreground">
+                      {trDateFormatter.format(row.createdAt)}
+                    </span>
+                  </div>
+                  {row.note ? (
+                    <p className="whitespace-pre-line text-sm text-muted-foreground">
+                      {row.note}
+                    </p>
+                  ) : null}
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </section>
+      ) : null}
 
       <section id="yorumlar" className="mt-8 grid gap-4">
         <h2 className="text-lg font-semibold">
