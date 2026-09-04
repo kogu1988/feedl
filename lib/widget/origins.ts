@@ -40,6 +40,28 @@ export async function isOriginAllowed(origin: string | null): Promise<boolean> {
   return dbOrigins.includes(normalized);
 }
 
+// Sprint 38: admin girişlerinde origin doğrulama — sadece scheme://host[:port]
+// kabul edilir; path, query, hash ve userinfo reddedilir. Normalizasyon:
+// trim + trailing slash atma + hostname küçük harf.
+export function normalizeWidgetOrigin(raw: string): string | null {
+  const value = raw.trim();
+  if (!value) return null;
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    return null;
+  }
+  if (url.protocol !== "https:" && url.protocol !== "http:") return null;
+  if (!url.hostname) return null;
+  if (url.pathname && url.pathname !== "/") return null;
+  if (url.search || url.hash || url.username || url.password) return null;
+  const origin = `${url.protocol}//${url.hostname.toLowerCase()}${
+    url.port ? `:${url.port}` : ""
+  }`;
+  return origin.length <= 200 ? origin : null;
+}
+
 // Widget isteklerinde her istek DB okumamak için kısa TTL cache; admin
 // yazma işlemleri invalidateOriginsCache ile anında etkili olur.
 const ORIGINS_TTL_MS = 10_000;
