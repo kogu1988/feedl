@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { z } from "zod";
 
 import {
   API_KEY_ERRORS,
@@ -9,18 +10,32 @@ import {
 } from "@/lib/api-keys";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
-import { apiKeys } from "@/lib/db/schema";
+import { apiKeys, posts } from "@/lib/db/schema";
 import {
   comments,
   postStatusEnum,
-  posts,
   postTags,
   tags,
   votes,
 } from "@/lib/db/schema";
+import { postCreatedEventSchema } from "@/lib/validations/events";
+import { upsertApiUser } from "@/lib/users/api-user";
+import { inngest } from "@/inngest/client";
 
 // Sprint 34 — Public API (P4.2). Bearer API key ile salt-okunur fikir
-// listesi. Kapsam/limit detayları: lib/api-keys.ts + docs/plan.md Sprint 34.
+// listesi ve (Sprint 43) yeni fikir oluşturma. Kapsam/limit detayları:
+// lib/api-keys.ts + docs/plan.md Sprint 34.
+
+const createPostSchema = z.object({
+  title: z.string().trim().min(3).max(140),
+  description: z.string().trim().min(10).max(2000),
+  author: z
+    .object({
+      email: z.string().trim().email().min(3).max(200),
+      name: z.string().trim().max(100).optional(),
+    })
+    .optional(),
+});
 
 export async function GET(req: NextRequest) {
   try {
@@ -163,6 +178,107 @@ export async function GET(req: NextRequest) {
     console.error("[api/v1/posts] GET failed:", err);
     return NextResponse.json(
       { success: false, error: "Fikirler alınamadı." },
+      { status: 500 },
+    );
+  }
+}
+
+// POST /api/v1/posts — yeni fikir oluştur (Sprint 43). API anahtarı ile
+// authed; yazar (author) opsiyonel bir kimliktir — verilirse `api_` önekli
+// stabil müşteri kullanıcısı upsert edilir, verilmezse fikri sahipsiz
+// (authorId yok) bırakmamak için email zorunlu kabul edilir.
+export async function POST(req: NextRequest) {
+  try {
+    const key = await authenticateApiKey(req);
+    if (!key) {
+      return NextResponse.json(API_KEY_ERRORS.unauthorized, { status: 401 });
+    }
+    const rl = await checkRateLimit(key.id);
+    if (!rl.allowed) {
+      return NextResponse.json(API_KEY_ERRORS.rateLimited(rl.retryAfterSec), {
+        status: 429,
+      });
+    }
+
+    try {
+      await getDb()
+        .update(apiKeys)
+        .set({ lastUsedAt: new Date() })
+        .where(eq(apiKeys.id, key.id));
+    } catch {
+      // yoksay
+    }
+
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json(
+        { success: false, error: "Geçersiz istek gövdesi." },
+        { status: 400 },
+      );
+    }
+
+    const parsed = createPostSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { success: false, error: "Başlık 3-140, açıklama 10-2000 karakter olmalı." },
+        { status: 400 },
+      );
+    }
+
+    // Yazar kimliği zorunlu: posts.user_id NOT NULL. Author yoksa 400.
+    if (!parsed.data.author) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Bu işlem için bir yazar e-postası (author.email) gerekli.",
+        },
+        { status: 400 },
+      );
+    }
+
+    const author = await upsertApiUser(
+      parsed.data.author.email,
+      parsed.data.author.name,
+    );
+
+    const [created] = await getDb()
+      .insert(posts)
+      .values({
+        workspaceId: await getWorkspaceId(),
+        userId: author.id,
+        title: parsed.data.title,
+        description: parsed.data.description,
+      })
+      .returning({ id: posts.id, title: posts.title });
+
+    // Auth sonrası Inngest event'ı (best-effort) — AI autopilot + webhook.
+    try {
+      await inngest.send({
+        name: "post/created",
+        data: postCreatedEventSchema.parse({
+          postId: created.id,
+          title: created.title,
+          description: parsed.data.description,
+          userId: author.id,
+        }),
+      });
+    } catch (eventErr) {
+      console.error(
+        "[api/v1/posts] POST event send failed:",
+        eventErr instanceof Error ? eventErr.message : eventErr,
+      );
+    }
+
+    return NextResponse.json(
+      { success: true, data: { id: created.id, title: created.title } },
+      { status: 201 },
+    );
+  } catch (err) {
+    console.error("[api/v1/posts] POST failed:", err);
+    return NextResponse.json(
+      { success: false, error: "Fikir oluşturulamadı." },
       { status: 500 },
     );
   }
