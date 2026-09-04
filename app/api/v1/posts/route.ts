@@ -193,6 +193,12 @@ export async function POST(req: NextRequest) {
     if (!key) {
       return NextResponse.json(API_KEY_ERRORS.unauthorized, { status: 401 });
     }
+    if (!key.scopes.includes("write")) {
+      return NextResponse.json(
+        { success: false, error: "Bu işlem write kapsamı olan bir API anahtarı gerektirir." },
+        { status: 403 },
+      );
+    }
     const rl = await checkRateLimit(key.id);
     if (!rl.allowed) {
       return NextResponse.json(API_KEY_ERRORS.rateLimited(rl.retryAfterSec), {

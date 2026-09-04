@@ -787,6 +787,7 @@ async function loadApiKeys() {
       id: apiKeys.id,
       name: apiKeys.name,
       prefix: apiKeys.prefix,
+      scopes: apiKeys.scopes,
       revokedAt: apiKeys.revokedAt,
       lastUsedAt: apiKeys.lastUsedAt,
       createdAt: apiKeys.createdAt,
@@ -800,6 +801,7 @@ async function loadApiKeys() {
     id: row.id,
     name: row.name,
     prefix: row.prefix,
+    scopes: row.scopes,
     revoked: row.revokedAt !== null,
     lastUsedLabel: row.lastUsedAt
       ? trDateTimeFormatter.format(row.lastUsedAt)

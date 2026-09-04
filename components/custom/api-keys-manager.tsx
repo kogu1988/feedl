@@ -11,6 +11,7 @@ export interface ApiKeyItem {
   id: string;
   name: string;
   prefix: string;
+  scopes: string[];
   revoked: boolean;
   lastUsedLabel: string | null;
   createdAtLabel: string;
@@ -20,6 +21,7 @@ export interface ApiKeyItem {
 // sunucudan döner ve ekranda bir kez gösterilir (kopyalanmadıysa kurtarılamaz).
 export function ApiKeysManager({ items }: { items: ApiKeyItem[] }) {
   const [name, setName] = useState("");
+  const [scopes, setScopes] = useState<string[]>(["read"]);
   const [creating, setCreating] = useState(false);
   const [revokingId, setRevokingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -40,7 +42,7 @@ export function ApiKeysManager({ items }: { items: ApiKeyItem[] }) {
       const res = await fetch("/api/admin/api-keys", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: trimmed }),
+        body: JSON.stringify({ name: trimmed, scopes }),
       });
       const json = (await res.json()) as {
         success?: boolean;
@@ -52,6 +54,7 @@ export function ApiKeysManager({ items }: { items: ApiKeyItem[] }) {
         return;
       }
       setName("");
+      setScopes(["read"]);
       setCreatedKey(json.data.key);
       setCopied(false);
       startTransition(() => router.refresh());
@@ -98,6 +101,19 @@ export function ApiKeysManager({ items }: { items: ApiKeyItem[] }) {
           className="max-w-xs"
           maxLength={100}
         />
+        <select
+          value={scopes.includes("write") ? "read-write" : "read"}
+          onChange={(e) =>
+            setScopes(
+              e.target.value === "read-write" ? ["read", "write"] : ["read"],
+            )
+          }
+          aria-label="Kapsam"
+          className="h-9 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm"
+        >
+          <option value="read">Salt okunur</option>
+          <option value="read-write">Okuma + yazma</option>
+        </select>
         <Button onClick={create} disabled={creating || isPending}>
           {creating ? (
             <Loader2Icon className="size-4 animate-spin" aria-hidden="true" />
@@ -156,7 +172,8 @@ export function ApiKeysManager({ items }: { items: ApiKeyItem[] }) {
                     : item.lastUsedLabel
                       ? `Son kullanım: ${item.lastUsedLabel}`
                       : "Hiç kullanılmadı"}{" "}
-                  · Oluşturma: {item.createdAtLabel}
+                  · Oluşturma: {item.createdAtLabel}{" "}
+                  · {item.scopes.includes("write") ? "Okuma + yazma" : "Salt okunur"}
                 </p>
               </div>
               {!item.revoked ? (

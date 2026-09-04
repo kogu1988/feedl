@@ -14,8 +14,15 @@ import { apiKeys } from "@/lib/db/schema";
 // yanıtında bir kez döner; DB'de SHA-256 karması tutulur. Revocation:
 // revokedAt set edilir (soft delete), kayıt denetim için kalır.
 
+// Sprint 43: kapsam genişletildi — read (salt okunur) ve/veya write
+// (yazma: fikir oluşturma). Varsayılan read; write isteyen admin seçer.
 const createSchema = z.object({
   name: z.string().trim().min(1, "Anahtar adı gerekli.").max(100),
+  scopes: z
+    .array(z.enum(["read", "write"]))
+    .min(1, "En az bir kapsam gerekli.")
+    .max(2)
+    .default(["read"]),
 });
 
 // GET /api/admin/api-keys — anahtarları listele (prefix + durum).
@@ -86,6 +93,7 @@ export async function POST(req: Request) {
     }
 
     const { key, prefix, keyHash } = generateApiKey();
+    const scopes = Array.from(new Set(parsed.data.scopes));
     const [created] = await getDb()
       .insert(apiKeys)
       .values({
@@ -93,11 +101,12 @@ export async function POST(req: Request) {
         name: parsed.data.name,
         prefix,
         keyHash,
+        scopes,
       })
-      .returning({ id: apiKeys.id, prefix: apiKeys.prefix });
+      .returning({ id: apiKeys.id, prefix: apiKeys.prefix, scopes: apiKeys.scopes });
 
     return NextResponse.json(
-      { success: true, data: { id: created.id, prefix: created.prefix, key } },
+      { success: true, data: { id: created.id, prefix: created.prefix, scopes: created.scopes, key } },
       { status: 201 },
     );
   } catch (err) {
