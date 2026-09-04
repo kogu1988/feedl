@@ -8,6 +8,8 @@ import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { changelogEntries, changelogPostLinks } from "@/lib/db/schema";
+import { changelogPublishedEventSchema } from "@/lib/validations/events";
+import { inngest } from "@/inngest/client";
 
 // Sprint 25: bağımsız changelog yönetimi (admin). GET: liste (son 50),
 // POST: yeni duyuru (başlık + gövde + opsiyonel label + opsiyonel post
@@ -109,6 +111,24 @@ export async function POST(req: Request) {
         .insert(changelogPostLinks)
         .values(postIds.map((postId) => ({ entryId: created.id, postId })))
         .onConflictDoNothing();
+    }
+
+    // Sprint 40: duyuru yayınlandı — abonelere e-posta (best-effort;
+    // event gönderilemezse duyuru kaydı etkilenmez).
+    const event = changelogPublishedEventSchema.safeParse({
+      entryId: created.id,
+      title,
+      body: entryBody,
+    });
+    if (event.success) {
+      try {
+        await inngest.send({ name: "changelog/published", data: event.data });
+      } catch (eventErr) {
+        console.error(
+          "changelog/published event could not be sent:",
+          eventErr instanceof Error ? eventErr.message : eventErr,
+        );
+      }
     }
 
     return NextResponse.json(

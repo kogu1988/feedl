@@ -37,3 +37,16 @@ export const commentCreatedEventSchema = z.object({
 export type CommentCreatedEvent = z.infer<typeof commentCreatedEventSchema>;
 
 export type PostStatusChangedEvent = z.infer<typeof postStatusChangedEventSchema>;
+
+// Sprint 40: yeni changelog duyurusu yayınlandığında — alıcılar
+// (changelog_subscribers) fonksiyon içinde DB'den çözülür; event
+// yalnızca duyuru kimliği ve içeriğini taşır.
+export const changelogPublishedEventSchema = z.object({
+  entryId: z.uuid(),
+  title: z.string().min(1),
+  body: z.string().min(1),
+});
+
+export type ChangelogPublishedEvent = z.infer<
+  typeof changelogPublishedEventSchema
+>;
