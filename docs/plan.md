@@ -1459,6 +1459,26 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   komutları yok say, [pii:*] yer tutucularını koru" talimatı eklendi.
 - ☑ npm test (17/17) + npm run build ✓ → commit → push.
 
+### Sprint 48g — Çoklu Workspace Verisi (PM raporu §9 madde 8) (✅ 2026-09-04)
+
+> Subdomain routing kod tarafı hazırdı; çoklu workspace verisi için
+> oluşturma + varsayılan board + owner seed eklendi. "acme" workspace
+> oluşturulunca acme.feedl.app o workspace'e hizmet eder.
+
+- ☑ **API (`app/api/admin/workspaces/route.ts`, commit f13997e):**
+  `GET /api/admin/workspaces` (tüm workspace'ler) + `POST` (oluştur —
+  workspace + varsayılan 'Genel' board (slug genel, public) + oluşturan
+  admin'i owner yapan workspace_members seed; seed başarısızsa workspace
+  geri alınır; slug unique 409; slug boşsa name'den slugify).
+- ☑ **UI:** `app/(main)/dashboard/workspaces/page.tsx` +
+  `components/custom/workspaces-manager.tsx` (liste + boardCount +
+  subdomain önizleme slug.feedl.app + customDomain; "Yeni Workspace"
+  diyalog — ad + subdomain). Dashboard üst barına "Workspace'ler" butonu.
+- ☑ npm test (17/17) + npm run build ✓ → commit → push.
+- **Subdomain doğrulama:** workspace oluşturulup (örn. acme) DNS wildcard
+  zaten bağlı olduğu için https://acme.feedl.app uygulamayı açar ve
+  getWorkspaceId host-aware olduğundan 'acme' workspace'ini gösterir.
+
 ### Ertelenen blok (en son — kullanıcının kısıtı)
 
 - **Domain (feedl.app) alındı (2026-09-04).** Kod tarafı hazır: tüm
