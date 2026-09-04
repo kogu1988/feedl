@@ -16,6 +16,10 @@ import {
   type WebhookEventName,
 } from "@/lib/webhooks/dispatch";
 import { hydrateWebhookPayload } from "@/lib/webhooks/payload";
+import {
+  markDeliveryDelivered,
+  recordDeliveryFailure,
+} from "@/lib/webhooks/delivery-log";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import {
@@ -641,7 +645,25 @@ export const sendWebhooks = inngest.createFunction(
     let delivered = 0;
     for (const endpoint of endpoints) {
       await step.run(`deliver-${endpoint.id}`, async () => {
-        await deliverWebhook(endpoint, webhookEvent, hydrated);
+        const upsert = {
+          workspaceId: await getWorkspaceId(),
+          endpointId: endpoint.id,
+          event: webhookEvent,
+          payload: hydrated,
+        };
+        try {
+          await deliverWebhook(endpoint, webhookEvent, hydrated);
+          await markDeliveryDelivered(upsert);
+        } catch (deliveryErr) {
+          // Dead-letter kaydı + Inngest'in retry etmesi için rethrow.
+          await recordDeliveryFailure(
+            upsert,
+            deliveryErr instanceof Error
+              ? deliveryErr.message
+              : "Bilinmeyen teslimat hatası",
+          );
+          throw deliveryErr;
+        }
       });
       delivered += 1;
     }

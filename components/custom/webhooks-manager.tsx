@@ -1,8 +1,15 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { BellIcon, CopyIcon, Loader2Icon, TrashIcon } from "lucide-react";
+import {
+  AlertTriangleIcon,
+  BellIcon,
+  CopyIcon,
+  Loader2Icon,
+  RefreshCwIcon,
+  TrashIcon,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,6 +46,71 @@ export function WebhooksManager({ items }: { items: WebhookItem[] }) {
   const [copied, setCopied] = useState(false);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
+
+  // Sprint 43: dead-letter — başarısız webhook teslimatları.
+  const [deadLetters, setDeadLetters] = useState<
+    {
+      id: string;
+      event: string;
+      attempts: number;
+      lastError: string | null;
+      createdAtLabel: string;
+    }[]
+  >([]);
+  const [loading, setLoading] = useState(false);
+  const [replayingId, setReplayingId] = useState<string | null>(null);
+
+  const loadDeadLetters = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(
+        "/api/admin/webhooks/deliveries?status=failed",
+        { cache: "no-store" },
+      );
+      const json = await res.json();
+      if (json.success) {
+        setDeadLetters(
+          (json.data as {
+            id: string;
+            event: string;
+            attempts: number;
+            lastError: string | null;
+            createdAt: string;
+          }[]).map((d) => ({
+            id: d.id,
+            event: d.event,
+            attempts: d.attempts,
+            lastError: d.lastError,
+            createdAtLabel: new Date(d.createdAt).toLocaleString("tr-TR"),
+          })),
+        );
+      }
+    } catch {
+      // yoksay
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadDeadLetters();
+  }, []);
+
+  const replay = async (id: string) => {
+    setReplayingId(id);
+    try {
+      const res = await fetch(
+        `/api/admin/webhooks/deliveries/${id}/replay`,
+        { method: "POST" },
+      );
+      const json = await res.json();
+      if (json.success) {
+        await loadDeadLetters();
+      }
+    } finally {
+      setReplayingId(null);
+    }
+  };
 
   const toggleEvent = (value: string, checked: boolean) => {
     setEvents((prev) =>
@@ -204,6 +276,71 @@ export function WebhooksManager({ items }: { items: WebhookItem[] }) {
           ))}
         </ul>
       )}
+
+      <div className="space-y-2 pt-2">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-medium text-muted-foreground">
+            Son başarısız teslimatlar
+          </p>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={loadDeadLetters}
+            disabled={loading}
+          >
+            <RefreshCwIcon
+              className={loading ? "size-3.5 animate-spin" : "size-3.5"}
+              aria-hidden="true"
+            />
+            Yenile
+          </Button>
+        </div>
+        {deadLetters.length === 0 ? (
+          <p className="rounded-lg border border-dashed px-3 py-3 text-xs text-muted-foreground">
+            Başarısız teslimat yok.
+          </p>
+        ) : (
+          <ul className="space-y-2">
+            {deadLetters.map((d) => (
+              <li
+                key={d.id}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2"
+              >
+                <div className="min-w-0">
+                  <p className="flex items-center gap-1.5 text-sm font-medium">
+                    <AlertTriangleIcon
+                      className="size-3.5 text-destructive"
+                      aria-hidden="true"
+                    />
+                    {d.event}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {d.createdAtLabel} · {d.attempts} deneme
+                  </p>
+                  {d.lastError ? (
+                    <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
+                      {d.lastError}
+                    </p>
+                  ) : null}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => replay(d.id)}
+                  disabled={replayingId === d.id}
+                >
+                  {replayingId === d.id ? (
+                    <Loader2Icon className="size-3.5 animate-spin" aria-hidden="true" />
+                  ) : (
+                    <RefreshCwIcon className="size-3.5" aria-hidden="true" />
+                  )}
+                  Yeniden Dene
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }

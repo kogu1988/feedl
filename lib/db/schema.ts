@@ -611,6 +611,47 @@ export const webhookEndpoints = pgTable(
 export type WebhookEndpoint = typeof webhookEndpoints.$inferSelect;
 export type NewWebhookEndpoint = typeof webhookEndpoints.$inferInsert;
 
+// Sprint 43 (PM raporu §9 madde 6): webhook dead-letter kuyruğu.
+// Inngest teslimatı 3× retry eder; her deneme burada izlenir, sonunda
+// başarısız kalanlar admin'in inceleyip yeniden tetikleyebileceği
+// dead-letter kaydıdır. payload teslimat için oluşturulmuş gövdeyi taşır.
+export const webhookDeliveries = pgTable(
+  "webhook_deliveries",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    endpointId: uuid("endpoint_id")
+      .notNull()
+      .references(() => webhookEndpoints.id, { onDelete: "cascade" }),
+    event: varchar("event", { length: 40 }).notNull(),
+    payload: jsonb("payload").notNull(),
+    status: varchar("status", { length: 20 }).notNull().default("pending"),
+    attempts: integer("attempts").notNull().default(1),
+    lastError: text("last_error"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    // Doğal anahtar: aynı endpoint+olay+payload tek teslimat kaydıdır;
+    // retry'lar bu satırın attempts'ını artırır, başarı durumu `delivered`
+    // olur (dead-letter görünümünden düşer).
+    uniqueIndex("webhook_deliveries_endpoint_event_payload_key").on(
+      table.endpointId,
+      table.event,
+      table.payload,
+    ),
+  ],
+);
+
+export type WebhookDelivery = typeof webhookDeliveries.$inferSelect;
+export type NewWebhookDelivery = typeof webhookDeliveries.$inferInsert;
+
 // widget_origins: Sprint 38 — widget'ın gömülebileceği izinli origin'ler
 // (PM raporu §8.2: "env boşsa her origin kabul" riskini kapatır). Biçim:
 // protokol + host (+port), path yok — örn. https://example.com. Feedl'in
