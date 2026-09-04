@@ -109,7 +109,7 @@ olmadan kurulamaz; sıralama bu yüzden **tenant önce** demektir.
 |---|---|---|
 | First Load JS (son build) | `/` 224 kB, `/portal` 362 kB, `/portal/[id]` 395 kB, `/dashboard` 302 kB, ortak 139 kB | Makul ama detay sayfası en ağır; lazy-load + `next/dynamic` ile düşürülebilir |
 | Rate limit | Süreç-içi, sunucular arası ortak değil → **riskli** | Redis/Upstash şart |
-| Pagination | `limit(200)` ve cursor yok → **riskli** | Server-side cursor şart |
+| Pagination | Portal + dashboard + oyladıklarım offset/limit + `?per=5/25/50/all` → ✅ Sprint 39 | Cursor'a geçiş ancak çok büyük setlerde gerekir |
 | Arama | Full-text + trigram + vector fallback | İyi; trigram index'i migration'a bağlı (kırılgan) |
 | Font/asset | next/font (Manrope/Geist) → harici font isteği yok | İyi |
 | Ölçekleme | Neon serverless; sorgu tenant scope'suz büyük sette yavaşlar | Tenant scope ile indeksleme iyi olur |
@@ -147,10 +147,9 @@ konuşuyor.
 
 **İyileştirilecekler:**
 
-- Fikir detay sayfası kanonik olmuş ama **pagination olmadığı için** liste
-  uzunluğunda UX bozulur.
-- Saved views / filtre sıralaması ile `limit(200)` çelişiyor; büyük
-  listelerde "kayıp veri" hissi.
+- ~~Pagination yok~~ → ✅ Sprint 39: portal/dashboard/oyladıklarım
+  server-side sayfalama (`?per=5/25/50/all`, `?page=N`) — "kayıp veri"
+  hissi bitti; `limit(100/200)` kırpma kaldırıldı.
 - **"Follow"** kullanıcıya görünür bir anahtar değil → takip/bildirim
   tercihi açık olmalı.
 - Changelog detail'de markdown/görsel yok → release note zayıf.
@@ -165,7 +164,9 @@ konuşuyor.
    helper**~~ → ✅ tamamlandı (Sprint 37, commit ae6bea0…1ae5cf1)
 2. ~~**Widget origin zorunlu + paylaşımlı rate limit + API key hash
    doğrulama**~~ → ✅ tamamlandı (Sprint 38, commit 13a4f40…ee41e1e)
-3. **Server-side pagination + test/CI** → *şart, büyüme hazırlığı*
+3. ~~**Server-side pagination + test/CI**~~ → ✅ tamamlandı (Sprint 39,
+   commit 46f65b5…dea5bc1 — offset/limit + ortak parsePagination;
+   Vitest 17 test + GitHub Actions CI)
 4. Comments/changelog polish
 5. Custom fields + categories
 6. Full API/webhook event matrix → (bu, entegrasyonu açar)

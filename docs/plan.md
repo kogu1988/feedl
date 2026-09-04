@@ -1038,19 +1038,33 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   anahtarsız /api/v1/posts → 401 zarfı doğrulandı; UPSTASH env'leri
   Vercel'e eklendi + redeploy.
 
-- ☐ **Sprint 39 — Server-side Pagination + Test/CI başlangıcı (PM raporu
-  §8.3)** (2026-09-04): Portal limit(100), dashboard limit(200) ile
-  kırpıyordu — büyüme durumunda kayıp veri. Karar (kullanıcı talebi):
-  URL ile taşınan `?per=5|25|50|all` (varsayılan 5) + `?page=N`
-  param'ları; sunucuda offset/limit + aynı where koşuluyla ayrı count
-  sorgusu (arama koşulu yalnızca posts sütunlarına referans verdiğinden
-  joinsiz). "Tümü" için makul üst sınır 1000. Portal sayfalaması TÜM
-  sıralı liste (shipped + aktif birlikte) üzerinden çalışır; "Yayında"
-  bölümü sayfa içi gruplama olarak kalır — mevcut UX korunur. Yeni
-  bileşen: PaginationFooter (sayfa boyutu seçici FilterTabs + Önceki/
-  Sonraki sayfa linkleri; per değişince page sıfırlanır). Batch 1
-  portal, Batch 2 dashboard, Batch 3 oyladıklarım, Batch 4 Vitest +
-  kritik pure fonksiyon testleri + GitHub Actions CI.
+- ✅ **Sprint 39 — Server-side Pagination + Test/CI başlangıcı (PM raporu
+  §8.3)** (2026-09-04, commit 46f65b5 + c72bbdc + b3e35bc + dea5bc1;
+  npm test 17/17 + build ✓): Portal limit(100), dashboard limit(200)
+  ile kırpıyordu — büyüme durumunda kayıp veri. Uygulama: URL ile
+  taşınan `?per=5|25|50|all` (varsayılan 5; "all" üst sınır 1000) +
+  `?page=N`; sunucuda offset/limit + aynı where koşuluyla ayrı joinsiz
+  count sorgusu (arama koşulu yalnız posts sütunlarına referans verir).
+  lib/pagination.ts parsePagination: üç sayfanın ortak whitelist
+  ayrıştırması (tek kaynak kuralı); PaginationFooter bileşeni: sayfa
+  boyutu seçici (FilterTabs; per değişince page sıfırlanır) + Önceki/
+  Sonraki (sayfa dışına taşıyınca pasif). Portal: sayfalama TÜM sıralı
+  liste (shipped + aktif) üzerinden; "Yayında" sayfa içi gruplama olarak
+  korundu; vektör fallback kararı artık count üzerinden (davranış
+  aynı, OpenRouter maliyeti artmadı). Dashboard: durum filtresi
+  sunucuya taşındı (client filtresi sayfalı listede yanlış olurdu);
+  istatistik/duygu/top-5 agregat sorgusuna alındı (loadPostStats —
+  tablo sayfalansa da kartlar tüm fikirleri yansıtır; eski limit(200)
+  toplamlarından daha doğru); countDashboardPosts + paylaşımlı
+  dashboardPostConditions; filtre sekmeleri per'i korur. Oyladıklarım:
+  oy sorgusuna offset/limit; detay sorgusu sayfadaki id'lerle sınırlı.
+  Test/CI: vitest 3.2.7 (vitest@5 @types/node ^22 istediği için pinned
+  20 kaldı) + vitest.config.ts (@ alias + server-only stub); 17 test:
+  parsePagination, foldTr/buildPostSearch tokenization, statusLabels/
+  summarize, normalizeWidgetOrigin; `npm test` script'i; GitHub
+  Actions ci.yml (push/PR → npm ci → npm test → npm run build; build
+  için Clerk placeholder key — gizli anahtar yok, tüm env okumaları
+  lazy olduğundan DB bağlanmaz).
 
 ### Ertelenen blok (en son — kullanıcının kısıtı)
 
