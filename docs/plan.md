@@ -1069,7 +1069,7 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   actions/checkout + setup-node v4 → v5 (Node 20 deprecation
   annotation'ı kayboldu; beeb9e2).
 
-### Sprint 40 — Comments/Changelog Polish (PM raporu §8.4) (☐ = planlandı)
+### Sprint 40 — Comments/Changelog Polish (PM raporu §8.4) (✅ 2026-09-04)
 
 - ☐ **Keşif ve kapsam onayı:** mevcut yorum bileşenleri, changelog
   sayfaları, email şablonları ve Inngest notify fonksiyonları okunur;
@@ -1101,10 +1101,29 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   memoization ile (anonim aboneler email_deliveries'e yazılamaz);
   unsubscribe `type=changelog` satırı siler. Mail konusu:
   "🎉 Yeni duyuru: {başlık}".
-- ☐ **§7 kalan UI-UX artıkları:** "Follow" tercihinin kullanıcıya
-  görünür olması; status history'nin kullanıcı tarafında görünmesi;
-  widget tema/branding kontrolü.
-- ☐ Her batch: npm run build ✓ → commit → push → kısa test listesi.
+- ☑ **Batch 3b ek — onaylı mail metinleri (2026-09-04, commit
+  70e0858):** mail footer "Bu e-postayı feedl.co duyurularına abone
+  olduğun için alıyorsun." + link "Feedl aboneliğinden çık" (html +
+  text); çıkış sayfası "bağlantı bulunamadı" varyantı
+  "Bu bağlantısı geçersiz veya abonelik zaten kaldırılmış." olarak
+  revize edildi. Eski maillerde eski footer kalır (normal).
+- ☑ **Batch 4 — Fikir takibi / Follow (2026-09-04, commit e41584d):**
+  `POST/DELETE /api/posts/[id]/follow` (auth handler'da; workspace
+  kontrolü; birleşmiş fikir reddi — bildirim akışı hedef fikirde;
+  unique(post_id, user_id) ile idempotent insert); detay sayfasında
+  oy butonunun yanında "Takip Et"/"Takipte" butonu (takip durumu
+  loadPost'ta sorgulanır; sunucu zarfıyla güncellenir). Takipten
+  çıkmak oy/yorumları silmez; otomatik takip davranışı (yazar/oy/
+  yorum) aynen korunur.
+- ☑ **Batch 5 — Durum Geçmişi bölümü (2026-09-04, commit c1b75bd):**
+  fikir detay sayfasında herkese açık `post_status_history` listesi
+  (Sprint 23 verisi): eski→yeni StatusBadge + tarih + varsa admin
+  notu (whitespace-pre-line). Notlar zaten takipçilere bildirim
+  e-postasıyla gittiği için portalda gösterilmesi tutarlı.
+- ☑ Her batch: npm test (17/17) + npm run build ✓ → commit → push →
+  kısa test listesi.
+- **Widget tema/branding kontrolü** Sprint 41'e taşındı (§7'nin
+  tek kalan artığı).
 
 ### Ertelenen blok (en son — kullanıcının kısıtı)
 
