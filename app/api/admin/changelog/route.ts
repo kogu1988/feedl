@@ -16,6 +16,11 @@ import { changelogEntries, changelogPostLinks } from "@/lib/db/schema";
 const createSchema = z.object({
   title: z.string().trim().min(3, "Başlık en az 3 karakter.").max(120),
   body: z.string().trim().min(3, "Gövde en az 3 karakter.").max(5000),
+  // Sprint 40: kapak görseli — http(s) URL, opsiyonel.
+  imageUrl: z
+    .url({ protocol: /^https?$/, error: "Görsel URL'si http(s) olmalı." })
+    .max(2048)
+    .optional(),
   label: z
     .enum(["yeni", "iyileştirme", "düzeltme"], {
       error: "Geçersiz etiket.",
@@ -87,7 +92,7 @@ export async function POST(req: Request) {
         { status: 400 },
       );
     }
-    const { title, body: entryBody, label, postIds } = parsed.data;
+    const { title, body: entryBody, imageUrl, label, postIds } = parsed.data;
 
     // Gövde değişken adı çakışması: insert değerlerini ayrı kur.
     const [created] = await getDb()
@@ -96,6 +101,7 @@ export async function POST(req: Request) {
         workspaceId: await getWorkspaceId(),
         title,
         body: entryBody,
+        imageUrl: imageUrl ?? null,
         label: label ?? null,
         createdBy: adminId,
       })

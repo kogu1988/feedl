@@ -42,6 +42,7 @@ export function ChangelogAdmin({
 }) {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
   const [label, setLabel] = useState("");
   const [selectedPosts, setSelectedPosts] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
@@ -77,6 +78,7 @@ export function ChangelogAdmin({
         body: JSON.stringify({
           title: title.trim(),
           body: body.trim(),
+          ...(imageUrl.trim() ? { imageUrl: imageUrl.trim() } : {}),
           ...(label ? { label } : {}),
           ...(selectedPosts.size > 0 ? { postIds: [...selectedPosts] } : {}),
         }),
@@ -88,6 +90,7 @@ export function ChangelogAdmin({
       }
       setTitle("");
       setBody("");
+      setImageUrl("");
       setLabel("");
       setSelectedPosts(new Set());
       setSuccess(true);
@@ -144,6 +147,15 @@ export function ChangelogAdmin({
           maxLength={5000}
           aria-label="Duyuru metni"
         />
+        <p className="text-xs text-muted-foreground">Markdown destekler.</p>
+        <Input
+          value={imageUrl}
+          onChange={(event) => setImageUrl(event.target.value)}
+          placeholder="Görsel URL'si (opsiyonel)"
+          maxLength={2048}
+          type="url"
+          aria-label="Duyuru görseli URL'si"
+ />
         <div className="flex items-center gap-2">
           <Label htmlFor="changelog-label" className="text-xs text-muted-foreground">
             Etiket

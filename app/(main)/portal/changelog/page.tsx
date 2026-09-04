@@ -2,6 +2,7 @@ import Link from "next/link";
 import { desc, eq, inArray } from "drizzle-orm";
 import { ArrowLeftIcon, MegaphoneIcon } from "lucide-react";
 
+import { MarkdownContent } from "@/components/custom/markdown-content";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
@@ -83,13 +84,24 @@ export default async function ChangelogPage() {
                   ) : null}
                 </div>
                 <h2 className="text-lg font-semibold leading-snug">
-                  {entry.title}
+                  <Link
+                    href={`/portal/changelog/${entry.id}`}
+                    className="underline-offset-4 transition-colors hover:text-primary hover:underline"
+                  >
+                    {entry.title}
+                  </Link>
                 </h2>
               </CardHeader>
               <CardContent className="grid gap-4">
-                <p className="whitespace-pre-line text-sm leading-relaxed">
-                  {entry.body}
-                </p>
+                {entry.imageUrl ? (
+                  <img
+                    src={entry.imageUrl}
+                    alt=""
+                    className="max-h-80 w-full rounded-md border object-cover"
+                    loading="lazy"
+                  />
+                ) : null}
+                <MarkdownContent content={entry.body} />
                 {entry.linkedPosts.length > 0 ? (
                   <div className="grid gap-1.5 rounded-md border bg-muted/40 p-3">
                     <span className="text-xs font-medium text-muted-foreground">
@@ -124,6 +136,7 @@ async function loadEntries() {
       id: changelogEntries.id,
       title: changelogEntries.title,
       body: changelogEntries.body,
+      imageUrl: changelogEntries.imageUrl,
       label: changelogEntries.label,
       publishedAt: changelogEntries.publishedAt,
     })

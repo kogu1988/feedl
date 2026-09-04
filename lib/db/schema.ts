@@ -380,6 +380,8 @@ export const changelogEntries = pgTable("changelog_entries", {
     .references(() => workspaces.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   body: text("body").notNull(),
+  // imageUrl: duyuru kapak görseli (opsiyonel — Sprint 40).
+  imageUrl: text("image_url"),
   // label: örn. "yeni", "iyileştirme", "düzeltme" — filtreleme için.
   label: text("label"),
   publishedAt: timestamp("published_at", { withTimezone: true })

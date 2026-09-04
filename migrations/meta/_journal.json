@@ -155,6 +155,13 @@
       "when": 1788481200000,
       "tag": "0021_widget_origins",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1788567600000,
+      "tag": "0022_changelog_image",
+      "breakpoints": true
     }
   ]
 }

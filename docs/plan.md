@@ -1075,10 +1075,14 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   sayfaları, email şablonları ve Inngest notify fonksiyonları okunur;
   PM raporu §3 "İyi olur" + §7 UI-UX artıkları ile karşılaştırılıp
   öneri listesi kullanıcıya sunulur (isimlendirme onayı dahil).
-- ☐ **Comments polish:** markdown render, @mention, private end-user
-  yorumları, yorum özeti (AI) — kapsam onayına göre batch'lere bölünür.
-- ☐ **Changelog polish:** detay sayfasında markdown render + görsel,
-  custom label, changelog aboneliği (subscription) — kapsam onayına göre.
+- ☑ **Batch 1 — Comments markdown (2026-09-04, commit 8a46565):**
+  react-markdown@10 + remark-gfm@4 + remark-breaks@4; ortak
+  MarkdownContent bileşeni (ham HTML render edilmez — XSS güvenli;
+  dış linkler yeni sekmede; gfm tablo/liste; tek satır sonu = satır
+  sonu). CommentCard gövdesi markdown render eder.
+- ☐ **Batch 2 — Changelog markdown + görsel + detay sayfası:**
+  `/portal/changelog/[id]`; `imageUrl` kolonu (elle migration);
+  admin formuna görsel URL alanı + "Markdown destekler." ipucu.
 - ☐ **§7 kalan UI-UX artıkları:** "Follow" tercihinin kullanıcıya
   görünür olması; status history'nin kullanıcı tarafında görünmesi;
   widget tema/branding kontrolü.
