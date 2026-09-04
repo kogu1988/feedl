@@ -1200,6 +1200,49 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   `show_on_portal` alanlar "Detaylar" bölümünde okunur.
 - ☑ Her batch: npm test (17/17) + npm run build ✓ → commit → push.
 
+### Sprint 43 — Full API/Webhook Event Matrix (PM raporu §9 madde 6) (✅ 2026-09-04)
+
+> PM raporu §4'teki webhook eksiği kapatılır: "Webhook olayları dar:
+> deleted, vote.created/deleted, changelog yok → event matrix eksiği".
+> Entegrasyonu (maddde 7'sındaki ilk canlı connector) mümkün kılan adım.
+
+- ☑ **Batch 1 — Olay yayınları (commit e85307d):** `lib/validations/events.ts`'e
+  `voteCreatedEventSchema`, `voteDeletedEventSchema`,
+  `commentDeletedEventSchema` eklendi. Oy/yorum silme nihai yollara
+  `inngest.send` best-effort yayınlar: `/api/votes` (POST vote/created,
+  DELETE vote/deleted — yalnızca gerçekten eklenen/silinen satır için
+  `onConflictDoNothing().returning().do`), `/api/widget/votes` (aynı,
+  session kullanıcısı ile), `/api/comments/[commentId]` DELETE
+  (`post/comment.deleted`).
+- ☑ **Batch 2 — Matrix + payload zenginleştirme (commit d8d9843):**
+  `lib/webhooks/dispatch.ts` `WEBHOOK_EVENTS` listesi 3 → 7 olay
+  (post.created, post.status_changed, comment.created, comment.deleted,
+  vote.created, vote.deleted, changelog.published; post.deleted yok —
+  fikir silme akışı yok). `inngest/functions.ts` `WEBHOOK_EVENT_MAP` +
+  triggers 3 → 7; teslimat öncesi `hydrateWebhookPayload`
+  (`lib/webhooks/payload.ts`) bağlamı çözer (fikir başlığı, yazar adı,
+  yorum gövdesi, duyuru) — webhook tüketicisi artık kimlik yerine
+  eyleme dönüştürülebilir veri alır. Admin webhook route'u olay listesini
+  `dispatch`'ten alır; webhooks-manager UI'sine yeni olay etiketleri
+  (Yorum silindi, Oy verildi, Oy geri alındı, Duyuru yayınlandı) eklendi.
+- ☑ **Batch 3 — Public API yazma + duyuru okuma (commit d06f6c8):**
+  `POST /api/v1/posts` (Bearer API key; `author.email` zorunlu — yazar
+  `api_` önekli stabil müşteri kullanıcısına upsert edilir, `posts.user_id`
+  NOT NULL; `post/created` event'ı yayınlar) + `GET /api/v1/changelog`
+  (yayınlanmış duyurular). `lib/users/api-user.ts` `upsertApiUser`
+  (e-posta ile bul-ve-update, yoksa api_<uuid> insert).
+- ☑ **Batch 4 — API key write kapsamı (commit e85383f):** Yeni anahtar
+  `scopes: ["read"] | ["read","write"]` (varsayılan read); `POST /api/v1/posts`
+  `write` kapsamı ister (403 yoksa). Admin api-keys route'u `scopes` alır,
+  api-keys-manager UI'sine kapsam seçici (Salt okunur / Okuma + yazma) +
+  listede kapsam rozeti eklendi; dashboard loadApiKeys `scopes` taşır.
+- ☑ Her batch: npm test (17/17) + npm run build ✓ → commit → push.
+- **Kalan (maddde 6'nın tamamlanması için):** `vote.created/deleted` ve
+  `comment.deleted` için public API yazma uçları (şu an yalnızca
+  `POST /api/v1/posts` yazma var); retry/dead-letter — Inngest teslimat
+  retry 3× var, başarısız teslimatlar için kalıcı dead-letter kuyruğu
+  (webhook_delivery_log + yeniden oynatıcı) henüz yok.
+
 ### Ertelenen blok (en son — kullanıcının kısıtı)
 
 - **Resend geçişi:** tek env `RESEND_API_KEY`; kod otomatik geçer
