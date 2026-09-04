@@ -1308,6 +1308,31 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   + custom domain (domain alındığında). Ya da madde 12: Paddle
   billing/plan limitleri.
 
+### Sprint 48a — Workspace Yönetim Paneli + Custom Domain Hazırlığı (PM raporu §9 madde 8) (✅ 2026-09-04)
+
+> Madde 8'in ilk parçası (düşük risk, additive): workspace meta yönetimi.
+> slug subdomain kaynağı olarak salt-okunur; custom domain/brand/logo
+> alanları eklenir. Çoklu tenancy + board modeli (48b) ve erişim
+> politikaları/subdomain routing (48c) sonraki adımlar.
+
+- ☑ **Şema (migration 0029, commit bdba602):** `workspaces`'e
+  `custom_domain` (varchar 200), `brand_color` (varchar 20),
+  `logo_url` (text) kolonları. `lib/db/workspace.ts` / getWorkspaceId
+  değişmedi (tek workspace dönemi).
+- ☑ **API:** `GET/PATCH /api/admin/workspace` — slug salt-okunur
+  (değiştirilemez); name 1-120, customDomain normalize (trailing slash
+  at + küçük harf), brandColor hex regex (#'lı/#'siz kabul → # ekle),
+  logoUrl url. Admin guard 403, workspace scope.
+- ☑ **UI:** `app/(main)/dashboard/settings/page.tsx` (admin guard +
+  DB'den workspace) + `components/custom/workspace-settings.tsx`
+  (ad, slug önizleme `.feedl.app`, custom domain, marka rengi + renk
+  önizleme karesi, logo URL; Kaydet + inline hata). Dashboard üst
+  barına "Ayarlar" butonu.
+- ☑ npm test (17/17) + npm run build ✓ → commit → push.
+- **Sonraki:** 48b — Board modeli (`boards`, `board_statuses`,
+  `board_members`) + `posts.board_id` + merkezi tenant scope (her
+  sorguya boardId kapsamı). En kritik/büyük parça.
+
 ### Ertelenen blok (en son — kullanıcının kısıtı)
 
 - **Domain (feedl.app) alındı (2026-09-04).** Kod tarafı hazır: tüm
