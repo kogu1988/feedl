@@ -1419,6 +1419,26 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
 - **Sonraki:** 48d — Dashboard `?board=` filtre + board'a göre fikir
   yönetimi.
 
+### Sprint 48d — Dashboard Board Filtresi + Board'a Göre Yönetim (PM raporu §9 madde 8) (✅ 2026-09-04)
+
+> 48'in düşük riskli son parçası: admin dashboard'da board filtre.
+> Board'a göre fikir listesi; status/tag/range/sayfalama filtreleri
+> board'ı korur.
+
+- ☑ **Dashboard `?board=` filtre (commit e2ec7b2):** `searchParams.board`
+  okunur, `resolveBoardBySlug(slug, true)` ile çözülür (admin — private
+  board da). `dashboardPostConditions`'a `boardId` koşulu; `loadPosts` /
+  `countDashboardPosts` boardId parametresi. Board select UI (Tüm
+  Board'lar + board isimleri; private rozeti). Status/tag/range FilterTabs,
+  SavedViewBar currentParams, PaginationFooter `board` paramını korur
+  (filtre çaprazında board kaybolmaz).
+- ☑ npm test (17/17) + npm run build ✓ → commit → push.
+- **48 bloğu tamamlandı:** Workspace UI + board modeli + board erişimi
+  (portal `?board=`) + role matrix + dashboard board filtresi. Subdomain
+  routing (`acme.feedl.app`) Vercel wildcard DNS/SSL gerektirdiği için
+  ayrı sprint olarak (kod kısmı middleware + host çözümleyici) tehir
+  edildi.
+
 ### Ertelenen blok (en son — kullanıcının kısıtı)
 
 - **Domain (feedl.app) alındı (2026-09-04).** Kod tarafı hazır: tüm
