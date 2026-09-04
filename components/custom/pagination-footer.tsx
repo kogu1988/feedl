@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { FilterTabs } from "@/components/custom/filter-tabs";
 
-// Sprint 39: sunucuda render edilen sayfalama alt bilgisi. Sayfa boyutu
+// Sprint 39: sunucuda render edilen sayfalama alt bilgisi. Kayıt adedi
 // seçici FilterTabs ile taşınır — per değişince page sıfırlanır (extraParams
 // içinde page bilinçli olarak yok). Önceki/Sonraki düz Link'tir; Next
 // varsayılanı yeni sayfanın başına kaydırır. "Tümü" seçiliyken veya tek
@@ -41,7 +41,7 @@ export function PaginationFooter({
       aria-label="Sayfalama"
     >
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-sm text-muted-foreground">Sayfa boyutu</span>
+        <span className="text-sm text-muted-foreground">Kayıt adedi</span>
         <FilterTabs
           paramName="per"
           basePath={basePath}
