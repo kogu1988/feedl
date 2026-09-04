@@ -1277,6 +1277,32 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   + custom domain (domain alındığında; subdomain yönlendirme P0.1 veri
   temeliyle kuruldu).
 
+### Sprint 45 — Gelişmiş Revenue/Reporting (PM raporu §9 madde 9) (✅ 2026-09-04)
+
+> Farklılaşma katmanı: PM raporu §4 "Revenue score genel değil" notunu
+> genişletir — şirket/fırsat verisinden segment MRR, yenileme/churn riski ve
+> dealbreaker (gelir etkisi en yüksek fikirler) raporu üretilir.
+
+- ☑ **Şema (migration 0028, commit 2fc8e24):** `companies`'e `status`
+  (active | at_risk | churned, varsayılan active), `renewal_date`,
+  `segment` kolonları. Companies API (POST/PATCH) + manager form'una
+  Durum seçici (Aktif/Risk altında/Kaybedildi), Yenileme tarihi (date),
+  Segment (input) alanları eklendi; liste satırında durum rozeti +
+  segment + yenileme tarihi görünür.
+- ☑ **Rapor (commit ab5d003):** `lib/db/revenue-report.ts`
+  `loadRevenueReport()` — MRR özeti (toplam/aktif/risk/kaybedilen),
+  segment kırılımı, 90 gün içinde yenileme riski (renewalDate - bugün),
+  churn adayları (status=churned VEYA lost fırsat), dealbreaker fikirler
+  (şirket MRR toplamı + açık fırsat değeri ile en yüksek gelir
+  maruziyeti). `app/(main)/dashboard/revenue/page.tsx` +
+  `components/custom/revenue-report.tsx` (sunum bileşeni — MRR kartları,
+  segment listesi, risk/churn listeleri, dealbreaker top-10; TRY
+  para birimi). Dashboard üst barına "Gelir Raporu" butonu.
+- ☑ npm test (17/17) + npm run build ✓ → commit → push.
+- **Sonraki (madde 8):** Workspace/board UI + private access + role matrix
+  + custom domain (domain alındığında). Ya da madde 12: Paddle
+  billing/plan limitleri.
+
 ### Ertelenen blok (en son — kullanıcının kısıtı)
 
 - **Resend geçişi:** tek env `RESEND_API_KEY`; kod otomatik geçer
