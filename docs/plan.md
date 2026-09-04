@@ -1064,7 +1064,25 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   summarize, normalizeWidgetOrigin; `npm test` script'i; GitHub
   Actions ci.yml (push/PR → npm ci → npm test → npm run build; build
   için Clerk placeholder key — gizli anahtar yok, tüm env okumaları
-  lazy olduğundan DB bağlanmaz).
+  lazy olduğundan DB bağlanmaz). Etiket düzeltmesi: PaginationFooter
+  "Sayfa boyutu" → "Kayıt adedi" (kullanıcı tercihi; beeb9e2). CI
+  actions/checkout + setup-node v4 → v5 (Node 20 deprecation
+  annotation'ı kayboldu; beeb9e2).
+
+### Sprint 40 — Comments/Changelog Polish (PM raporu §8.4) (☐ = planlandı)
+
+- ☐ **Keşif ve kapsam onayı:** mevcut yorum bileşenleri, changelog
+  sayfaları, email şablonları ve Inngest notify fonksiyonları okunur;
+  PM raporu §3 "İyi olur" + §7 UI-UX artıkları ile karşılaştırılıp
+  öneri listesi kullanıcıya sunulur (isimlendirme onayı dahil).
+- ☐ **Comments polish:** markdown render, @mention, private end-user
+  yorumları, yorum özeti (AI) — kapsam onayına göre batch'lere bölünür.
+- ☐ **Changelog polish:** detay sayfasında markdown render + görsel,
+  custom label, changelog aboneliği (subscription) — kapsam onayına göre.
+- ☐ **§7 kalan UI-UX artıkları:** "Follow" tercihinin kullanıcıya
+  görünür olması; status history'nin kullanıcı tarafında görünmesi;
+  widget tema/branding kontrolü.
+- ☐ Her batch: npm run build ✓ → commit → push → kısa test listesi.
 
 ### Ertelenen blok (en son — kullanıcının kısıtı)
 
