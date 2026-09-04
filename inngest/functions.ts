@@ -334,7 +334,7 @@ export const notifyShipped = inngest.createFunction(
     // Provider (Resend/Ethereal) env'e göre lib/email/send.ts'te seçilir.
     const result = await step.run("send-status-emails", async () => {
       const appUrl =
-        process.env.NEXT_PUBLIC_APP_URL ?? "https://getfeedl.vercel.app";
+        process.env.NEXT_PUBLIC_APP_URL ?? "https://feedl.app";
       const messages = recipients.recipients.map((recipient) => {
         const unsubscribeUrl = `${appUrl}/api/unsubscribe?token=${recipient.token}&type=status`;
         const message = isShipped
@@ -537,7 +537,7 @@ export const notifyCommentCreated = inngest.createFunction(
       return {
         recipients,
         ideaTitle: post.title,
-        ideaUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? "https://getfeedl.vercel.app"}/portal/${post.id}`,
+        ideaUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? "https://feedl.app"}/portal/${post.id}`,
         commenterName: commenter?.name ?? null,
         commentBody: comment.body,
         isReply,
@@ -550,7 +550,7 @@ export const notifyCommentCreated = inngest.createFunction(
 
     const result = await step.run("send-comment-emails", async () => {
       const appUrl =
-        process.env.NEXT_PUBLIC_APP_URL ?? "https://getfeedl.vercel.app";
+        process.env.NEXT_PUBLIC_APP_URL ?? "https://feedl.app";
       const messages = context.recipients.map((recipient) => {
         const message = renderCommentEmail({
           ideaTitle: context.ideaTitle,
@@ -719,7 +719,7 @@ export const notifyChangelog = inngest.createFunction(
     // Provider (Resend/Ethereal) env'e göre lib/email/send.ts'te seçilir.
     const result = await step.run("send-changelog-emails", async () => {
       const appUrl =
-        process.env.NEXT_PUBLIC_APP_URL ?? "https://getfeedl.vercel.app";
+        process.env.NEXT_PUBLIC_APP_URL ?? "https://feedl.app";
       const entryUrl = `${appUrl}/portal/changelog/${payload.entryId}`;
       const messages = recipients.map((recipient) => {
         const message = renderChangelogEmail({

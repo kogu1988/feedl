@@ -4,7 +4,7 @@
 // katmanında (lib/email/send.ts) tutulur; şablon yalnızca içerik üretir.
 import { escapeHtml } from "./html";
 
-const PORTAL_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://getfeedl.vercel.app/portal";
+const PORTAL_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://feedl.app/portal";
 
 export interface AdminNewPostEmailInput {
   title: string;

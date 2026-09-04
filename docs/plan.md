@@ -251,10 +251,11 @@
 > - Portal: "Yayında" bölümü (changelog mantığı, en son yayınlanan üstte,
 >   oy butonu yok); aktif fikirler ayrı listede kaldı.
 > - Portal linki `NEXT_PUBLIC_APP_URL` ile override edilebilir (varsayılan
->   https://getfeedl.vercel.app/portal). Gönderen: Resend'de feedl.co
+>   https://feedl.app/portal). Gönderen: Resend'de feedl.app
 >   doğrulanana kadar `onboarding@resend.dev` (yalnızca hesap sahibine
->   teslim eder); `EMAIL_FROM` ile override edilebilir. Resend'e geçiş için
->   tek adım: Vercel + .env.local'a RESEND_API_KEY girmek.
+>   teslim eder); `EMAIL_FROM` ile override edilebilir (feedl <no-reply@feedl.app>).
+>   Resend'e geçiş için tek adım: Vercel + .env.local'a RESEND_API_KEY girmek
+>   + feedl.app domainini doğrulamak (SPF/DKIM/DMARC).
 
 **Hedef:** Admin durumu "shipped" yaptığında, o isteği açan ve oy veren herkese Resend (production) veya Ethereal.email (test) ile mail gitmeli.
 
@@ -637,13 +638,17 @@ Yapılacaklar:
 ## 🗺️ Faz 2 Yol Haritası (2026-09-01 güncellemesi)
 
 Canny araştırmasına (docs/deepseek.txt, docs/oxalpha.txt) dayalı plan;
-**domain gerektiren faz ertelendi** (henüz domain alınmayacak):
+**domain 2026-09-04'te alındı (feedl.app)** — domain gerektiren faz aktifleşti:
 
-- **Ertelendi (domain alımına kadar):** Domain bağlama (feedl.co + wildcard
-  DNS), Organizations / çoklu müşteri + subdomain (`acme.feedl.co`), Widget
-  SDK (`widget.js` + iframe overlay + Secure Identify — Canny modeli:
-  SDK identify + data-canny-link yakalama, developers.canny.io'dan
-  doğrulandı). Domain alındığında bu sprintler aktifleşecek.
+- **Domain bilgisi (feedl.app):** Alanadı alındı; canlı URL `https://feedl.app`,
+  kurumsal mail `hi@feedl.app` (Squarespace mail yönlendirme → kişisel adrese
+  iletilir), mail gönderimi Resend ile bağlanacak (SPF/DKIM/DMARC DNS + Vercel
+  domain + SSL gerekir — kod tarafı fallback'ler ve email from adresleri
+  feedl.app / no-reply@feedl.app olarak güncellendi).
+- **Artık aktifleşen sprintler:** Domain bağlama (feedl.app + wildcard
+  DNS), Organizations / çoklu müşteri + subdomain (`acme.feedl.app`),
+  Widget SDK, custom domain + markalama, Resend geçişi. DNS/Vercel/Resend
+  wiring'i kod dışı; ilgili sprint'lerde env ve kod değişiklikleri yapılır.
   (Faz 3 güncellemesi: Widget custom domain gerektirmediğinden Sprint
   32'ye alındı; Organizations/subdomain + domain Sprint 37'de.)
 - **Sıradaki (özellik + arayüz/tasarım odağı):**
@@ -1305,14 +1310,19 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
 
 ### Ertelenen blok (en son — kullanıcının kısıtı)
 
-- **Resend geçişi:** tek env `RESEND_API_KEY`; kod otomatik geçer
-  (`lib/email/send.ts`). Domain doğrulaması gerektiğinden domain ile
-  birlikte yapılır.
-- **Domain gerektirenler:** Workspace/Organizations UI + çoklu tenancy
-  (P0.1'in veri temeli Sprint 37 ile kuruldu; Organizations UI,
+- **Domain (feedl.app) alındı (2026-09-04).** Kod tarafı hazır: tüm
+  URL fallback'leri + email footer + widget origin/CORS `feedl.app`'e ve
+  `no-reply@feedl.app`'e güncellendi; `NEXT_PUBLIC_APP_URL=https://feedl.app`
+  Vercel'e eklenmeli. Kalan işler artık DNS/Vercel/Resend wiring'i:
+  Vercel'e feedl.app bağlama + SSL, Resend'de feedl.app domain
+  doğrulaması (SPF/DKIM/DMARC) + `RESEND_API_KEY` + `EMAIL_FROM`,
+  `hi@feedl.app` yönlendirme (Squarespace, hazır).
+- **Hâlâ erteleme gerekli değil ama kod dışı:** Workspace/Organizations UI
+  + çoklu tenancy (P0.1 veri temeli Sprint 37'de kuruldu; Organizations UI,
   subdomain yönlendirme, board erişim politikaları (P0.2),
   custom domain + markalama, üçüncü taraf entegrasyonları (P4.3:
-  Slack/Intercom/Jira...), billing/plan limitleri hâlâ ertelenmiş.
+  Slack/Intercom/Jira...), billing/plan limitleri — bu sprint'ler artık
+  aktifleşebilir, ilgili sprint'te kod + env değişikliği yapılır.
 
 ### ⚠️ Mimari risk notu (P0.1 ertelenmesi hakkında)
 

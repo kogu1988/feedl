@@ -4,7 +4,7 @@
 // alıcı listesini ayrı tutar — şablon yalnızca içerik üretir.
 import { escapeHtml } from "./html";
 
-const PORTAL_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://getfeedl.vercel.app/portal";
+const PORTAL_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://feedl.app/portal";
 
 export interface ShippedEmailInput {
   title: string;

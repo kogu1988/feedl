@@ -11,7 +11,7 @@ import { getWorkspaceId } from "@/lib/db/workspace";
 // NEXT_PUBLIC_APP_URL setliyse o da self kabul edilir (custom domain'e
 // geçişte tek env güncellemesi yeter kalır).
 function getSelfOrigins(): string[] {
-  const self = new Set<string>(["https://getfeedl.vercel.app"]);
+  const self = new Set<string>(["https://feedl.app"]);
   const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
   if (appUrl) self.add(appUrl.replace(/\/$/, ""));
   return [...self];

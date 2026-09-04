@@ -29,7 +29,7 @@ export default async function WidgetAdminPage() {
   // Snippet, ziyaret edilen adresi otomatik izler (domain değişirse güncel kalır).
   const headerList = await headers();
   const host =
-    headerList.get("x-forwarded-host") ?? headerList.get("host") ?? "getfeedl.vercel.app";
+    headerList.get("x-forwarded-host") ?? headerList.get("host") ?? "feedl.app";
   const proto = headerList.get("x-forwarded-proto") ?? "https";
   const baseUrl = `${proto}://${host}`;
 

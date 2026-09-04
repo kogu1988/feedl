@@ -158,7 +158,7 @@ export type NewUser = typeof users.$inferInsert;
 export const workspaces = pgTable("workspaces", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
-  // slug: gelecekte subdomain kaynağı ({slug}.feedl.co); şimdilik yalnızca
+  // slug: gelecekte subdomain kaynağı ({slug}.feedl.app); şimdilik yalnızca
   // seed satırını belirleyici yapmak için kullanılır.
   slug: varchar("slug", { length: 63 }).notNull().unique(),
   createdAt: timestamp("created_at", { withTimezone: true })

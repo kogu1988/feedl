@@ -1,13 +1,13 @@
 ---
 name: feedl
-description: feedl (feedl.co) development guide - AI feedback platform (Canny clone) on Next.js 15 + Clerk + Neon/Drizzle + Inngest + OpenRouter (LLM + embeddings), LIVE at getfeedl.vercel.app. Use when continuing development in this repo it locates the source-of-truth docs in docs/ defines the sprint workflow and conventions and lists hard-won pitfalls (OpenRouter free-model quirks pgvector 2000-dim cap Clerk v7 split exports neon-http CTE pattern widget iframe/JWT origin rules Windows file-tool quirks).
+description: feedl (feedl.app) development guide - AI feedback platform (Canny clone) on Next.js 15 + Clerk + Neon/Drizzle + Inngest + OpenRouter (LLM + embeddings), LIVE at feedl.app. Use when continuing development in this repo it locates the source-of-truth docs in docs/ defines the sprint workflow and conventions and lists hard-won pitfalls (OpenRouter free-model quirks pgvector 2000-dim cap Clerk v7 split exports neon-http CTE pattern widget iframe/JWT origin rules Windows file-tool quirks).
 ---
 
 # feedl - Project Development Guide
 
-feedl (domain feedl.co is PLANNED, not bought - do not wire domains) is an
-AI-supported customer feedback platform - a Canny clone MVP built solo. It is
-LIVE at https://getfeedl.vercel.app (Vercel, project "feedl", team
+feedl (domain feedl.app is OWNED; wire it in Vercel + Resend) is an
+AI-supported customer feedback platform - a Canny clone built solo. It is
+LIVE at https://feedl.app (Vercel, project "feedl", team
 ogukis-vercel-projects); pushing to main deploys to production. This skill
 encodes everything learned so far so future sessions do not repeat mistakes.
 
@@ -387,8 +387,12 @@ docs/                                                 planning docs (source of t
 
 **Position (2026-09-04):** All parity sprints 20-34 are ✅ in
 docs/plan.md, user-verified in production (incl. Sprint 31 —
-opportunities + revenue scoring, closing commit adfbfe1). Remaining
-parity work is domain-bound, deferred until a domain is bought:
-P0.1 Workspace/Organization + Board model, P0.2 board access /
-private comments, P4.3 third-party integrations, billing/plans,
-custom domain + branding, Resend migration.
+opportunities + revenue scoring, closing commit adfbfe1). Sprint 43-45
+(madde 6/7/9) closed: full API/webhook event matrix, dead-letter,
+inbound feedback connector, revenue reporting. Domain feedl.app is
+OWNED (buyer-confirmed 2026-09-04; LIVE at https://feedl.app, mail
+hi@feedl.app forwarded via Squarespace). Remaining parity work that
+was domain-bound is now actionable but needs DNS/Vercel/Resend wiring
+outside code: P0.1 Workspace/Organization + Board model, P0.2 board
+access / private comments, P4.3 third-party integrations,
+billing/plans, custom domain + branding, Resend migration.

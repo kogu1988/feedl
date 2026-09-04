@@ -3,8 +3,8 @@
  *
  * Kullanım (müşteri sitesi):
  *   <script
- *     src="https://getfeedl.vercel.app/widget.js"
- *     data-feedl-url="https://getfeedl.vercel.app"
+ *     src="https://feedl.app/widget.js"
+ *     data-feedl-url="https://feedl.app"
  *     data-token="<1 saatlik HS256 widget JWT — opsiyonel>"
  *     data-button-text="Geri bildirim"
  *     data-accent="#7f1d1d"

@@ -11,8 +11,8 @@ import { Resend } from "resend";
 const ETHEREAL_SMTP_HOST = "smtp.ethereal.email";
 const ETHEREAL_SMTP_PORT = 587;
 
-// Resend'de doğrulanmış domain olana kadar paylaşılan test göndericisi;
-// EMAIL_FROM ile override edilebilir (domain bağlandıktan sonra "feedl <no-reply@feedl.co>").
+// Resend'de feedl.app domaini doğrulanana kadar test göndericisi;
+// EMAIL_FROM ile override edilebilir (feedl <no-reply@feedl.app>).
 const DEFAULT_FROM = "feedl <onboarding@resend.dev>";
 
 export interface EmailMessage {
@@ -96,7 +96,7 @@ async function sendWithEthereal(
   const results = await Promise.allSettled(
     messages.map(async (message) => {
       const info = await transporter.sendMail({
-        from: process.env.EMAIL_FROM ?? "feedl <no-reply@feedl.co>",
+        from: process.env.EMAIL_FROM ?? "feedl <no-reply@feedl.app>",
         to: message.to,
         subject: message.subject,
         html: message.html,
