@@ -1125,6 +1125,31 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
 - **Widget tema/branding kontrolü** Sprint 41'e taşındı (§7'nin
   tek kalan artığı).
 
+### Sprint 41 — Widget Tema/Branding (PM raporu §7 artığı) (✅ 2026-09-04)
+
+- **Kapsam (kullanıcı onaylı):** embed script'e `data-accent` (launcher
+  arka plan rengi, yalnızca hex; yazı rengi WCAG kontrastına göre
+  otomatik beyaz/siyah — örn. mercan gibi açık renklerde siyah) ve
+  `data-theme` (light | dark | auto, **varsayılan light** — kullanıcı
+  tercihiyle mevcut gömülüler etkilenmez) attr'ları.
+- ☑ **`public/widget.js`:** hex doğrulama (3/4/6/8 hane), luminance
+  hesabıyla launcher yazı rengi, launcher stili inline (CSS'ten sabit
+  renk kaldırıldı); iframe src'e `?theme=` parametresi (light'ta
+  eklenmez); panel + kapat butonu çözümlenen temaya göre renklenir
+  (auto modda matchMedia ile canlı izlenir).
+- ☑ **`app/widget/page.tsx`:** `?theme=` parametresi doğrulanır
+  (whitelist), dark/auto'da hydration öncesi inline script `html`'e
+  `.dark` class'ı ekler (auto: prefers-color-scheme change listener);
+  arama formu ve "aramayı temizle" linki theme parametresini korur.
+- ☑ **`components/custom/widget-setup.tsx`:** yeni "Görünüm" bölümü
+  (renk seçici + Tema: Açık/Koyu/Sistem select); snippet canlı güncellenir,
+  non-default değerler `data-accent`/`data-theme` olarak yazılır;
+  adımlar yeniden numaralandı (1 jeton, 2 görünüm, 3 snippet).
+- ☑ npm test (17/17) + npm run build ✓ → commit → push.
+- Sonraki: **Sprint 42 = §8.5 Custom fields** (Sprint 21 tek taksonomi
+  kararı korunacak: admin tanımlı özel alanlar olarak daraltılacak,
+  kapsam kullanıcıya onaylatılacak).
+
 ### Ertelenen blok (en son — kullanıcının kısıtı)
 
 - **Resend geçişi:** tek env `RESEND_API_KEY`; kod otomatik geçer

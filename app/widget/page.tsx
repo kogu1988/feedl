@@ -17,15 +17,25 @@ import { getWidgetSession } from "@/lib/widget/jwt";
 // içi. (main) layout'unu KULLANMAZ — root layout bare html/body verir, site
 // üst barı iframe'e sızmaz. Kimlik Clerk değil widget çerezinden gelir;
 // çerez yoksa liste salt-okunur izlenir.
+// Sprint 41: embed script'ten gelen ?theme=light|dark|auto parametresi html
+// elementine .dark class'ı olarak uygulanır (varsayılan light).
 export const dynamic = "force-dynamic";
+
+const WIDGET_THEMES = ["light", "dark", "auto"] as const;
+type WidgetTheme = (typeof WIDGET_THEMES)[number];
 
 export default async function WidgetPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; theme?: string }>;
 }) {
-  const { q: rawQ } = await searchParams;
+  const { q: rawQ, theme: rawTheme } = await searchParams;
   const q = (rawQ ?? "").trim().slice(0, 100);
+  const theme: WidgetTheme = WIDGET_THEMES.includes(
+    rawTheme as WidgetTheme,
+  )
+    ? (rawTheme as WidgetTheme)
+    : "light";
   const search = buildPostSearch(q);
 
   const session = await getWidgetSession();
@@ -89,6 +99,18 @@ export default async function WidgetPage({
 
   return (
     <main className="mx-auto w-full max-w-md p-4">
+      {theme !== "light" ? (
+        <script
+          // Hydration'dan önce çalışır; auto modda işletim sistemi tercihini
+          // izler ve değişiklikte class'ı günceller.
+          dangerouslySetInnerHTML={{
+            __html:
+              theme === "dark"
+                ? 'document.documentElement.classList.add("dark");'
+                : '(function(){var el=document.documentElement;var mq=window.matchMedia("(prefers-color-scheme: dark)");function a(v){el.classList.toggle("dark",v)}a(mq.matches);if(mq.addEventListener)mq.addEventListener("change",function(e){a(e.matches)});else if(mq.addListener)mq.addListener(function(e){a(e.matches)})})();',
+          }}
+        />
+      ) : null}
       <div className="flex items-center justify-between gap-2">
         <h1 className="text-base font-bold tracking-tight">Geri Bildirim</h1>
         <Link
@@ -102,6 +124,9 @@ export default async function WidgetPage({
       </div>
 
       <form action="/widget" method="get" className="mt-3 flex gap-2">
+        {theme !== "light" ? (
+          <input type="hidden" name="theme" value={theme} />
+        ) : null}
         <Input
           type="search"
           name="q"
@@ -135,7 +160,7 @@ export default async function WidgetPage({
           &quot;{q}&quot; için {rows.length} sonuç
           {" · "}
           <Link
-            href="/widget"
+            href={theme === "light" ? "/widget" : `/widget?theme=${theme}`}
             className="underline underline-offset-2 hover:text-foreground"
           >
             aramayı temizle

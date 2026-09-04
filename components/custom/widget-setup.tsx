@@ -9,12 +9,17 @@ import { Input } from "@/components/ui/input";
 // Sprint 32: dashboard/widget sayfasının etkileşimli bölümü — test jetonu
 // üretir (POST /api/admin/widget-token) ve embed snippet'ini jetonla
 // doldurur. Üretimde jetonu müşterinin kendi backend'i imalar; bu form
-// MVP/test amaçlıdır.
+// MVP/test amaçlıdır. Sprint 41: vurgu rengi + tema seçimi snippet'e
+// data-accent / data-theme olarak yansır (varsayılanlar snippet'e yazılmaz).
+const ACCENT_DEFAULT = "#111827";
+
 export function WidgetSetup({ baseUrl }: { baseUrl: string }) {
   const [sub, setSub] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [token, setToken] = useState<string | null>(null);
+  const [accent, setAccent] = useState(ACCENT_DEFAULT);
+  const [theme, setTheme] = useState<"light" | "dark" | "auto">("light");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<"snippet" | null>(null);
@@ -25,6 +30,10 @@ export function WidgetSetup({ baseUrl }: { baseUrl: string }) {
     `  data-feedl-url="${baseUrl}"`,
     ...(token ? [`  data-token="${token}"`] : []),
     `  data-button-text="Geri bildirim"`,
+    ...(accent.toLowerCase() !== ACCENT_DEFAULT
+      ? [`  data-accent="${accent.toLowerCase()}"`]
+      : []),
+    ...(theme !== "light" ? [`  data-theme="${theme}"`] : []),
     `></script>`,
   ].join("\n");
 
@@ -124,7 +133,42 @@ export function WidgetSetup({ baseUrl }: { baseUrl: string }) {
 
       <div className="grid gap-3">
         <p className="text-sm text-muted-foreground">
-          2) Aşağıdaki kodu kendi sitenizin HTML&apos;ine ekleyin
+          2) Widget görünümünü ayarlayın. Vurgu rengi launcher butonuna
+          uygulanır; yazı rengi seçtiğiniz rengin parlaklığına göre otomatik
+          belirlenir.
+        </p>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <label className="flex h-8 items-center gap-2 rounded-lg border border-input bg-transparent px-2.5 text-sm">
+            <input
+              type="color"
+              value={accent}
+              onChange={(event) => setAccent(event.target.value)}
+              className="size-5 shrink-0 cursor-pointer rounded border-0 bg-transparent p-0"
+              aria-label="Vurgu rengi"
+            />
+            <span className="text-muted-foreground">Vurgu rengi</span>
+            <code className="ml-auto text-xs uppercase text-muted-foreground">
+              {accent.toUpperCase()}
+            </code>
+          </label>
+          <select
+            value={theme}
+            onChange={(event) =>
+              setTheme(event.target.value as "light" | "dark" | "auto")
+            }
+            aria-label="Tema"
+            className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm"
+          >
+            <option value="light">Tema: Açık</option>
+            <option value="dark">Tema: Koyu</option>
+            <option value="auto">Tema: Sistem</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="grid gap-3">
+        <p className="text-sm text-muted-foreground">
+          3) Aşağıdaki kodu kendi sitenizin HTML&apos;ine ekleyin
           {token
             ? " — jeton gömülü, ziyaretçi kimliğiyle fikir gönderebilir ve oy verebilir."
             : " — jetonsuz widget salt-okunur liste olarak açılır."}

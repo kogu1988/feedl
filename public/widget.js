@@ -7,7 +7,14 @@
  *     data-feedl-url="https://getfeedl.vercel.app"
  *     data-token="<1 saatlik HS256 widget JWT — opsiyonel>"
  *     data-button-text="Geri bildirim"
+ *     data-accent="#7f1d1d"
+ *     data-theme="light"
  *   ></script>
+ *
+ * - data-accent: launcher butonunun arka plan rengi (yalnızca hex kabul;
+ *   yazı rengi WCAG kontrastına göre otomatik seçilir). Varsayılan #111827.
+ * - data-theme: panel ve iframe teması — light | dark | auto (varsayılan
+ *   light; auto = ziyaretçinin işletim sistemi tercihini izler).
  *
  * - data-token verilirse açılışta /api/widget/session çağrılır; başarılıysa
  *   iframe içindeki fikir gönderme/oylama aktifleşir (kimlik feedl'in
@@ -61,6 +68,39 @@
   var token = attr("data-token") || globalCfg.token || null;
   var buttonText = attr("data-button-text") || globalCfg.buttonText || "Geri bildirim";
 
+  // Görünüm: data-accent launcher arka plan rengi (yalnızca hex kabul;
+  // geçersizse varsayılana düşer), data-theme panel + iframe teması.
+  var ACCENT_DEFAULT = "#111827";
+  var accentRaw = (attr("data-accent") || globalCfg.accent || "").trim();
+  var accent = /^#([0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(accentRaw)
+    ? accentRaw.toLowerCase()
+    : ACCENT_DEFAULT;
+  var themeRaw = (attr("data-theme") || globalCfg.theme || "light").toLowerCase();
+  var themeParam = themeRaw === "dark" || themeRaw === "auto" ? themeRaw : "light";
+
+  function hexChannels(h) {
+    var v = h.slice(1);
+    if (v.length === 3 || v.length === 4) {
+      v = v.slice(0, 3).split("").map(function (c) { return c + c; }).join("");
+    } else if (v.length === 8) {
+      v = v.slice(0, 6);
+    }
+    var n = parseInt(v, 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
+  // Launcher yazı rengi: beyaz ve siyah kontrast oranlarından büyüğü kazanır
+  // (WCAG göreli parlaklık; örn. mercan gibi açık marka renklerinde siyah).
+  function launcherTextColor(bg) {
+    function lin(c) {
+      c = c / 255;
+      return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    }
+    var c = hexChannels(bg);
+    var l = 0.2126 * lin(c[0]) + 0.7152 * lin(c[1]) + 0.0722 * lin(c[2]);
+    return 1.05 / (l + 0.05) >= (l + 0.05) / 0.05 ? "#ffffff" : "#18181b";
+  }
+  var launcherColor = launcherTextColor(accent);
+
   // Kimlik: müşteri uygulaması ürettiği kısa ömürlü jetonu session
   // ucuna gönderir; feedl httpOnly SameSite=None çerez bırakır. Çağrı
   // parent siteden cross-origin olduğu için CORS başlıkları sunucuda
@@ -81,7 +121,7 @@
   var CSS = [
     ".feedl-widget-launcher{position:fixed;right:20px;bottom:20px;z-index:2147483000;",
     "display:inline-flex;align-items:center;gap:8px;padding:12px 18px;border:0;border-radius:9999px;",
-    "background:#111827;color:#fff;font:600 14px/1 system-ui,-apple-system,sans-serif;cursor:pointer;",
+    "font:600 14px/1 system-ui,-apple-system,sans-serif;cursor:pointer;",
     "box-shadow:0 10px 25px rgba(0,0,0,.2)}",
     ".feedl-widget-launcher:hover{transform:translateY(-1px)}",
     ".feedl-widget-launcher svg{width:18px;height:18px;flex:none}",
@@ -108,6 +148,8 @@
   var launcher = document.createElement("button");
   launcher.type = "button";
   launcher.className = "feedl-widget-launcher";
+  launcher.style.background = accent;
+  launcher.style.color = launcherColor;
   launcher.setAttribute("aria-label", buttonText);
   launcher.innerHTML =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
@@ -131,13 +173,40 @@
   var iframe = document.createElement("iframe");
   iframe.className = "feedl-widget-iframe";
   iframe.title = buttonText;
-  iframe.src = baseUrl + "/widget";
+  iframe.src =
+    baseUrl + "/widget" + (themeParam === "light" ? "" : "?theme=" + themeParam);
 
   panel.appendChild(closeBtn);
   panel.appendChild(iframe);
   overlay.appendChild(panel);
   document.body.appendChild(launcher);
   document.body.appendChild(overlay);
+
+  // Panel ve kapat butonu çözümlenen temaya uyar (auto: işletim sistemi
+  // tercihini izler, tercih değişirse anında güncellenir).
+  var prefersDark = window.matchMedia
+    ? window.matchMedia("(prefers-color-scheme: dark)")
+    : null;
+  function isDarkResolved() {
+    if (themeParam === "dark") return true;
+    if (themeParam === "auto") return Boolean(prefersDark && prefersDark.matches);
+    return false;
+  }
+  function applyChrome() {
+    var dark = isDarkResolved();
+    panel.style.background = dark ? "#1c1c1c" : "#fff";
+    closeBtn.style.background = dark ? "rgba(28,28,28,.9)" : "rgba(255,255,255,.9)";
+    closeBtn.style.color = dark ? "#d4d4d4" : "#374151";
+  }
+  if (themeParam === "auto" && prefersDark) {
+    var onPrefChange = function () { applyChrome(); };
+    if (prefersDark.addEventListener) {
+      prefersDark.addEventListener("change", onPrefChange);
+    } else if (prefersDark.addListener) {
+      prefersDark.addListener(onPrefChange);
+    }
+  }
+  applyChrome();
 
   function openWidget() {
     overlay.hidden = false;
