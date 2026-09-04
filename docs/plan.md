@@ -1080,9 +1080,27 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   MarkdownContent bileşeni (ham HTML render edilmez — XSS güvenli;
   dış linkler yeni sekmede; gfm tablo/liste; tek satır sonu = satır
   sonu). CommentCard gövdesi markdown render eder.
-- ☐ **Batch 2 — Changelog markdown + görsel + detay sayfası:**
-  `/portal/changelog/[id]`; `imageUrl` kolonu (elle migration);
-  admin formuna görsel URL alanı + "Markdown destekler." ipucu.
+- ☑ **Batch 2 — Changelog markdown + görsel + detay sayfası (2026-09-04,
+  commit 57ac99c):** `/portal/changelog/[id]`; `imageUrl` kolonu
+  (elle migration 0022); admin formuna görsel URL alanı + "Markdown
+  destekler." ipucu.
+- ☑ **Batch 3a — Serbest changelog etiketi (2026-09-04, commit
+  16b4a8e + 6b77022):** API `label` şeması enum'dan serbest metne
+  (1-40 kar); admin formu datalist önerili input (yeni/iyileştirme/
+  düzeltme); native dropdown'lar `color-scheme` ile temaya uydu.
+  Not: boş etiket = rozet yok — beklenen davranış (bug değil).
+- ☑ **Batch 3b — Changelog e-posta aboneliği (2026-09-04, commit
+  346fe15 + ed30c74 + 82c3a1c + c4011d8):** `changelog_subscribers`
+  tablosu (migration 0023; workspace+email unique, token'lı
+  unsubscribe); portal kutusu "Yeni duyurular için abone ol."
+  (girişliye e-posta ön-dolu, anonim de abone olabilir);
+  `POST /api/changelog/subscribe` (zod + IP rate limit +
+  onConflictDoNothing ile zaten-abone tespiti); admin duyuru POST'u
+  `changelog/published` event'i yayar (best-effort); Inngest
+  `notify-changelog` abonelere maili gönderir — idempotency step
+  memoization ile (anonim aboneler email_deliveries'e yazılamaz);
+  unsubscribe `type=changelog` satırı siler. Mail konusu:
+  "🎉 Yeni duyuru: {başlık}".
 - ☐ **§7 kalan UI-UX artıkları:** "Follow" tercihinin kullanıcıya
   görünür olması; status history'nin kullanıcı tarafında görünmesi;
   widget tema/branding kontrolü.
