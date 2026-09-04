@@ -13,6 +13,7 @@ import { WebhooksManager } from "@/components/custom/webhooks-manager";
 import { PostsTable } from "@/components/custom/posts-table";
 import { RoadmapPlanner } from "@/components/custom/roadmap-planner";
 import { SavedViewBar } from "@/components/custom/saved-view-bar";
+import { BoardFilterSelect } from "@/components/custom/board-filter-select";
 import {
   Card,
   CardContent,
@@ -343,31 +344,15 @@ export default async function DashboardPage({
           </CardDescription>
           {!loadError && boardItems.length > 1 ? (
             <div className="pt-2">
-              <select
-                value={boardSlug}
-                onChange={(e) => {
-                  const next = e.target.value;
-                  const params = new URLSearchParams();
-                  if (next) params.set("board", next);
-                  if (statusFilter) params.set("status", statusFilter);
-                  if (tagFilter) params.set("tag", tagFilter);
-                  if (per !== "5") params.set("per", per);
-                  window.location.href = `/dashboard?${params.toString()}`;
-                }}
-                aria-label="Board filtresi"
-                className="h-9 max-w-[240px] rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-              >
-                <option value="">Tüm Board&apos;lar</option>
-                {boardItems.map((board) => (
-                  <option
-                    key={board.id}
-                    value={board.slug}
-                    className={board.visibility === "private" ? "text-muted-foreground" : ""}
-                  >
-                    {board.name}
-                  </option>
-                ))}
-              </select>
+              <BoardFilterSelect
+                boards={boardItems.map((board) => ({
+                  id: board.id,
+                  name: board.name,
+                  slug: board.slug,
+                  visibility: board.visibility,
+                }))}
+                boardSlug={boardSlug}
+              />
             </div>
           ) : null}
           {!loadError && rows.length > 0 ? (
