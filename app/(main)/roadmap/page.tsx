@@ -1,4 +1,4 @@
-import { and, countDistinct, desc, eq, isNull } from "drizzle-orm";
+import { and, countDistinct, desc, eq, inArray, isNull, or } from "drizzle-orm";
 import Link from "next/link";
 
 import { CommentCountBadge } from "@/components/custom/comment-count-badge";
@@ -13,7 +13,7 @@ import { StatusBadge } from "@/components/custom/status-badge";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { roadmapStatuses } from "@/lib/post-format";
-import { comments, posts, votes } from "@/lib/db/schema";
+import { boards, comments, posts, votes } from "@/lib/db/schema";
 
 // Herkese açık yol haritası (plan.md Sprint 8): kanban görünümü —
 // Planlandı / Geliştiriliyor / Yayında kolonları, kartlar oy + yorum
@@ -140,6 +140,15 @@ export default async function RoadmapPage() {
 }
 
 async function loadPosts() {
+  // Sprint 48c: roadmap yalnızca public board'a ait (veya board'sız) fikirleri
+  // gösterir — private board fikirleri yönetici ekranı dışında sızmaz.
+  const publicBoardIds = (
+    await getDb()
+      .select({ id: boards.id })
+      .from(boards)
+      .where(eq(boards.visibility, "public"))
+  ).map((row) => row.id);
+
   return getDb()
     .select({
       id: posts.id,
@@ -160,7 +169,14 @@ async function loadPosts() {
     )
     // Sprint 20: birleşmiş fikirler roadmap'te görünmez.
     .where(
-      and(eq(posts.workspaceId, await getWorkspaceId()), isNull(posts.mergedIntoId)),
+      and(
+        eq(posts.workspaceId, await getWorkspaceId()),
+        isNull(posts.mergedIntoId),
+        or(
+          isNull(posts.boardId),
+          inArray(posts.boardId, publicBoardIds),
+        ),
+      ),
     )
     .groupBy(posts.id)
     .orderBy(desc(posts.createdAt))
