@@ -1038,6 +1038,20 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   anahtarsız /api/v1/posts → 401 zarfı doğrulandı; UPSTASH env'leri
   Vercel'e eklendi + redeploy.
 
+- ☐ **Sprint 39 — Server-side Pagination + Test/CI başlangıcı (PM raporu
+  §8.3)** (2026-09-04): Portal limit(100), dashboard limit(200) ile
+  kırpıyordu — büyüme durumunda kayıp veri. Karar (kullanıcı talebi):
+  URL ile taşınan `?per=5|25|50|all` (varsayılan 5) + `?page=N`
+  param'ları; sunucuda offset/limit + aynı where koşuluyla ayrı count
+  sorgusu (arama koşulu yalnızca posts sütunlarına referans verdiğinden
+  joinsiz). "Tümü" için makul üst sınır 1000. Portal sayfalaması TÜM
+  sıralı liste (shipped + aktif birlikte) üzerinden çalışır; "Yayında"
+  bölümü sayfa içi gruplama olarak kalır — mevcut UX korunur. Yeni
+  bileşen: PaginationFooter (sayfa boyutu seçici FilterTabs + Önceki/
+  Sonraki sayfa linkleri; per değişince page sıfırlanır). Batch 1
+  portal, Batch 2 dashboard, Batch 3 oyladıklarım, Batch 4 Vitest +
+  kritik pure fonksiyon testleri + GitHub Actions CI.
+
 ### Ertelenen blok (en son — kullanıcının kısıtı)
 
 - **Resend geçişi:** tek env `RESEND_API_KEY`; kod otomatik geçer

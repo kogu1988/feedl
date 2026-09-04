@@ -7,6 +7,7 @@ import { RocketIcon, SearchIcon, ThumbsUpIcon } from "lucide-react";
 import { CommentCountBadge } from "@/components/custom/comment-count-badge";
 import { NewPostDialog } from "@/components/custom/new-post-dialog";
 import { FilterTabs } from "@/components/custom/filter-tabs";
+import { PaginationFooter } from "@/components/custom/pagination-footer";
 import { KeywordChips } from "@/components/custom/keyword-chips";
 import { SentimentBadge } from "@/components/custom/sentiment-badge";
 import { embedText } from "@/lib/ai/openrouter";
@@ -26,7 +27,7 @@ import { Input } from "@/components/ui/input";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { summarize, trDateFormatter } from "@/lib/post-format";
-import { buildPostSearch } from "@/lib/post-search";
+import { buildPostSearch, type PostSearch } from "@/lib/post-search";
 import { comments, postTags, posts, tags, votes } from "@/lib/db/schema";
 
 // Canlı liste: her istekte DB'den okunur, build zamanında dondurulmaz.
@@ -38,34 +39,59 @@ export const dynamic = "force-dynamic";
 export default async function PortalPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; sort?: string; tag?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    sort?: string;
+    tag?: string;
+    per?: string;
+    page?: string;
+  }>;
 }) {
-  const { q: rawQuery, sort: rawSort, tag: rawTag } = await searchParams;
+  const {
+    q: rawQuery,
+    sort: rawSort,
+    tag: rawTag,
+    per: rawPer,
+    page: rawPage,
+  } = await searchParams;
   const searchQuery = (rawQuery ?? "").trim().slice(0, 100);
   // plan.md Sprint 12: "top" varsayılan (Canny modeli — en çok istenen öne
   // çıkar), "new" en yeni; arama varken alaka sıralaması önceliklidir.
   const sort = rawSort === "new" ? "new" : "top";
   // Sprint 21: ?tag= serbest form etiket filtresi (normalize lowercase).
   const tagFilter = (rawTag ?? "").trim().toLocaleLowerCase("tr").slice(0, 30);
+  // Sprint 39: sayfa boyutu whitelist'i — 5 varsayılan, 25/50/Tümü.
+  // Geçersiz değer sessizce varsayılana döner; "all" makul üst sınıra
+  // (1000) oturur, sayfa param'ı devre dışı kalır.
+  const per =
+    rawPer === "25" || rawPer === "50" || rawPer === "all" ? rawPer : "5";
+  const perSize = per === "all" ? 1000 : Number(per);
+  const rawPageNumber = Number(rawPage);
+  const requestedPage =
+    Number.isInteger(rawPageNumber) && rawPageNumber >= 1 ? rawPageNumber : 1;
 
   let rows: Awaited<ReturnType<typeof loadPosts>> = [];
+  let totalCount = 0;
+  let currentPage = 1;
+  let totalPages = 1;
   let votedIds = new Set<string>();
   let tagsByPost = new Map<string, string[]>();
   let tagOptions: Awaited<ReturnType<typeof loadTagOptions>> = [];
   let loadError = false;
 
   try {
-    rows = await loadPosts(searchQuery, sort, tagFilter);
-
-    // Sprint 27 (maliyet optimizasyonu): vektör katmanı YALNIZCA ilk
-    // arama boş dönerse devreye girer — fold/FTS/trigram sonuç bulduğunda
-    // OpenRouter hiç çağrılmaz. Embedding başarısız olursa sonuçlar boş
-    // kalır, sayfa hata vermez.
-    if (rows.length === 0 && searchQuery) {
+    // Sprint 39: önce toplam sayı — sayfa numarası üst sınıra kelepçelenir,
+    // sonra offset/limit ile tek sayfa çekilir. Arama koşulu count ile
+    // birebir aynı olduğundan count=0 ⇔ liste boş; vektör fallback
+    // kararını count üzerinden veririz (davranış Sprint 27 ile aynı).
+    let embedding: number[] | undefined;
+    totalCount = await countPosts(searchQuery, tagFilter);
+    if (totalCount === 0 && searchQuery) {
       try {
         const vector = await embedText(searchQuery);
         if (vector.length === 2048) {
-          rows = await loadPosts(searchQuery, sort, tagFilter, vector);
+          embedding = vector;
+          totalCount = await countPosts(searchQuery, tagFilter, embedding);
         }
       } catch (embedErr) {
         console.error(
@@ -74,6 +100,18 @@ export default async function PortalPage({
         );
       }
     }
+    totalPages =
+      per === "all" ? 1 : Math.max(1, Math.ceil(totalCount / perSize));
+    currentPage = Math.min(requestedPage, totalPages);
+    rows = await loadPosts(
+      searchQuery,
+      sort,
+      tagFilter,
+      embedding,
+      perSize,
+      (currentPage - 1) * perSize,
+    );
+
     tagOptions = await loadTagOptions();
 
     if (rows.length > 0) {
@@ -389,6 +427,25 @@ export default async function PortalPage({
           </>
         )}
       </div>
+
+      {rows.length > 0 ? (
+        <PaginationFooter
+          basePath="/portal"
+          page={currentPage}
+          totalPages={totalPages}
+          per={per}
+          extraParams={{
+            ...(sort === "new" ? { sort } : {}),
+            ...(tagFilter ? { tag: tagFilter } : {}),
+          }}
+          pageParams={{
+            ...(searchQuery ? { q: searchQuery } : {}),
+            ...(sort === "new" ? { sort } : {}),
+            ...(tagFilter ? { tag: tagFilter } : {}),
+            ...(per !== "5" ? { per } : {}),
+          }}
+        />
+      ) : null}
     </main>
   );
 }
@@ -401,25 +458,12 @@ async function loadPosts(
   searchQuery: string,
   sort: "top" | "new",
   tagFilter: string,
-  queryEmbedding?: number[],
+  queryEmbedding: number[] | undefined,
+  limit: number,
+  offset: number,
 ) {
   const search = buildPostSearch(searchQuery, queryEmbedding);
   const workspaceId = await getWorkspaceId();
-
-  // Sprint 21: etiket filtresi — posts.id, etiket adıyla eşleşen
-  // post_tags bağlantılarıyla sınırlandırılır (normalize lowercase).
-  const tagCondition = tagFilter
-    ? inArray(
-        posts.id,
-        getDb()
-          .select({ postId: postTags.postId })
-          .from(postTags)
-          .innerJoin(tags, eq(tags.id, postTags.tagId))
-          .where(
-            and(eq(tags.name, tagFilter), eq(tags.workspaceId, workspaceId)),
-          ),
-      )
-    : undefined;
 
   const orderBys: SQL[] = [];
   if (search.tokens.length > 0) {
@@ -453,17 +497,58 @@ async function loadPosts(
       and(eq(comments.postId, posts.id), eq(comments.isInternal, false)),
     )
     // Sprint 20: birleşmiş fikirler listede görünmez (kaynak arşivlenir).
-    .where(
-      and(
-        eq(posts.workspaceId, workspaceId),
-        search.condition,
-        isNull(posts.mergedIntoId),
-        tagCondition,
-      ),
-    )
+    // Sprint 39: where koşulu countPosts ile paylaşılır (buildPostConditions).
+    .where(buildPostConditions(workspaceId, search, tagFilter))
     .groupBy(posts.id)
     .orderBy(...orderBys)
-    .limit(100);
+    .limit(limit)
+    .offset(offset);
+}
+
+// Sprint 39: loadPosts ile BİREBİR aynı where koşulu — koşul yalnızca
+// posts sütunlarına (title/description/searchVector/embeddingVector/id)
+// ve alt sorgulara referans verdiğinden joinsiz sayılabilir; vote/comment
+// fan-out'u count'u etkilemez. Tek kaynak kuralı: koşulu burada değiştirir
+// sen count'u da bozmuş olursun — buildPostConditions paylaşımlı.
+function buildPostConditions(
+  workspaceId: string,
+  search: PostSearch,
+  tagFilter: string,
+) {
+  // Sprint 21: etiket filtresi — posts.id, etiket adıyla eşleşen
+  // post_tags bağlantılarıyla sınırlandırılır (normalize lowercase).
+  const tagCondition = tagFilter
+    ? inArray(
+        posts.id,
+        getDb()
+          .select({ postId: postTags.postId })
+          .from(postTags)
+          .innerJoin(tags, eq(tags.id, postTags.tagId))
+          .where(
+            and(eq(tags.name, tagFilter), eq(tags.workspaceId, workspaceId)),
+          ),
+      )
+    : undefined;
+
+  return and(
+    eq(posts.workspaceId, workspaceId),
+    search.condition,
+    isNull(posts.mergedIntoId),
+    tagCondition,
+  );
+}
+
+async function countPosts(
+  searchQuery: string,
+  tagFilter: string,
+  queryEmbedding?: number[],
+) {
+  const search = buildPostSearch(searchQuery, queryEmbedding);
+  const [row] = await getDb()
+    .select({ value: count() })
+    .from(posts)
+    .where(buildPostConditions(await getWorkspaceId(), search, tagFilter));
+  return row.value;
 }
 
 // Sprint 21: etiket filtre sekmeleri — en çok kullanılan 8 etiket.
