@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { getDb } from "@/lib/db";
-import { users } from "@/lib/db/schema";
+import { changelogSubscribers, users } from "@/lib/db/schema";
 
 // Sprint 26: token'lı unsubscribe — bildirim e-postalarının altındaki
 // link buraya gelir. token kullanıcıya özel (users.unsubscribe_token);
@@ -13,7 +13,9 @@ import { users } from "@/lib/db/schema";
 
 const unsubscribeSchema = z.object({
   token: z.uuid("Geçersiz bağlantı."),
-  type: z.enum(["status", "comment"], { error: "Geçersiz bildirim türü." }),
+  type: z.enum(["status", "comment", "changelog"], {
+    error: "Geçersiz bildirim türü.",
+  }),
 });
 
 function page(title: string, message: string) {
@@ -50,6 +52,29 @@ export async function GET(req: Request) {
     });
     if (!parsed.success) {
       return page("Geçersiz bağlantı", "Bu abonelikten çıkma bağlantısı hatalı veya eksik.");
+    }
+
+    // Sprint 40: changelog aboneliği users tablosuna bağlı değildir;
+    // token ile abone satırı silinir (tek yönlü, geri abonelik portaldan).
+    if (parsed.data.type === "changelog") {
+      const deleted = await getDb()
+        .delete(changelogSubscribers)
+        .where(
+          eq(changelogSubscribers.unsubscribeToken, parsed.data.token),
+        )
+        .returning({ id: changelogSubscribers.id });
+
+      if (deleted.length === 0) {
+        return page(
+          "Bağlantı bulunamadı",
+          "Bu abonelikten çıkma bağlantısı geçersiz veya abonelik zaten kaldırılmış.",
+        );
+      }
+
+      return page(
+        "Bildirimler kapatıldı",
+        "Artık yeni duyurular e-posta ile gönderilmeyecek.",
+      );
     }
 
     const patch =

@@ -5,6 +5,7 @@ import { analyzeIdea, compareIdeas, normalizeTags } from "@/lib/ai/analysis";
 import { embedText } from "@/lib/ai/openrouter";
 import { sendEmails } from "@/lib/email/send";
 import { renderAdminNewPostEmail } from "@/lib/email/admin-new-post";
+import { renderChangelogEmail } from "@/lib/email/changelog";
 import { renderCommentEmail } from "@/lib/email/comment";
 import { renderStatusUpdateEmail } from "@/lib/email/status-update";
 import { renderShippedEmail } from "@/lib/email/shipped";
@@ -17,6 +18,9 @@ import {
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import {
+  changelogEntries,
+  changelogPostLinks,
+  changelogSubscribers,
   comments,
   emailDeliveries,
   postFollowers,
@@ -27,9 +31,11 @@ import {
   aiSuggestions,
 } from "@/lib/db/schema";
 import {
+  changelogPublishedEventSchema,
   commentCreatedEventSchema,
   postCreatedEventSchema,
   postStatusChangedEventSchema,
+  type ChangelogPublishedEvent,
   type CommentCreatedEvent,
   type PostCreatedEvent,
   type PostStatusChangedEvent,
@@ -625,5 +631,81 @@ export const sendWebhooks = inngest.createFunction(
     }
 
     return { event: webhookEvent, delivered };
+  },
+);
+
+// Sprint 40: changelog abonelerine yeni duyuru maili (changelog/published).
+// Alıcılar changelog_subscribers'tan çözülür — anonim aboneler users
+// tablosunda olmadığı için email_deliveries idempotency KULLANILAMAZ;
+// tekrar gönderimi Inngest step memoization önler (adım bir kez
+// tamamlanınca retry/replay aynı adımı tekrar çalıştırmaz).
+export const notifyChangelog = inngest.createFunction(
+  {
+    id: "notify-changelog",
+    retries: 3,
+    triggers: { event: "changelog/published" },
+  },
+  async ({ event, step }) => {
+    const payload: ChangelogPublishedEvent =
+      changelogPublishedEventSchema.parse(event.data);
+
+    // 1) Duyuru doğrulaması + alıcılar (tek step).
+    const recipients = await step.run("fetch-recipients", async () => {
+      const [entry] = await getDb()
+        .select({ workspaceId: changelogEntries.workspaceId })
+        .from(changelogEntries)
+        .where(eq(changelogEntries.id, payload.entryId))
+        .limit(1);
+
+      if (!entry) {
+        // Duyuru silinmişse retry anlamsız.
+        throw new NonRetriableError(
+          `Changelog entry not found: ${payload.entryId}`,
+        );
+      }
+
+      return getDb()
+        .select({
+          email: changelogSubscribers.email,
+          token: changelogSubscribers.unsubscribeToken,
+        })
+        .from(changelogSubscribers)
+        .where(eq(changelogSubscribers.workspaceId, entry.workspaceId));
+    });
+
+    if (recipients.length === 0) {
+      return { skipped: true, reason: "no-recipients" };
+    }
+
+    // 2) Her abone için kişisel unsubscribe linkiyle render et ve gönder.
+    // Provider (Resend/Ethereal) env'e göre lib/email/send.ts'te seçilir.
+    const result = await step.run("send-changelog-emails", async () => {
+      const appUrl =
+        process.env.NEXT_PUBLIC_APP_URL ?? "https://getfeedl.vercel.app";
+      const entryUrl = `${appUrl}/portal/changelog/${payload.entryId}`;
+      const messages = recipients.map((recipient) => {
+        const message = renderChangelogEmail({
+          title: payload.title,
+          body: payload.body,
+          entryUrl,
+          unsubscribeUrl: `${appUrl}/api/unsubscribe?token=${recipient.token}&type=changelog`,
+        });
+        return {
+          to: recipient.email,
+          subject: message.subject,
+          html: message.html,
+          text: message.text,
+        };
+      });
+      return sendEmails(messages);
+    });
+
+    return {
+      provider: result.provider,
+      recipients: recipients.length,
+      sent: result.sent,
+      failed: result.failed,
+      previewUrls: result.previewUrls,
+    };
   },
 );
