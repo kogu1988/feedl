@@ -13,6 +13,10 @@ export const WEBHOOK_EVENT_OPTIONS = [
   { value: "post.created", label: "Fikir oluşturuldu" },
   { value: "post.status_changed", label: "Fikir durumu değişti" },
   { value: "comment.created", label: "Yorum yazıldı" },
+  { value: "comment.deleted", label: "Yorum silindi" },
+  { value: "vote.created", label: "Oy verildi" },
+  { value: "vote.deleted", label: "Oy geri alındı" },
+  { value: "changelog.published", label: "Duyuru yayınlandı" },
 ] as const;
 
 export interface WebhookItem {

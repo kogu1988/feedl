@@ -14,10 +14,17 @@ import { webhookEndpoints } from "@/lib/db/schema";
 // ham body üzerinde aynı hesabı yaparak doğrular. Teslimat Inngest
 // fonksiyonundan (send-webhooks) yapılır; non-2xx throw → Inngest retry.
 
+// Sprint 43 (PM raporu §9 full API/webhook event matrix): tüm alan olayları
+// webhook'a taşınır — oluşturma/durum/yorum + oy ekle-geri al + yorum sil +
+// duyuru. post.deleted yok (fikir silme akışı yok; birleştirme ile kapanır).
 export const WEBHOOK_EVENTS = [
   "post.created",
   "post.status_changed",
   "comment.created",
+  "comment.deleted",
+  "vote.created",
+  "vote.deleted",
+  "changelog.published",
 ] as const;
 
 export type WebhookEventName = (typeof WEBHOOK_EVENTS)[number];

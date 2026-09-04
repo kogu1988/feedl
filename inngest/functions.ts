@@ -15,6 +15,7 @@ import {
   loadWebhookEndpoints,
   type WebhookEventName,
 } from "@/lib/webhooks/dispatch";
+import { hydrateWebhookPayload } from "@/lib/webhooks/payload";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import {
@@ -592,11 +593,16 @@ export const notifyCommentCreated = inngest.createFunction(
 // Sprint 34 — webhook teslimatı: kaynak Inngest olaylarını noktalı webhook
 // olay adlarına çevirip abone endpoint'lere imzalı POST atar (analiz raporu
 // P4.2). Her endpoint ayrı step: tek hata yalnızca kendi teslimatını retry
-// eder. Kaynak olaylar zaten emitter'larda doğrulanmış payload taşır.
+// eder. Sprint 43: matrix tamamlandı — oy/yorum silme + duyuru olayları da
+// eklenir ve payload teslimat öncesi zenginleştirilir (lib/webhooks/payload).
 const WEBHOOK_EVENT_MAP: Record<string, WebhookEventName> = {
   "post/created": "post.created",
   "post/status.changed": "post.status_changed",
   "post/comment.created": "comment.created",
+  "post/comment.deleted": "comment.deleted",
+  "vote/created": "vote.created",
+  "vote/deleted": "vote.deleted",
+  "changelog/published": "changelog.published",
 };
 
 export const sendWebhooks = inngest.createFunction(
@@ -607,6 +613,10 @@ export const sendWebhooks = inngest.createFunction(
       { event: "post/created" },
       { event: "post/status.changed" },
       { event: "post/comment.created" },
+      { event: "post/comment.deleted" },
+      { event: "vote/created" },
+      { event: "vote/deleted" },
+      { event: "changelog/published" },
     ],
   },
   async ({ event, step }) => {
@@ -622,10 +632,16 @@ export const sendWebhooks = inngest.createFunction(
       return { event: webhookEvent, delivered: 0 };
     }
 
+    // Tüketicinin kullanabileceği bağlamı tek kez çöz; teslimat her endpoint
+    // için aynı zengin payload'ı kullanır.
+    const hydrated = await step.run("hydrate-payload", () =>
+      hydrateWebhookPayload(webhookEvent, event.data),
+    );
+
     let delivered = 0;
     for (const endpoint of endpoints) {
       await step.run(`deliver-${endpoint.id}`, async () => {
-        await deliverWebhook(endpoint, webhookEvent, event.data);
+        await deliverWebhook(endpoint, webhookEvent, hydrated);
       });
       delivered += 1;
     }

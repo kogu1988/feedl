@@ -9,16 +9,12 @@ import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { webhookEndpoints } from "@/lib/db/schema";
+import { WEBHOOK_EVENTS } from "@/lib/webhooks/dispatch";
 
 // Sprint 34 — admin webhook endpoint yönetimi. Secret sunucuda üretilir ve
 // YALNIZCA oluşturma yanıtında bir kez döner; listede yer almaz. Teslimat
-// Inngest "send-webhooks" fonksiyonundan HMAC imzalı yapılır.
-
-const WEBHOOK_EVENTS = [
-  "post.created",
-  "post.status_changed",
-  "comment.created",
-] as const;
+// Inngest "send-webhooks" fonksiyonundan HMAC imzalı yapılır. Sprint 43:
+// olay listesi dispatch'teki tek kaynaktan gelir (matrix tamamlandı).
 
 const createSchema = z.object({
   url: z.url("Geçerli bir URL gerekli."),
