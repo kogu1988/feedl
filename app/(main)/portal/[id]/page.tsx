@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { redirect, notFound } from "next/navigation";
 import { Show, SignInButton } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
 import { and, asc, count, countDistinct, desc, eq, gt, inArray, isNotNull, isNull, ne, sql } from "drizzle-orm";
@@ -43,6 +43,7 @@ import { getDb } from "@/lib/db";
 import { loadCustomerCounts } from "@/lib/db/customer-counts";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import {
+  boards,
   comments,
   companies,
   customFields,
@@ -72,7 +73,13 @@ export default async function PostDetailPage({
 }) {
   const { id } = await params;
   const parsedId = z.uuid().safeParse(id);
+  // Sprint 48c: UUID değilse bir board slug'ı olarak ele al — board'a ait
+  // portal listesine yönlendir (`/portal?board=slug`). Bu, mevcut fikir
+  // detay linklerini (UUID) korurken board linklerini de destekler.
   if (!parsedId.success) {
+    if (/^[a-z0-9][a-z0-9-]{1,78}$/.test(id)) {
+      redirect(`/portal?board=${encodeURIComponent(id)}`);
+    }
     notFound();
   }
   const postId = parsedId.data;
@@ -88,6 +95,18 @@ export default async function PostDetailPage({
   const post = await loadPost(postId, userId);
   if (!post) {
     notFound();
+  }
+
+  // Sprint 48c: fikir private bir board'a aitse yalnızca admin görebilir.
+  if (post.boardId) {
+    const [boardRow] = await getDb()
+      .select({ visibility: boards.visibility })
+      .from(boards)
+      .where(eq(boards.id, post.boardId))
+      .limit(1);
+    if (boardRow?.visibility === "private" && !isAdmin) {
+      notFound();
+    }
   }
 
   // Sprint 30: kaç şirket istedi (yalnızca admin kutusunda gösterilir).
@@ -518,6 +537,7 @@ async function loadPost(postId: string, userId: string | null) {
       aiKeywords: posts.aiKeywords,
       aiSummary: posts.aiSummary,
       mergedIntoId: posts.mergedIntoId,
+      boardId: posts.boardId,
       createdAt: posts.createdAt,
       voteCount: count(votes.id),
     })

@@ -1,5 +1,6 @@
 import { and, asc, count, countDistinct, desc, eq, inArray, isNull, type SQL } from "drizzle-orm";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
 import { Show, SignInButton } from "@clerk/nextjs";
 import { RocketIcon, SearchIcon, ThumbsUpIcon } from "lucide-react";
@@ -26,6 +27,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
+import { getRole } from "@/lib/auth/admin";
+import { listBoards, resolveBoardBySlug } from "@/lib/db/board";
 import { summarize, trDateFormatter } from "@/lib/post-format";
 import { buildPostSearch, type PostSearch } from "@/lib/post-search";
 import { parsePagination } from "@/lib/pagination";
@@ -33,6 +36,20 @@ import { comments, postTags, posts, tags, votes } from "@/lib/db/schema";
 
 // Canlı liste: her istekte DB'den okunur, build zamanında dondurulmaz.
 export const dynamic = "force-dynamic";
+
+// Sprint 48c: portal linki üretici — aktif board slug'ını ve diğer
+// filtreleri (q/sort/tag) korur.
+function buildPortalHref(
+  boardSlug: string,
+  extra?: { q?: string; sort?: string; tag?: string },
+): string {
+  const params = new URLSearchParams();
+  params.set("board", boardSlug);
+  if (extra?.q) params.set("q", extra.q);
+  if (extra?.sort) params.set("sort", extra.sort);
+  if (extra?.tag) params.set("tag", extra.tag);
+  return `/portal?${params.toString()}`;
+}
 
 // plan.md Sprint 15: yerel dateFormatter + summarize kopyaları lib/
 // post-format'a taşındı (tek kaynak kuralı — Sprint 9 statusLabels dersi).
@@ -46,6 +63,7 @@ export default async function PortalPage({
     tag?: string;
     per?: string;
     page?: string;
+    board?: string;
   }>;
 }) {
   const {
@@ -54,6 +72,7 @@ export default async function PortalPage({
     tag: rawTag,
     per: rawPer,
     page: rawPage,
+    board: rawBoard,
   } = await searchParams;
   const searchQuery = (rawQuery ?? "").trim().slice(0, 100);
   // plan.md Sprint 12: "top" varsayılan (Canny modeli — en çok istenen öne
@@ -64,6 +83,32 @@ export default async function PortalPage({
   // Sprint 39: sayfa boyutu — 5 varsayılan, 25/50/Tümü (ortak parse;
   // lib/pagination.ts whitelist + makul "Tümü" üst sınırı).
   const { per, perSize, requestedPage } = parsePagination(rawPer, rawPage);
+  // Sprint 48c: ?board=slug filtresi — verilmezse varsayılan board (genel).
+  const boardSlug = (rawBoard ?? "").trim().toLowerCase().slice(0, 80);
+
+  const { userId } = await auth();
+  let isAdmin = false;
+  try {
+    const { getRole } = await import("@/lib/auth/admin");
+    isAdmin = userId ? (await getRole(userId)) === "admin" : false;
+  } catch {
+    isAdmin = false;
+  }
+
+  // Board çözümü: tüm workspace board'ları (seçici için) + aktif board
+  // (private ise yalnızca admin; verilmemişse varsayılan genel).
+  const [allBoards, activeBoard] = await Promise.all([
+    listBoards(),
+    resolveBoardBySlug(boardSlug || "genel", isAdmin),
+  ]);
+  // Geçersiz/private board slug'ı: varsayılana düş (zarif geri dön).
+  if (!activeBoard) {
+    redirect(`/portal?board=genel`);
+  }
+  if (activeBoard.visibility === "private" && !isAdmin) {
+    redirect(`/portal?board=genel`);
+  }
+  const activeBoardId = activeBoard.id;
 
   let rows: Awaited<ReturnType<typeof loadPosts>> = [];
   let totalCount = 0;
@@ -80,13 +125,13 @@ export default async function PortalPage({
     // birebir aynı olduğundan count=0 ⇔ liste boş; vektör fallback
     // kararını count üzerinden veririz (davranış Sprint 27 ile aynı).
     let embedding: number[] | undefined;
-    totalCount = await countPosts(searchQuery, tagFilter);
+    totalCount = await countPosts(searchQuery, tagFilter, undefined, activeBoardId);
     if (totalCount === 0 && searchQuery) {
       try {
         const vector = await embedText(searchQuery);
         if (vector.length === 2048) {
           embedding = vector;
-          totalCount = await countPosts(searchQuery, tagFilter, embedding);
+          totalCount = await countPosts(searchQuery, tagFilter, embedding, activeBoardId);
         }
       } catch (embedErr) {
         console.error(
@@ -105,6 +150,7 @@ export default async function PortalPage({
       embedding,
       perSize,
       (currentPage - 1) * perSize,
+      activeBoardId,
     );
 
     tagOptions = await loadTagOptions();
@@ -159,6 +205,12 @@ export default async function PortalPage({
     .filter((post) => post.status === "shipped")
     .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
 
+  // Sprint 48c: erişilebilir board'lar (public herkese + private yalnızca
+  // admin). Yalnızca board varsa seçici gösterilir.
+  const visibleBoards = isAdmin
+    ? allBoards
+    : allBoards.filter((board) => board.visibility === "public");
+
   return (
     <main className="container mx-auto max-w-3xl p-4 sm:p-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -195,7 +247,38 @@ export default async function PortalPage({
         </Show>
       </div>
 
+      {/* Sprint 48c: board seçici — erişilebilir board'lar (public + admin
+          için private). Aktif board vurgulu; diğer filtreler korunur. */}
+      {visibleBoards.length > 1 ? (
+        <div className="mt-6 flex flex-wrap gap-2">
+          {visibleBoards.map((board) => {
+            const href = buildPortalHref(board.slug, {
+              q: searchQuery || undefined,
+              sort: rawSort === "new" ? "new" : undefined,
+              tag: tagFilter || undefined,
+            });
+            const active = board.id === activeBoardId;
+            return (
+              <Link
+                key={board.id}
+                href={href}
+                className={
+                  active
+                    ? "block rounded-full bg-primary px-3 py-1 text-sm font-medium text-primary-foreground"
+                    : "block rounded-full border bg-background px-3 py-1 text-sm font-medium text-muted-foreground hover:text-foreground"
+                }
+              >
+                {board.name}
+              </Link>
+            );
+          })}
+        </div>
+      ) : null}
+
       <form action="/portal" method="get" className="mt-6 flex gap-2">
+        {boardSlug ? (
+          <input type="hidden" name="board" value={boardSlug} />
+        ) : null}
         <div className="relative flex-1">
           <SearchIcon
             className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
@@ -222,7 +305,10 @@ export default async function PortalPage({
               paramName="sort"
               basePath="/portal"
               active={sort === "new" ? "new" : ""}
-              extraParams={tagFilter ? { tag: tagFilter } : undefined}
+              extraParams={{
+                ...(tagFilter ? { tag: tagFilter } : {}),
+                ...(boardSlug ? { board: boardSlug } : {}),
+              }}
               options={[
                 { value: "", label: "En Çok Oy Alan" },
                 { value: "new", label: "En Yeni" },
@@ -235,7 +321,10 @@ export default async function PortalPage({
                 paramName="tag"
                 basePath="/portal"
                 active={tagFilter}
-                extraParams={sort === "new" ? { sort } : undefined}
+                extraParams={{
+                  ...(sort === "new" ? { sort } : {}),
+                  ...(boardSlug ? { board: boardSlug } : {}),
+                }}
                 options={[
                   { value: "", label: "Tüm Etiketler" },
                   ...tagOptions.map((option) => ({
@@ -432,11 +521,13 @@ export default async function PortalPage({
           extraParams={{
             ...(sort === "new" ? { sort } : {}),
             ...(tagFilter ? { tag: tagFilter } : {}),
+            ...(boardSlug ? { board: boardSlug } : {}),
           }}
           pageParams={{
             ...(searchQuery ? { q: searchQuery } : {}),
             ...(sort === "new" ? { sort } : {}),
             ...(tagFilter ? { tag: tagFilter } : {}),
+            ...(boardSlug ? { board: boardSlug } : {}),
             ...(per !== "5" ? { per } : {}),
           }}
         />
@@ -456,6 +547,7 @@ async function loadPosts(
   queryEmbedding: number[] | undefined,
   limit: number,
   offset: number,
+  boardId?: string,
 ) {
   const search = buildPostSearch(searchQuery, queryEmbedding);
   const workspaceId = await getWorkspaceId();
@@ -493,7 +585,7 @@ async function loadPosts(
     )
     // Sprint 20: birleşmiş fikirler listede görünmez (kaynak arşivlenir).
     // Sprint 39: where koşulu countPosts ile paylaşılır (buildPostConditions).
-    .where(buildPostConditions(workspaceId, search, tagFilter))
+    .where(buildPostConditions(workspaceId, search, tagFilter, boardId))
     .groupBy(posts.id)
     .orderBy(...orderBys)
     .limit(limit)
@@ -509,6 +601,7 @@ function buildPostConditions(
   workspaceId: string,
   search: PostSearch,
   tagFilter: string,
+  boardId?: string,
 ) {
   // Sprint 21: etiket filtresi — posts.id, etiket adıyla eşleşen
   // post_tags bağlantılarıyla sınırlandırılır (normalize lowercase).
@@ -525,8 +618,14 @@ function buildPostConditions(
       )
     : undefined;
 
+  // Sprint 48c: board kapsamı — ?board=slug verildiyse o board'a, yoksa
+  // varsayılan board'a (genel) ait fikirler. boardId undefined ise koşul
+  // eklenmez (gerçek, board'sız sorgular için esnek kalır).
+  const boardCondition = boardId ? eq(posts.boardId, boardId) : undefined;
+
   return and(
     eq(posts.workspaceId, workspaceId),
+    boardCondition,
     search.condition,
     isNull(posts.mergedIntoId),
     tagCondition,
@@ -537,12 +636,15 @@ async function countPosts(
   searchQuery: string,
   tagFilter: string,
   queryEmbedding?: number[],
+  boardId?: string,
 ) {
   const search = buildPostSearch(searchQuery, queryEmbedding);
   const [row] = await getDb()
     .select({ value: count() })
     .from(posts)
-    .where(buildPostConditions(await getWorkspaceId(), search, tagFilter));
+    .where(
+      buildPostConditions(await getWorkspaceId(), search, tagFilter, boardId),
+    );
   return row.value;
 }
 
