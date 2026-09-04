@@ -8,6 +8,7 @@ import { z } from "zod";
 import { ArrowLeftIcon, GitMergeIcon, SparklesIcon } from "lucide-react";
 
 import { CommentCard } from "@/components/custom/comment-card";
+import { FollowButton } from "@/components/custom/follow-button";
 import { CommentForm } from "@/components/custom/comment-form";
 import { CommentCountBadge } from "@/components/custom/comment-count-badge";
 import { KeywordChips } from "@/components/custom/keyword-chips";
@@ -37,6 +38,7 @@ import {
   comments,
   companies,
   opportunities,
+  postFollowers,
   postOpportunities,
   postTags,
   posts,
@@ -184,12 +186,16 @@ export default async function PostDetailPage({
                 {post.voteCount}
               </span>
             ) : (
-              <>
+              <div className="flex shrink-0 items-center gap-2">
                 <Show when="signed-in">
                   <VoteButton
                     postId={post.id}
                     initialCount={post.voteCount}
                     initialVoted={post.voted}
+                  />
+                  <FollowButton
+                    postId={post.id}
+                    initialFollowing={post.following}
                   />
                 </Show>
                 <Show when="signed-out">
@@ -203,7 +209,7 @@ export default async function PostDetailPage({
                     </button>
                   </SignInButton>
                 </Show>
-              </>
+              </div>
             )}
           </div>
           <CardDescription className="flex flex-wrap items-center gap-2">
@@ -416,16 +422,30 @@ async function loadPost(postId: string, userId: string | null) {
   }
 
   let voted = false;
+  let following = false;
   if (userId) {
-    const [mine] = await getDb()
-      .select({ id: votes.id })
-      .from(votes)
-      .where(and(eq(votes.postId, postId), eq(votes.userId, userId)))
-      .limit(1);
+    const [mine, follow] = await Promise.all([
+      getDb()
+        .select({ id: votes.id })
+        .from(votes)
+        .where(and(eq(votes.postId, postId), eq(votes.userId, userId)))
+        .limit(1),
+      getDb()
+        .select({ id: postFollowers.id })
+        .from(postFollowers)
+        .where(
+          and(
+            eq(postFollowers.postId, postId),
+            eq(postFollowers.userId, userId),
+          ),
+        )
+        .limit(1),
+    ]);
     voted = Boolean(mine);
+    following = Boolean(follow);
   }
 
-  return { ...row, voted };
+  return { ...row, voted, following };
 }
 
 async function loadComments(postId: string, isAdmin: boolean) {
