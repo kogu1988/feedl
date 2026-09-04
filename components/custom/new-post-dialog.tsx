@@ -30,12 +30,18 @@ interface SimilarPost {
   voteCount: number;
 }
 
+export interface BoardOption {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 const SUGGESTION_MIN_LENGTH = 3;
 const SUGGESTION_DEBOUNCE_MS = 400;
 
 // shadcn form bileşeni registry'den kalktığı için form elle kompoze edilir
 // (react-hook-form + zod); bkz. .agents/skills/feedl/SKILL.md tuzaklar.
-export function NewPostDialog() {
+export function NewPostDialog({ boardOptions = [] }: { boardOptions?: BoardOption[] }) {
   const [open, setOpen] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [similarPosts, setSimilarPosts] = useState<SimilarPost[]>([]);
@@ -46,10 +52,13 @@ export function NewPostDialog() {
     handleSubmit,
     reset,
     watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<CreatePostInput>({
     resolver: zodResolver(createPostSchema),
-    defaultValues: { title: "", description: "" },
+    // Sprint 48d: boardId opsiyonel — varsayılan (genel) istemcide belirgin
+    // seçilmezse sunucu tarafı atar.
+    defaultValues: { title: "", description: "", boardId: undefined },
   });
 
   const title = watch("title");
@@ -149,6 +158,27 @@ export function NewPostDialog() {
               <p className="text-sm text-destructive">{errors.title.message}</p>
             ) : null}
           </div>
+
+          {boardOptions.length > 1 ? (
+            <div className="grid gap-2">
+              <label htmlFor="post-board" className="text-sm font-medium">
+                Board
+              </label>
+              <select
+                id="post-board"
+                defaultValue=""
+                {...register("boardId")}
+                className="h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm"
+              >
+                <option value="">Varsayılan (genel)</option>
+                {boardOptions.map((board) => (
+                  <option key={board.id} value={board.id}>
+                    {board.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
 
           {similarPosts.length > 0 ? (
             <div

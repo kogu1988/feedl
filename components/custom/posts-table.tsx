@@ -30,12 +30,17 @@ import {
   StatusSelect,
   statusLabel,
 } from "@/components/custom/status-select";
+import {
+  BoardSelect,
+  type BoardSelectOption,
+} from "@/components/custom/board-select";
 
 export interface PostsTableRow {
   id: string;
   title: string;
   status: string;
   postType: string | null;
+  boardId: string | null;
   mergedIntoId: string | null;
   sentimentLabel: string | null;
   aiKeywords: string[] | null;
@@ -56,9 +61,11 @@ export interface BulkTagOption {
 export function PostsTable({
   rows,
   tagOptions,
+  boardOptions = [],
 }: {
   rows: PostsTableRow[];
   tagOptions: BulkTagOption[];
+  boardOptions?: BoardSelectOption[];
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [note, setNote] = useState("");
@@ -284,6 +291,15 @@ export function PostsTable({
               </TableCell>
               <TableCell className="text-right">
                 <StatusSelect postId={post.id} status={post.status} />
+                {boardOptions.length > 1 ? (
+                  <div className="mt-1">
+                    <BoardSelect
+                      postId={post.id}
+                      boardId={post.boardId}
+                      options={boardOptions}
+                    />
+                  </div>
+                ) : null}
               </TableCell>
             </TableRow>
           ))}

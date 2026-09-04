@@ -8,6 +8,7 @@ import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import {
+  boards,
   comments,
   postStatusEnum,
   postStatusHistory,
@@ -44,10 +45,18 @@ const patchSchema = z
       .optional(),
     impact: z.number().int().min(1).max(3).nullable().optional(),
     effort: z.number().int().min(1).max(3).nullable().optional(),
+    // Sprint 48d: fikri başka board'a taşıma. Board kimlikleri UUID'dir.
+    boardId: z.uuid("Geçersiz board.").nullable().optional(),
   })
-  .refine((data) => data.status !== undefined || data.postType !== undefined, {
-    error: "Güncellenecek alan yok.",
-  });
+  .refine(
+    (data) =>
+      data.status !== undefined ||
+      data.postType !== undefined ||
+      data.boardId !== undefined,
+    {
+      error: "Güncellenecek alan yok.",
+    },
+  );
 
 // GET /api/admin/posts?q=...&exclude=... — merge hedef seçici için başlık
 // araması (Sprint 20). Birleşmiş fikirler hedef olamaz; kaynak fikir de
@@ -177,6 +186,26 @@ export async function PATCH(req: Request) {
       }
     }
 
+    // Sprint 48d: board'u taşımada hedef board workspace'te olmalı.
+    if (parsed.data.boardId) {
+      const [targetBoard] = await getDb()
+        .select({ id: boards.id })
+        .from(boards)
+        .where(
+          and(
+            eq(boards.id, parsed.data.boardId),
+            eq(boards.workspaceId, await getWorkspaceId()),
+          ),
+        )
+        .limit(1);
+      if (!targetBoard) {
+        return NextResponse.json(
+          { success: false, error: "Hedef board bulunamadı." },
+          { status: 400 },
+        );
+      }
+    }
+
     const statusChanged =
       parsed.data.status !== undefined && parsed.data.status !== existing.status;
     const typeChanged =
@@ -204,6 +233,9 @@ export async function PATCH(req: Request) {
           : {}),
         ...(parsed.data.effort !== undefined
           ? { effort: parsed.data.effort }
+          : {}),
+        ...(parsed.data.boardId !== undefined
+          ? { boardId: parsed.data.boardId }
           : {}),
         updatedAt: new Date(),
       })

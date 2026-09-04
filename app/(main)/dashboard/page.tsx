@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
+import { listBoards } from "@/lib/db/board";
 import { loadCustomerCounts } from "@/lib/db/customer-counts";
 import {
   computeRevenueScore,
@@ -113,6 +114,7 @@ export default async function DashboardPage({
   let inboxSuggestions: Awaited<ReturnType<typeof loadInboxSuggestions>> = [];
   let apiKeyItems: Awaited<ReturnType<typeof loadApiKeys>> = [];
   let webhookItems: Awaited<ReturnType<typeof loadWebhooks>> = [];
+  let boardItems: Awaited<ReturnType<typeof listBoards>> = [];
   let weeklyCounts = { ideas: 0, votes: 0, comments: 0 };
   let customerCountByPost: Map<string, number> = new Map();
   let revenueContexts = {
@@ -148,6 +150,7 @@ export default async function DashboardPage({
     inboxSuggestions = await loadInboxSuggestions();
     apiKeyItems = await loadApiKeys();
     webhookItems = await loadWebhooks();
+    boardItems = await listBoards();
     weeklyCounts = await loadWeeklyCounts(rangeDays);
   } catch (err) {
     console.error(
@@ -397,6 +400,7 @@ export default async function DashboardPage({
                 title: row.title,
                 status: row.status,
                 postType: row.postType,
+                boardId: row.boardId,
                 mergedIntoId: row.mergedIntoId,
                 sentimentLabel: row.sentimentLabel,
                 aiKeywords: row.aiKeywords,
@@ -414,6 +418,10 @@ export default async function DashboardPage({
               tagOptions={tagOptions.map((option) => ({
                 id: option.id,
                 name: option.name,
+              }))}
+              boardOptions={boardItems.map((board) => ({
+                id: board.id,
+                name: board.name,
               }))}
             />
           )}
@@ -492,6 +500,7 @@ async function loadPosts(
       aiKeywords: posts.aiKeywords,
       postType: posts.postType,
       mergedIntoId: posts.mergedIntoId,
+      boardId: posts.boardId,
       createdAt: posts.createdAt,
       voteCount: count(votes.id),
     })

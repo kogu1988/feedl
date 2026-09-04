@@ -5,7 +5,7 @@ import { and, count, desc, eq, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { getDefaultBoardId } from "@/lib/db/board";
-import { postFollowers, posts, votes } from "@/lib/db/schema";
+import { postFollowers, posts, votes, boards } from "@/lib/db/schema";
 import { createPostSchema } from "@/lib/validations/post";
 import { inngest } from "@/inngest/client";
 import { buildPostSearch } from "@/lib/post-search";
@@ -96,6 +96,37 @@ export async function POST(req: Request) {
       );
     }
 
+    // Sprint 48d: boardId verildiyse workspace'te ve public olmalı (portal
+    // oluşturma normal kullanıcı — private board seçilemez). Verilmediyse
+    // varsayılan board (genel).
+    let boardId = await getDefaultBoardId();
+    if (parsed.data.boardId) {
+      const [boardRow] = await getDb()
+        .select({ id: boards.id, visibility: boards.visibility })
+        .from(boards)
+        .where(
+          and(
+            eq(boards.id, parsed.data.boardId),
+            eq(boards.workspaceId, await getWorkspaceId()),
+          ),
+        )
+        .limit(1);
+      if (!boardRow) {
+        return NextResponse.json(
+          { success: false, error: "Geçersiz board." },
+          { status: 400 },
+        );
+      }
+      // Public olmayan bir board portal üzerinden seçilemez.
+      if (boardRow.visibility !== "public") {
+        return NextResponse.json(
+          { success: false, error: "Bu board portal üzerinden seçilemez." },
+          { status: 400 },
+        );
+      }
+      boardId = parsed.data.boardId;
+    }
+
     const [created] = await getDb()
       .insert(posts)
       .values({
@@ -103,7 +134,7 @@ export async function POST(req: Request) {
         userId,
         title: parsed.data.title,
         description: parsed.data.description,
-        boardId: await getDefaultBoardId(),
+        boardId,
         source: "portal",
       })
       .returning({

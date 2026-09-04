@@ -238,7 +238,11 @@ export default async function PortalPage({
         </div>
 
         <Show when="signed-in">
-          <NewPostDialog />
+          <NewPostDialog
+            boardOptions={visibleBoards
+              .filter((board) => board.visibility === "public")
+              .map((board) => ({ id: board.id, name: board.name, slug: board.slug }))}
+          />
         </Show>
         <Show when="signed-out">
           <SignInButton>
