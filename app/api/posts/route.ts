@@ -102,6 +102,7 @@ export async function POST(req: Request) {
         userId,
         title: parsed.data.title,
         description: parsed.data.description,
+        source: "portal",
       })
       .returning({
         id: posts.id,

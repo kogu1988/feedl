@@ -133,6 +133,7 @@ export async function POST(req: NextRequest) {
         title: parsed.data.title,
         description: parsed.data.description,
         widgetOrigin: origin?.slice(0, 200) ?? null,
+        source: "widget_embed",
       })
       .returning({
         id: posts.id,

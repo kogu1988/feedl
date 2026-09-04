@@ -256,6 +256,7 @@ export async function POST(req: NextRequest) {
         userId: author.id,
         title: parsed.data.title,
         description: parsed.data.description,
+        source: "api",
       })
       .returning({ id: posts.id, title: posts.title });
 

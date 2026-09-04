@@ -123,6 +123,9 @@ export const posts = pgTable(
     // Sprint 32: fikir widget (gömülü script) üzerinden gönderildiyse kaynak
     // origin/URL buraya yazılır; portal gönderilerinde null kalır.
     widgetOrigin: text("widget_origin"),
+    // Sprint 44: fikrin geldiği kaynak — portal | widget_embed | api | inbound:<ad>
+    // Connector'ların (madde 7) Autopilot'u bu alanla izlenebilir kılar.
+    source: varchar("source", { length: 60 }),
     // Sprint 27: Türkçe full-text arama kolonu (GENERATED ALWAYS STORED).
     // İki-argümanlı to_tsvector('turkish', ...) immutable olduğu için
     // generated kolonda kullanılabilir.
