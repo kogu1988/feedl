@@ -213,6 +213,39 @@ export const boards = pgTable("boards", {
 export type Board = typeof boards.$inferSelect;
 export type NewBoard = typeof boards.$inferInsert;
 
+// Sprint 48c-2 (madde 8): role matrix — workspace üyeleri. users.role
+// (admin/customer) global kalır; bu tablo workspace bağlamında owner /
+// admin / member rolleri taşır. getAdminUserId buradan doğrular (geriye
+// dönük: users.role=admin de kabul edilir, geçişte kırılma olmaz).
+export const workspaceMemberRoleEnum = pgEnum("workspace_member_role", [
+  "owner",
+  "admin",
+  "member",
+]);
+
+export const workspaceMembers = pgTable("workspace_members", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  workspaceId: uuid("workspace_id")
+    .notNull()
+    .references(() => workspaces.id, { onDelete: "cascade" }),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  role: workspaceMemberRoleEnum("role").notNull().default("member"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+}, (table) => [
+  uniqueIndex("workspace_members_workspace_user_key").on(
+    table.workspaceId,
+    table.userId,
+  ),
+  index("workspace_members_user_idx").on(table.userId),
+]);
+
 export type Workspace = typeof workspaces.$inferSelect;
 export type NewWorkspace = typeof workspaces.$inferInsert;
 export type Post = typeof posts.$inferSelect;
