@@ -89,6 +89,11 @@ export const posts = pgTable(
     workspaceId: uuid("workspace_id")
       .notNull()
       .references(() => workspaces.id, { onDelete: "cascade" }),
+    // Sprint 48b: fikrin ait olduğu board. Mevcut kayıtlar varsayılan
+    // board'a seed'lenir; yeni girişler seçilen board'a yazılır.
+    boardId: uuid("board_id").references(() => boards.id, {
+      onDelete: "set null",
+    }),
     userId: text("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
@@ -174,6 +179,39 @@ export const workspaces = pgTable("workspaces", {
     .notNull()
     .defaultNow(),
 });
+
+// Sprint 48b (madde 8): board modeli — feedback koleksiyonları. Canny'de
+// boards yalnızca POST'lari kapsar; votes/comments/tags post üzerinden
+// scope'lanır (post_id FK). companies/opportunities/changelog/api_keys
+// workspace-scoped kalır (board'a bağlanmaz).
+export const boardVisibilityEnum = pgEnum("board_visibility", [
+  "public",
+  "private",
+]);
+
+export const boards = pgTable("boards", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  workspaceId: uuid("workspace_id")
+    .notNull()
+    .references(() => workspaces.id, { onDelete: "cascade" }),
+  name: varchar("name", { length: 120 }).notNull(),
+  slug: varchar("slug", { length: 80 }).notNull(),
+  description: text("description"),
+  visibility: boardVisibilityEnum("visibility").notNull().default("public"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+}, (table) => [
+  uniqueIndex("boards_workspace_slug_key").on(table.workspaceId, table.slug),
+  index("boards_workspace_sort_idx").on(table.workspaceId, table.sortOrder),
+]);
+
+export type Board = typeof boards.$inferSelect;
+export type NewBoard = typeof boards.$inferInsert;
 
 export type Workspace = typeof workspaces.$inferSelect;
 export type NewWorkspace = typeof workspaces.$inferInsert;

@@ -211,6 +211,13 @@
       "when": 1788555799128,
       "tag": "0029_workspace_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1788557290617,
+      "tag": "0030_boards",
+      "breakpoints": true
     }
   ]
 }

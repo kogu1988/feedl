@@ -4,6 +4,7 @@ import { and, count, desc, eq, sql } from "drizzle-orm";
 
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
+import { getDefaultBoardId } from "@/lib/db/board";
 import { postFollowers, posts, votes } from "@/lib/db/schema";
 import { createPostSchema } from "@/lib/validations/post";
 import { inngest } from "@/inngest/client";
@@ -102,6 +103,7 @@ export async function POST(req: Request) {
         userId,
         title: parsed.data.title,
         description: parsed.data.description,
+        boardId: await getDefaultBoardId(),
         source: "portal",
       })
       .returning({

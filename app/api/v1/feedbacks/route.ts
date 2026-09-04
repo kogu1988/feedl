@@ -10,6 +10,7 @@ import {
 } from "@/lib/api-keys";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
+import { getDefaultBoardId } from "@/lib/db/board";
 import { apiKeys, posts } from "@/lib/db/schema";
 import { postCreatedEventSchema } from "@/lib/validations/events";
 import { upsertApiUser } from "@/lib/users/api-user";
@@ -107,6 +108,7 @@ export async function POST(req: NextRequest) {
         userId: author.id,
         title: autoTitle,
         description: parsed.data.message,
+        boardId: await getDefaultBoardId(),
         source: `inbound:${parsed.data.source}`,
       })
       .returning({ id: posts.id, title: posts.title });

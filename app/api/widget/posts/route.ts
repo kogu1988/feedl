@@ -3,6 +3,7 @@ import { and, count, desc, eq, isNull, sql } from "drizzle-orm";
 
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
+import { getDefaultBoardId } from "@/lib/db/board";
 import { postFollowers, posts, votes } from "@/lib/db/schema";
 import { createPostSchema } from "@/lib/validations/post";
 import { buildPostSearch } from "@/lib/post-search";
@@ -132,6 +133,7 @@ export async function POST(req: NextRequest) {
         userId: session.userId,
         title: parsed.data.title,
         description: parsed.data.description,
+        boardId: await getDefaultBoardId(),
         widgetOrigin: origin?.slice(0, 200) ?? null,
         source: "widget_embed",
       })
