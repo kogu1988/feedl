@@ -77,10 +77,14 @@ export function BoardsManager({ initial }: { initial: BoardView[] }) {
       setError("Board adı gerekli.");
       return;
     }
+    if (!editing && slug.trim() && !/^[a-z0-9][a-z0-9-]{1,78}$/.test(slug.trim())) {
+      setError("Slug yalnızca küçük harf, rakam ve tire içerebilir (2-79). Boş bırakırsan otomatik üretilir.");
+      return;
+    }
     setSaving(true);
     const payload = {
       name: name.trim(),
-      ...(editing ? {} : { slug: slug.trim().toLowerCase() }),
+      ...(!editing ? { slug: slug.trim().toLowerCase() } : {}),
       description: description.trim() || null,
       visibility,
     };
@@ -224,16 +228,17 @@ export function BoardsManager({ initial }: { initial: BoardView[] }) {
             </div>
             {!editing && (
               <div className="space-y-1.5">
-                <Label htmlFor="board-slug">Slug (URL)</Label>
+                <Label htmlFor="board-slug">Slug (URL) — opsiyonel</Label>
                 <Input
                   id="board-slug"
                   value={slug}
                   onChange={(e) => setSlug(e.target.value)}
-                  placeholder="Örn: ozellik-istekleri"
+                  placeholder="Boş bırakılırsa otomatik üretilir"
                   maxLength={80}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Portal adresi: feedl.app/portal/[slug] — küçük harf, tire.
+                  Portal adresi: feedl.app/portal/[slug]. Küçük harf, tire
+                  (boş bırakılırsa adresten üretilir).
                 </p>
               </div>
             )}

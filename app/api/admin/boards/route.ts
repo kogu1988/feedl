@@ -16,13 +16,35 @@ import { boards } from "@/lib/db/schema";
 const slugRegex = /^[a-z0-9][a-z0-9-]{1,78}$/;
 const visibilityEnum = z.enum(["public", "private"]);
 
+// Türkçe karakterleri ASCII'ye çevir + slugify (boş satır -> boş string).
+function slugify(input: string): string {
+  return input
+    .toLocaleLowerCase("tr")
+    .replace(/[çÇ]/g, "c")
+    .replace(/[ğĞ]/g, "g")
+    .replace(/[ıİ]/g, "i")
+    .replace(/[öÖ]/g, "o")
+    .replace(/[şŞ]/g, "s")
+    .replace(/[üÜ]/g, "u")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 const createSchema = z.object({
   name: z.string().trim().min(1, "Board adı gerekli.").max(120),
   slug: z
     .string()
     .trim()
     .toLowerCase()
-    .regex(slugRegex, "Slug yalnızca küçük harf, rakam ve tire içerebilir (2-79)."),
+    .regex(slugRegex, "Slug yalnızca küçük harf, rakam ve tire içerebilir (2-79).")
+    .optional()
+    .or(
+      z
+        .string()
+        .trim()
+        .length(0)
+        .transform(() => undefined),
+    ),
   description: z
     .string()
     .trim()
@@ -32,6 +54,10 @@ const createSchema = z.object({
   visibility: visibilityEnum.default("public"),
   sortOrder: z.number().int().min(0).max(9999).default(0),
 });
+
+export function firstIssueMessage(error: z.ZodError): string {
+  return error.issues[0]?.message ?? "Board bilgileri geçersiz.";
+}
 
 function isUniqueViolation(err: unknown): boolean {
   let current: unknown = err;
@@ -103,18 +129,20 @@ export async function POST(req: Request) {
     const parsed = createSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { success: false, error: "Board bilgileri geçersiz." },
+        { success: false, error: firstIssueMessage(parsed.error) },
         { status: 400 },
       );
     }
     const workspaceId = await getWorkspaceId();
+    // Slug boşsa name'den otomatik üret (Türkçe karakterler dönüştürülür).
+    const slug = parsed.data.slug ?? slugify(parsed.data.name);
     try {
       const [created] = await getDb()
         .insert(boards)
         .values({
           workspaceId,
           name: parsed.data.name,
-          slug: parsed.data.slug,
+          slug,
           description: parsed.data.description,
           visibility: parsed.data.visibility,
           sortOrder: parsed.data.sortOrder,
