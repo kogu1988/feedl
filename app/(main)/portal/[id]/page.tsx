@@ -12,7 +12,10 @@ import {
   SparklesIcon,
 } from "lucide-react";
 
-import { CommentCard } from "@/components/custom/comment-card";
+import { CustomValuesPanel } from "@/components/custom/custom-values-panel";
+import {
+  CommentCard,
+} from "@/components/custom/comment-card";
 import { FollowButton } from "@/components/custom/follow-button";
 import { CommentForm } from "@/components/custom/comment-form";
 import { CommentCountBadge } from "@/components/custom/comment-count-badge";
@@ -42,11 +45,13 @@ import { getWorkspaceId } from "@/lib/db/workspace";
 import {
   comments,
   companies,
+  customFields,
   opportunities,
   postFollowers,
   postOpportunities,
   postStatusHistory,
   postTags,
+  postCustomValues,
   posts,
   tags,
   users,
@@ -138,6 +143,26 @@ export default async function PostDetailPage({
     .innerJoin(tags, eq(tags.id, postTags.tagId))
     .where(eq(postTags.postId, postId));
   const postTagsList = tagRows.map((row) => row.name);
+
+  // Sprint 42: özel alanlar — tanımlar + bu fikrin değerleri. Alanlar
+  // workspace'e, değerler fikre bağlı; görünürlük show_on_portal ile belirlenir.
+  const [customFieldItems, customValueRows] = await Promise.all([
+    getDb()
+      .select()
+      .from(customFields)
+      .where(eq(customFields.workspaceId, await getWorkspaceId()))
+      .orderBy(asc(customFields.displayOrder), asc(customFields.createdAt)),
+    getDb()
+      .select({ fieldId: postCustomValues.fieldId, value: postCustomValues.value })
+      .from(postCustomValues)
+      .where(eq(postCustomValues.postId, postId)),
+  ]);
+  const customValues = Object.fromEntries(
+    customValueRows.map((row) => [row.fieldId, row.value ?? ""]),
+  );
+  // Herkese açık alanlar (show_on_portal) portalda görünür; diğerleri yalnızca
+  // admin bölümünde. Admin bölümünde tüm alanlar düzenlenebilir.
+  const publicCustomFields = customFieldItems.filter((f) => f.showOnPortal);
 
   const commentRows = await loadComments(postId, isAdmin);
 
@@ -300,6 +325,34 @@ export default async function PostDetailPage({
               opportunities={opportunityItems}
               linkedIds={linkedOpportunityIds}
             />
+          ) : null}
+
+          {isAdmin ? (
+            <div className="grid gap-2 rounded-md border border-dashed p-3">
+              <p className="text-xs font-medium text-muted-foreground">
+                Özel alanlar (yalnızca admin)
+              </p>
+              <CustomValuesPanel
+                postId={post.id}
+                fields={customFieldItems}
+                initialValues={customValues}
+                editable
+              />
+            </div>
+          ) : null}
+
+          {!isAdmin && publicCustomFields.length > 0 ? (
+            <div className="grid gap-2 rounded-md border border-dashed p-3">
+              <p className="text-xs font-medium text-muted-foreground">
+                Detaylar
+              </p>
+              <CustomValuesPanel
+                postId={post.id}
+                fields={publicCustomFields}
+                initialValues={customValues}
+                editable={false}
+              />
+            </div>
           ) : null}
         </CardContent>
       </Card>
