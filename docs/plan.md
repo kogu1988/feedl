@@ -1253,6 +1253,30 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   "Son başarısız teslimatlar" + "Yeniden Dene" bölümü. Sonraki: madde 7
   (ilk canlı connector).
 
+### Sprint 44 — İlk Canlı Connector (PM raporu §9 madde 7) (✅ 2026-09-04)
+
+> İlk connector: dış sistemlerin geri bildirim mesajını feedl'e taşıyan
+> HERHANGİ bir kanal için ortak giriş (inbound) noktası. Üçüncü taraf
+> OAuth/credential gerektirmez — mevcut API anahtarı (write kapsamı) ile
+> doğrulanır; Intercom/Zendesk/Slack gibi adaptörler bu uca POST eder ve
+> AI Autopilot triage'ını kanıtlar (mesaj → fikir + sentiment/etiket/özet).
+
+- ☑ **`posts.source` kolonu (migration 0027):** fikrin geldiği kaynak
+  (portal | widget_embed | api | inbound:<ad>). Mevcut oluşturma yollarına
+  `source` set edildi: `/api/posts` (portal), `/api/widget/posts`
+  (widget_embed), `/api/v1/posts` (api). Connector'ların Autopilot'u
+  kaynağa göre izlenebilir.
+- ☑ **`POST /api/v1/feedbacks` (inbound connector):** write kapsamı;
+  `{ source, author:{email,name?}, message, title? }` — serbest mesaj alır,
+  başlık verilmediyse mesajın ilk satırından üretilir (140 kırpma),
+  `source` ile etiketlenir (`inbound:<ad>`), `post/created` yayınlar →
+  AI Autopilot çalışır. Örn. Intercom adaptörü bir müşteri mesajını buraya
+  POST ederek fikir oluşturur.
+- ☑ npm test (17/17) + npm run build ✓ → commit → push.
+- **Sonraki (madde 8):** Workspace/board UI + private access + role matrix
+  + custom domain (domain alındığında; subdomain yönlendirme P0.1 veri
+  temeliyle kuruldu).
+
 ### Ertelenen blok (en son — kullanıcının kısıtı)
 
 - **Resend geçişi:** tek env `RESEND_API_KEY`; kod otomatik geçer
