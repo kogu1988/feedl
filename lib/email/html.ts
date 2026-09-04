@@ -20,9 +20,9 @@ export function escapeHtml(value: string): string {
 // HTML footer bloğu: tek yönlü bildirim + destek adresi. Var olan her
 // şablonun footer <td> içine eklenir.
 export function oneWayFooterHtml(): string {
-  return `<span style="white-space:nowrap;">Bu e-posta tek yönlü bir bilgilendirmedir — bu e-postaya yanıt vermek bize ulaşmaz. Geri bildirim için <a href="https://feedl.app/portal" style="color:#71717a;">feedl&#39;e yazın</a> ya da <a href="mailto:${SUPPORT_EMAIL}" style="color:#71717a;">${SUPPORT_EMAIL}</a> adresine e-posta gönderin.</span>`;
+  return `<span style="white-space:nowrap;">Lütfen bu e-postayı yanıtlamayınız — bu e-postaya yanıt vermek bize ulaşmaz. Geri bildirim için <a href="https://feedl.app/portal" style="color:#71717a;">feedl&#39;e yazın</a> ya da <a href="mailto:${SUPPORT_EMAIL}" style="color:#71717a;">${SUPPORT_EMAIL}</a> adresine e-posta gönderin.</span>`;
 }
 
 export function oneWayFooterText(): string {
-  return `Bu e-posta tek yönlü bir bilgilendirmedir — bu e-postaya yanıt vermek bize ulaşmaz. Geri bildirim için: ${SUPPORT_EMAIL}`;
+  return `Lütfen bu e-postayı yanıtlamayınız — bu e-postaya yanıt vermek bize ulaşmaz. Geri bildirim için: ${SUPPORT_EMAIL}`;
 }
