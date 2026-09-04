@@ -3,7 +3,7 @@ import { redirect, notFound } from "next/navigation";
 import { Show, SignInButton } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
 import { and, asc, count, countDistinct, desc, eq, gt, inArray, isNotNull, isNull, ne, sql } from "drizzle-orm";
-import { alias } from "drizzle-orm/pg-core";
+
 import { z } from "zod";
 import {
   ArrowLeftIcon,
@@ -609,9 +609,9 @@ const SIMILAR_POSTS_LIMIT = 3;
 const SIMILAR_POSTS_MIN_SIMILARITY = 0.5;
 
 async function loadSimilarPosts(postId: string) {
-  const currentPost = alias(posts, "current_post");
+  // Inner subquery kendi scope'unda posts tablosunu görür; alias'a gerek yok.
   const similarity = () =>
-    sql<number>`1 - (${posts.embeddingVector} <=> (select ${currentPost.embeddingVector} from ${currentPost} where ${currentPost.id} = ${postId}))`;
+    sql<number>`1 - (${posts.embeddingVector} <=> (select ${posts.embeddingVector} from ${posts} where ${posts.id} = ${postId}))`;
 
   // 1) Embedding'i olan en benzer fikirlerin id'leri (join'siz — sıralama
   //    gruplamasız expression olarak kalır).
