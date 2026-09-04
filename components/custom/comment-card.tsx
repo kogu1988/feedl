@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Loader2Icon, PencilIcon, ReplyIcon, Trash2Icon } from "lucide-react";
 
 import { CommentForm } from "@/components/custom/comment-form";
+import { MarkdownContent } from "@/components/custom/markdown-content";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -151,9 +152,7 @@ export function CommentCard({
             </div>
           </div>
         ) : (
-          <p className="whitespace-pre-line text-sm leading-relaxed">
-            {comment.body}
-          </p>
+          <MarkdownContent content={comment.body} />
         )}
 
         {error ? <p className="text-xs text-destructive">{error}</p> : null}
