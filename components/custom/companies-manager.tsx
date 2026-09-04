@@ -36,6 +36,9 @@ export interface CompanyView {
   name: string;
   domain: string | null;
   mrr: string | null;
+  status: string;
+  renewalDate: string | null;
+  segment: string | null;
   notes: string | null;
   members: CompanyMemberView[];
 }
@@ -90,6 +93,9 @@ function CompanyFormDialog({
   const [name, setName] = useState("");
   const [domain, setDomain] = useState("");
   const [mrr, setMrr] = useState("");
+  const [status, setStatus] = useState("active");
+  const [renewalDate, setRenewalDate] = useState("");
+  const [segment, setSegment] = useState("");
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -98,6 +104,9 @@ function CompanyFormDialog({
     setName(company?.name ?? "");
     setDomain(company?.domain ?? "");
     setMrr(company?.mrr ?? "");
+    setStatus(company?.status ?? "active");
+    setRenewalDate(company?.renewalDate ?? "");
+    setSegment(company?.segment ?? "");
     setNotes(company?.notes ?? "");
     setError(null);
   };
@@ -126,6 +135,9 @@ function CompanyFormDialog({
           name: trimmedName,
           domain: domain.trim() || undefined,
           mrr: mrrValue,
+          status,
+          renewalDate: renewalDate || undefined,
+          segment: segment.trim() || undefined,
           notes: notes.trim() || undefined,
         }),
       });
@@ -226,6 +238,44 @@ function CompanyFormDialog({
               value={mrr}
               onChange={(event) => setMrr(event.target.value)}
               placeholder="0"
+            />
+          </div>
+          <div className="grid gap-2">
+            <label htmlFor={`company-status-${mode}`} className="text-sm font-medium">
+              Durum
+            </label>
+            <select
+              id={`company-status-${mode}`}
+              value={status}
+              onChange={(event) => setStatus(event.target.value)}
+              className="h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm"
+            >
+              <option value="active">Aktif</option>
+              <option value="at_risk">Risk altında</option>
+              <option value="churned">Kaybedildi</option>
+            </select>
+          </div>
+          <div className="grid gap-2">
+            <label htmlFor={`company-renewal-${mode}`} className="text-sm font-medium">
+              Yenileme tarihi (opsiyonel)
+            </label>
+            <Input
+              id={`company-renewal-${mode}`}
+              type="date"
+              value={renewalDate}
+              onChange={(event) => setRenewalDate(event.target.value)}
+            />
+          </div>
+          <div className="grid gap-2">
+            <label htmlFor={`company-segment-${mode}`} className="text-sm font-medium">
+              Segment (opsiyonel)
+            </label>
+            <Input
+              id={`company-segment-${mode}`}
+              value={segment}
+              onChange={(event) => setSegment(event.target.value)}
+              maxLength={40}
+              placeholder="Kurumsal"
             />
           </div>
           <div className="grid gap-2">
@@ -764,7 +814,30 @@ export function CompaniesManager({
                       ? `MRR ${mrrFormatter.format(Number(company.mrr))} · `
                       : ""}
                     {company.members.length} üye
+                    {company.segment ? ` · ${company.segment}` : ""}
                   </p>
+                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                    <span
+                      className={
+                        company.status === "churned"
+                          ? "rounded-md bg-muted px-1.5 py-0.5 text-xs text-muted-foreground"
+                          : company.status === "at_risk"
+                            ? "rounded-md bg-red-100 px-1.5 py-0.5 text-xs text-red-800 dark:bg-red-500/15 dark:text-red-300"
+                            : "rounded-md bg-emerald-100 px-1.5 py-0.5 text-xs text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300"
+                      }
+                    >
+                      {company.status === "churned"
+                        ? "Kaybedildi"
+                        : company.status === "at_risk"
+                          ? "Risk altında"
+                          : "Aktif"}
+                    </span>
+                    {company.renewalDate ? (
+                      <span className="text-xs text-muted-foreground">
+                        Yenileme: {company.renewalDate}
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
                 <div className="flex shrink-0 flex-wrap items-center gap-1">
                   <CompanyFormDialog

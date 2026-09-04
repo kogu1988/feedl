@@ -12,6 +12,8 @@ import { companies, companyMembers, users } from "@/lib/db/schema";
 // Sprint 30 — müşteri şirket yönetimi (P3.1). Üyeler cascade silinir;
 // şirketin fikirlerle bağı Sprint 31'de opportunities üzerinden gelir.
 
+const companyStatusEnum = z.enum(["active", "at_risk", "churned"]);
+
 const companyInputSchema = z.object({
   name: z.string().trim().min(1, "Şirket adı gerekli.").max(120),
   domain: z
@@ -21,6 +23,18 @@ const companyInputSchema = z.object({
     .optional()
     .transform((value) => (value ? value : null)),
   mrr: z.number().min(0).max(99999999.99).nullable().optional(),
+  status: companyStatusEnum.optional().default("active"),
+  renewalDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Geçersiz tarih.")
+    .nullable()
+    .optional(),
+  segment: z
+    .string()
+    .trim()
+    .max(40)
+    .optional()
+    .transform((value) => (value ? value : null)),
   notes: z
     .string()
     .trim()
@@ -72,6 +86,9 @@ export async function GET() {
       name: company.name,
       domain: company.domain,
       mrr: company.mrr,
+      status: company.status,
+      renewalDate: company.renewalDate,
+      segment: company.segment,
       notes: company.notes,
       members: (membersByCompany.get(company.id) ?? []).map((member) => ({
         id: member.id,
@@ -131,6 +148,9 @@ export async function POST(req: Request) {
         name: parsed.data.name,
         domain: parsed.data.domain,
         mrr: parsed.data.mrr == null ? null : String(parsed.data.mrr),
+        status: parsed.data.status,
+        renewalDate: parsed.data.renewalDate ?? null,
+        segment: parsed.data.segment,
         notes: parsed.data.notes,
       })
       .returning({ id: companies.id });
@@ -188,6 +208,9 @@ export async function PATCH(req: Request) {
         name: parsed.data.name,
         domain: parsed.data.domain,
         mrr: parsed.data.mrr == null ? null : String(parsed.data.mrr),
+        status: parsed.data.status,
+        renewalDate: parsed.data.renewalDate ?? null,
+        segment: parsed.data.segment,
         notes: parsed.data.notes,
         updatedAt: new Date(),
       })

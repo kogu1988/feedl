@@ -197,6 +197,13 @@
       "when": 1788548492824,
       "tag": "0027_post_source",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1788548720488,
+      "tag": "0028_company_revenue",
+      "breakpoints": true
     }
   ]
 }

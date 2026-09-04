@@ -695,6 +695,11 @@ export const companies = pgTable("companies", {
   name: varchar("name", { length: 120 }).notNull(),
   domain: varchar("domain", { length: 200 }),
   mrr: numeric("mrr", { precision: 12, scale: 2 }),
+  // Sprint 45 (PM raporu §9 madde 9): segment MRR + renewal/churn riski.
+  // status: active | at_risk | churned — yenileme riski ve kayıp izlenir.
+  status: varchar("status", { length: 20 }).notNull().default("active"),
+  renewalDate: date("renewal_date"),
+  segment: varchar("segment", { length: 40 }),
   notes: text("notes"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()

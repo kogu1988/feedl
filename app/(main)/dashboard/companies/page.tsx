@@ -91,6 +91,9 @@ export default async function CompaniesPage() {
       name: company.name,
       domain: company.domain,
       mrr: company.mrr,
+      status: company.status,
+      renewalDate: company.renewalDate,
+      segment: company.segment,
       notes: company.notes,
       members: membersByCompany.get(company.id) ?? [],
     }));
