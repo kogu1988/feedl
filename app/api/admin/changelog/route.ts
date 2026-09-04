@@ -21,11 +21,8 @@ const createSchema = z.object({
     .url({ protocol: /^https?$/, error: "Görsel URL'si http(s) olmalı." })
     .max(2048)
     .optional(),
-  label: z
-    .enum(["yeni", "iyileştirme", "düzeltme"], {
-      error: "Geçersiz etiket.",
-    })
-    .optional(),
+  // Sprint 40: serbest metin etiket — öneriler admin UI'da datalist ile.
+  label: z.string().trim().min(1).max(40).optional(),
   postIds: z.array(z.uuid()).max(20).optional(),
 });
 

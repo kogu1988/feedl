@@ -23,12 +23,8 @@ export interface ShippedPostOption {
   title: string;
 }
 
-const LABEL_OPTIONS = [
-  { value: "", label: "Etiket yok" },
-  { value: "yeni", label: "Yeni" },
-  { value: "iyileştirme", label: "İyileştirme" },
-  { value: "düzeltme", label: "Düzeltme" },
-] as const;
+// Serbest metin etiket — datalist yalnızca öneri sunar, boş = etiket yok.
+const LABEL_SUGGESTIONS = ["yeni", "iyileştirme", "düzeltme"] as const;
 
 // Sprint 25: admin changelog paneli — duyuru yaz, fikirlere bağla,
 // mevcut duyuruları sil. Dashboard'da sunucudan entry + shipped fikir
@@ -160,18 +156,19 @@ export function ChangelogAdmin({
           <Label htmlFor="changelog-label" className="text-xs text-muted-foreground">
             Etiket
           </Label>
-          <select
+          <Input
             id="changelog-label"
             value={label}
             onChange={(event) => setLabel(event.target.value)}
-            className="h-8 rounded-md border bg-background px-2 text-xs"
-          >
-            {LABEL_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
+            list="changelog-label-suggestions"
+            maxLength={40}
+            className="w-36"
+          />
+          <datalist id="changelog-label-suggestions">
+            {LABEL_SUGGESTIONS.map((suggestion) => (
+              <option key={suggestion} value={suggestion} />
             ))}
-          </select>
+          </datalist>
         </div>
         {shippedPosts.length > 0 ? (
           <div className="grid gap-1.5 rounded-md border p-3">
