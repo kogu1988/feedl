@@ -159,15 +159,22 @@
     {
       "idx": 22,
       "version": "7",
-      "when": 1788567600000,
+      "when": 1788481300000,
       "tag": "0022_changelog_image",
       "breakpoints": true
     },
     {
       "idx": 23,
       "version": "7",
-      "when": 1788654000000,
+      "when": 1788481400000,
       "tag": "0023_changelog_subscribers",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1788542316397,
+      "tag": "0024_custom_fields",
       "breakpoints": true
     }
   ]

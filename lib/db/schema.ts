@@ -754,3 +754,73 @@ export const postOpportunities = pgTable(
 
 export type PostOpportunity = typeof postOpportunities.$inferSelect;
 export type NewPostOpportunity = typeof postOpportunities.$inferInsert;
+
+// Sprint 42 (PM raporu §8.5): Admin'in fikirlere eklediği özel alanlar.
+// Sprint 21 taksonomi kararına dokunmaz: postType = kategori, tags = serbest
+// etiket kalır; custom fields ayrı, admin tanımlı bir katmandır.
+export const customFieldTypeEnum = pgEnum("custom_field_type", [
+  "text",
+  "select",
+  "number",
+  "date",
+]);
+
+export const customFields = pgTable(
+  "custom_fields",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    name: varchar("name", { length: 100 }).notNull(),
+    fieldType: customFieldTypeEnum("field_type").notNull().default("text"),
+    // Yalnızca fieldType = "select" iken anlamlı; satır başına bir seçenek.
+    options: text("options").array(),
+    required: boolean("required").notNull().default(false),
+    // true ise portal detay sayfasında herkese görünür; false yalnızca admin.
+    showOnPortal: boolean("show_on_portal").notNull().default(false),
+    displayOrder: integer("display_order").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("custom_fields_workspace_name_key").on(
+      table.workspaceId,
+      table.name,
+    ),
+  ],
+);
+
+export type CustomField = typeof customFields.$inferSelect;
+export type NewCustomField = typeof customFields.$inferInsert;
+
+export const postCustomValues = pgTable(
+  "post_custom_values",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    postId: uuid("post_id")
+      .notNull()
+      .references(() => posts.id, { onDelete: "cascade" }),
+    fieldId: uuid("field_id")
+      .notNull()
+      .references(() => customFields.id, { onDelete: "cascade" }),
+    // Değer metin saklanır; number/date doğrulaması API katmanında yapılır.
+    value: text("value"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    unique("post_custom_values_post_field_unique").on(
+      table.postId,
+      table.fieldId,
+    ),
+  ],
+);
+
+export type PostCustomValue = typeof postCustomValues.$inferSelect;
+export type NewPostCustomValue = typeof postCustomValues.$inferInsert;
