@@ -1366,6 +1366,31 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   board erişim politikaları + role matrix. Bu, board'ların gerçek
   kullanımı (farklı portallar) için gerekli.
 
+### Sprint 48c — Board Erişim + Portal Filtresi (PM raporu §9 madde 8) (✅ 2026-09-04)
+
+> Kullanıcı kararı: **B2 (korunaklı)** — board'a özel tam URL yerine mevcut
+> `/portal/[id]` (fikir detayı) korunur; board erişimi `?board=slug` query
+> ile. Mevcut e-posta/portal linkleri bozulmaz.
+
+- ☑ **Portal listesi (`portal/page.tsx`, commit ec78130):** `?board=slug`
+  okunur; aktif board `resolveBoardBySlug(slug, isAdmin)` ile çözülür
+  (private + admin değilse `genel`'e redirect). `buildPostConditions`'a
+  `boardId` koşulu eklendi; `loadPosts`/`countPosts` boardId alır. Board
+  seçici (pill) render — public boardlar anonime, private yalnızca admin;
+  aktif vurgulu. Arama formu + FilterTabs + PaginationFooter `board`
+  parametresini korur. `buildPortalHref` yardımcısı (q/sort/tag + board).
+- ☑ **Detay erişimi (`portal/[id]`, commit ec78130):** UUID değilse board
+  slug kabul edilir → `/portal?board=slug` redirect. `loadPost` `boardId`
+  döner; post private board'a aitse + admin değilse `notFound()`.
+- ☑ **Roadmap güvenliği (`roadmap/page.tsx`, commit 9fa6d1e):** roadmap
+  yalnızca public board (veya board'sız) fikirleri gösterir — private
+  board fikirleri sızmaz.
+- ☑ npm test (17/17) + npm run build ✓ → commit → push.
+- **Sonraki (48c'nin kalanı):** subdomain routing (`acme.feedl.app` ->
+  workspace çözümleme) + role matrix (owner/admin/member). Bunların
+  middleware + Vercel/DNS gerektirir ve ayrı sprint'te yapılır. Dashboard
+  `?board=` filtre de eklenebilir (48d adayı).
+
 ### Ertelenen blok (en son — kullanıcının kısıtı)
 
 - **Domain (feedl.app) alındı (2026-09-04).** Kod tarafı hazır: tüm
