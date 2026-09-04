@@ -23,6 +23,17 @@ const createSchema = z.object({
   label: z.string().trim().max(120).optional(),
 });
 
+// drizzle 0.45 hatayı DrizzleQueryError.cause'a sarar; 23505 (unique
+// violation) hem kök hem sarmalayıcıda olabilir — zinciri kısa tararız.
+function isUniqueViolation(err: unknown): boolean {
+  let current: unknown = err;
+  for (let depth = 0; current && depth < 3; depth += 1) {
+    if ((current as { code?: string }).code === "23505") return true;
+    current = (current as { cause?: unknown }).cause;
+  }
+  return false;
+}
+
 // GET /api/admin/widget-origins — izinli origin listesi.
 export async function GET() {
   try {
@@ -89,11 +100,32 @@ export async function POST(req: Request) {
       );
     }
 
+    const workspaceId = await getWorkspaceId();
+
+    // Pre-check: aynı origin varsa dostça 409 (catch yalnızca yarış durumu
+    // için yedek — drizzle hatayı cause zincirine sarar).
+    const [existing] = await getDb()
+      .select({ id: widgetOrigins.id })
+      .from(widgetOrigins)
+      .where(
+        and(
+          eq(widgetOrigins.workspaceId, workspaceId),
+          eq(widgetOrigins.origin, origin),
+        ),
+      )
+      .limit(1);
+    if (existing) {
+      return NextResponse.json(
+        { success: false, error: "Bu origin zaten kayıtlı." },
+        { status: 409 },
+      );
+    }
+
     try {
       const [created] = await getDb()
         .insert(widgetOrigins)
         .values({
-          workspaceId: await getWorkspaceId(),
+          workspaceId,
           origin,
           label: parsed.data.label || null,
         })
@@ -107,7 +139,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, data: created }, { status: 201 });
     } catch (err) {
       // unique (workspace_id, origin) — aynı origin tekrar ekleniyorsa dostça 409.
-      if ((err as { code?: string }).code === "23505") {
+      if (isUniqueViolation(err)) {
         return NextResponse.json(
           { success: false, error: "Bu origin zaten kayıtlı." },
           { status: 409 },
