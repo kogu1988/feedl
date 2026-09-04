@@ -1150,6 +1150,56 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   kararı korunacak: admin tanımlı özel alanlar olarak daraltılacak,
   kapsam kullanıcıya onaylatılacak).
 
+### Sprint 42 — Custom Fields (PM raporu §8.5) (✅ 2026-09-04)
+
+> Kullanıcı kapsamı onayladı ve genişletti: "MVP seviyesini çoktan
+> geçtik, geliştirme yaparken MVP diyerek erteleme yapma" → tam kapsam:
+> 4 alan türü (text/select/number/date) + `required` + `show_on_portal`
+> görünürlüğü + sıralama. Sprint 21 tek taksonomi kararı korunur:
+> postType = kategori, tags = serbest etiket; custom fields bunlardan
+> bağımsız, admin tanımlı bir katmandır. Ayrı categories tablosu YOK.
+
+- ☑ **Batch 1 — Şema + migration (2026-09-04, commit d172b20):** `customFields`
+  (id, workspace_id, name, field_type enum text/select/number/date, options
+  text[], required, show_on_portal, display_order, created_at;
+  unique(workspace_id, name)) + `postCustomValues` (id, post_id, field_id,
+  value text, created_at, updated_at; unique(post_id, field_id)) tabloları
+  `lib/db/schema.ts`'e eklendi; migration **0024_custom_fields.sql**
+  generate + migrate ile canlı Neon'a uygulandı.
+  - **Migration zincir onarımı:** drizzle-kit generate "0020/0021
+    snapshot parent collision" hatası verdi — 0020 ve 0021 snapshot'ları
+    aynı `id`/`prevId` taşıyordu (elle + generate karışımından). 0021'e
+    yeni id, 0022.prevId'yeni id'e bağlandı. Ayrıca 0022/0023 `when`
+    değerleri bozuktu (gelecek tarihli, +24h sentetik) → 0024'ün `when`'i
+    onlardan küçük kaldığı için drizzle 0024'ü "uygulanmış" sayıp
+    atlıyordu; journal `when`'leri ve `drizzle.__drizzle_migrations`
+    `created_at` değerleri tutarlı gerçekçi değerlere çekildi (0021-0023
+    elle uygulanmıştı, kayıt yoktu). Sonrası: 25/25 kayıt, hem tablo hem
+    enum doğrulandı. NOT: gelecekteki drizzle-kit generate diff'leri
+    elle düzeltilecek.
+- ☑ **Batch 2 — API (2026-09-04, commit 089d99a):** `lib/validations/custom-field.ts`
+  (create/update şemaları, customFieldTypeValues, firstIssueMessage);
+  `GET/POST /api/admin/custom-fields` + `PATCH/DELETE /api/admin/custom-fields/[id]`
+  — widget-origins deseni (getAdminUserId 403, zod, workspace scope, pre-check
+  + isUniqueViolation 409). POST: fieldType=select ise options zorunlu,
+  diğer türlerde null; PATCH: nihai tür select değilse options temizlenir.
+- ☑ **Batch 3 — Tanım sayfası (2026-09-04, commit e146988):**
+  `app/(main)/dashboard/fields/page.tsx` (admin guard + DB'den alanlar) +
+  `components/custom/custom-fields-manager.tsx` (ekle/düzenle/sil + yukarı/aşağı
+  sırala — displayOrder takası ile; tür seçici native select, options textarea
+  "satır başına bir seçenek"); dashboard üst butonlarına "Özel Alanlar" linki
+  (Şirketler ile Widget arasına).
+- ☑ **Batch 4 — Değer girişi + görünürlük (2026-09-04, commit 907c7e3):**
+  `POST /api/admin/posts/[id]/custom-values` (field türüne göre doğrulama:
+  number regex + virgül→nokta, date YYYY-MM-DD, select seçenek üyeliği;
+  required boş bırakılamaz; boş değer = temizle; unique üzerinden
+  `onConflictDoUpdate` ile tek set upsert — `excluded.value` kullanılır);
+  `components/custom/custom-values-panel.tsx` (editable=admin: tür başına
+  giriş + "Değerleri Kaydet"; editable=false: salt okunur); portal detay
+  sayfasında admin kutusuna tüm alanlar düzenlenebilir, herkese yalnızca
+  `show_on_portal` alanlar "Detaylar" bölümünde okunur.
+- ☑ Her batch: npm test (17/17) + npm run build ✓ → commit → push.
+
 ### Ertelenen blok (en son — kullanıcının kısıtı)
 
 - **Resend geçişi:** tek env `RESEND_API_KEY`; kod otomatik geçer
