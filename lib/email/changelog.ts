@@ -84,8 +84,8 @@ export function renderChangelogEmail(input: ChangelogEmailInput): RenderedEmail 
             <tr>
               <td style="padding:20px 32px;border-top:1px solid #e4e4e7;">
                 <p style="margin:0;font-size:12px;line-height:1.5;color:#71717a;">
-                  Bu e-postayı changelog duyurularına abone olduğun için alıyorsun.
-                  <a href="${input.unsubscribeUrl}" style="color:#71717a;">Duyuru e-postalarını kapat</a>.
+                  Bu e-postayı feedl.co duyurularına abone olduğun için alıyorsun.
+                  <a href="${input.unsubscribeUrl}" style="color:#71717a;">Feedl aboneliğinden çık</a>.
                 </p>
               </td>
             </tr>
@@ -102,8 +102,8 @@ ${bodyText}
 
 Portalda görüntüle: ${input.entryUrl}
 
-Bu e-postayı changelog duyurularına abone olduğun için alıyorsun.
-Duyuru e-postalarını kapat: ${input.unsubscribeUrl}`;
+Bu e-postayı feedl.co duyurularına abone olduğun için alıyorsun.
+Feedl aboneliğinden çık: ${input.unsubscribeUrl}`;
 
   return { subject, html, text };
 }

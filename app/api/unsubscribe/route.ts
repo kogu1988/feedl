@@ -67,7 +67,7 @@ export async function GET(req: Request) {
       if (deleted.length === 0) {
         return page(
           "Bağlantı bulunamadı",
-          "Bu abonelikten çıkma bağlantısı geçersiz veya abonelik zaten kaldırılmış.",
+          "Bu bağlantısı geçersiz veya abonelik zaten kaldırılmış.",
         );
       }
 
