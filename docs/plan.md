@@ -1333,6 +1333,39 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   `board_members`) + `posts.board_id` + merkezi tenant scope (her
   sorguya boardId kapsamı). En kritik/büyük parça.
 
+### Sprint 48b — Board Modeli + Tenant Scope (PM raporu §9 madde 8) (✅ 2026-09-04)
+
+> Kullanıcı kararı: **Model B** — her board kendi portalına sahip (`portal/[slug]`);
+> board yalnızca POST'ları kapsar (Canny modeli), companies/opportunities/
+> changelog/api_keys workspace-scoped kalır. Varsayılan board "genel" mevcut
+> tüm fikirleri taşır. Portal URL/subdomain routing (48c) sonraki adım.
+
+- ☑ **Şema (migration 0030, commit d084952):** `board_visibility` enum
+  (public/private) + `boards` tablosu (id, workspace_id, name, slug
+  unique(workspace_id,slug), description, visibility, sort_order,
+  timestamps) + `posts.board_id` FK (nullable, set null). Migration SQL'ine
+  **default board seed** eklendi: her workspace için 'Genel' (slug=genel,
+  public, sort_order 0) + `UPDATE posts SET board_id = genel WHERE NULL`.
+  DB doğrulandı: 1 'Genel' board, 9/9 posta board atandı.
+- ☑ **Helper:** `lib/db/board.ts` — `getDefaultBoardId()` (cache'li
+  singleton), `listBoards()`, `resolveBoardBySlug(slug, isAdmin)`
+  (private board yalnızca admin'e görünür),`isBoardInWorkspace()`.
+- ☑ **API:** `GET/POST/PATCH/DELETE /api/admin/boards` — slug regex,
+  unique(workspace,slug) 409, varsayılan 'genel' board silinemez ve gizli
+  yapılamaz, PATCH/DELETE `?id=` query ile.
+- ☑ **UI:** `app/(main)/dashboard/boards/page.tsx` +
+  `components/custom/boards-manager.tsx` (ekle/düzenle/sil, görünürlük
+  rozeti, varsayılan sil butonu devre dışı). Dashboard üst barına
+  "Board'lar" butonu.
+- ☑ **Post oluşturma scope:** `/api/posts`, `/api/widget/posts`,
+  `/api/v1/posts`, `/api/v1/feedbacks` > `boardId: getDefaultBoardId()`
+  (yeni fikirler varsayılan board'a yazılır; tek board döneminde doğru).
+- ☑ npm test (17/17) + npm run build ✓ → commit → push.
+- **Sonraki:** 48c — Board bazlı portal URL (`portal/[slug]`),
+  subdomain routing (`acme.feedl.app` -> workspace çözümleme),
+  board erişim politikaları + role matrix. Bu, board'ların gerçek
+  kullanımı (farklı portallar) için gerekli.
+
 ### Ertelenen blok (en son — kullanıcının kısıtı)
 
 - **Domain (feedl.app) alındı (2026-09-04).** Kod tarafı hazır: tüm
