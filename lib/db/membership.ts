@@ -72,7 +72,11 @@ export async function upsertWorkspaceMember(
       target: [workspaceMembers.workspaceId, workspaceMembers.userId],
       set: { role, updatedAt: new Date() },
     })
-    .returning({ id: workspaceMembers.id, userId: workspaceMembers.userId, role });
+    .returning({
+      id: workspaceMembers.id,
+      userId: workspaceMembers.userId,
+      role: workspaceMembers.role,
+    });
 }
 
 export async function removeWorkspaceMember(userId: string) {

@@ -24,7 +24,7 @@ import { Button } from "@/components/ui/button";
 import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
-import { listBoards } from "@/lib/db/board";
+import { listBoards, resolveBoardBySlug } from "@/lib/db/board";
 import { loadCustomerCounts } from "@/lib/db/customer-counts";
 import {
   computeRevenueScore,
@@ -67,6 +67,7 @@ export default async function DashboardPage({
     range?: string;
     per?: string;
     page?: string;
+    board?: string;
   }>;
 }) {
   // Middleware girişi garanti eder; admin rolü tek kaynaktan (DB) doğrulanır.
@@ -78,11 +79,16 @@ export default async function DashboardPage({
   // plan.md Sprint 12: durum filtresi ?status= ile gelir; geçersiz değer
   // "Tümü"ne düşer. İstatistikler her zaman TÜM fikirlerden hesaplanır,
   // filtre yalnızca tabloyu etkiler.
-  const { status: rawStatus, tag: rawTag, range: rawRange, per: rawPer, page: rawPage } = await searchParams;
+  const { status: rawStatus, tag: rawTag, range: rawRange, per: rawPer, page: rawPage, board: rawBoard } = await searchParams;
   const statusFilter =
     postStatusEnum.enumValues.find((value) => value === rawStatus) ?? null;
   // Sprint 21: etiket filtresi (portal ile aynı normalize kuralı).
   const tagFilter = (rawTag ?? "").trim().toLocaleLowerCase("tr").slice(0, 30);
+  // Sprint 48d: board filtresi (
+  const boardSlug = (rawBoard ?? "").trim().toLowerCase().slice(0, 80);
+  const activeBoard = boardSlug
+    ? await resolveBoardBySlug(boardSlug, true)
+    : null;
   // Sprint 29: analitik dönemi (?range=); geçersiz değer 7 güne düşer.
   const rangeDays =
     rawRange === "14" || rawRange === "30" || rawRange === "365"
@@ -131,7 +137,7 @@ export default async function DashboardPage({
     postStats = statsData.stats;
     sentimentCounts = statsData.sentimentCounts;
     topPosts = statsData.topPosts;
-    totalCount = await countDashboardPosts(tagFilter, statusFilter);
+    totalCount = await countDashboardPosts(tagFilter, statusFilter, activeBoard?.id);
     totalPages =
       per === "all" ? 1 : Math.max(1, Math.ceil(totalCount / perSize));
     currentPage = Math.min(requestedPage, totalPages);
@@ -140,6 +146,7 @@ export default async function DashboardPage({
       statusFilter,
       perSize,
       (currentPage - 1) * perSize,
+      activeBoard?.id,
     );
     customerCountByPost = await loadCustomerCounts(rows.map((row) => row.id));
     revenueContexts = await loadRevenueContexts(rows.map((row) => row.id));
@@ -248,6 +255,7 @@ export default async function DashboardPage({
                 extraParams={{
                   ...(statusFilter ? { status: statusFilter } : {}),
                   ...(tagFilter ? { tag: tagFilter } : {}),
+                  ...(boardSlug ? { board: boardSlug } : {}),
                 }}
                 options={rangeOptions}
               />
@@ -333,6 +341,35 @@ export default async function DashboardPage({
                 ? `Filtrede ${totalCount} fikir — durumu satırdan değiştirebilirsin.`
                 : `Toplam ${totalCount} fikir — durumu satırdan değiştirebilirsin.`}
           </CardDescription>
+          {!loadError && boardItems.length > 1 ? (
+            <div className="pt-2">
+              <select
+                value={boardSlug}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  const params = new URLSearchParams();
+                  if (next) params.set("board", next);
+                  if (statusFilter) params.set("status", statusFilter);
+                  if (tagFilter) params.set("tag", tagFilter);
+                  if (per !== "5") params.set("per", per);
+                  window.location.href = `/dashboard?${params.toString()}`;
+                }}
+                aria-label="Board filtresi"
+                className="h-9 max-w-[240px] rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              >
+                <option value="">Tüm Board&apos;lar</option>
+                {boardItems.map((board) => (
+                  <option
+                    key={board.id}
+                    value={board.slug}
+                    className={board.visibility === "private" ? "text-muted-foreground" : ""}
+                  >
+                    {board.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
           {!loadError && rows.length > 0 ? (
             <div className="grid gap-2 pt-2">
               <FilterTabs
@@ -341,6 +378,7 @@ export default async function DashboardPage({
                 active={statusFilter ?? ""}
                 extraParams={{
                   ...(tagFilter ? { tag: tagFilter } : {}),
+                  ...(boardSlug ? { board: boardSlug } : {}),
                   ...(per !== "5" ? { per } : {}),
                 }}
                 options={[
@@ -358,6 +396,7 @@ export default async function DashboardPage({
                   active={tagFilter}
                   extraParams={{
                     ...(statusFilter ? { status: statusFilter } : {}),
+                    ...(boardSlug ? { board: boardSlug } : {}),
                     ...(per !== "5" ? { per } : {}),
                   }}
                   options={[
@@ -375,6 +414,7 @@ export default async function DashboardPage({
                   [
                     ["status", statusFilter],
                     ["tag", tagFilter],
+                    ["board", boardSlug || null],
                   ].filter(
                     (pair): pair is [string, string] =>
                       pair[1] !== null && pair[1] !== "",
@@ -438,10 +478,12 @@ export default async function DashboardPage({
               extraParams={{
                 ...(statusFilter ? { status: statusFilter } : {}),
                 ...(tagFilter ? { tag: tagFilter } : {}),
+                ...(boardSlug ? { board: boardSlug } : {}),
               }}
               pageParams={{
                 ...(statusFilter ? { status: statusFilter } : {}),
                 ...(tagFilter ? { tag: tagFilter } : {}),
+                ...(boardSlug ? { board: boardSlug } : {}),
                 ...(per !== "5" ? { per } : {}),
               }}
             />
@@ -493,6 +535,7 @@ async function loadPosts(
   statusFilter: (typeof postStatusEnum.enumValues)[number] | null,
   limit: number,
   offset: number,
+  boardId?: string,
 ) {
   const workspaceId = await getWorkspaceId();
   return getDb()
@@ -510,7 +553,7 @@ async function loadPosts(
     })
     .from(posts)
     .leftJoin(votes, eq(votes.postId, posts.id))
-    .where(dashboardPostConditions(workspaceId, tagFilter, statusFilter))
+    .where(dashboardPostConditions(workspaceId, tagFilter, statusFilter, boardId))
     .groupBy(posts.id)
     .orderBy(desc(posts.createdAt))
     .limit(limit)
@@ -519,14 +562,17 @@ async function loadPosts(
 
 // Sprint 39: loadPosts + countDashboardPosts paylaşılan where koşulu
 // (tek kaynak kuralı). statusFilter undefined → istatistik sorgusu tüm
-// durumları kapsar (kartlar filtrelenmemiş toplamları gösterir).
+// durumları kapsar (kartlar filtrelenmemiş toplamları gösterir). Sprint
+// 48d: boardId koşulu — ?board= verildiyse o board'un fikirleri.
 function dashboardPostConditions(
   workspaceId: string,
   tagFilter: string,
   statusFilter: (typeof postStatusEnum.enumValues)[number] | null | undefined,
+  boardId?: string,
 ) {
   return and(
     eq(posts.workspaceId, workspaceId),
+    boardId ? eq(posts.boardId, boardId) : undefined,
     tagFilter
       ? inArray(
           posts.id,
@@ -549,6 +595,7 @@ function dashboardPostConditions(
 async function countDashboardPosts(
   tagFilter: string,
   statusFilter: (typeof postStatusEnum.enumValues)[number] | null,
+  boardId?: string,
 ) {
   const [row] = await getDb()
     .select({ value: count() })
@@ -558,6 +605,7 @@ async function countDashboardPosts(
         await getWorkspaceId(),
         tagFilter,
         statusFilter,
+        boardId,
       ),
     );
   return row.value;
