@@ -1,10 +1,11 @@
-import { and, countDistinct, desc, eq, inArray } from "drizzle-orm";
+import { and, count, countDistinct, desc, eq, inArray } from "drizzle-orm";
 import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
 import { SignInButton } from "@clerk/nextjs";
 import { ArrowLeftIcon } from "lucide-react";
 
 import { CommentCountBadge } from "@/components/custom/comment-count-badge";
+import { PaginationFooter } from "@/components/custom/pagination-footer";
 import { StatusBadge } from "@/components/custom/status-badge";
 import { VoteButton } from "@/components/custom/vote-button";
 import {
@@ -18,6 +19,7 @@ import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { comments, posts, votes } from "@/lib/db/schema";
 import { summarize } from "@/lib/post-format";
+import { parsePagination } from "@/lib/pagination";
 
 // Kullanıcının kendi oyları (plan.md Sprint 15): en son oyladığı üstte.
 // Statik segment "oyladiklarim" /portal/[id] rotasını gölgeler; çakışma
@@ -25,7 +27,11 @@ import { summarize } from "@/lib/post-format";
 // Oy geri çekme mevcut VoteButton + DELETE /api/votes ile çalışır.
 export const dynamic = "force-dynamic";
 
-export default async function MyVotesPage() {
+export default async function MyVotesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ per?: string; page?: string }>;
+}) {
   const { userId } = await auth();
 
   if (!userId) {
@@ -49,11 +55,22 @@ export default async function MyVotesPage() {
     );
   }
 
+  // Sprint 39: oy listesi sayfalaması — 5 varsayılan, 25/50/Tümü.
+  const { per: rawPer, page: rawPage } = await searchParams;
+  const { per, perSize, requestedPage } = parsePagination(rawPer, rawPage);
+
   let rows: Awaited<ReturnType<typeof loadMyVotes>> = [];
+  let totalCount = 0;
+  let currentPage = 1;
+  let totalPages = 1;
   let loadError = false;
 
   try {
-    rows = await loadMyVotes(userId);
+    totalCount = await countMyVotes(userId);
+    totalPages =
+      per === "all" ? 1 : Math.max(1, Math.ceil(totalCount / perSize));
+    currentPage = Math.min(requestedPage, totalPages);
+    rows = await loadMyVotes(userId, perSize, (currentPage - 1) * perSize);
   } catch (err) {
     console.error(
       "My votes load failed:",
@@ -127,6 +144,16 @@ export default async function MyVotesPage() {
           ))
         )}
       </div>
+
+      {rows.length > 0 ? (
+        <PaginationFooter
+          basePath="/portal/oyladiklarim"
+          page={currentPage}
+          totalPages={totalPages}
+          per={per}
+          pageParams={per !== "5" ? { per } : undefined}
+        />
+      ) : null}
     </main>
   );
 }
@@ -143,15 +170,26 @@ function BackLink() {
   );
 }
 
-async function loadMyVotes(userId: string) {
+async function countMyVotes(userId: string) {
+  const [row] = await getDb()
+    .select({ value: count() })
+    .from(votes)
+    .where(eq(votes.userId, userId));
+  return row.value;
+}
+
+async function loadMyVotes(userId: string, limit: number, offset: number) {
   // 1) Kullanıcının oyları — unique(user_id, post_id) sayesinde fikir
   // başına en fazla bir satır; sıralama "en son oyladığın üstte".
+  // Sprint 39: sayfalama bu adımda uygulanır; detay sorgusu yalnız sayfadaki
+  // id'leri çeker.
   const myVotes = await getDb()
     .select({ postId: votes.postId, votedAt: votes.createdAt })
     .from(votes)
     .where(eq(votes.userId, userId))
     .orderBy(desc(votes.createdAt))
-    .limit(200);
+    .limit(limit)
+    .offset(offset);
 
   if (myVotes.length === 0) {
     return [];
