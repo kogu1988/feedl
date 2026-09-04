@@ -1011,40 +1011,32 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   gelecekteki drizzle-kit generate diff'leri elle düzeltilecek (0020'de
   olduğu gibi). DB doğrulandı: 1 workspace, 8 tabloda NULL yok.
 
-### Sprint 38 (planlandı 2026-09-04): Widget Origin Yönetimi + Paylaşımlı Rate Limit
-
-PM raporu §8.2 — "şart, güvenlik" üçlüsü. (c) madde kod incelemesiyle
-çözüldü: API key SHA-256 key_hash ile saklanıyor, düz metin yok.
-
-- **Kararlar:**
-  - Widget origin kontrolü artık üç katmanlı: (1) self-origin
-    (NEXT_PUBLIC_APP_URL + canlı fallback) her zaman izinli — iframe
-    içi istekler feedl domaininden gelir; (2) env listesi
-    (FEEDL_WIDGET_ALLOWED_ORIGINS, mevcut davranış korunur); (3) yeni
-    widget_origins tablosu (workspace bazlı, admin panelinden yönetilir).
-    Hiçbiri boş origin'i kapsamıyorsa RED — "env boşsa herkes kabul"
-    davranışı biter.
-  - "Teyit" bu sprintte = admin'in kendisi ekler; meta tag/DNS
-    sahiplik doğrulaması custom domain sprintiyle (PM §8.8) gelir.
-  - Paylaşımlı rate limit: Upstash Redis (@upstash/ratelimit),
-    Vercel Marketplace > Upstash entegrasyonu; env isimleri
-    UPSTASH_REDIS_REST_URL/TOKEN (KV_REST_API_* da desteklenir).
-    Env yoksa mevcut süreç-içi limiter'a düşer — deploy kırılmaz.
-  - Upstash envanterinde feedl_ öneki ilkesi korunur.
-- **Adımlar (batch'ler):**
-  1. plan kaydı (bu blok)
-  2. widget_origins şeması + migration 0021 + lib/widget/origins.ts +
-     çağrı yerleri (session/posts/votes)
-  3. admin API (/api/admin/widget-origins) + dashboard/widget UI
-  4. @upstash/ratelimit entegrasyonu (lib/api-keys.ts async)
-  5. plan.md ✅ kaydı + PM raporu (c) maddesi güncellemesi
-- **Kabul kriterleri:**
-  - DB'de kayıtlı olmayan yabancı origin'den widget session isteği
-    reddedilir (403); self-origin ve kayıtlı origin çalışır.
-  - Env tanımlıysa davranış bugünküyle aynı kalır (geriye uyumlu).
-  - UPSTASH env'li ortamda 61. istek 429 döner; env'siz ortamda
-    mevcut davranış aynen sürer.
-  - `npm run build` temiz.
+- ✅ **Sprint 38 — Widget Origin Yönetimi + Paylaşımlı Rate Limit
+  (PM raporu §8.2)** (2026-09-04, commit 13a4f40 + d702c71 + f071309 +
+  ee41e1e; kullanıcı kontrol listesi + yerel uçtan uca test):
+  (c) madde kod incelemesiyle çözüldü — API key SHA-256 key_hash ile
+  saklanıyor, düz metin yok (Sprint 34'ten beri), PM raporu güncellendi.
+  Widget origin kontrolü üç katmanlı: (1) self-origin
+  (NEXT_PUBLIC_APP_URL + canlı fallback) her zaman izinli; (2) env
+  listesi FEEDL_WIDGET_ALLOWED_ORIGINS; (3) widget_origins tablosu
+  (migration 0021, workspace bazlı, unique(workspace_id, origin)).
+  Hiçbiri kapsamıyorsa RED — "env boşsa herkes kabul" davranışı bitti.
+  lib/widget/origins.ts: isOriginAllowed (10s TTL cache +
+  invalidateOriginsCache) + normalizeWidgetOrigin (yalnız
+  scheme://host[:port]; path/query/hash/userinfo reddedilir);
+  session/posts/votes route'ları bağlandı. Admin: /api/admin/widget-origins
+  (GET/POST/DELETE; duplicate pre-check + isUniqueViolation cause-chain
+  kontrolü — drizzle 0.45 hatayı DrizzleQueryError.cause'a sarıyor,
+  err.code yüzeyde yok) + /dashboard/widget "İzinli siteler" kartı
+  (WidgetOriginsManager) + yanlış "Boşsa kısıt yok" metni düzeltildi.
+  Paylaşımlı rate limit: Upstash Redis (Vercel Marketplace, feedl_db /
+  us-east-1), @upstash/ratelimit 2.0.8 — lib/api-keys.ts checkRateLimit
+  async: env varsa slidingWindow(60/dk, prefix "feedl:rl") tüm
+  instance'larda ortak; Redis hatasında süreç-içi fallback (log düşer);
+  env yoksa eski davranış. api/v1/posts ×2 await'e geçti. Yerel test:
+  ping PONG; 5 istek/10sn/3 limit → true,true,true,false,false. Canlı:
+  anahtarsız /api/v1/posts → 401 zarfı doğrulandı; UPSTASH env'leri
+  Vercel'e eklendi + redeploy.
 
 ### Ertelenen blok (en son — kullanıcının kısıtı)
 

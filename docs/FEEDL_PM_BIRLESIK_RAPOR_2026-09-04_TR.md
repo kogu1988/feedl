@@ -85,9 +85,11 @@ olmadan kurulamaz; sıralama bu yüzden **tenant önce** demektir.
 - **Revenue score sadece `oy + 10×müşteri + (MRR + açık fırsat)/1000`** —
   generic scoring engine değil; "skor" ile gerçek karar desteği arasındaki
   netlik farkı büyük.
-- **API key at-rest:** build'de `hashApiKey` ve `timingSafeEqual`
-  **kullanılmayan import** olarak görünüyor → API key'in gerçekten
-  hash'lenip hashlenmediğini **doğrula**. Düz metin depolama riski yüksek.
+- **API key at-rest — ✅ doğrulandı (2026-09-04, Sprint 38):** API key
+  SHA-256 `key_hash` ile saklanıyor (Sprint 34'ten beri); tam anahtar
+  yalnızca oluşturma anında döner, düz metin depolama yok. İlk raporun
+  "kullanılmayan import" şüphesi yerıldı — analiz anındaki kod durumu
+  eksik okunmuş.
 - **Arama migration bağımlılığı:** `pg_trgm` index'i yeni ortamda manuel
   kuruluyor → migration'a kodla, fresh DB smoke testi ekle.
 - **Webhook olayları dar:** `deleted`, `vote.created/deleted`, `changelog`
@@ -120,17 +122,19 @@ olmadan kurulamaz; sıralama bu yüzden **tenant önce** demektir.
 
 | Yüzey | Durum | Önem |
 |---|---|---|
-| Widget origin allowlist | Boşsa her origin kabul → **kritik** | Production'da boş değeri reject et |
+| Widget origin allowlist | ✅ Çözüldü (Sprint 38): self + env + `widget_origins` tablosu (admin UI'li); kapsamayan origin RED | "Teyit" = admin ekler; meta tag/DNS doğrulaması custom domain sprintine kaldı |
 | Widget JWT identify | İmzalı kısa ömürlü token var | İyi; expiration + audience/issuer kontrolü doğrula |
-| API key hash | `hashApiKey`/`timingSafeEqual` kullanılmıyor olabilir → **doğrula** | Düz metin riski |
+| API key hash | ✅ Doğrulandı: SHA-256 `key_hash`, düz metin yok (Sprint 38 kod incelemesi) | — |
 | Webhook HMAC | İmzalı teslimat var | İyi; retry/dead-letter eksik |
-| Tenant veri ayrımı | **Yok** | En büyük risk; tenant scope helper'ı şart |
+| Tenant veri ayrımı | Kısmi: workspace_id + scope filtreleri yayıldı (Sprint 37), UI/membership yok | Kalan: Organizations UI + erişim politikaları (P0.2) |
+| Public API rate limit | ✅ Paylaşımlı (Sprint 38): Upstash 60 ist/dk, `feedl:rl` öneki; Redis hatasında süreç-içi fallback | Upstash kotası izlenmeli (free tier 10 GB/ay) |
 | AI PII | Kullanıcı içeriği OpenRouter'a gidiyor; retention varsa soru | Prompt injection + PII maskesi + tenant bağlam ayrımı zorunlu |
-| Clerk/CORS | Clerk session + DB role; widget iframe origin | Doğrulandı; allowlist ilişkisi izle |
+| Clerk/CORS | Clerk session + DB role; widget iframe origin | Doğrulandı; allowlist Sprint 38 ile ilişkilendirildi |
 
-**Güvenlik özeti:** İki tanesi (widget allowlist, tenant scope) hemen
-yapılmalı; biri (API key hash) **doğrulanmalı**; biri (AI PII/tenant)
-mimariyle birlikte çözülmeli.
+**Güvenlik özeti (2026-09-04 revizyonu):** Widget allowlist, API key
+hash ve paylaşımlı rate limit çözüldü (Sprint 38). Kalan iki başlık:
+tenant veri ayrımının UI/membership ayağı (Organizations, domain'le) ve
+AI PII/tenant bağlamı — ikisi mimariyle birlikte çözülmeli.
 
 ## 7. UI-UX Analizi
 
@@ -157,10 +161,10 @@ konuşuyor.
 
 ## 8. PM Önerim: Sıradaki Adım Sırası
 
-1. **Workspace/board hazırlık migration'ı + merkezi tenant scope helper**
-   (Paddle plan limitlerini mümkün kılar) → *şart*
-2. **Widget origin zorunlu + paylaşımlı rate limit + API key hash
-   doğrulama** → *şart, güvenlik*
+1. ~~**Workspace/board hazırlık migration'ı + merkezi tenant scope
+   helper**~~ → ✅ tamamlandı (Sprint 37, commit ae6bea0…1ae5cf1)
+2. ~~**Widget origin zorunlu + paylaşımlı rate limit + API key hash
+   doğrulama**~~ → ✅ tamamlandı (Sprint 38, commit 13a4f40…ee41e1e)
 3. **Server-side pagination + test/CI** → *şart, büyüme hazırlığı*
 4. Comments/changelog polish
 5. Custom fields + categories
