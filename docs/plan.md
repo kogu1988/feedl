@@ -1237,11 +1237,21 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   api-keys-manager UI'sine kapsam seçici (Salt okunur / Okuma + yazma) +
   listede kapsam rozeti eklendi; dashboard loadApiKeys `scopes` taşır.
 - ☑ Her batch: npm test (17/17) + npm run build ✓ → commit → push.
-- **Kalan (maddde 6'nın tamamlanması için):** `vote.created/deleted` ve
-  `comment.deleted` için public API yazma uçları (şu an yalnızca
-  `POST /api/v1/posts` yazma var); retry/dead-letter — Inngest teslimat
-  retry 3× var, başarısız teslimatlar için kalıcı dead-letter kuyruğu
-  (webhook_delivery_log + yeniden oynatıcı) henüz yok.
+- ☑ **Madde 6 tamamlandı:** `vote.created/deleted` ve `comment.deleted`
+  için public API yazma uçları (commit d01e743 sonrası):
+  `POST /api/v1/posts/[id]/votes`, `DELETE /api/v1/posts/[id]/votes`,
+  `POST /api/v1/posts/[id]/comments` — `write` kapsamı zorunlu, yazar
+  `upsertApiUser` ile müşteri kullanıcısına bağlanır, olaylar yayınlanır.
+  **Dead-letter:** `webhook_deliveries` tablosu (migration 0025/0026,
+  unique(endpoint_id,event,payload)) + `lib/webhooks/delivery-log.ts`
+  (recordDeliveryFailure / markDeliveryDelivered best-effort + attempts
+  artırımı); `send-webhooks` her teslimatı izler — başarısızlıkta
+  dead-letter'a yazar ve retry için rethrow, başarıda delivered'a çeker.
+  Admin: `GET /api/admin/webhooks/deliveries?status=failed` (dead-letter
+  listesi) + `POST /api/admin/webhooks/deliveries/[id]/replay` (kayıtlı
+  payload ile yeniden imzalı teslimat) + webhooks-manager UI'sinde
+  "Son başarısız teslimatlar" + "Yeniden Dene" bölümü. Sonraki: madde 7
+  (ilk canlı connector).
 
 ### Ertelenen blok (en son — kullanıcının kısıtı)
 
