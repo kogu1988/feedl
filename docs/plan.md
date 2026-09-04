@@ -1391,6 +1391,34 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   middleware + Vercel/DNS gerektirir ve ayrı sprint'te yapılır. Dashboard
   `?board=` filtre de eklenebilir (48d adayı).
 
+### Sprint 48c-2 — Role Matrix (workspace üyeleri) (PM raporu §9 madde 8) (✅ 2026-09-04)
+
+> Kullanıcı onayı: 48c kalanının kod dışı Vercel/DNS gerektiren subdomain
+> kısmı tehir edildi; owner/admin/member rol matrisi bu sprint'te tamamlandı.
+> Sonrasında 48d (dashboard board filtre) hedefi.
+
+- ☑ **Şema (migration 0031, commit 7240fe8):** `workspace_member_role`
+  enum (owner/admin/member) + `workspace_members` tablosu (workspace_id,
+  user_id, role, timestamps; unique(workspace_id,user_id), user_idx).
+  Migration seed: mevcut `users.role='admin'` olanları feedl workspace'ine
+  owner olarak ekler (geçiş dönemi uyumluluğu).
+- ☑ **Helper:** `lib/db/membership.ts` — `getWorkspaceRole` (cache'siz),
+  `hasWorkspaceAdminAccess` (owner/admin + users.role='admin' geriye dönük),
+  `listWorkspaceMembers` (users join), `upsertWorkspaceMember`
+  (onConflictDoUpdate), `removeWorkspaceMember` (son owner kaldırılamaz).
+- ☑ **Auth:** `lib/auth/admin.ts` getRole önce workspace rolünü döner
+  (owner/admin → "admin", member → "customer"), membership yoksa global
+  users.role'a düşer; getAdminUserId buradan doğrular.
+- ☑ **API:** `GET/POST/PATCH/DELETE /api/admin/members` — rol değiştir,
+  üye ekle (kullanıcı Clerk'te var olmalı), çıkar (son owner reddedilir).
+- ☑ **UI:** `app/(main)/dashboard/members/page.tsx` +
+  `components/custom/members-manager.tsx` (üye ekle diyalog — kullanıcı
+  seçici + rol; satır içi rol dropdown; çıkar). Dashboard üst barına
+  "Üyeler" butonu.
+- ☑ npm test (17/17) + npm run build ✓ → commit → push.
+- **Sonraki:** 48d — Dashboard `?board=` filtre + board'a göre fikir
+  yönetimi.
+
 ### Ertelenen blok (en son — kullanıcının kısıtı)
 
 - **Domain (feedl.app) alındı (2026-09-04).** Kod tarafı hazır: tüm
