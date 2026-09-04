@@ -4,6 +4,7 @@ import {
   COMPARE_IDEAS_SYSTEM_PROMPT,
   compareIdeasUserPrompt,
 } from "./prompts";
+import { maskPii } from "./pii";
 import { chatJson } from "./openrouter";
 import {
   ideaAnalysisSchema,
@@ -12,13 +13,19 @@ import {
 } from "@/lib/validations/ai";
 
 /** prompts.md §1: özet + sentiment + tür + etiketler üretir. */
-export function analyzeIdea(post: {
-  title: string;
-  description: string;
-}): Promise<IdeaAnalysis> {
+export function analyzeIdea(
+  post: { title: string; description: string },
+  context?: { boardName?: string },
+): Promise<IdeaAnalysis> {
+  // PII maskele + tenant bağlamı (board/workspace).
+  const title = maskPii(post.title);
+  const description = maskPii(post.description);
+  const contextLine = context?.boardName
+    ? `Board: ${context.boardName}`
+    : undefined;
   return chatJson({
     system: ANALYZE_IDEA_SYSTEM_PROMPT,
-    user: analyzeIdeaUserPrompt(post.title, post.description),
+    user: analyzeIdeaUserPrompt(title, description, contextLine),
     schema: ideaAnalysisSchema,
   });
 }
@@ -53,7 +60,10 @@ export function compareIdeas(
 ): Promise<"DUPLICATE" | "RELATED" | "UNRELATED"> {
   return chatJson({
     system: COMPARE_IDEAS_SYSTEM_PROMPT,
-    user: compareIdeasUserPrompt(existing, incoming),
+    user: compareIdeasUserPrompt(
+      { title: maskPii(existing.title), description: maskPii(existing.description) },
+      { title: maskPii(incoming.title), description: maskPii(incoming.description) },
+    ),
     schema: ideaRelationSchema,
     maxTokens: 100,
   }).then((parsed) => parsed.relation);

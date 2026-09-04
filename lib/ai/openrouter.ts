@@ -1,4 +1,5 @@
 import type { ZodType } from "zod";
+import { maskPii } from "./pii";
 
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 
@@ -20,13 +21,14 @@ interface EmbeddingResponse {
 
 /** Tek metni 2048 boyutlu vektöre çevirir (docs/prompts.md §3). */
 export async function embedText(input: string): Promise<number[]> {
+  const safeInput = maskPii(input);
   const response = await fetch(`${OPENROUTER_BASE_URL}/embeddings`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${getApiKey()}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ model: EMBEDDING_MODEL, input }),
+    body: JSON.stringify({ model: EMBEDDING_MODEL, input: safeInput }),
   });
 
   if (!response.ok) {

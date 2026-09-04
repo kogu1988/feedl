@@ -23,6 +23,8 @@ import {
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import {
+  aiSuggestions,
+  boards,
   changelogEntries,
   changelogPostLinks,
   changelogSubscribers,
@@ -33,7 +35,6 @@ import {
   posts,
   tags,
   users,
-  aiSuggestions,
 } from "@/lib/db/schema";
 import {
   changelogPublishedEventSchema,
@@ -165,9 +166,29 @@ export const aiAutopilot = inngest.createFunction(
       }
     }
 
-    // 4) Özet + sentiment + etiketler.
+    // 4) Özet + sentiment + etiketler. Tenant bağlamı: postun board adı
+    // analyzeIdea'ya geçirilir (bağımsız workspace'lerde içerik karışmaz).
+    const boardContext: string | null | undefined = await step.run(
+      "resolve-board-context",
+      async () => {
+      const [post] = await getDb()
+        .select({ boardId: posts.boardId })
+        .from(posts)
+        .where(eq(posts.id, payload.postId))
+        .limit(1);
+      if (!post?.boardId) return undefined;
+      const [board] = await getDb()
+        .select({ name: boards.name })
+        .from(boards)
+        .where(eq(boards.id, post.boardId))
+        .limit(1);
+      return board?.name ?? undefined;
+    });
     const analysis = await step.run("analyze-idea", async () =>
-      analyzeIdea({ title: payload.title, description: payload.description }),
+      analyzeIdea(
+        { title: payload.title, description: payload.description },
+        { boardName: boardContext ?? undefined },
+      ),
     );
 
     // 5) Tüm sonuçları tek yazımda kaydet. duplicateOf artık buraya yazılmaz
