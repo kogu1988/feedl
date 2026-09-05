@@ -1,6 +1,6 @@
 import "server-only";
 
-import { timingSafeEqual } from "node:crypto";
+import { createHmac, timingSafeEqual } from "node:crypto";
 
 // Sprint 57 (madde 2) — Jira connector. Jira Automation/Webhook → Issue
 // created/updated → feedl feedback. Doğrulama: `X-Jira-Signature` başlığı,
@@ -26,10 +26,17 @@ export function verifyJiraSignature(
   rawBody: string,
   signatureHeader: string,
 ): boolean {
-  void rawBody; // HMAC kullanılmıyor; statik secret karşılaştırması yapıyoruz.
   const secret = process.env.JIRA_WEBHOOK_SECRET;
   if (!secret) return false;
   const value = (signatureHeader || "").trim();
+  // Otomatik webhook (rest/webhooks/1.0 + secret): Jira `X-Hub-Signature:
+  // sha256=<hmac>` başlığı gönderir — HMAC-SHA256(secret, rawBody) doğrula.
+  if (value.startsWith("sha256=")) {
+    const given = value.slice("sha256=".length).toLowerCase();
+    const expected = createHmac("sha256", secret).update(rawBody).digest("hex");
+    return safeEqual(given, expected);
+  }
+  // Statik token (manuel Automation yolu): secret ile birebir karşılaştır.
   return safeEqual(value, secret);
 }
 
@@ -100,11 +107,11 @@ export function jiraCreds(): {
   };
 }
 
-// Webhook kayıt URL'si. Production'da her zaman https://feedl.app; token'ı
-// query'de taşır (Jira imza göndermediği için).
-export function jiraWebhookUrl(token: string): string {
+// Webhook kayıt URL'si. Production'da her zaman https://feedl.app. Token
+// query'de DEĞİL; Jira `secret` ile imzaladığı için gövde HMAC'i doğrulanır.
+export function jiraWebhookUrl(): string {
   const base = process.env.NEXT_PUBLIC_APP_URL ?? "https://feedl.app";
-  return `${base}/api/integrations/jira/webhook?token=${encodeURIComponent(token)}`;
+  return `${base}/api/integrations/jira/webhook`;
 }
 
 function jiraBasicAuth(): string {
@@ -152,10 +159,11 @@ export async function registerJiraWebhook(
     },
     body: JSON.stringify({
       name: "feedl",
-      url: jiraWebhookUrl(token),
-      webhookEvents: JIRA_WEBHOOK_EVENTS,
-      jqlFilter: "",
+      url: jiraWebhookUrl(),
+      events: JIRA_WEBHOOK_EVENTS,
+      filters: { "issue-related-events-section": "" },
       excludeBody: false,
+      secret: token,
     }),
   });
   if (!res.ok) {
