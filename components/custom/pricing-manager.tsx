@@ -5,19 +5,22 @@ import { initializePaddle, type Paddle } from "@paddle/paddle-js";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// Sprint 49 (Faz 5) — public /pricing. Free vs Pro karşılaştırma tablosu;
+import { Button } from "@/components/ui/button";
+import {
+  getPlanEnv,
+  PRO_PLAN,
+} from "@/components/custom/plan-config";
+
+// Sprint 49/52 (Faz 5) — public /pricing. Free vs Pro karşılaştırma tablosu;
 // "Pro'ya Geç" Paddle.js sandbox/live overlay checkout'u açar (webhook
 // provisioning'dan sorumludur). Slug workspace'te satırı ile eşleştirilir.
 // Kullanıcı kararı: canlı tahsilata geçilmedi — sandbox'ta hazır bekler.
 // Aylık/yıllık switch Pro kartının içindedir, varsayılan YILLIK; yıllıkta
-// aylık eşdeğeri ($15/ay), aylıkta $19/ay gösterilir. Butonlar kart içi
-// altta aynı hizada (flex-col + mt-auto).
+// PRO_PLAN.yearlyMonthlyPrice, aylıkta PRO_PLAN.monthlyPrice. Butonlar kart
+// içi altta aynı hizada (flex-col + mt-auto), hepsi Button komponenti.
 
-const env = process.env.NEXT_PUBLIC_PADDLE_ENV === "sandbox" ? "sandbox" : "live";
+const env = getPlanEnv();
 const clientToken = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN ?? "";
-
-const monthlyPriceId = process.env.NEXT_PUBLIC_PADDLE_PRO_MONTHLY_PRICE_ID ?? "";
-const yearlyPriceId = process.env.NEXT_PUBLIC_PADDLE_PRO_YEARLY_PRICE_ID ?? "";
 
 const freeFeatures = [
   "1 board",
@@ -81,13 +84,17 @@ export function PricingManager({ workspaceSlug }: { workspaceSlug: string }) {
       return;
     }
     paddle.Checkout.open({
-      items: [{ priceId: annual ? yearlyPriceId : monthlyPriceId, quantity: 1 }],
+      items: [
+        {
+          priceId: annual ? PRO_PLAN.yearlyPriceId : PRO_PLAN.monthlyPriceId,
+          quantity: 1,
+        },
+      ],
       customData: { slug: workspaceSlug },
     });
   }
 
-  const proPrice = annual ? "$15" : "$19";
-  const proPeriod = "/ay";
+  const proPrice = annual ? PRO_PLAN.yearlyMonthlyPrice : PRO_PLAN.monthlyPrice;
 
   return (
     <div className="space-y-8">
@@ -102,17 +109,11 @@ export function PricingManager({ workspaceSlug }: { workspaceSlug: string }) {
             <span className="text-sm text-muted-foreground">sonsuza dek</span>
           </div>
           <FeatureList items={freeFeatures} />
-          <button
-            type="button"
-            onClick={() => {
-              window.location.href = "/sign-up";
-            }}
-            className="mt-auto pt-6"
-          >
-            <div className="w-full rounded-lg border bg-background px-4 py-2.5 text-sm font-medium hover:bg-muted">
+          <div className="mt-auto pt-6">
+            <Button size="lg" variant="outline" className="w-full" render={<a href="/sign-up" />}>
               Hemen Başla
-            </div>
-          </button>
+            </Button>
+          </div>
         </div>
 
         {/* PRO kartı */}
@@ -150,25 +151,21 @@ export function PricingManager({ workspaceSlug }: { workspaceSlug: string }) {
 
           <div className="mt-4 flex items-baseline gap-1">
             <span className="text-4xl font-bold tracking-tight">{proPrice}</span>
-            <span className="text-sm text-muted-foreground">{proPeriod}</span>
+            <span className="text-sm text-muted-foreground">/ay</span>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
             {annual
-              ? "Yıllık faturalandırmayla ayda $15 (yıllık $180)."
-              : "Aylık faturalandırmayla ayda $19."}
+              ? `Yıllık faturalandırmayla ayda ${PRO_PLAN.yearlyMonthlyPrice} (yıllık ${PRO_PLAN.yearlyTotal}).`
+              : `Aylık faturalandırmayla ayda ${PRO_PLAN.monthlyPrice}.`}
           </p>
 
           <FeatureList items={proFeatures} />
 
-          <button
-            type="button"
-            onClick={openProCheckout}
-            className="mt-auto pt-6"
-          >
-            <div className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90">
+          <div className="mt-auto pt-6">
+            <Button size="lg" className="w-full" onClick={openProCheckout}>
               Pro&apos;ya Geç
-            </div>
-          </button>
+            </Button>
+          </div>
         </div>
       </div>
 

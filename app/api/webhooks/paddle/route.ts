@@ -61,12 +61,18 @@ export async function POST(req: Request) {
       );
     }
 
-    // subscription.activated / subscription.updated (active) → pro;
-    // subscription.canceled / subscription.past_due → free.
-    const activate = eventType === "subscription.activated" || eventType === "subscription.updated";
-    const cancel = eventType === "subscription.canceled" || eventType === "subscription.past_due";
+    // Sprint 52: planı aboneliğin `status` alanından türet (eşleştirmedeki
+    // tek gerçek) — trialing/active → pro; canceled/paused/past_due/dunned
+    // → free. event_type yalnız ikincil bilgi (ignored kararında kullanılır);
+    // böylece canlı yenileme/duraklatma/iptal durumları sağlıklı işlenir.
+    const subscriptionStatus = (data.status as string | undefined) ?? "";
+    let plan: "pro" | "free" | null = null;
+    if (["trialing", "active"].includes(subscriptionStatus)) {
+      plan = "pro";
+    } else if (["canceled", "paused", "past_due", "dunned"].includes(subscriptionStatus)) {
+      plan = "free";
+    }
 
-    const plan = activate ? "pro" : cancel ? "free" : null;
     if (!plan) {
       return NextResponse.json({ success: true, data: { ignored: eventType } });
     }
@@ -81,7 +87,7 @@ export async function POST(req: Request) {
       .update(workspaces)
       .set({
         plan,
-        ...(activate ? { paddleSubscriptionId: subscriptionId } : {}),
+        ...(plan === "pro" ? { paddleSubscriptionId: subscriptionId } : {}),
         ...(customerId ? { paddleCustomerId: customerId } : {}),
         updatedAt: new Date(),
       })
