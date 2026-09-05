@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronsUpIcon } from "lucide-react";
-import { Show, UserButton } from "@clerk/nextjs";
+import { Show, UserButton, useAuth } from "@clerk/nextjs";
 
 import { ClerkTriggerButton } from "@/components/custom/clerk-trigger-button";
 import { ThemeToggle } from "@/components/custom/theme-toggle";
@@ -28,37 +28,56 @@ function textOn(hex: string): string {
 // /dashboard*) yüzeylerine göre değişir. Satış sayfalarında portal/yol
 // haritası/güncellemeler çıkar; yerine Demo + Fiyat. Ürün sayfalarında
 // mevcut ürün nav'ı kalır.
-// Sprint 63+ (IA standardı — kullanıcı onayı): yüzeyler netleştirildi —
-//   satış/marka (/ , /demo, /pricing, /contact, /privacy, /terms) → Demo+Fiyat
-//   auth/işlem (/sign-in, /sign-up, /onboarding, /invites) → nav YOK
-//   admin (/dashboard*) → yalnız "Portal" (public board'a atla; sidebar zaten nav)
-//   public topluluk (/portal*, /roadmap*, /changelog*) → Portal+Yol+Güncellemeler
-const SALES_PREFIXES = ["/", "/demo", "/pricing", "/contact", "/privacy", "/terms"];
+// Sprint 63+ (IA standardı — kullanıcı onayı) + 2026-09-06 revizyonu:
+// nav artık hem yüzeye hem OTURUMA göre değişir.
+//   Giriş yapmış kullanıcı (admin/team/member = ürünü kullanıyor) → her yerde
+//     tam ürün nav'ı: Portal + Yol Haritası + Güncellemeler (owner her şeyi görür).
+//   Anonim ziyaretçi → satış/marka (/, /demo, /pricing, /contact, legal) →
+//     Demo + Fiyatlandırma; auth/işlem (/sign-in, /sign-up, /onboarding,
+//     /invites) → nav YOK; public topluluk (portal/roadmap/changelog) →
+//     Portal + Yol + Güncellemeler.
+// Not: "/" satış eşleşmesi EXACT olmalı (startsWith("/") her path'e uyar —
+// /portal'da Demo/Fiyat görünmesi bug'ı 2026-09-06'da düzeltildi).
+const SALES_PREFIXES = ["/demo", "/pricing", "/contact", "/privacy", "/terms"];
+const SALES_EXACT = ["/"];
 const AUTH_APP_PREFIXES = ["/sign-in", "/sign-up", "/onboarding", "/invites"];
-const ADMIN_PREFIX = "/dashboard";
 
-function navItemsFor(pathname: string) {
-  if (pathname.startsWith(ADMIN_PREFIX)) {
-    return [{ href: "/portal", label: "Portal" }];
+function isSalesSurface(pathname: string) {
+  return (
+    SALES_EXACT.includes(pathname) ||
+    SALES_PREFIXES.some((prefix) => pathname.startsWith(prefix))
+  );
+}
+
+const PRODUCT_NAV = [
+  { href: "/portal", label: "Portal" },
+  { href: "/roadmap", label: "Yol Haritası" },
+  { href: "/changelog", label: "Güncellemeler" },
+];
+const SALES_NAV = [
+  { href: "/demo", label: "Demo" },
+  { href: "/pricing", label: "Fiyatlandırma" },
+];
+
+function navItemsFor(pathname: string, isSignedIn: boolean) {
+  // Giriş yapmış kullanıcı: ürünü kullanıyor — her yüzeyde tam ürün nav'ı.
+  if (isSignedIn) {
+    return PRODUCT_NAV;
   }
-  // Satış/marka yüzeyleri: yeni müşteri CTA'sı. Legal/şirket sayfaları da
-  // satış tarafına ait (public footer'da pazarlama nav'ıyla aynı dünya).
-  if (SALES_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
-    return [
-      { href: "/demo", label: "Demo" },
-      { href: "/pricing", label: "Fiyat" },
-    ];
+  // Anonim: satış/marka yüzeyi.
+  if (isSalesSurface(pathname)) {
+    return SALES_NAV;
   }
-  // Auth/işlem yüzeyleri: üst bar ürün nav'ı göstermez (footer da gizli).
+  // Anonim: auth/işlem yüzeyi — nav yok (yalnızca logo + temalar).
   if (AUTH_APP_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
     return [];
   }
-  // Public topluluk yüzeyleri (portal, roadmap, changelog).
-  return [
-    { href: "/portal", label: "Portal" },
-    { href: "/roadmap", label: "Yol Haritası" },
-    { href: "/changelog", label: "Güncellemeler" },
-  ];
+  // Anonim: public topluluk.
+  return PRODUCT_NAV;
+}
+
+function isAuthSurface(pathname: string) {
+  return AUTH_APP_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }
 
 function isActive(pathname: string, href: string) {
@@ -75,11 +94,15 @@ function isActive(pathname: string, href: string) {
 
 export function SiteHeader({ brand }: { brand?: { name: string; brandColor: string | null; logoUrl: string | null } }) {
   const pathname = usePathname();
+  const { isSignedIn } = useAuth();
   // Tam genişlik kararı (2026-09-05): üst bar tüm sayfalarda ekranın
   // tamamını kullanır — public/admin container ayrımı kalktı.
   const workspaceName = brand?.name ?? "feedl";
   const brandColor = brand?.brandColor ?? "#ff5c35";
   const logoUrl = brand?.logoUrl ?? null;
+  // Auth yüzeyinde giriş/kayıt butonları gösterilmez (kendi sayfasına giden
+  // ölü link + P1 tekrar). Aksi halde anonimde gösterilir.
+  const showAuthTriggers = !isSignedIn && !isAuthSurface(pathname);
 
   return (
     <header className="sticky top-0 z-40 border-b bg-background">
@@ -109,7 +132,7 @@ export function SiteHeader({ brand }: { brand?: { name: string; brandColor: stri
             className="flex min-w-0 items-center gap-0.5 text-sm sm:gap-1"
             aria-label="Site menüsü"
           >
-            {navItemsFor(pathname).map((item) => (
+            {navItemsFor(pathname, isSignedIn === true).map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
@@ -129,17 +152,21 @@ export function SiteHeader({ brand }: { brand?: { name: string; brandColor: stri
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
           <ThemeToggle />
           <Show when="signed-out">
-            <ClerkTriggerButton
-              mode="sign-in"
-              variant="ghost"
-              size="sm"
-              className="hidden sm:inline-flex"
-            >
-              Giriş yap
-            </ClerkTriggerButton>
-            <ClerkTriggerButton mode="sign-up" size="sm">
-              Kayıt ol
-            </ClerkTriggerButton>
+            {showAuthTriggers ? (
+              <>
+                <ClerkTriggerButton
+                  mode="sign-in"
+                  variant="ghost"
+                  size="sm"
+                  className="hidden sm:inline-flex"
+                >
+                  Giriş yap
+                </ClerkTriggerButton>
+                <ClerkTriggerButton mode="sign-up" size="sm">
+                  Kayıt ol
+                </ClerkTriggerButton>
+              </>
+            ) : null}
           </Show>
           <Show when="signed-in">
             <UserButton />

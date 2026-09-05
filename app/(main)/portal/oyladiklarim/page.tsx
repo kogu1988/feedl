@@ -9,6 +9,7 @@ import { PaginationFooter } from "@/components/custom/pagination-footer";
 import { PageBreadcrumb } from "@/components/custom/page-breadcrumb";
 import { StatusBadge } from "@/components/custom/status-badge";
 import { VoteButton } from "@/components/custom/vote-button";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -110,12 +111,12 @@ export default async function MyVotesPage({
               Beğendiğin fikirlere oy ver; en çok istenenler yol haritasına
               girer.
             </p>
-            <Link
-              href="/portal"
-              className="mt-4 inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            <Button
+              className="mt-4"
+              render={<Link href="/portal" />}
             >
               Fikirlere göz at
-            </Link>
+            </Button>
           </div>
         ) : (
           rows.map((post) => (

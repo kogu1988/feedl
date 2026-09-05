@@ -2,15 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@clerk/nextjs";
 
-// Sprint 63+ (IA standardı — kullanıcı onayı): footer, üst bar yüzey
-// ayrımıyla birlikte linklenir —
-//   satış/marka (/, /demo, /pricing, /contact, legal): "Ürün" kolonunda
-//     Demo + Fiyat (canlı board/yol haritası/güncelleme linkleri YOK —
-//     bunlar tanıtım için değil, gerçek müşteri yüzeyi).
-//   public topluluk (/portal*, /roadmap*, /changelog*): Portal / Yol
-//     Haritası / Güncellemeler + Şirket/legal.
-//   admin ve auth/işlem yüzeyleri: footer render edilmez (APP_PREFIXES).
+// Sprint 63+ (IA standardı — kullanıcı onayı) + 2026-09-06 revizyonu:
+// footer yüzeye VE oturuma göre render edilir —
+//   Giriş yapmış kullanıcı (ürünü kullanıyor) → footer YOK (pazarlama gürültüsü).
+//   Anonim ziyaretçi → satış/marka: Demo + Fiyat; public topluluk:
+//     Portal / Yol Haritası / Güncellemeler; Şirket/legal hep.
+//   admin ve auth/işlem yüzeyleri → footer yok (PRIVATE_APP_PREFIXES).
+// Not: "/" satış eşleşmesi EXACT (startsWith("/") her path'e uyar).
 const PRIVATE_APP_PREFIXES = [
   "/dashboard",
   "/onboarding",
@@ -18,7 +18,15 @@ const PRIVATE_APP_PREFIXES = [
   "/sign-in",
   "/sign-up",
 ];
-const SALES_PREFIXES = ["/", "/demo", "/pricing", "/contact", "/privacy", "/terms"];
+const SALES_PREFIXES = ["/demo", "/pricing", "/contact", "/privacy", "/terms"];
+const SALES_EXACT = ["/"];
+
+function isSalesSurface(pathname: string) {
+  return (
+    SALES_EXACT.includes(pathname) ||
+    SALES_PREFIXES.some((prefix) => pathname.startsWith(prefix))
+  );
+}
 
 const companyLinks = [
   { href: "/pricing", label: "Fiyatlandırma" },
@@ -30,7 +38,7 @@ const companyLinks = [
 function footerColumnsFor(pathname: string) {
   // Satış/marka yüzeyi: ürün kolonunda yalnız Demo + Fiyat — müşteri
   // board'larını (portal/yol/güncelleme) satış landing'inde tanımlamayız.
-  if (SALES_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
+  if (isSalesSurface(pathname)) {
     return [
       {
         title: "Ürün",
@@ -58,7 +66,10 @@ function footerColumnsFor(pathname: string) {
 
 export function SiteFooter({ brand }: { brand: { name: string } }) {
   const pathname = usePathname();
-  if (PRIVATE_APP_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
+  const { isSignedIn } = useAuth();
+  // Giriş yapmış kullanıcı ürünü kullanıyor → pazarlama footer'ı yok.
+  // Anonimde private yüzeylerde de yok.
+  if (isSignedIn || PRIVATE_APP_PREFIXES.some((p) => pathname.startsWith(p))) {
     return null;
   }
   const footerColumns = footerColumnsFor(pathname);

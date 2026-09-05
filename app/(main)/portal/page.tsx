@@ -236,12 +236,6 @@ export default async function PortalPage({
             Özellik isteklerini paylaş, oy ver, öne çıkanları belirle.
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
-            <a
-              href="/roadmap"
-              className="text-sm font-medium text-primary underline-offset-4 hover:underline"
-            >
-              Yol Haritası
-            </a>
             <Show when="signed-in">
               <Link
                 href="/portal/oyladiklarim"
