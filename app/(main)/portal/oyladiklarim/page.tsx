@@ -2,10 +2,10 @@ import { and, count, countDistinct, desc, eq, inArray } from "drizzle-orm";
 import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
 import { SignInButton } from "@clerk/nextjs";
-import { ArrowLeftIcon } from "lucide-react";
 
 import { CommentCountBadge } from "@/components/custom/comment-count-badge";
 import { PaginationFooter } from "@/components/custom/pagination-footer";
+import { PageBreadcrumb } from "@/components/custom/page-breadcrumb";
 import { StatusBadge } from "@/components/custom/status-badge";
 import { VoteButton } from "@/components/custom/vote-button";
 import {
@@ -37,7 +37,12 @@ export default async function MyVotesPage({
   if (!userId) {
     return (
       <main className="container mx-auto max-w-none p-4 sm:p-8">
-        <BackLink />
+        <PageBreadcrumb
+          items={[
+            { label: "Portal", href: "/portal" },
+            { label: "Oyladıklarım" },
+          ]}
+        />
         <div className="mt-8 rounded-lg border border-dashed p-10 text-center">
           <p className="font-medium">Oyladıklarını görmek için giriş yap</p>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -81,7 +86,12 @@ export default async function MyVotesPage({
 
   return (
     <main className="container mx-auto max-w-none p-4 sm:p-8">
-      <BackLink />
+      <PageBreadcrumb
+        items={[
+          { label: "Portal", href: "/portal" },
+          { label: "Oyladıklarım" },
+        ]}
+      />
 
       <h1 className="mt-6 text-2xl font-bold">Oyladıklarım</h1>
       <p className="mt-2 text-muted-foreground">
@@ -155,18 +165,6 @@ export default async function MyVotesPage({
         />
       ) : null}
     </main>
-  );
-}
-
-function BackLink() {
-  return (
-    <Link
-      href="/portal"
-      className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-    >
-      <ArrowLeftIcon className="size-4" aria-hidden="true" />
-      Portala dön
-    </Link>
   );
 }
 

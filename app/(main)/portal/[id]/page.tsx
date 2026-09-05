@@ -6,13 +6,13 @@ import { and, asc, count, countDistinct, desc, eq, gt, inArray, isNotNull, isNul
 
 import { z } from "zod";
 import {
-  ArrowLeftIcon,
   ArrowRightIcon,
   GitMergeIcon,
   SparklesIcon,
 } from "lucide-react";
 
 import { CustomValuesPanel } from "@/components/custom/custom-values-panel";
+import { PageBreadcrumb } from "@/components/custom/page-breadcrumb";
 import {
   CommentCard,
 } from "@/components/custom/comment-card";
@@ -217,13 +217,9 @@ export default async function PostDetailPage({
 
   return (
     <main className="container mx-auto max-w-none p-4 sm:p-8">
-      <Link
-        href="/portal"
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-      >
-        <ArrowLeftIcon className="size-4" aria-hidden="true" />
-        Portala dön
-      </Link>
+      <PageBreadcrumb
+        items={[{ label: "Portal", href: "/portal" }, { label: post.title }]}
+      />
 
       {mergedInto ? (
         <div className="mt-4 flex flex-wrap items-center gap-2 rounded-md border bg-muted/50 p-3 text-sm">

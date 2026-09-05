@@ -3,9 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
-import { ArrowLeftIcon } from "lucide-react";
 
 import { MarkdownContent } from "@/components/custom/markdown-content";
+import { PageBreadcrumb } from "@/components/custom/page-breadcrumb";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
@@ -109,13 +109,12 @@ export default async function ChangelogDetailPage({
 
   return (
     <main className="container mx-auto max-w-none p-4 sm:p-8">
-      <Link
-        href="/portal/changelog"
-        className="inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
-      >
-        <ArrowLeftIcon className="size-4" aria-hidden="true" />
-        Changelog&apos;a dön
-      </Link>
+      <PageBreadcrumb
+        items={[
+          { label: "Güncellemeler", href: "/portal/changelog" },
+          { label: entry?.title ?? "Duyuru" },
+        ]}
+      />
 
       {entry ? (
         <article className="mt-6">

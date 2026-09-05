@@ -137,6 +137,12 @@ Ayarlar); altta UserButton. Bileşen: `app-sidebar` — dashboard altı
   kartı + durum geçmişi + yorumlar, sağda ~340px "Detaylar" yan
   paneli (admin panelleri + herkese açık özel alanlar). Mobilde tek
   kolon; yan panel alta düşer. Canny/Frill post-detay deseni.
+- **Breadcrumb (2026-09-05):** `components/custom/page-breadcrumb.tsx`
+  — yalnız portal alt sayfalarında (`portal/[id]`, `changelog/[id]`,
+  `oyladiklarim`) "Portal / Başlık" biçiminde konum verir; "...dön"
+  back-link'lerinin yerini aldı. Son öğe `aria-current="page"` +
+  `truncate`; ayraç ChevronRight. Tek seviyeli sayfalarda, dashboard
+  ve widget'ta breadcrumb YOK (üst bar + sidebar konumu zaten verir).
 - **Genişlik disiplini (2026-09-05, tam genişlik kararı):** her sayfa
   container'ı `max-w-none` ile ekranın tamamını kullanır — `max-w-3xl/4xl/5xl/6xl`
   sayfa container'ı olarak KULLANILMAZ. İçerik **sola yaslı** dizilir
