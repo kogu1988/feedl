@@ -1,6 +1,7 @@
 import { and, countDistinct, desc, eq, inArray, isNull, or } from "drizzle-orm";
 
 import { PageBreadcrumb } from "@/components/custom/page-breadcrumb";
+import { Notice } from "@/components/custom/notice";
 import { RoadmapColumns } from "@/components/custom/roadmap-columns";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId, isShowcaseRequest } from "@/lib/db/workspace";
@@ -79,9 +80,9 @@ export default async function RoadmapPage() {
       </div>
 
       {loadError ? (
-        <p className="mt-8 rounded-md border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+        <Notice size="md">
           Yol haritası yüklenemedi. Sayfayı yenilemeyi dene.
-        </p>
+        </Notice>
       ) : (
         <RoadmapColumns columns={columns} posts={rows} isAdmin={isAdmin} />
       )}

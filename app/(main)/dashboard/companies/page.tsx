@@ -7,6 +7,7 @@ import {
   type OpportunityView,
   type UserOption,
 } from "@/components/custom/companies-manager";
+import { Notice } from "@/components/custom/notice";
 import { getTeamUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
@@ -130,9 +131,9 @@ export default async function CompaniesPage() {
 
       <div className="mt-8">
         {loadError ? (
-          <p className="rounded-md border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+          <Notice size="md">
             Şirketler yüklenemedi. Sayfayı yenilemeyi dene.
-          </p>
+          </Notice>
         ) : (
           <CompaniesManager
             items={items}

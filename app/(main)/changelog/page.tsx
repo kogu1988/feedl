@@ -4,6 +4,7 @@ import { and, desc, eq, inArray } from "drizzle-orm";
 import { MegaphoneIcon } from "lucide-react";
 
 import { ChangelogSubscribeForm } from "@/components/custom/changelog-subscribe-form";
+import { Notice } from "@/components/custom/notice";
 import { MarkdownContent } from "@/components/custom/markdown-content";
 import { PageBreadcrumb } from "@/components/custom/page-breadcrumb";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -95,9 +96,9 @@ export default async function ChangelogPage() {
 
       <div className="mt-8 grid gap-4">
         {loadError ? (
-          <p className="rounded-md border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+          <Notice size="md">
             Duyurular yüklenemedi. Sayfayı yenilemeyi dene.
-          </p>
+          </Notice>
         ) : entries.length === 0 ? (
           <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
             Henüz duyuru yok — ilk güncelleme burada duyurulacak.

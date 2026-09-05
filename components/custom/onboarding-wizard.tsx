@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Loader2Icon, ArrowRightIcon, CheckIcon } from "lucide-react";
 
+import { Notice } from "@/components/custom/notice";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -84,9 +85,9 @@ export function OnboardingWizard() {
           </div>
 
           {error && (
-            <p className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            <Notice>
               {error}
-            </p>
+            </Notice>
           )}
         </div>
       ) : (

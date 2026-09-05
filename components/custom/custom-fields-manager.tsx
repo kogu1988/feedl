@@ -10,6 +10,8 @@ import {
   TrashIcon,
 } from "lucide-react";
 
+import { Notice } from "@/components/custom/notice";
+
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -212,9 +214,9 @@ export function CustomFieldsManager({
       </div>
 
       {inlineError && (
-        <p className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <Notice>
           {inlineError}
-        </p>
+        </Notice>
       )}
 
       {fields.length === 0 ? (

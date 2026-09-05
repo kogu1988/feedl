@@ -24,6 +24,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Notice } from "@/components/custom/notice";
 import { getTeamUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
@@ -452,9 +453,9 @@ export default async function DashboardPage({
           </CardHeader>
           <CardContent>
             {loadError ? (
-              <p className="rounded-md border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+              <Notice size="md">
                 Fikirler yüklenemedi. Sayfayı yenilemeyi dene.
-              </p>
+              </Notice>
             ) : rows.length === 0 && (statusFilter || tagFilter) ? (
               <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
                 Bu filtrede fikir yok.

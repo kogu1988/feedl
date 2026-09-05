@@ -4,6 +4,7 @@ import { auth } from "@clerk/nextjs/server";
 
 import { ClerkTriggerButton } from "@/components/custom/clerk-trigger-button";
 import { CommentCountBadge } from "@/components/custom/comment-count-badge";
+import { Notice } from "@/components/custom/notice";
 import { PaginationFooter } from "@/components/custom/pagination-footer";
 import { PageBreadcrumb } from "@/components/custom/page-breadcrumb";
 import { StatusBadge } from "@/components/custom/status-badge";
@@ -99,9 +100,9 @@ export default async function MyVotesPage({
 
       <div className="mt-8 grid gap-4">
         {loadError ? (
-          <p className="rounded-md border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+          <Notice size="md">
             Fikirler yüklenemedi. Sayfayı yenilemeyi dene.
-          </p>
+          </Notice>
         ) : rows.length === 0 ? (
           <div className="rounded-lg border border-dashed p-10 text-center">
             <p className="font-medium">Henüz kimseye oy vermedin</p>

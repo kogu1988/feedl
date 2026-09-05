@@ -6,6 +6,7 @@ import { Show } from "@clerk/nextjs";
 import { RocketIcon, SearchIcon, ThumbsUpIcon } from "lucide-react";
 
 import { CommentCountBadge } from "@/components/custom/comment-count-badge";
+import { Notice } from "@/components/custom/notice";
 import { ClerkTriggerButton } from "@/components/custom/clerk-trigger-button";
 import { NewPostDialog } from "@/components/custom/new-post-dialog";
 import { FilterTabs } from "@/components/custom/filter-tabs";
@@ -359,9 +360,9 @@ export default async function PortalPage({
 
       <div className="mt-8 grid gap-4">
         {loadError ? (
-          <p className="rounded-md border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+          <Notice size="md">
             Fikirler yüklenemedi. Sayfayı yenilemeyi dene.
-          </p>
+          </Notice>
         ) : rows.length === 0 && (searchQuery || tagFilter) ? (
           <div className="rounded-lg border border-dashed p-10 text-center">
             <p className="font-medium">Aramanla eşleşen fikir yok</p>
