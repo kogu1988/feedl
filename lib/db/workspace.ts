@@ -3,6 +3,12 @@ import { z } from "zod";
 
 import { getDb } from "./index";
 import { workspaces } from "./schema";
+import { cookies } from "next/headers";
+
+// Sprint 63 (onboarding): kullanıcının aktif workspace slug'ı çerezde tutulur
+// (feedl_active_ws). Self-serve onboarding sonrası kullanıcı kendi oluşturduğu
+// workspace'e "girer". SADECE bu çerez varsa host yerine o slug tercih edilir.
+const ACTIVE_WS_COOKIE = "feedl_active_ws";
 
 // Sprint 48e (madde 8): subdomain routing — getWorkspaceId artık isteğin
 // host'u bazında workspace çözer. `acme.feedl.app` → workspaces.slug='acme';
@@ -94,6 +100,20 @@ let cached: { host: string; id: string } | null = null;
 
 export async function getWorkspaceId(): Promise<string> {
   const host = await getRequestHost();
+  // Aktif workspace çerezi varsa önce onu dene (onboarding sonrası).
+  const activeSlug = await readActiveWorkspaceCookie();
+  if (activeSlug) {
+    const [row] = await getDb()
+      .select({ id: workspaces.id })
+      .from(workspaces)
+      .where(eq(workspaces.slug, activeSlug))
+      .limit(1);
+    if (row) {
+      const id = workspaceIdSchema.parse(row.id);
+      cached = { host, id };
+      return id;
+    }
+  }
   if (cached && cached.host === host) {
     return cached.id;
   }
@@ -101,6 +121,15 @@ export async function getWorkspaceId(): Promise<string> {
   const id = workspaceIdSchema.parse(resolved.id);
   cached = { host, id };
   return id;
+}
+
+async function readActiveWorkspaceCookie(): Promise<string | null> {
+  try {
+    const c = await cookies();
+    return c.get(ACTIVE_WS_COOKIE)?.value ?? null;
+  } catch {
+    return null;
+  }
 }
 
 // Sprint 48k: workspace marka bilgisi (portal üst barı/logo). Marka yoksa

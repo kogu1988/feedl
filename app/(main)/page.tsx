@@ -19,7 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { DemoPostCard } from "@/components/custom/demo-post-card";
 import { getDb } from "@/lib/db";
-import { users } from "@/lib/db/schema";
+import { users, workspaceMembers } from "@/lib/db/schema";
 
 // Sprint 50 (Faz 4/cilama) — "/" artık SATIŞ landing'idir. Portal / yol
 // haritası / güncellemeler nav'dan çıkarıldı; ürün örnekleri /demo'ya taşındı.
@@ -42,6 +42,18 @@ export default async function RootPage() {
 
       if (user?.role === "admin") {
         target = "/dashboard";
+      } else {
+        // Sprint 63: Yeni müşteri (henüz workspace üyesi değil, admin değil)
+        // landing'den self-serve onboarding'e yönlendirilir. Portal uç
+        // kullanıcıları (üyelik sahibi) mevcut davranışta /portal'da kalır.
+        const [member] = await getDb()
+          .select({ id: workspaceMembers.id })
+          .from(workspaceMembers)
+          .where(eq(workspaceMembers.userId, userId))
+          .limit(1);
+        if (!member) {
+          target = "/onboarding";
+        }
       }
     } catch (err) {
       console.error(
