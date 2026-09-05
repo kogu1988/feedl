@@ -105,17 +105,39 @@
   // ucuna gönderir; feedl httpOnly SameSite=None çerez bırakır. Çağrı
   // parent siteden cross-origin olduğu için CORS başlıkları sunucuda
   // allowlist'e göre üretilir (app/api/widget/session).
-  if (token) {
+  function sendToken(nextToken) {
+    if (!nextToken) return;
     try {
       fetch(baseUrl + "/api/widget/session", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: token }),
+        body: JSON.stringify({ token: nextToken }),
       }).catch(function () {});
     } catch (e) {
       /* oturum açılamazsa widget salt-okunur listeyle açılır */
     }
+  }
+  if (token) sendToken(token);
+
+  // Sprint 48m — Canny Identify tarzı dinamik kimlik: kullanıcı girişi
+  // sonrası ya da veri-attr dışında `feedlWidget.identify({ token })` çağrısıyla
+  // yeni bir kısa ömürlü jeton verilirse oturum yeniden açılır. Bu, anonim
+  // değil gerçek müşteri kimliği taşır (Canny modeli); token yoksa widget
+  // salt-okunur kalır.
+  var widgetApi = {
+    identify: function (options) {
+      if (!options || typeof options !== "object") return;
+      var nextToken = options.token || options.jwt || options.value || null;
+      if (nextToken) {
+        token = nextToken;
+        sendToken(nextToken);
+      }
+    },
+  };
+  if (!window.feedlWidget) window.feedlWidget = widgetApi;
+  else {
+    window.feedlWidget.identify = widgetApi.identify;
   }
 
   var CSS = [
