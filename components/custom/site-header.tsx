@@ -158,7 +158,6 @@ export function SiteHeader({ brand }: { brand?: { name: string; brandColor: stri
                   mode="sign-in"
                   variant="ghost"
                   size="sm"
-                  className="hidden sm:inline-flex"
                 >
                   Giriş yap
                 </ClerkTriggerButton>

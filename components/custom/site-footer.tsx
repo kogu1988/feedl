@@ -29,7 +29,6 @@ function isSalesSurface(pathname: string) {
 }
 
 const companyLinks = [
-  { href: "/pricing", label: "Fiyatlandırma" },
   { href: "/contact", label: "İletişim" },
   { href: "/privacy", label: "Gizlilik Politikası" },
   { href: "/terms", label: "Kullanım Şartları" },
