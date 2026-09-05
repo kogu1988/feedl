@@ -1895,6 +1895,33 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   → 200 (regression yok).
 - ☑ npm test (17/17) + build ✓ → commit → push → deploy.
 
+### Sprint 56 — Linear Connector (Madde 2 — ilk parça) (✅ 2026-09-05)
+
+> Madde 2'nin ilk gerçek connector'ı: Linear webhook'u (Issue.create/update) →
+> AI triage → feedback. Slack/Zendesk desenini izler. **Jira (Atlassian)
+> OAuth gerektirir** (OAuth app + consumer key/secret + site URL) — ayrı sprint.
+
+- ☑ **`lib/linear.ts` (commit …):** verifyLinearSignature (`X-Linear-Signature`,
+  gövde HMAC-SHA256 hex, LINEAR_WEBHOOK_SECRET), parseLinearPayload
+  (action/data), linearIssueText (başlık+açıklama), isLinearConfigured.
+- ☑ **`POST /api/integrations/linear/webhook`:** imza doğrulama,
+  Issue → classifyWidgetMessage → feedback ise users upsert
+  (widget_linear_<id>) + post oluştur (source=linear,
+  sourceRef=linear:<issue.id>) + post/created. Sprint 48q idempotency.
+- ☑ middleware `/api/integrations(.*)` zaten public → Linear ek değişiklik yok.
+- ☑ npm test (17/17) + build ✓ → commit → push.
+- **Kalan (kullanıcı tarafı):** Linear ayarları → Webhooks → yeni webhook:
+  URL https://feedl.app/api/integrations/linear/webhook + event'ler
+  (Issue create/update) → `LINEAR_WEBHOOK_SECRET` (Linear webhook signing
+  secret) Vercel env. (Linear API key opsiyonel, şu an kod kullanmıyor.)
+
+### Sprint 57 (plan notu) — Jira (Madde 2 — kalan) — OAuth gerekli
+
+> Jira (Atlassian) entegrasyonu OAuth 2.0 (3LO) + site URL + JWT/access token
+> gerektirir. BU, dış hesap kurulumu (Atlassian developer app) ister; kod
+> deseni Linear/Intercom'dan türetilecek ama credential'lar olmadan canlı
+> test edilemez. Madde 2'deki Jira kısmı kullanıcı hesabı hazır olunca.
+
 ### 📝 Sonraki plan notları (kullanıcı onayıyla erteelenen/planlanacak)
 
 - **Ticarileşme (Paddle):** Canlı tahsilata geç YOK — sandbox'ta kalınacak.
