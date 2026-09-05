@@ -1,7 +1,7 @@
 import "server-only";
 
 import { NextResponse } from "next/server";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, count, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { getAdminUserId } from "@/lib/auth/admin";
@@ -9,6 +9,7 @@ import { getDb } from "@/lib/db";
 import { getDefaultBoardId } from "@/lib/db/board";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { boards } from "@/lib/db/schema";
+import { enforceLimit } from "@/lib/paddle";
 
 // Sprint 48b (madde 8) — board yönetimi. Varsayılan "genel" board
 // silinemez (tüm mevcut fikirler ona bağlı); diğerleri ekle/düzenle/sil.
@@ -134,6 +135,21 @@ export async function POST(req: Request) {
       );
     }
     const workspaceId = await getWorkspaceId();
+    // Sprint 48i: plan board limiti — aşılırsa reddet.
+    const [boardCountRow] = await getDb()
+      .select({ value: count(boards.id) })
+      .from(boards)
+      .where(eq(boards.workspaceId, workspaceId));
+    const boardCheck = await enforceLimit(
+      "board",
+      Number(boardCountRow?.value ?? 0),
+    );
+    if (!boardCheck.ok) {
+      return NextResponse.json(
+        { success: false, error: boardCheck.message },
+        { status: 403 },
+      );
+    }
     // Slug boşsa name'den otomatik üret (Türkçe karakterler dönüştürülür).
     const slug = parsed.data.slug ?? slugify(parsed.data.name);
     try {

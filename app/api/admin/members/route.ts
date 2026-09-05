@@ -15,6 +15,7 @@ import {
   upsertWorkspaceMember,
   type WorkspaceMemberRole,
 } from "@/lib/db/membership";
+import { enforceLimit } from "@/lib/paddle";
 
 // Sprint 48c-2 (madde 8) — workspace üyeleri ve rol matrisi. Üye ekle/rol
 // değiştir/çıkar; roller owner/admin/member. Son owner kaldırılamaz.
@@ -91,6 +92,17 @@ export async function POST(req: Request) {
       return NextResponse.json(
         { success: false, error: "Kullanıcı bulunamadı (Clerk webhook ile kayıt olmalı)." },
         { status: 404 },
+      );
+    }
+
+    // Sprint 48i: plan üye limiti — yeni üye eklerken mevcut üye sayısı
+    // limite ulaştıysa reddet.
+    const existingMembers = await listWorkspaceMembers();
+    const memberCheck = await enforceLimit("member", existingMembers.length);
+    if (!memberCheck.ok) {
+      return NextResponse.json(
+        { success: false, error: memberCheck.message },
+        { status: 403 },
       );
     }
 
