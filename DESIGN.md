@@ -146,11 +146,11 @@ Ayarlar); altta UserButton. Bileşen: `app-sidebar` — dashboard altı
 - **Genişlik disiplini (2026-09-05, rev. 2 — işe göre hizalama):**
   **Uygulama sayfaları** (dashboard, portal, roadmap, admin ekranları)
   tam genişlik `max-w-none` + **sola yaslı** — sidebar'lı veri yüzeyi,
-  tablo/liste yoğunluğu için. **Landing** (`app/(main)/page.tsx`)
-  ortalanmış kolon: `container mx-auto max-w-6xl` — pazarlama sayfası
-  gösteri/okuma ölçeği ister; hero'daki asimetrik bloklar kolon içinde
-  kalır. İçeride uzun okuma metinleri (legal, changelog gövdesi, boş
-  durum metinleri) her iki tipte de `max-w-prose` alabilir.
+  tablo/liste yoğunluğu için. **Pazarlama sayfaları** (landing, demo,
+  pricing) ortalanmış kolon: `container mx-auto max-w-6xl` — gösteri/
+  okuma ölçeği ister; landing hero'sundaki asimetrik bloklar kolon
+  içinde kalır. İçeride uzun okuma metinleri (legal, changelog gövdesi,
+  boş durum metinleri) her iki tipte de `max-w-prose` alabilir.
 - **Sayfa deseni (admin):** başlık satırı (h1 + muted açıklama solda,
   primary aksiyon sağda) → KPI şeridi (4 kart; 2×2 tablet, tek kolon
   mobil) → araç çubuğu (FilterTabs solda, kayıtlı görünüm + aksiyonlar

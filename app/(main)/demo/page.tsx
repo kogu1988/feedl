@@ -37,7 +37,7 @@ const surfaces = [
 
 export default function DemoPage() {
   return (
-    <main className="container mx-auto max-w-none px-4 pb-16 pt-12 sm:pt-20">
+    <main className="container mx-auto max-w-6xl px-4 pb-16 pt-12 sm:pt-20">
       <section>
         <h1 className="max-w-2xl text-3xl font-bold tracking-tight sm:text-4xl">
           feedl gerçekte nasıl görünüyor?

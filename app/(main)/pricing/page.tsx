@@ -25,7 +25,7 @@ export default async function PricingPage() {
   }
 
   return (
-    <main className="container mx-auto max-w-none px-4 py-12 sm:py-16">
+    <main className="container mx-auto max-w-6xl px-4 py-12 sm:py-16">
       <div>
         <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
           Geri bildirimi ürüne dönüştürmek için fiyatlandırma
