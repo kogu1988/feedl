@@ -55,3 +55,40 @@ export const widgetTriageSchema = z.object({
 });
 
 export type WidgetTriage = z.infer<typeof widgetTriageSchema>;
+
+// Sprint 61 (corpus AI içgörüleri) — feedback korpusunun küme/trend/risk
+// özeti. ChatGPT §16/17: "AI post'u değil, feedback corpus'unu analiz etmeli."
+export const corpusInsightsSchema = z.object({
+  themes: z
+    .array(
+      z.object({
+        name: z.string().trim().min(1).max(80),
+        count: z.number().int().min(0),
+        summary: z.string().trim().min(1).max(300),
+      }),
+    )
+    .min(1)
+    .max(12),
+  trends: z
+    .array(
+      z.object({
+        name: z.string().trim().min(1).max(80),
+        note: z.string().trim().min(1).max(300),
+      }),
+    )
+    .max(8),
+  quickWins: z
+    .array(z.string().trim().min(1).max(300))
+    .max(8),
+  risks: z
+    .array(
+      z.object({
+        label: z.string().trim().min(1).max(80),
+        detail: z.string().trim().min(1).max(300),
+      }),
+    )
+    .max(8),
+  recommendation: z.string().trim().min(1).max(500),
+});
+
+export type CorpusInsights = z.infer<typeof corpusInsightsSchema>;

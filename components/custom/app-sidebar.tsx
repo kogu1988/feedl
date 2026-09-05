@@ -16,6 +16,7 @@ import {
   PanelLeftOpenIcon,
   PuzzleIcon,
   SettingsIcon,
+  SparklesIcon,
   TrendingUpIcon,
   UsersIcon,
   XIcon,
@@ -39,6 +40,7 @@ const navGroups = [
       { href: "/dashboard/boards", label: "Board'lar", icon: Columns3Icon },
       { href: "/dashboard/revenue", label: "Gelir", icon: TrendingUpIcon },
       { href: "/dashboard/activation", label: "Aktivasyon", icon: BarChart3Icon },
+      { href: "/dashboard/insights", label: "AI İçgörüleri", icon: SparklesIcon },
     ],
   },
   {
