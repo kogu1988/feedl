@@ -28,6 +28,7 @@ const navItems = [
   { href: "/portal", label: "Portal" },
   { href: "/roadmap", label: "Yol Haritası" },
   { href: "/portal/changelog", label: "Güncellemeler" },
+  { href: "/pricing", label: "Fiyat" },
 ];
 
 function isActive(pathname: string, href: string) {

@@ -28,6 +28,10 @@ const isPublicRoute = createRouteMatcher([
 
   "/invites(.*)",
 
+  // Sprint 49: public fiyatlandırma sayfası (Paddle checkout sandbox/live,
+  // Clerk oturumu gerekmez).
+  "/pricing",
+
   "/widget",
   "/api/posts(.*)",
 
