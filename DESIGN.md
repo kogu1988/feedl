@@ -193,6 +193,10 @@ prop'unu `AppSidebar`'a geçirir.
   küçük elemanlar (buton, input, badge) token radius (`rounded-md`
   ailesi). Elle kart yazarken Card primitive'ini kullan ya da bu
   katmanlara uyun — tek radius her yerde değil, hiyerarşi koda yansır.
+- **Rozet tek kabuk (2026-09-06):** `components/ui/badge.tsx` (Badge) —
+  `rounded-full` pill; semantik rozetler (StatusBadge / TypeBadge /
+  SentimentBadge) yalnız kendi ton class'ını `className` ile verir, kabuğu
+  kopyalamaz. Yeni rozet bu primitive'ten üretilir (kopya `span` kabuğu yazılmaz).
 - **`components/ui/`** — Base UI (`@base-ui/react`) primitive'leri + cva
   varyantları. `Button` Base UI `render` prop destekler (Link vs. için).
 - **Button varyantları:** `default` (mercan/mürekkep) `outline` `secondary`
