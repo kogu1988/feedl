@@ -1625,6 +1625,24 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
 - ☑ npm test (17/17) + npm run build ✓ → commit → push.
 - **Not:** Reaction (emoji) şeması/UI sonraki adım; draft modeli tamam.
 
+### Sprint 48o — Slack Connector (madde 8, madde 10) (✅ 2026-09-04)
+
+> İlk gerçek connector — Slack Events API. Slack mesajları → AI triage →
+> feedback oluşturma. Zendesk/Intercom sonraki adım (kullanıcı onayı).
+
+- ☑ **`lib/slack.ts` (commit ea8edfc):** verifySlackSignature (X-Slack-Signature
+  v0 HMAC-SHA256, timestamp replay 5dk), parseSlackMessage (message event;
+  bot_message/message_changed/deleted hariç), isSlackConfigured.
+- ☑ **`POST /api/integrations/slack/events`:** imza doğrulama, url_verification
+  challenge yanıtı, message → classifyWidgetMessage → feedback ise post
+  oluştur + post/created yayınla (source=slack).
+- ☑ middleware `/api/integrations(.*)` public (Slack Clerk'siz çağırır).
+- ☑ npm test (17/17) + npm run build ✓ → commit → push.
+- **Kalan (kullanıcı tarafı):** Slack app oluştur → Event Subscriptions'a
+  https://feedl.app/api/integrations/slack/events ekle (message.channels event)
+  → Signing Secret → Vercel env `SLACK_SIGNING_SECRET` (+ opsiyonel
+  `SLACK_BOT_TOKEN`). Sonra test.
+
 ### Ertelenen blok (en son — kullanıcının kısıtı)
 
 - **Domain (feedl.app) alındı (2026-09-04).** Kod tarafı hazır: tüm
