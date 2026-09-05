@@ -114,16 +114,30 @@ kalır; **yalnız admin `/dashboard`** 240px daralabilir sidebar alır
 Ayarlar); altta UserButton. Bileşen: `app-sidebar` — dashboard altı
 `layout.tsx` sağlar; rail durumu localStorage.
 
+**Sidebar rol kademesi (2026-09-06, kullanıcı onaylı yetki matrisi):**
+`workspace_members.role` → owner/admin (tam), contributor (kısmi team),
+member (public). Contributor, `adminOnly` işaretli öğeleri (Gelir / Üyeler /
+Çalışma Alanları / Widget / Faturalama / Ayarlar) sidebar'da GÖRMEZ; onun
+nav listesi Genel Bakış / Board'lar / Aktivasyon / AI İçgörüleri / Şirketler /
+Alanlar olur. `layout.tsx` `getDashboardScope()` ile `scope="admin|"team`
+prop'unu `AppSidebar`'a geçirir.
+
 - `app/(main)/layout.tsx`: `ClerkProvider(shadcn)` > `ThemeProvider` >
   `flex min-h-svh flex-col` (üst bar / flex-1 içerik / alt bar).
 - **Üst bar** (`components/custom/site-header.tsx`): `h-14`,
   `sticky top-0 z-40 bg-background`; container **her sayfada tam genişlik**
-  (`max-w-none`) — admin/public ayrımı yoktur; marka karosu (`size-6 rounded-md bg-brand`
-  + ChevronsUpIcon koyu mürekkep), aktif nav vurgusu `bg-muted`
-  (`usePathname`; `/portal*` Portal'ı, `/changelog*` Güncellemeler'i aktif eder);
-  sağda `ThemeToggle` + Clerk butonları.
-- **Alt bar:** `border-t`, tek satır marka cümlesi + 3 bağlantı
-  (Portal / Yol Haritası / Güncellemeler).
+  (`max-w-none`); marka karosu (`size-6 rounded-md bg-brand` + ChevronsUpIcon
+  koyu mürekkep), aktif nav vurgusu `bg-muted`; sağda `ThemeToggle` +
+  Clerk butonları. **Satış/marka yüzeyi** (`/`, `/demo`, `/pricing`, `/contact`,
+  `/privacy`, `/terms`) → Demo+Fiyat; **admin** (`/dashboard*`) → yalnız
+  "Portal" (public board'a atla; sidebar zaten nav); **auth/işlem**
+  (`/sign-in`, `/sign-up`, `/onboarding`, `/invites`) → nav YOK;
+  **public topluluk** (`/portal*`, `/roadmap*`, `/changelog*`) →
+  Portal+Yol+Güncellemeler.
+- **Alt bar** (`components/custom/site-footer.tsx`): `border-t` + marka
+  cümlesi + linkler; **yüzeye göre** — satış/marka sayfasında "Ürün" kolonu
+  Demo+Fiyat, public toplulukta Portal/Yol/Güncellemeler; admin ve auth
+  yüzeylerinde footer render edilmez (marka/legal sayfaları public kalır).
 - **Marketing h1 merdiveni (2026-09-05):** landing hero `text-4xl
   sm:text-5xl lg:text-6xl`; demo/pricing h1 `text-3xl sm:text-4xl`;
   bölüm h2'leri `text-2xl` — yalnız ana sayfa en büyük ölçeği taşır.
