@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
-import { Show, SignInButton } from "@clerk/nextjs";
+import { Show } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
 import { and, asc, count, countDistinct, desc, eq, gt, inArray, isNotNull, isNull, ne, sql } from "drizzle-orm";
 
@@ -9,6 +9,7 @@ import {
   ArrowRightIcon,
   GitMergeIcon,
   SparklesIcon,
+  ThumbsUpIcon,
 } from "lucide-react";
 
 import { CustomValuesPanel } from "@/components/custom/custom-values-panel";
@@ -19,6 +20,7 @@ import {
 import { FollowButton } from "@/components/custom/follow-button";
 import { CommentForm } from "@/components/custom/comment-form";
 import { CommentCountBadge } from "@/components/custom/comment-count-badge";
+import { ClerkTriggerButton } from "@/components/custom/clerk-trigger-button";
 import { KeywordChips } from "@/components/custom/keyword-chips";
 import { MergeControls } from "@/components/custom/merge-controls";
 import {
@@ -279,15 +281,16 @@ export default async function PostDetailPage({
                   />
                 </Show>
                 <Show when="signed-out">
-                  <SignInButton>
-                    <button
-                      type="button"
-                      className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
-                      aria-label="Oy vermek için giriş yap"
-                    >
-                      {post.voteCount}
-                    </button>
-                  </SignInButton>
+                  <ClerkTriggerButton
+                    mode="sign-in"
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0 gap-1.5"
+                    aria-label="Oy vermek için giriş yap"
+                  >
+                    <ThumbsUpIcon className="size-4" aria-hidden="true" />
+                    {post.voteCount}
+                  </ClerkTriggerButton>
                 </Show>
               </div>
             )}
@@ -373,14 +376,13 @@ export default async function PostDetailPage({
           )}
         </Show>
         <Show when="signed-out">
-          <SignInButton>
-            <button
-              type="button"
-              className="cursor-pointer rounded-md border border-dashed p-4 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
-            >
-              Yorum yazmak için giriş yap
-            </button>
-          </SignInButton>
+          <ClerkTriggerButton
+            mode="sign-in"
+            variant="outline"
+            className="h-auto w-full border-dashed p-4 text-muted-foreground"
+          >
+            Yorum yazmak için giriş yap
+          </ClerkTriggerButton>
         </Show>
 
         {commentRows.length === 0 ? (

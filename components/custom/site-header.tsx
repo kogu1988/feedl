@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronsUpIcon } from "lucide-react";
-import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
+import { Show, UserButton } from "@clerk/nextjs";
 
-import { Button } from "@/components/ui/button";
+import { ClerkTriggerButton } from "@/components/custom/clerk-trigger-button";
 import { ThemeToggle } from "@/components/custom/theme-toggle";
 import { cn } from "@/lib/utils";
 
@@ -114,14 +114,17 @@ export function SiteHeader({ brand }: { brand?: { name: string; brandColor: stri
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
           <ThemeToggle />
           <Show when="signed-out">
-            <SignInButton>
-              <button className="hidden cursor-pointer rounded-md px-2 py-1.5 text-sm font-medium hover:bg-accent sm:block">
-                Giriş Yap
-              </button>
-            </SignInButton>
-            <SignUpButton>
-              <Button size="sm">Kayıt Ol</Button>
-            </SignUpButton>
+            <ClerkTriggerButton
+              mode="sign-in"
+              variant="ghost"
+              size="sm"
+              className="hidden sm:inline-flex"
+            >
+              Giriş yap
+            </ClerkTriggerButton>
+            <ClerkTriggerButton mode="sign-up" size="sm">
+              Kayıt ol
+            </ClerkTriggerButton>
           </Show>
           <Show when="signed-in">
             <UserButton />

@@ -1,8 +1,8 @@
 import { and, count, countDistinct, desc, eq, inArray } from "drizzle-orm";
 import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
-import { SignInButton } from "@clerk/nextjs";
 
+import { ClerkTriggerButton } from "@/components/custom/clerk-trigger-button";
 import { CommentCountBadge } from "@/components/custom/comment-count-badge";
 import { PaginationFooter } from "@/components/custom/pagination-footer";
 import { PageBreadcrumb } from "@/components/custom/page-breadcrumb";
@@ -49,11 +49,9 @@ export default async function MyVotesPage({
             Oy verdiğin fikirler burada listelenir.
           </p>
           <div className="mt-4">
-            <SignInButton>
-              <button className="inline-flex h-9 cursor-pointer items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90">
-                Giriş yap
-              </button>
-            </SignInButton>
+            <ClerkTriggerButton mode="sign-in" size="lg">
+              Giriş yap
+            </ClerkTriggerButton>
           </div>
         </div>
       </main>

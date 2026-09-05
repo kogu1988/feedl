@@ -2,10 +2,11 @@ import { and, asc, count, countDistinct, desc, eq, inArray, isNull, type SQL } f
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
-import { Show, SignInButton } from "@clerk/nextjs";
+import { Show } from "@clerk/nextjs";
 import { RocketIcon, SearchIcon, ThumbsUpIcon } from "lucide-react";
 
 import { CommentCountBadge } from "@/components/custom/comment-count-badge";
+import { ClerkTriggerButton } from "@/components/custom/clerk-trigger-button";
 import { NewPostDialog } from "@/components/custom/new-post-dialog";
 import { FilterTabs } from "@/components/custom/filter-tabs";
 import { PaginationFooter } from "@/components/custom/pagination-footer";
@@ -259,9 +260,9 @@ export default async function PortalPage({
           />
         </Show>
         <Show when="signed-out">
-          <SignInButton>
-            <Button>Fikir göndermek için giriş yap</Button>
-          </SignInButton>
+          <ClerkTriggerButton mode="sign-in">
+            Fikir göndermek için giriş yap
+          </ClerkTriggerButton>
         </Show>
       </div>
 
@@ -373,9 +374,9 @@ export default async function PortalPage({
                 <NewPostDialog />
               </Show>
               <Show when="signed-out">
-                <SignInButton>
-                  <Button>Bu fikri ilk sen gönder</Button>
-                </SignInButton>
+                <ClerkTriggerButton mode="sign-in">
+                  Bu fikri ilk sen gönder
+                </ClerkTriggerButton>
               </Show>
               <Button variant="outline" render={<Link href="/portal" />}>
                 Aramayı temizle
@@ -393,9 +394,9 @@ export default async function PortalPage({
                 <NewPostDialog />
               </Show>
               <Show when="signed-out">
-                <SignInButton>
-                  <Button>İlk fikri sen gönder</Button>
-                </SignInButton>
+                <ClerkTriggerButton mode="sign-in">
+                  İlk fikri sen gönder
+                </ClerkTriggerButton>
               </Show>
             </div>
           </div>
@@ -484,16 +485,16 @@ export default async function PortalPage({
                           />
                         </Show>
                         <Show when="signed-out">
-                          <SignInButton>
-                            <button
-                              type="button"
-                              className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
-                              aria-label="Oy vermek için giriş yap"
-                            >
-                              <ThumbsUpIcon className="size-4" aria-hidden="true" />
-                              {post.voteCount}
-                            </button>
-                          </SignInButton>
+                          <ClerkTriggerButton
+                            mode="sign-in"
+                            variant="outline"
+                            size="sm"
+                            className="shrink-0 gap-1.5"
+                            aria-label="Oy vermek için giriş yap"
+                          >
+                            <ThumbsUpIcon className="size-4" aria-hidden="true" />
+                            {post.voteCount}
+                          </ClerkTriggerButton>
                         </Show>
                       </div>
                       <CardDescription className="flex flex-wrap items-center gap-2">
