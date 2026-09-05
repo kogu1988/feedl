@@ -401,7 +401,10 @@ export default async function PortalPage({
                   Yayında
                 </h2>
                 {shippedPosts.map((post) => (
-                  <Card key={post.id}>
+                  <Card
+                    key={post.id}
+                    className="transition-[transform,box-shadow] duration-150 ease-[var(--ease-out-quart)] hover:-translate-y-0.5 hover:shadow-xs dark:hover:ring-foreground/25"
+                  >
                     <CardHeader>
                       <CardTitle className="leading-snug">
                         <Link
@@ -452,7 +455,10 @@ export default async function PortalPage({
               <section className="mt-4 grid gap-4">
                 <h2 className="text-lg font-semibold">Fikirler</h2>
                 {activePosts.map((post) => (
-                  <Card key={post.id}>
+                  <Card
+                    key={post.id}
+                    className="transition-[transform,box-shadow] duration-150 ease-[var(--ease-out-quart)] hover:-translate-y-0.5 hover:shadow-xs dark:hover:ring-foreground/25"
+                  >
                     <CardHeader>
                       <div className="flex items-start justify-between gap-3">
                         <CardTitle className="leading-snug">

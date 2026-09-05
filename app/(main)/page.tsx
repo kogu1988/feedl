@@ -137,15 +137,21 @@ export default async function RootPage() {
     <main className="container mx-auto max-w-5xl px-4 pb-16 pt-12 sm:pt-20">
       <section className="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-14">
         <div>
-          <h1 className="max-w-lg text-4xl font-bold sm:text-5xl">
+          <h1 className="hero-rise max-w-lg text-4xl font-bold sm:text-5xl">
             Müşteri isteklerini tahminle değil, veriyle önceliklendir.
           </h1>
-          <p className="mt-4 max-w-xl text-lg text-muted-foreground">
+          <p
+            className="hero-rise mt-4 max-w-xl text-lg text-muted-foreground"
+            style={{ animationDelay: "60ms" }}
+          >
             Fikirleri toplamak, oylamak ve AI ile analiz etmek için tek
             platform. Canny&apos;ye ücretsiz bir alternatif — ürününü müşteri
             sesiyle şekillendir.
           </p>
-          <div className="mt-8 flex flex-wrap items-center gap-3">
+          <div
+            className="hero-rise mt-8 flex flex-wrap items-center gap-3"
+            style={{ animationDelay: "120ms" }}
+          >
             <SignUpButton>
               <Button size="lg">Ücretsiz Başla</Button>
             </SignUpButton>
@@ -162,7 +168,7 @@ export default async function RootPage() {
           </div>
         </div>
 
-        <div aria-hidden="true">
+        <div aria-hidden="true" className="hero-rise" style={{ animationDelay: "180ms" }}>
           <DemoPostCard
             title="Karanlık mod desteği"
             date="31 Ağustos 2026"

@@ -63,13 +63,21 @@ function isActive(pathname: string, href: string) {
 
 export function SiteHeader({ brand }: { brand?: { name: string; brandColor: string | null; logoUrl: string | null } }) {
   const pathname = usePathname();
+  // Admin kabuk (Sprint 51): üst bar dashboard'da tam genişlik açılır —
+  // soldaki slate sidebar'la hizalı; public yüzeyler max-w-5xl kalır.
+  const isDashboard = pathname.startsWith("/dashboard");
   const workspaceName = brand?.name ?? "feedl";
   const brandColor = brand?.brandColor ?? "#ff5c35";
   const logoUrl = brand?.logoUrl ?? null;
 
   return (
-    <header className="border-b">
-      <div className="container mx-auto flex h-14 max-w-5xl items-center justify-between gap-3 px-4">
+    <header className="sticky top-0 z-40 border-b bg-background">
+      <div
+        className={cn(
+          "container mx-auto flex h-14 items-center justify-between gap-3 px-4",
+          isDashboard ? "max-w-none" : "max-w-5xl",
+        )}
+      >
         <div className="flex min-w-0 items-center gap-4 sm:gap-6">
           <Link
             href="/"

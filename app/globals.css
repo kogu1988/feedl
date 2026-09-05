@@ -86,14 +86,21 @@
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  /* Hareket eğrisi (design_report.md §5): transition: all yasak — yalnız
+     transform/opacity/renk özellikleri geçer. */
+  --duration-fast: 150ms;
+  --duration-base: 200ms;
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  /* Yapısal slate (design_report.md Karar 1): admin sidebar yüzeyi —
+     aksan değil nötr yapı. Değerler Tailwind slate oklch karşılıkları. */
+  --sidebar: oklch(0.208 0.042 265.755);
+  --sidebar-foreground: oklch(0.968 0.007 247.896);
+  --sidebar-primary: var(--brand);
+  --sidebar-primary-foreground: #2b0e04;
+  --sidebar-accent: oklch(0.279 0.041 260.031);
+  --sidebar-accent-foreground: oklch(0.968 0.007 247.896);
+  --sidebar-border: oklch(1 0 0 / 8%);
+  --sidebar-ring: #ff8c66;
 }
 
 .dark {
@@ -125,14 +132,14 @@
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar: oklch(0.129 0.042 264.695);
+  --sidebar-foreground: oklch(0.968 0.007 247.896);
+  --sidebar-primary: var(--brand);
+  --sidebar-primary-foreground: #2b0e04;
+  --sidebar-accent: oklch(0.279 0.041 260.031);
+  --sidebar-accent-foreground: oklch(0.968 0.007 247.896);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --sidebar-ring: #ff8c66;
 }
 
 @layer base {
@@ -150,5 +157,40 @@
   h3,
   h4 {
     letter-spacing: -0.02em;
+  }
+  /* Tailwind v4 preflight butonları default imlece çeker; pointer geri. */
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+/* Tek orkestra (DESIGN.md §8): landing hero'nun tek seferlik kademeli
+   girişi. Kademeli elemanlara inline animationDelay verilir (~60ms aralık);
+   reduced-motion'da kill-switch saniyeye indirir, içerik görünür kalır. */
+@keyframes hero-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.hero-rise {
+  animation: hero-rise 0.45s var(--ease-out-quart) both;
+}
+
+/* Hareket azaltma: dekoratif süreleri etkisizleştir (erişilebilirlik zemini). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-delay: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
   }
 }
