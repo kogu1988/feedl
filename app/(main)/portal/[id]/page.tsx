@@ -240,7 +240,9 @@ export default async function PostDetailPage({
       <Card className="mt-4">
         <CardHeader>
           <div className="flex items-start justify-between gap-3">
-            <CardTitle className="text-xl leading-snug">{post.title}</CardTitle>
+            <h1 className="font-heading text-xl font-semibold leading-snug">
+              {post.title}
+            </h1>
             {mergedInto ? (
               // Birleşmiş fikirde oy butonu kapalı: oylar hedef fikirde.
               <span
