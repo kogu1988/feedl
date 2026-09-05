@@ -14,6 +14,7 @@ import { PostsTable } from "@/components/custom/posts-table";
 import { RoadmapPlanner } from "@/components/custom/roadmap-planner";
 import { SavedViewBar } from "@/components/custom/saved-view-bar";
 import { BoardFilterSelect } from "@/components/custom/board-filter-select";
+import { OnboardingChecklist } from "@/components/custom/onboarding-checklist";
 import {
   Card,
   CardContent,
@@ -25,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
+import { loadOnboardingState } from "@/lib/db/onboarding";
 import { listBoards, resolveBoardBySlug } from "@/lib/db/board";
 import { loadCustomerCounts } from "@/lib/db/customer-counts";
 import {
@@ -148,8 +150,11 @@ export default async function DashboardPage({
     opportunityValueByPost: new Map<string, number>(),
   };
   let loadError = false;
+  let onboardingState: Awaited<ReturnType<typeof loadOnboardingState>> | null = null;
 
   try {
+    // Sprint 59 (onboarding): "Başlarken" checklist'inin durumu.
+    onboardingState = await loadOnboardingState();
     // Sprint 39: istatistikler agregat sorgudan; tablo offset/limit ile
     // tek sayfa çeker. Durum filtresi artık sunucuda uygulanır — client-
     // tarafı filtre sayfalanmış listede yanlış sonuç verirdi.
@@ -224,6 +229,10 @@ export default async function DashboardPage({
           </Button>
         </div>
       </div>
+
+      {onboardingState ? (
+        <OnboardingChecklist state={onboardingState} />
+      ) : null}
 
       {!loadError ? (
         <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

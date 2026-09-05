@@ -194,6 +194,11 @@ export const workspaces = pgTable("workspaces", {
   trackedUserLimit: integer("tracked_user_limit").notNull().default(50),
   boardLimit: integer("board_limit").notNull().default(1),
   memberLimit: integer("member_limit").notNull().default(1),
+  // Sprint 59 (madde onboarding): dashboard'daki onboarding checklist'ini
+  // kullanıcı "Şimdilik gizle" derse kalıcı olarak gizle (tamamlansa bile).
+  onboardingDismissedAt: timestamp("onboarding_dismissed_at", {
+    withTimezone: true,
+  }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

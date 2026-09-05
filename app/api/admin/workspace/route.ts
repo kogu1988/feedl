@@ -37,6 +37,9 @@ const updateSchema = z.object({
     .max(500)
     .nullable()
     .optional(),
+  // Sprint 59 (onboarding): dashboard checklist'ini kullanıcı "Şimdilik gizle"
+  // derse null'a çekilecek; tamamlanınca otomatik gizlenir (kolon set edilmez).
+  dismissOnboarding: z.literal(true).optional(),
 });
 
 // GET /api/admin/workspace — workspace bilgileri.
@@ -122,6 +125,10 @@ export async function PATCH(req: Request) {
     if (parsed.data.brandColor !== undefined)
       set.brandColor = parsed.data.brandColor;
     if (parsed.data.logoUrl !== undefined) set.logoUrl = parsed.data.logoUrl;
+    // Onboarding gizleme: dismissOnboarding=true → timestamp set, yalnızca gizleme.
+    if (parsed.data.dismissOnboarding === true) {
+      set.onboardingDismissedAt = new Date();
+    }
     set.updatedAt = new Date();
 
     if (Object.keys(set).length <= 1 && set.updatedAt) {
