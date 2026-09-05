@@ -46,8 +46,8 @@ function safeEqual(a: string, b: string): boolean {
 
 // Opsiyonel `X-Intercom-Signature: sha256=<hex>` doğrulaması (Intercom
 // webhook "webhook secret" etkinse). HMAC-SHA256 doğrudan ham gövde üzerinden.
-function verifyIntercomSignature(rawBody: string, headerValue: string): boolean {
-  const secret = process.env.INTERCOM_WEBHOOK_SECRET;
+function verifyIntercomSignature(rawBody: string, headerValue: string, secretOverride?: string | null): boolean {
+  const secret = secretOverride ?? process.env.INTERCOM_WEBHOOK_SECRET;
   if (!secret) return false;
   const value = headerValue.replace(/^sha256=/i, "").trim();
   const expected = createHmac("sha256", secret).update(rawBody).digest("hex");
@@ -65,14 +65,16 @@ export function verifyIntercomWebhook(
   payload: Record<string, unknown>,
   rawBody: string,
   headers: Headers,
+  appIdOverride?: string | null,
+  secretOverride?: string | null,
 ): boolean {
-  const appId = process.env.INTERCOM_APP_ID;
+  const appId = appIdOverride ?? process.env.INTERCOM_APP_ID;
   if (!appId) return false;
   const payloadAppId = typeof payload.app_id === "string" ? payload.app_id : "";
   if (payloadAppId && payloadAppId === appId) return true;
-  // Alternatif: imza başlığı ile doğrula (INTERCOM_WEBHOOK_SECRET setse).
+  // Alternatif: imza başlığı ile doğrula (INTERCOM_WEBHOOK_SECRET ya da override).
   const signature = headers.get("x-intercom-signature");
-  if (signature && verifyIntercomSignature(rawBody, signature)) return true;
+  if (signature && verifyIntercomSignature(rawBody, signature, secretOverride)) return true;
   return false;
 }
 

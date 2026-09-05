@@ -17,6 +17,7 @@ import {
   verifyIntercomWebhook,
 } from "@/lib/intercom";
 import { posts, users } from "@/lib/db/schema";
+import { resolveIntegrationByUrlToken } from "@/lib/integrations";
 import { toWidgetUserId } from "@/lib/widget/jwt";
 import { postCreatedEventSchema } from "@/lib/validations/events";
 import { inngest } from "@/inngest/client";
@@ -28,7 +29,27 @@ import { inngest } from "@/inngest/client";
 // `X-Intercom-Signature` desteklenir.
 export async function POST(req: NextRequest) {
   try {
-    if (!isIntercomConfigured()) {
+    // Per-workspace context (Sprint 63g): ?ws&t varsa workspace_integrations'tan çöz.
+    const { searchParams } = req.nextUrl;
+    const wsParam = searchParams.get("ws");
+    const tokenParam = searchParams.get("t");
+    let integrationAppId: string | null = null;
+    let integrationSecret: string | null = null;
+    let workspaceId: string | null = null;
+    if (wsParam && tokenParam) {
+      const resolved = await resolveIntegrationByUrlToken("intercom", wsParam, tokenParam);
+      if (!resolved) {
+        return NextResponse.json(
+          { success: false, error: "Geçersiz Intercom webhook token." },
+          { status: 403 },
+        );
+      }
+      integrationAppId = resolved.apiKey;
+      integrationSecret = resolved.webhookSecret;
+      workspaceId = resolved.workspaceId;
+    }
+
+    if (!integrationAppId && !isIntercomConfigured()) {
       return NextResponse.json(
         { success: false, error: "Intercom yapılandırılmamış (INTERCOM_APP_ID yok)." },
         { status: 503 },
@@ -47,7 +68,7 @@ export async function POST(req: NextRequest) {
     }
     const body = payload as Record<string, unknown>;
 
-    if (!verifyIntercomWebhook(body, rawBody, req.headers)) {
+    if (!verifyIntercomWebhook(body, rawBody, req.headers, integrationAppId, integrationSecret)) {
       return NextResponse.json(
         { success: false, error: "Geçersiz Intercom webhook (app_id/imeza)." },
         { status: 401 },
@@ -81,14 +102,14 @@ export async function POST(req: NextRequest) {
 
     let createdPostId: string | null = null;
     if (classification === "feedback") {
-      const workspaceId = await getWorkspaceId();
+      const targetWorkspaceId = workspaceId ?? (await getWorkspaceId());
       // Sprint 48q: aynı Intercom conversation/ticket (id) tekrar post edilmesin.
       const sourceRef = intercomSourceRef(item, topic);
       if (sourceRef) {
         const [existing] = await getDb()
           .select({ id: posts.id })
           .from(posts)
-          .where(and(eq(posts.workspaceId, workspaceId), eq(posts.sourceRef, sourceRef)))
+          .where(and(eq(posts.workspaceId, targetWorkspaceId), eq(posts.sourceRef, sourceRef)))
           .limit(1);
         if (existing) {
           return NextResponse.json({
@@ -130,7 +151,7 @@ export async function POST(req: NextRequest) {
       const [created] = await getDb()
         .insert(posts)
         .values({
-          workspaceId,
+          workspaceId: targetWorkspaceId,
           boardId: await getDefaultBoardId(),
           userId,
           title,

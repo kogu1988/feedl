@@ -29,8 +29,8 @@ function safeEqual(a: string, b: string): boolean {
   }
 }
 
-export function verifyZendeskToken(headerValue: string): boolean {
-  const secret = process.env.ZENDESK_WEBHOOK_SECRET ?? "";
+export function verifyZendeskToken(headerValue: string, secretOverride?: string | null): boolean {
+  const secret = secretOverride ?? process.env.ZENDESK_WEBHOOK_SECRET ?? "";
   if (!secret) return false;
   const value = headerValue.replace(/^Bearer\s+/i, "").trim();
   return safeEqual(value, secret);

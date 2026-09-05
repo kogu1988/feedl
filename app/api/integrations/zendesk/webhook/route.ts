@@ -6,6 +6,7 @@ import { getWorkspaceId } from "@/lib/db/workspace";
 import { getDefaultBoardId } from "@/lib/db/board";
 import { classifyWidgetMessage } from "@/lib/ai/analysis";
 import { isZendeskConfigured, verifyZendeskToken, zendeskAuthFromHeaders, zendeskTicketText, type ZendeskTicket } from "@/lib/zendesk";
+import { resolveIntegrationByUrlToken } from "@/lib/integrations";
 import { posts, users } from "@/lib/db/schema";
 import { toWidgetUserId } from "@/lib/widget/jwt";
 import { postCreatedEventSchema } from "@/lib/validations/events";
@@ -16,14 +17,32 @@ import { inngest } from "@/inngest/client";
 // uygulama feedl olarak adlandırılır).
 export async function POST(req: NextRequest) {
   try {
-    if (!isZendeskConfigured()) {
+    // Per-workspace context (Sprint 63g): ?ws&t varsa workspace_integrations'tan çöz.
+    const { searchParams } = req.nextUrl;
+    const wsParam = searchParams.get("ws");
+    const tokenParam = searchParams.get("t");
+    let integrationSecret: string | null = null;
+    let workspaceId: string | null = null;
+    if (wsParam && tokenParam) {
+      const resolved = await resolveIntegrationByUrlToken("zendesk", wsParam, tokenParam);
+      if (!resolved) {
+        return NextResponse.json(
+          { success: false, error: "Geçersiz Zendesk webhook token." },
+          { status: 403 },
+        );
+      }
+      integrationSecret = resolved.apiKey ?? resolved.webhookSecret;
+      workspaceId = resolved.workspaceId;
+    }
+
+    if (!integrationSecret && !isZendeskConfigured()) {
       return NextResponse.json(
         { success: false, error: "Zendesk yapılandırılmamış (ZENDESK_WEBHOOK_SECRET yok)." },
         { status: 503 },
       );
     }
     const auth = zendeskAuthFromHeaders(req.headers);
-    if (!verifyZendeskToken(auth)) {
+    if (!verifyZendeskToken(auth, integrationSecret)) {
       return NextResponse.json(
         { success: false, error: "Geçersiz Zendesk token." },
         { status: 401 },
@@ -57,14 +76,14 @@ export async function POST(req: NextRequest) {
 
     let createdPostId: string | null = null;
     if (classification === "feedback") {
-      const workspaceId = await getWorkspaceId();
+      const targetWorkspaceId = workspaceId ?? (await getWorkspaceId());
       // Sprint 48q: aynı Zendesk ticket'ı (id) tekrar post edilmesin.
       const sourceRef = ticket.id ? `zendesk:${ticket.id}` : null;
       if (sourceRef) {
         const [existing] = await getDb()
           .select({ id: posts.id })
           .from(posts)
-          .where(and(eq(posts.workspaceId, workspaceId), eq(posts.sourceRef, sourceRef)))
+          .where(and(eq(posts.workspaceId, targetWorkspaceId), eq(posts.sourceRef, sourceRef)))
           .limit(1);
         if (existing) {
           return NextResponse.json({
@@ -87,7 +106,7 @@ export async function POST(req: NextRequest) {
       const [created] = await getDb()
         .insert(posts)
         .values({
-          workspaceId,
+          workspaceId: targetWorkspaceId,
           boardId: await getDefaultBoardId(),
           userId,
           title,
