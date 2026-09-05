@@ -1,36 +1,90 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# feedl — AI Destekli Müşteri Geri Bildirim Platformu
 
-## Getting Started
+feedl, ürün ekiplerinin müşteri geri bildirimini toplaması, AI ile analiz etmesi,
+önceliklendirmesi ve duyurması için tek bir platformdur. Canny'ye ücretsiz bir
+alternatif — herkese açık bir topluluk portalı + gelir odaklı önceliklendirme.
 
-First, run the development server:
+**Canlı:** [https://feedl.app](https://feedl.app)
+
+---
+
+## Ne yapar?
+
+1. **Topla:** Müşterilerin istekleri tek bir panoya düşer; oylar en çok istenen
+   özelliği üste taşır. Widget ile kendi sitenize gömülür.
+2. **Anla:** Autopilot her fikri özetler, etiketler ve benzer istekleri işaretler;
+   duygu analizi ve korpus içgörüleriyle tahmin değil veriyle karar verirsin.
+3. **Önceliklendir & Yol Haritası:** Durumlar (`Açık → Planlandı → Geliştiriliyor →
+   Yayında`) ve gelir skoru (oy + müşteri + fırsat) ile hangi özelliğin önce
+   geleceğini gör.
+4. **Duyur:** Yayına aldığında oy verenlere ve takipçilere otomatik e-posta gider;
+   herkese açık bir değişiklik günlüğü oluşur.
+
+## Teknoloji Stack'i
+
+| Katman | Teknoloji |
+| :--- | :--- |
+| Framework | Next.js 15 (App Router, Turbopack) + React 19 |
+| Hosting | Vercel (Hobby) |
+| Auth | Clerk (multi-tenant workspace + rol kademesi) |
+| DB | Neon PostgreSQL + pgvector (Drizzle ORM) |
+| UI | Tailwind v4 + shadcn/ui + Base UI |
+| Background | Inngest |
+| AI | OpenRouter (`minimax-minimax3:free` LLM, `nemotron-3-embed-1b:free` embedding) |
+| Email | Resend |
+| Billing | Paddle (sandbox) |
+| Rate-limit | Upstash Redis |
+
+## Kurulum
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .env.example .env.local  # env değişkenlerini doldur (aşağıya bak)
+npm run dev                 # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Ortam değişkenleri (`.env.local`)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- Clerk: `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, `CLERK_WEBHOOK_SIGNING_SECRET`
+- Neon: `DATABASE_URL`
+- OpenRouter: `OPENROUTER_API_KEY`
+- Inngest: `INNGEST_EVENT_KEY`, `INNGEST_SIGNING_KEY`
+- Resend: `RESEND_API_KEY` · Test: `ETHEREAL_EMAIL_USER`, `ETHEREAL_EMAIL_PASSWORD`
+- Widget: `FEEDL_WIDGET_SECRET`, `FEEDL_WIDGET_ALLOWED_ORIGINS`
+- Paddle: `PADDLE_API_KEY`, `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN`, `PADDLE_WEBHOOK_SECRET`
+- Upstash: `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
+- App: `NEXT_PUBLIC_APP_URL`
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Gizli değerler yalnız `.env.local`'de — repo'ya yazılmaz.
 
-## Learn More
+## Doğrulama
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run build   # tip + lint (in-session tek doğrulama)
+npm test        # Vitest birim testleri
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+> Not: Deploy, `main`'e push ile otomatiktir. Vercel Hobby planında kayan
+> 24 saatte ~100 deploy limiti vardır — commit'leri biriktirip tek push'ta
+> gönderin (bkz. `docs/standarts.md` §6).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Proje Yapısı
 
-## Deploy on Vercel
+```
+app/               Next.js App Router (sayfalar + API route'ları)
+  (main)/          Kabuk + public dashboard + portal + auth sayfaları
+  api/             API route'ları (posts, votes, admin, v1, webhooks)
+  widget/          İframe'de gömülen widget (bare shell)
+components/
+  ui/              Base UI primitive'leri (Button, Card, Badge...)
+  custom/          Ürün bileşenleri (SiteHeader, Notice, EmptyState...)
+lib/               db, ai, email, widget, webhooks, paddle, rate-limit
+inngest/           Arka plan fonksiyonları (autopilot, notify, webhooks)
+migrations/        Drizzle migration'ları
+docs/              Planlama (gitignored) + standartlar
+tests/             Vitest birim testleri
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Lisans
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Ticari SaaS — özel repo. (Bkz. `docs/plan.md` ve `product.md`.)
