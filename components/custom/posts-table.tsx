@@ -269,7 +269,7 @@ export function PostsTable({
                   </div>
                 ) : null}
                 {post.mergedIntoId ? (
-                  <div className="mt-0.5 inline-flex items-center gap-1 rounded-full border border-amber-600/30 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">
+                  <div className="mt-0.5 inline-flex items-center gap-1 rounded-full border bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
                     Birleştirildi
                   </div>
                 ) : null}

@@ -38,6 +38,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import { getRole } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { loadCustomerCounts } from "@/lib/db/customer-counts";
@@ -211,6 +212,9 @@ export default async function PostDetailPage({
     );
   }
 
+  // Yan panel yalnız içerik varken açılır — herkese açık boş gutter olmaz.
+  const showSidebar = isAdmin || publicCustomFields.length > 0;
+
   return (
     <main className="container mx-auto max-w-none p-4 sm:p-8">
       <Link
@@ -222,8 +226,8 @@ export default async function PostDetailPage({
       </Link>
 
       {mergedInto ? (
-        <div className="mt-4 flex flex-wrap items-center gap-2 rounded-md border border-amber-600/30 bg-amber-500/10 p-3 text-sm">
-          <GitMergeIcon className="size-4 shrink-0 text-amber-700 dark:text-amber-400" aria-hidden="true" />
+        <div className="mt-4 flex flex-wrap items-center gap-2 rounded-md border bg-muted/50 p-3 text-sm">
+          <GitMergeIcon className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
           <span>
             Bu fikir{" "}
             <Link
@@ -237,7 +241,14 @@ export default async function PostDetailPage({
         </div>
       ) : null}
 
-      <Card className="mt-4">
+      <div
+        className={cn(
+          "mt-4 grid items-start gap-6 lg:gap-8",
+          showSidebar && "lg:grid-cols-[minmax(0,1fr)_340px]",
+        )}
+      >
+      <div className="min-w-0">
+      <Card>
         <CardHeader>
           <div className="flex items-start justify-between gap-3">
             <h1 className="font-heading text-xl font-semibold leading-snug">
@@ -304,77 +315,6 @@ export default async function PostDetailPage({
             </div>
           ) : null}
 
-          {isAdmin && post.aiSummary ? (
-            <div className="grid gap-1 rounded-md border border-primary/20 bg-primary/5 p-3">
-              <p className="flex items-center gap-1.5 text-xs font-medium text-primary">
-                <SparklesIcon className="size-3.5" aria-hidden="true" />
-                AI Özeti (yalnızca admin)
-              </p>
-              <p className="text-sm text-muted-foreground">{post.aiSummary}</p>
-            </div>
-          ) : null}
-
-          {isAdmin ? (
-            <div className="grid gap-2 rounded-md border border-dashed p-3">
-              <p className="text-xs font-medium text-muted-foreground">
-                Müşteri (yalnızca admin)
-              </p>
-              <p className="text-sm tabular-nums">
-                {customerCount} müşteri bu fikre oy verdi
-              </p>
-            </div>
-          ) : null}
-
-          {isAdmin ? (
-            <div className="grid gap-2 rounded-md border border-dashed p-3">
-              <p className="text-xs font-medium text-muted-foreground">
-                Fikir türü (yalnızca admin)
-              </p>
-              <div>
-                <TypeSelect postId={post.id} type={post.postType} />
-              </div>
-            </div>
-          ) : null}
-
-          {isAdmin ? (
-            <MergeControls postId={post.id} mergedInto={mergedInto} />
-          ) : null}
-
-          {isAdmin ? (
-            <OpportunityLinkControls
-              postId={post.id}
-              opportunities={opportunityItems}
-              linkedIds={linkedOpportunityIds}
-            />
-          ) : null}
-
-          {isAdmin ? (
-            <div className="grid gap-2 rounded-md border border-dashed p-3">
-              <p className="text-xs font-medium text-muted-foreground">
-                Özel alanlar (yalnızca admin)
-              </p>
-              <CustomValuesPanel
-                postId={post.id}
-                fields={customFieldItems}
-                initialValues={customValues}
-                editable
-              />
-            </div>
-          ) : null}
-
-          {!isAdmin && publicCustomFields.length > 0 ? (
-            <div className="grid gap-2 rounded-md border border-dashed p-3">
-              <p className="text-xs font-medium text-muted-foreground">
-                Detaylar
-              </p>
-              <CustomValuesPanel
-                postId={post.id}
-                fields={publicCustomFields}
-                initialValues={customValues}
-                editable={false}
-              />
-            </div>
-          ) : null}
         </CardContent>
       </Card>
 
@@ -523,6 +463,84 @@ export default async function PostDetailPage({
           ))}
         </section>
       ) : null}
+      </div>
+
+      {showSidebar ? (
+        <aside className="grid gap-4">
+          {isAdmin && post.aiSummary ? (
+            <div className="grid gap-1 rounded-md border border-primary/20 bg-primary/5 p-3">
+              <p className="flex items-center gap-1.5 text-xs font-medium text-primary">
+                <SparklesIcon className="size-3.5" aria-hidden="true" />
+                AI Özeti (yalnızca admin)
+              </p>
+              <p className="text-sm text-muted-foreground">{post.aiSummary}</p>
+            </div>
+          ) : null}
+
+          {isAdmin ? (
+            <div className="grid gap-2 rounded-md border border-dashed p-3">
+              <p className="text-xs font-medium text-muted-foreground">
+                Müşteri (yalnızca admin)
+              </p>
+              <p className="text-sm tabular-nums">
+                {customerCount} müşteri bu fikre oy verdi
+              </p>
+            </div>
+          ) : null}
+
+          {isAdmin ? (
+            <div className="grid gap-2 rounded-md border border-dashed p-3">
+              <p className="text-xs font-medium text-muted-foreground">
+                Fikir türü (yalnızca admin)
+              </p>
+              <div>
+                <TypeSelect postId={post.id} type={post.postType} />
+              </div>
+            </div>
+          ) : null}
+
+          {isAdmin ? (
+            <MergeControls postId={post.id} mergedInto={mergedInto} />
+          ) : null}
+
+          {isAdmin ? (
+            <OpportunityLinkControls
+              postId={post.id}
+              opportunities={opportunityItems}
+              linkedIds={linkedOpportunityIds}
+            />
+          ) : null}
+
+          {isAdmin ? (
+            <div className="grid gap-2 rounded-md border border-dashed p-3">
+              <p className="text-xs font-medium text-muted-foreground">
+                Özel alanlar (yalnızca admin)
+              </p>
+              <CustomValuesPanel
+                postId={post.id}
+                fields={customFieldItems}
+                initialValues={customValues}
+                editable
+              />
+            </div>
+          ) : null}
+
+          {!isAdmin && publicCustomFields.length > 0 ? (
+            <div className="grid gap-2 rounded-md border border-dashed p-3">
+              <p className="text-xs font-medium text-muted-foreground">
+                Detaylar
+              </p>
+              <CustomValuesPanel
+                postId={post.id}
+                fields={publicCustomFields}
+                initialValues={customValues}
+                editable={false}
+              />
+            </div>
+          ) : null}
+        </aside>
+      ) : null}
+      </div>
     </main>
   );
 }

@@ -57,6 +57,12 @@
   emerald, nötr nötr, negatif rose.
 - Destructive (kırmızı) mercanla aynı sıcak ailede — karıştırma; canlıda
   sorun olursa derinleştirilecek ama başka renkle değiştirilmez.
+- **Amber kapsamı (2026-09-05 daraltma):** amber yalnız "dikkat"
+  semantiği taşır — Geliştiriliyor rozeti + kolon noktası, dahili
+  (yalnızca ekip) yorum notu, gizli anahtar/webhook uyarıları, inceleme
+  bekleyen durumlar. Bilgilendirme notları (ör. "X ile birleştirildi")
+  nötr temada (border + muted) gösterilir; amber dekoratif/asimetrik
+  kullanılmaz.
 
 ### Yapısal slate — admin sidebar yüzeyi (2026-09-05 kararı)
 
@@ -118,12 +124,19 @@ Ayarlar); altta UserButton. Bileşen: `app-sidebar` — dashboard altı
   sağda `ThemeToggle` + Clerk butonları.
 - **Alt bar:** `border-t`, tek satır marka cümlesi + 3 bağlantı
   (Portal / Yol Haritası / Güncellemeler).
+- **Marketing h1 merdiveni (2026-09-05):** landing hero `text-4xl
+  sm:text-5xl lg:text-6xl`; demo/pricing h1 `text-3xl sm:text-4xl`;
+  bölüm h2'leri `text-2xl` — yalnız ana sayfa en büyük ölçeği taşır.
 - **Landing (`app/(main)/page.tsx`):** asimetrik hero — sol metin blok /
   sağda mock kart ("Karanlık mod desteği") + "Nasıl çalışır" 1-2-3
   şeridi (Topla / Anla / Duyur). Bölüm h2'leri tek ölçekte
   (`text-2xl bold tracking-tight`); eyebrow pill YOK. Kapanış CTA
   paneli `bg-brand-soft` — marka ailesinden tek bold leke; üzerinde
   mürekkep metin + mercan buton (beyaz-on-mercan yok, §1).
+- **Portal fikir detayı (2026-09-05):** lg+ iki kolon — solda fikir
+  kartı + durum geçmişi + yorumlar, sağda ~340px "Detaylar" yan
+  paneli (admin panelleri + herkese açık özel alanlar). Mobilde tek
+  kolon; yan panel alta düşer. Canny/Frill post-detay deseni.
 - **Genişlik disiplini (2026-09-05, tam genişlik kararı):** her sayfa
   container'ı `max-w-none` ile ekranın tamamını kullanır — `max-w-3xl/4xl/5xl/6xl`
   sayfa container'ı olarak KULLANILMAZ. İçerik **sola yaslı** dizilir
@@ -150,6 +163,12 @@ Ayarlar); altta UserButton. Bileşen: `app-sidebar` — dashboard altı
 
 ## 5. Bileşenler
 
+- **Radius iki katman (2026-09-05):** uygulama içi kartlar ve primitifler
+  `rounded-xl` (Card primitive zaten böyle); marketing/display yüzeyleri
+  (landing, demo, pricing kartları, CTA paneli, toast) `rounded-2xl`;
+  küçük elemanlar (buton, input, badge) token radius (`rounded-md`
+  ailesi). Elle kart yazarken Card primitive'ini kullan ya da bu
+  katmanlara uyun — tek radius her yerde değil, hiyerarşi koda yansır.
 - **`components/ui/`** — Base UI (`@base-ui/react`) primitive'leri + cva
   varyantları. `Button` Base UI `render` prop destekler (Link vs. için).
 - **Button varyantları:** `default` (mercan/mürekkep) `outline` `secondary`

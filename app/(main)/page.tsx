@@ -137,7 +137,7 @@ export default async function RootPage() {
     <main className="container mx-auto max-w-none px-4 pb-16 pt-12 sm:pt-20">
       <section className="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-14">
         <div>
-          <h1 className="hero-rise max-w-lg text-4xl font-bold sm:text-5xl">
+          <h1 className="hero-rise max-w-xl text-4xl font-bold sm:text-5xl lg:text-6xl">
             Müşteri isteklerini tahminle değil, veriyle önceliklendir.
           </h1>
           <p
