@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { BoxesIcon, BuildingIcon, CreditCardIcon, DownloadIcon, LayoutGridIcon, PieChartIcon, PuzzleIcon, SettingsIcon, SlidersHorizontalIcon, UsersIcon } from "lucide-react";
+import { DownloadIcon } from "lucide-react";
 import { and, asc, count, countDistinct, desc, eq, gte, inArray, isNull } from "drizzle-orm";
 
 import { FilterTabs } from "@/components/custom/filter-tabs";
@@ -168,11 +168,22 @@ export default async function DashboardPage({
     loadError = true;
   }
 
-  // İstatistik satırı (plan.md Sprint 11): artık agregat sorgudan
-  // (loadPostStats) — tablo sayfalansa da kartlar tüm fikirleri yansıtır.
-  const stats = [
-    { label: "Toplam Fikir", value: postStats.totalPosts },
-    { label: "Toplam Oy", value: postStats.totalVotes },
+  // İstatistik satırı (plan.md Sprint 11): agregat sorgudan (loadPostStats)
+  // — tablo sayfalansa da kartlar tüm fikirleri yansıtır. Sprint 51
+  // (Batch 3): akış metriklerine dönem deltası — weeklyCounts seçili
+  // (?range=) dönemin toplamı (loadWeeklyCounts); stok metriklerinde
+  // delta yok, uydurmayız.
+  const stats: { label: string; value: number; delta?: string }[] = [
+    {
+      label: "Toplam Fikir",
+      value: postStats.totalPosts,
+      delta: `+${weeklyCounts.ideas} (${rangeLabel})`,
+    },
+    {
+      label: "Toplam Oy",
+      value: postStats.totalVotes,
+      delta: `+${weeklyCounts.votes} (${rangeLabel})`,
+    },
     { label: "Açık (bekleyen)", value: postStats.openCount },
     { label: "Yayınlanan", value: postStats.shippedCount },
   ];
@@ -188,62 +199,28 @@ export default async function DashboardPage({
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
-          <Button
-            variant="outline"
-            render={<Link href="/dashboard/companies" />}
-          >
-            <BuildingIcon aria-hidden="true" />
-            Şirketler
-          </Button>
-          <Button variant="outline" render={<Link href="/dashboard/boards" />}>
-            <LayoutGridIcon aria-hidden="true" />
-            Board&apos;lar
-          </Button>
-          <Button variant="outline" render={<Link href="/dashboard/workspaces" />}>
-            <BoxesIcon aria-hidden="true" />
-            Workspace&apos;ler
-          </Button>
-          <Button variant="outline" render={<Link href="/dashboard/billing" />}>
-            <CreditCardIcon aria-hidden="true" />
-            Faturalandırma
-          </Button>
-          <Button variant="outline" render={<Link href="/dashboard/members" />}>
-            <UsersIcon aria-hidden="true" />
-            Üyeler
-          </Button>
-          <Button variant="outline" render={<Link href="/dashboard/revenue" />}>
-            <PieChartIcon aria-hidden="true" />
-            Gelir Raporu
-          </Button>
-          <Button variant="outline" render={<Link href="/dashboard/fields" />}>
-            <SlidersHorizontalIcon aria-hidden="true" />
-            Özel Alanlar
-          </Button>
-          <Button variant="outline" render={<Link href="/dashboard/widget" />}>
-            <PuzzleIcon aria-hidden="true" />
-            Widget
-          </Button>
           <Button render={<a href="/api/admin/export" download />}>
             <DownloadIcon aria-hidden="true" />
             CSV İndir
-          </Button>
-          <Button variant="outline" render={<Link href="/dashboard/settings" />}>
-            <SettingsIcon aria-hidden="true" />
-            Ayarlar
           </Button>
         </div>
       </div>
 
       {!loadError ? (
-        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {stats.map((stat) => (
-            <div key={stat.label} className="rounded-lg border p-4">
+            <div key={stat.label} className="rounded-lg border p-4 sm:p-5">
               <p className="text-xs font-medium text-muted-foreground">
                 {stat.label}
               </p>
-              <p className="mt-1 font-mono text-2xl font-bold tabular-nums">
+              <p className="mt-2 font-mono text-3xl font-bold tabular-nums">
                 {stat.value}
               </p>
+              {stat.delta ? (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {stat.delta}
+                </p>
+              ) : null}
             </div>
           ))}
         </div>
