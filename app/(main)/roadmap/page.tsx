@@ -1,46 +1,35 @@
 import { and, countDistinct, desc, eq, inArray, isNull, or } from "drizzle-orm";
 import Link from "next/link";
 
-import { CommentCountBadge } from "@/components/custom/comment-count-badge";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { StatusBadge } from "@/components/custom/status-badge";
+import { RoadmapColumns } from "@/components/custom/roadmap-columns";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
+import { getAdminUserId } from "@/lib/auth/admin";
 import { roadmapStatuses } from "@/lib/post-format";
 import { boards, comments, posts, votes } from "@/lib/db/schema";
 
 // Herkese açık yol haritası (plan.md Sprint 8): kanban görünümü —
 // Planlandı / Geliştiriliyor / Yayında kolonları, kartlar oy + yorum
-// sayısıyla (Sprint 13).
+// sayısıyla (Sprint 13). Sprint 53: admin girişi varsa drag-and-drop
+// (sürükleyerek durum değiştirme) etkin; ziyaretçi salt-okunur.
 
 // Canlı liste: her istekte DB'den okunur, build zamanında dondurulmaz.
 export const dynamic = "force-dynamic";
 
-const columnTitles: Record<string, string> = {
-  planned: "Planlandı",
-  "in-progress": "Geliştiriliyor",
-  shipped: "Yayında",
-};
-
-// Kolon noktası StatusBadge renkleriyle aynı dil (Sprint 36).
-const columnDotStyles: Record<string, string> = {
-  planned: "bg-sky-500",
-  "in-progress": "bg-amber-500",
-  shipped: "bg-emerald-500",
+const columnMeta: Record<string, { title: string; dotClass: string }> = {
+  planned: { title: "Planlandı", dotClass: "bg-sky-500" },
+  "in-progress": { title: "Geliştiriliyor", dotClass: "bg-amber-500" },
+  shipped: { title: "Yayında", dotClass: "bg-emerald-500" },
 };
 
 export default async function RoadmapPage() {
   let rows: Awaited<ReturnType<typeof loadPosts>> = [];
   let loadError = false;
+  let isAdmin = false;
 
   try {
     rows = await loadPosts();
+    isAdmin = Boolean(await getAdminUserId());
   } catch (err) {
     console.error(
       "Roadmap load failed:",
@@ -48,6 +37,14 @@ export default async function RoadmapPage() {
     );
     loadError = true;
   }
+
+  const columns = roadmapStatuses
+    .map((status) => ({
+      status,
+      title: columnMeta[status]?.title ?? status,
+      dotClass: columnMeta[status]?.dotClass ?? "bg-muted",
+    }))
+    .filter((c) => c.status !== "open" && c.status !== "under-review" && c.status !== "closed");
 
   return (
     <main className="container mx-auto max-w-6xl p-4 sm:p-8">
@@ -59,12 +56,19 @@ export default async function RoadmapPage() {
             şeffafça takip et.
           </p>
         </div>
-        <Link
-          href="/portal"
-          className="inline-block text-sm font-medium text-primary underline-offset-4 hover:underline"
-        >
-          ← Portala dön
-        </Link>
+        <div className="flex flex-col items-end gap-1">
+          <Link
+            href="/portal"
+            className="inline-block text-sm font-medium text-primary underline-offset-4 hover:underline"
+          >
+            ← Portala dön
+          </Link>
+          {isAdmin && (
+            <span className="text-xs text-muted-foreground">
+              Kartları sürükleyerek durumu değiştirebilirsin.
+            </span>
+          )}
+        </div>
       </div>
 
       {loadError ? (
@@ -72,68 +76,7 @@ export default async function RoadmapPage() {
           Yol haritası yüklenemedi. Sayfayı yenilemeyi dene.
         </p>
       ) : (
-        <div className="mt-8 grid gap-4 md:grid-cols-3">
-          {roadmapStatuses.map((status) => {
-            const columnPosts = rows.filter((post) => post.status === status);
-
-            return (
-              <section key={status} className="grid content-start gap-3">
-                <h2 className="flex items-center justify-between text-lg font-semibold">
-                  <span className="flex items-center gap-2">
-                    <span
-                      className={`size-2 rounded-full ${columnDotStyles[status]}`}
-                      aria-hidden="true"
-                    />
-                    {columnTitles[status]}
-                  </span>
-                  <span className="rounded-full border px-2 py-0.5 text-xs font-medium text-muted-foreground">
-                    {columnPosts.length}
-                  </span>
-                </h2>
-
-                {columnPosts.length === 0 ? (
-                  <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-                    Bu kolonda henüz fikir yok.
-                    <Link
-                      href="/portal"
-                      className="mt-2 inline-block font-medium text-primary underline-offset-4 hover:underline"
-                    >
-                      Portaldan fikir öner →
-                    </Link>
-                  </div>
-                ) : (
-                  columnPosts.map((post) => (
-                    <Card key={post.id}>
-                      <CardHeader>
-                        <CardTitle className="text-base leading-snug">
-                          <Link
-                            href={`/portal/${post.id}`}
-                            className="underline-offset-4 transition-colors hover:text-primary hover:underline"
-                          >
-                            {post.title}
-                          </Link>
-                        </CardTitle>
-                        <CardDescription className="flex items-center gap-2">
-                          <StatusBadge status={post.status} />
-                          <span>{post.voteCount} oy</span>
-                          <CommentCountBadge
-                            postId={post.id}
-                            count={post.commentCount}
-                          />
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="line-clamp-3 text-sm text-muted-foreground">
-                          {post.description}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  ))
-                )}
-              </section>
-            );
-          })}
-        </div>
+        <RoadmapColumns columns={columns} posts={rows} isAdmin={isAdmin} />
       )}
     </main>
   );
