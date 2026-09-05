@@ -210,7 +210,12 @@ prop'unu `AppSidebar`'a geçirir.
   `companies-manager`, `opportunity-link-controls`, `widget-post-form`,
   `widget-vote-button`, `widget-setup`, `api-keys-manager`,
   `webhooks-manager`, `saved-view-bar`, `analytics-overview`,
-  `not-found-view`, `page-breadcrumb`, `notice`, `empty-state`.
+  `not-found-view`, `page-breadcrumb`, `notice`, `empty-state`,
+  `integrations-panel`.
+- **Entegrasyon kartı ızgarası (2026-09-06):** `integrations-panel.tsx` —
+  settings'te per-workspace connector kartları grid'i (`sm:grid-cols-2`); her
+  kart bağlıysa durum + webhook URL + kes, değilse credential alanları +
+  bağlan. Linear ayrı kart (mevcut).
 - **Boş durum tek kaynak (2026-09-06):** liste/sayfa boş durumları
   `empty-state.tsx` (EmptyState) bileşeninden geçer — `rounded-lg` kesikli
   kenarlık, `size="sm"` (p-6) vs `size="lg"` (p-10), opsiyonel
