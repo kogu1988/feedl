@@ -1988,9 +1988,14 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   workspace id'yi slug'dan çöz; `?ws=` yoksa global `LINEAR_WEBHOOK_SECRET`
   + default workspace (geriye dönük uyumlu).
 - ☑ **UI (`dashboard/settings`):** `LinearIntegration` kartı — API key input +
-  `POST /connect` + başarı/hata durumu.
+  `POST /connect` + başarı/hata durumu. Sprint 58 sonrası: GET (durum) +
+  DELETE (disconnect) eklendi.
+- ☑ **Disconnect akışı (Sprint 58 ek):** `workspace_integrations.api_key` kolonu
+  (migration 0039) — Linear webhook'u uzaktan silmek için. `GET` → durum,
+  `DELETE` → Linear `webhookDelete` (saklı apiKey) + yerel kaydı sil.
+  UI: bağlıysa durum + "Bağlantıyı kes" butonu.
 - ☑ **Doğrulama:** connect no-auth → 403; per-workspace: doğru token+imza →
-  200, yanlış token → 401, yanlış imza → 401.
+  200, yanlış token → 401, yanlış imza → 401. GET/DELETE no-auth → 403.
 - ☑ `npm run build` ✓ → commit → push (main).
 - **Not:** Linear UI commit'i yanlışlıkla `design/modernization` branch'ine
   gitti — `main`'e cherry-pick edildi (8775936).
