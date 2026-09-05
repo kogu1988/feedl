@@ -1,9 +1,11 @@
 import { statusLabels } from "@/lib/post-format";
-import { cn } from "@/lib/utils";
+
+import { Badge } from "@/components/ui/badge";
 
 // Durum etiketinin tek görsel kaynağı (plan.md Sprint 9): portal, roadmap
 // ve dialog aynı renk dilini kullanır — Açık nötr, İncelemede menekşe,
 // Planlandı mavi, Geliştiriliyor amber, Yayınlandı yeşil, Kapatıldı gri.
+// Görsel kabuk ui/badge (Badge), renk buradaki haritadan.
 const statusStyles: Record<string, string> = {
   open: "border-border bg-muted text-muted-foreground",
   "under-review":
@@ -18,13 +20,8 @@ const statusStyles: Record<string, string> = {
 
 export function StatusBadge({ status }: { status: string }) {
   return (
-    <span
-      className={cn(
-        "inline-flex w-fit items-center whitespace-nowrap rounded-full border px-2 py-0.5 text-xs font-medium",
-        statusStyles[status] ?? statusStyles.open,
-      )}
-    >
+    <Badge className={statusStyles[status] ?? statusStyles.open}>
       {statusLabels[status] ?? status}
-    </span>
+    </Badge>
   );
 }
