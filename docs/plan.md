@@ -1915,12 +1915,29 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   (Issue create/update) → `LINEAR_WEBHOOK_SECRET` (Linear webhook signing
   secret) Vercel env. (Linear API key opsiyonel, şu an kod kullanmıyor.)
 
-### Sprint 57 (plan notu) — Jira (Madde 2 — kalan) — OAuth gerekli
+### Sprint 57 — Jira Connector (Madde 2 — kalan) (✅ 2026-09-05)
 
-> Jira (Atlassian) entegrasyonu OAuth 2.0 (3LO) + site URL + JWT/access token
-> gerektirir. BU, dış hesap kurulumu (Atlassian developer app) ister; kod
-> deseni Linear/Intercom'dan türetilecek ama credential'lar olmadan canlı
-> test edilemez. Madde 2'deki Jira kısmı kullanıcı hesabı hazır olunca.
+> Kullanıcı kararı: **API token + webhook** yaklaşımı (OAuth 3LO yerine).
+> Jira Automation/Webhook → Issue created/updated → AI triage → feedback.
+
+- ☑ **`lib/jira.ts` (commit …):** verifyJiraSignature (X-Jira-Signature /
+  X-Feedl-Token — HMAC-SHA256 hex, JIRA_WEBHOOK_SECRET), parseJiraPayload
+  (issue_event_type_name/webhookEvent), jiraTicketText (summary+description),
+  jiraIdentity (id|key), isJiraConfigured.
+- ☑ **`POST /api/integrations/jira/webhook`:** imza doğrulama, Issue →
+  classifyWidgetMessage → feedback ise users upsert (widget_jira_<id>) +
+  post oluştur (source=jira, sourceRef=jira:<id|key>) + post/created.
+- ☑ middleware `/api/integrations(.*)` zaten public → ek değişiklik yok.
+- ☑ npm test (17/17) + build ✓ → commit → push.
+- **Kalan (kullanıcı tarafı):** 1) API token
+  (https://id.atlassian.com/manage-profile/security/api-tokens → ad feedl);
+  2) Jira Automation: yeni kural → trigger Issue created/updated → action
+  Send Web Request: URL https://feedl.app/api/integrations/jira/webhook,
+  Method POST, Body JSON + custom header `X-Jira-Signature: <secret>`;
+  3) Vercel env: `JIRA_WEBHOOK_SECRET`, `JIRA_BASE_URL`
+  (https://<kurum>.atlassian.net), `JIRA_EMAIL`, `JIRA_API_TOKEN`.
+  Jira webhook payload'ı `{ issue: { id, key, fields: { summary,
+  description, creator } } }` şemasında olmalı.
 
 ### 📝 Sonraki plan notları (kullanıcı onayıyla erteelenen/planlanacak)
 
