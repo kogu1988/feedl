@@ -1,11 +1,12 @@
 import "server-only";
 
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { timingSafeEqual } from "node:crypto";
 
 // Sprint 57 (madde 2) — Jira connector. Jira Automation/Webhook → Issue
-// created/updated → feedl feedback. Doğrulama: `X-Jira-Signature` (Jira
-// Automation webhook custom header gödermez; biz JIRA_WEBHOOK_SECRET'i
-// custom header olarak ekleriz — HMAC-SHA256 ham gövde üzerinden, hex).
+// created/updated → feedl feedback. Doğrulama: `X-Jira-Signature` başlığı,
+// JIRA_WEBHOOK_SECRET ile statik karşılaştırma (Zendesk deseni). Jira
+// Automation "Send web request" HMAC hesaplayamaz; bu yüzden secret'ı
+// doğrudan custom header olarak göndeririz — HMAC-SHA256 değil.
 // Kurumsal imaj: uygulama adı feedl.
 
 // Jira webhook payload (Automation web request veya custom schema):
@@ -25,17 +26,17 @@ export function verifyJiraSignature(
   rawBody: string,
   signatureHeader: string,
 ): boolean {
+  void rawBody; // HMAC kullanılmıyor; statik secret karşılaştırması yapıyoruz.
   const secret = process.env.JIRA_WEBHOOK_SECRET;
   if (!secret) return false;
   const value = (signatureHeader || "").trim();
-  const expected = createHmac("sha256", secret).update(rawBody).digest("hex");
-  return safeEqual(value, expected);
+  return safeEqual(value, secret);
 }
 
 function safeEqual(a: string, b: string): boolean {
   try {
-    const ba = Buffer.from(a, "hex");
-    const bb = Buffer.from(b, "hex");
+    const ba = Buffer.from(a);
+    const bb = Buffer.from(b);
     return ba.length === bb.length && timingSafeEqual(ba, bb);
   } catch {
     return false;

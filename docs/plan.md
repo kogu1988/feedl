@@ -1920,22 +1920,27 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
 > Kullanıcı kararı: **API token + webhook** yaklaşımı (OAuth 3LO yerine).
 > Jira Automation/Webhook → Issue created/updated → AI triage → feedback.
 
-- ☑ **`lib/jira.ts` (commit …):** verifyJiraSignature (X-Jira-Signature /
-  X-Feedl-Token — HMAC-SHA256 hex, JIRA_WEBHOOK_SECRET), parseJiraPayload
-  (issue_event_type_name/webhookEvent), jiraTicketText (summary+description),
-  jiraIdentity (id|key), isJiraConfigured.
+- ☑ **`lib/jira.ts`:** verifyJiraSignature (X-Jira-Signature /
+  X-Feedl-Token — **statik secret karşılaştırması** Zendesk deseninde,
+  JIRA_WEBHOOK_SECRET; Jira Automation HMAC hesaplayamadığı için HMAC
+  yerine statik token), parseJiraPayload (issue_event_type_name/webhookEvent),
+  jiraTicketText (summary+description), jiraIdentity (id|key), isJiraConfigured.
 - ☑ **`POST /api/integrations/jira/webhook`:** imza doğrulama, Issue →
   classifyWidgetMessage → feedback ise users upsert (widget_jira_<id>) +
   post oluştur (source=jira, sourceRef=jira:<id|key>) + post/created.
 - ☑ middleware `/api/integrations(.*)` zaten public → ek değişiklik yok.
 - ☑ npm test (17/17) + build ✓ → commit → push.
-- **Kalan (kullanıcı tarafı):** 1) API token
-  (https://id.atlassian.com/manage-profile/security/api-tokens → ad feedl);
-  2) Jira Automation: yeni kural → trigger Issue created/updated → action
-  Send Web Request: URL https://feedl.app/api/integrations/jira/webhook,
-  Method POST, Body JSON + custom header `X-Jira-Signature: <secret>`;
-  3) Vercel env: `JIRA_WEBHOOK_SECRET`, `JIRA_BASE_URL`
-  (https://<kurum>.atlassian.net), `JIRA_EMAIL`, `JIRA_API_TOKEN`.
+- ☑ **Vercel env (`feedl` projesi — feedl.app):** `JIRA_WEBHOOK_SECRET`
+  (üretildi/eklendi), `JIRA_API_TOKEN` (kullanıcı sağladı/eklendi).
+  (Not: `feedl` ve `feedl.co` iki ayrı Vercel projesi; `feedl.app` → `feedl`
+  projesi. Env bu projeye eklenmeli.)
+- **Kalan (kullanıcı tarafı):** 1) Jira Automation: yeni kural → trigger
+  Issue created/updated → action Send Web Request: URL
+  https://feedl.app/api/integrations/jira/webhook, Method POST, Body JSON +
+  custom header `X-Jira-Signature: <JIRA_WEBHOOK_SECRET>` (statik token,
+  HMAC değil). 2) (opsiyonel) REST iyileştirmesi için `JIRA_BASE_URL`
+  (https://<kurum>.atlassian.net) + `JIRA_EMAIL`; şu an webhook akışı
+  bunları kullanmıyor.
   Jira webhook payload'ı `{ issue: { id, key, fields: { summary,
   description, creator } } }` şemasında olmalı.
 
