@@ -1663,6 +1663,22 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   header `X-Feedl-Token: <ZENDESK_WEBHOOK_SECRET>`; Trigger (ticket.created)
   → bu webhook. Vercel env `ZENDESK_WEBHOOK_SECRET`.
 
+### Sprint 48q — Connector Idempotency (çift post önleme) (✅ 2026-09-04)
+
+> Slack'te gerçek çift post tespit edildi (aynı mesaj ~57ms arayla 2 kez
+> post oldu — Slack event retry). Aynı kaynak (mesaj/ticket) bir kez post
+> edilmesi için sourceRef idempotency eklenir.
+
+- ☑ **Şema (migration 0036, commit b11a609):** `posts.source_ref`
+  (varchar 120) + `unique(workspace_id, source_ref)` (null'lar hariç —
+  portal/api satırları etkilenmez).
+- ☑ **Slack:** `parseSlackMessage` eventTs alır; feedback ise
+  `slack:<event_ts>` sourceRef ile önce var mı kontrol — varsa yeni post
+  oluşturma (duplicate:true döner).
+- ☑ **Zendesk:** `zendesk:<ticket.id>` sourceRef — aynı ticket tekrar post
+  edilmez.
+- ☑ npm test (17/17) + npm run build ✓ → commit → push.
+
 ### Ertelenen blok (en son — kullanıcının kısıtı)
 
 - **Domain (feedl.app) alındı (2026-09-04).** Kod tarafı hazır: tüm
