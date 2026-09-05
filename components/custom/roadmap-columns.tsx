@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/card";
 import { StatusBadge } from "@/components/custom/status-badge";
 import { CommentCountBadge } from "@/components/custom/comment-count-badge";
+import { cn } from "@/lib/utils";
 
 // Sprint 53 (Platformlaşma #3) — roadmap drag-and-drop. Sadece ADMIN için
 // aktif: kartları kolonlar arasında sürükleyerek durum değiştirir
@@ -145,7 +146,14 @@ export function RoadmapColumns({
                     event.dataTransfer.effectAllowed = "move";
                     event.dataTransfer.setData("text/plain", post.id);
                   }}
-                  className={isAdmin ? "cursor-grab active:cursor-grabbing" : undefined}
+                  className={cn(
+                    // Sprint 51 (Batch 4): etkileşimli kart hover lift
+                    // (DESIGN.md §5) — translateY + shadow, 150ms; koyu
+                    // modda gölge görünmez, yüksekliği ring aydınlatır.
+                    "transition-[transform,box-shadow] duration-150 ease-[var(--ease-out-quart)]",
+                    "hover:-translate-y-0.5 hover:shadow-xs dark:hover:ring-foreground/25",
+                    isAdmin && "cursor-grab active:cursor-grabbing",
+                  )}
                 >
                   <CardHeader>
                     <CardTitle className="text-base leading-snug">

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2Icon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -182,7 +183,7 @@ export function NewPostDialog({ boardOptions = [] }: { boardOptions?: BoardOptio
 
           {similarPosts.length > 0 ? (
             <div
-              className="grid gap-2 rounded-md border border-border bg-muted/40 p-3"
+              className="grid gap-2 rounded-md border border-border bg-muted/40 p-3 animate-in fade-in-0 slide-in-from-top-1 duration-150"
               role="status"
             >
               <p className="text-xs font-medium text-muted-foreground">
@@ -229,7 +230,14 @@ export function NewPostDialog({ boardOptions = [] }: { boardOptions?: BoardOptio
 
           <DialogFooter>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Gönderiliyor..." : "Fikri Gönder"}
+              {isSubmitting ? (
+                <>
+                  <Loader2Icon className="size-4 animate-spin" aria-hidden="true" />
+                  Gönderiliyor
+                </>
+              ) : (
+                "Fikri Gönder"
+              )}
             </Button>
           </DialogFooter>
         </form>
