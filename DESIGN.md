@@ -87,7 +87,9 @@ sınırlıdır.
 - **Ölçek (2026-09-05):** display `text-4xl/5xl` (yalnız landing hero) →
   h1 `text-2xl bold tracking-tight` → h2 `text-base semibold` (bölüm) →
   gövde `text-sm` → meta/caption `text-xs text-muted-foreground`. KPI
-  sayıları: `font-mono text-3xl tabular-nums`.
+  sayıları: `font-mono text-3xl tabular-nums`. Landing bölüm h2:
+  `text-2xl bold tracking-tight` (marketing yüzeyi, app'ten büyük);
+  mock kart oy/yorum sayaçları `font-mono tabular-nums`.
 - Prose satır uzunluğu **<80ch** (`max-w-prose` / `max-w-3xl`).
 - Yasak tell'ler: ALL-CAPS eyebrow etiketi, başlıkta tek kelimeyi
   renkli/italik vurgulama, dekoratif mono mini-etiket.
@@ -114,8 +116,11 @@ Ayarlar); altta UserButton. Bileşen: `app-sidebar` — dashboard altı
 - **Alt bar:** `border-t`, tek satır marka cümlesi + 3 bağlantı
   (Portal / Yol Haritası / Güncellemeler).
 - **Landing (`app/(main)/page.tsx`):** asimetrik hero — sol metin blok /
-  sağda mock kart ("Karanlık mod desteği" + Autopilot şeridi) + "Nasıl
-  çalışır" 1-2-3 şeridi (Topla / Anla / Duyur).
+  sağda mock kart ("Karanlık mod desteği") + "Nasıl çalışır" 1-2-3
+  şeridi (Topla / Anla / Duyur). Bölüm h2'leri tek ölçekte
+  (`text-2xl bold tracking-tight`); eyebrow pill YOK. Kapanış CTA
+  paneli `bg-brand-soft` — marka ailesinden tek bold leke; üzerinde
+  mürekkep metin + mercan buton (beyaz-on-mercan yok, §1).
 - Genişlik disiplini: içerik `max-w-5xl`; dashboard tabloları tam genişlik
   container üzerinden. Alan sol bakışa değil, işe göre hizalanır.
 - **Sayfa deseni (admin):** başlık satırı (h1 + muted açıklama solda,

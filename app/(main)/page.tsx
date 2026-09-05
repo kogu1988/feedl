@@ -184,7 +184,7 @@ export default async function RootPage() {
       </section>
 
       <section className="mt-20 sm:mt-24">
-        <h2 className="text-xl font-semibold">Nasıl çalışır</h2>
+        <h2 className="text-2xl font-bold tracking-tight">Nasıl çalışır</h2>
         <ol className="mt-6 grid gap-8 sm:grid-cols-3 sm:gap-6">
           {steps.map((step, index) => (
             <li key={step.title} className="sm:pr-6">
@@ -202,10 +202,7 @@ export default async function RootPage() {
 
       <section className="mt-20 sm:mt-24">
         <div className="mx-auto max-w-2xl text-center">
-          <p className="inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium text-muted-foreground">
-            Özellikler
-          </p>
-          <h2 className="mt-4 text-2xl font-bold tracking-tight sm:text-3xl">
+          <h2 className="text-2xl font-bold tracking-tight">
             Geri bildirimden ürün kararına her şey
           </h2>
           <p className="mt-3 text-muted-foreground">
@@ -232,7 +229,7 @@ export default async function RootPage() {
         </div>
       </section>
 
-      <section className="mt-20 rounded-2xl border bg-card p-8 text-center sm:mt-24">
+      <section className="mt-20 rounded-2xl border bg-brand-soft p-8 text-center sm:mt-24">
         <h2 className="text-2xl font-bold tracking-tight">
           Bugün ücretsiz başla
         </h2>

@@ -59,7 +59,7 @@ export function DemoPostCard({
             className="pointer-events-none shrink-0 gap-1.5"
           >
             <ThumbsUpIcon className="size-4" aria-hidden="true" />
-            {voteCount}
+            <span className="font-mono tabular-nums">{voteCount}</span>
           </Button>
         </div>
         <CardDescription className="flex flex-wrap items-center gap-2">
@@ -68,7 +68,7 @@ export function DemoPostCard({
           <TypeBadge type={type} />
           <span className="inline-flex items-center gap-1">
             <MessageSquareIcon className="size-3.5" aria-hidden="true" />
-            {commentCount} yorum
+            <span className="font-mono tabular-nums">{commentCount}</span> yorum
           </span>
         </CardDescription>
       </CardHeader>
