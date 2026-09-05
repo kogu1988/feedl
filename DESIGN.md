@@ -210,11 +210,19 @@ prop'unu `AppSidebar`'a geçirir.
   `companies-manager`, `opportunity-link-controls`, `widget-post-form`,
   `widget-vote-button`, `widget-setup`, `api-keys-manager`,
   `webhooks-manager`, `saved-view-bar`, `analytics-overview`,
-  `not-found-view`, `page-breadcrumb`, `notice`.
+  `not-found-view`, `page-breadcrumb`, `notice`, `empty-state`.
+- **Boş durum tek kaynak (2026-09-06):** liste/sayfa boş durumları
+  `empty-state.tsx` (EmptyState) bileşeninden geçer — `rounded-lg` kesikli
+  kenarlık, `size="sm"` (p-6) vs `size="lg"` (p-10), opsiyonel
+  `title`/`children`/`action`. (Error sayfası/404 — `not-found-view` —
+  ikon/numara içerdiğinden ayrı kalır.)
 - **Hata/bilgi kutusu tek kaynak (2026-09-06):** destructive hata bildirimleri
   `notice.tsx` (Notice) bileşeninden geçer — satır içi kompakt `size="sm"`,
-  sayfa düzeyi `size="md"`; `rounded-md` (DESIGN.md §5 küçük eleman radius).
-  Kopya `border-destructive/…` kutuları yazılmaz.
+  sayfa düzeyi `size="md"`; `rounded-md` (küçük eleman radius). Kopya
+  `border-destructive/…` kutuları yazılmaz.
+- **Yerleşim ritmi (2026-09-06):** dikey uzayan sayfaları kır — ilgili kart
+  grupları yan yana: `xl:grid-cols-2` (2x2) veya 4-lü KPI şeridi
+  (`lg:grid-cols-4`). Kart grupları `gap-8`; mobilde tek kolona düşer.
 - Yeni bileşen: primitive gerekirse `ui/`, ürün kalıbı `custom/`; mümkünse
   mevcut `status-badge` / `type-badge` gibi tek kaynakları yeniden kullan.
 
