@@ -1527,6 +1527,32 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   8 — ilk gerçek connector. (Paddle webhook secret/Vercel env kullanıcı
   tarafındadır; kod buna bağımlı değil.)
 
+### Sprint 48j — Davet Akışı + Rol Granülerliği (madde 8, P1) (✅ 2026-09-04)
+
+> PM raporu §5 #3: yalnız var olan Clerk kullanıcısı eklenebiliyordu; yeni
+> takım üyesi e-posta ile davet edilebiliyor. Contributor rolü eklendi.
+
+- ☑ **Şema (migration 0033, commit f16abab):** `workspace_member_role`
+  enum'una `contributor` + `workspace_invites` tablosu (id, workspace_id,
+  email, role, token unique, expires_at, accepted_at, created_by,
+  created_at).
+- ☑ **`lib/db/invites.ts`:** generateInviteToken (32 byte hex),
+  createInvite (7 gün TTL), findValidInvite (acceptedAt null + süre
+  kontrolü), acceptInvite (e-posta eşleşmesi + üye ekle/rol güncelle +
+  acceptedAt işaretle), listWorkspaceInvites. PII/token redaksiyon + rate
+  limit API katmanında.
+- ☑ **API:** `POST /api/admin/invites` (üye limiti enforceLimit + mail
+  gönder — renderInviteEmail) + `GET` (davetler); `POST /api/invites/accept`
+  (auth; 401 → girişe yönlendir).
+- ☑ **UI:** `components/custom/invite-accept-form.tsx` (+ `/invites/accept`
+  server page + Suspense — useSearchParams prerender çözümü);
+  `members-manager`'a "Davet Gönder" dialog; middleware `/invites(.*)` public.
+- ☑ **Rol granülerliği:** `WorkspaceMemberRole` + `getRole` contributor →
+  customer; members/invites şemaları contributor kabul eder; members UI
+  rol listesinde "Katkıcı".
+- ☑ npm test (17/17) + npm run build ✓ → commit → push.
+- **Sıradaki:** 4 — Workspace markalamasını uygula (logo/renk → portal).
+
 ### Ertelenen blok (en son — kullanıcının kısıtı)
 
 - **Domain (feedl.app) alındı (2026-09-04).** Kod tarafı hazır: tüm
