@@ -1756,6 +1756,30 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   _PADDLE_*` env'leri Vercel'de set; Paddle dashboard notification
   destination → https://feedl.app/api/webhooks/paddle + `PADDLE_WEBHOOK_SECRET`.
 
+### Sprint 50 — Landing SaaS Satış Sayfası + /demo Ürün Turu (✅ 2026-09-05)
+
+> Kullanıcı kararı: portal/yol haritası/güncellemeler artık main landing'den
+> DEĞİL; landing satış odaklı, ürün örnekleri /demo'da. Design report
+> (design_report.md) incelendi — eleştiriler: slate/sidebar/dark default
+> değişikliği YAPILMADI (mevcut sistemik marka korunur), kapsam sadece
+> landing + demo.
+
+- ☑ **`/demo` (commit 0c679dc):** `app/(main)/demo/page.tsx` — ürün turu:
+  3 yüzey kartı (Portal / Yol Haritası / Güncellemeler → ilgili canlı
+  sayfalar) + gerçek portal fikir kartı örneği (tıklanamaz; StatusBadge,
+  TypeBadge, SentimentBadge, statik yorum sayısı — CommentCountBadge
+  kullanılmadı çünkü link gerektirir). CTA: Ücretsiz Başla + Fiyatlandırma.
+- ☑ **Landing `/` satışa çevrildi:** hero satış değeri ("tahminle değil
+  veriyle"), CTA Ücretsiz Başla + Canlı Demo (/demo) + Fiyatlandırma
+  (/pricing); gerçek fikir kartı mock (tıklanamaz); "Nasıl çalışır" şeridi
+  satış diline; footer CTA. Giriş yapmışsa role yönlendirmesi KORUNUR
+  (Sprint 9).
+- ☑ **`SiteHeader` nav pathname-duyarlı:** satış (/, /demo, /pricing) →
+  Demo + Fiyat; ürün (/portal*, /roadmap*, /dashboard*) → Portal / Yol
+  Haritası / Güncellemeler.
+- ☑ **`middleware.ts`:** /demo public; /pricing zaten public.
+- ☑ npm test (17/17) + npm run build ✓ → commit → push.
+
 ### 📝 Sonraki plan notları (kullanıcı onayıyla erteelenen/planlanacak)
 
 - **Ticarileşme (Paddle):** Canlı tahsilata geç YOK — sandbox'ta kalınacak.
