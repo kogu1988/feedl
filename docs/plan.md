@@ -1587,6 +1587,24 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
 - ☑ npm test (17/17) + npm run build ✓ → commit → push.
 - **Sıradaki:** 6 — Guest mode + identity merge.
 
+### Sprint 48m — Widget Identify Güçlendirme (Canny modeli) (✅ 2026-09-04)
+
+> Kullanıcı kararı: rakipler (Canny) anonim guest DEĞİL, Identify/SSO ile
+> gerçek müşteri kimliği kullanıyor. Anonim guest yerine widget Identify
+> güçlendirildi (P0.2/IP4.1 doğrultusunda: "anonim değil gerçek kimlikle
+> oylar" — oxalpha §E).
+
+- ☑ **`public/widget.js` (commit 5e0b3d5):** `window.feedlWidget.identify({ token })`
+  dinamik kimlik API'si — müşteri uygulaması kullanıcı girişi/oturum sonrası
+  yeni kısa ömürlü jeton vererek `/api/widget/session`'ı yeniden çağırır
+  (Canny `canny.identify` karşılığı). Token yoksa widget salt-okunur kalır;
+  anonim kimlik yok, `widget_<sub>` gerçek müşteri kimliği.
+- ☑ npm test (17/17) + npm run build ✓ → commit → push.
+- **Not:** Anonim guest mode (FeedLog tarzı) FEEDLOG-doğru olurdu ama
+  Canny'nin kanıtlanmış modeli Identify'dir; ileride guest mode gerekirse
+  spam/rate-limit + merge kurallarıyla (parite raporu P0.2 sarı şartı)
+  eklenir.
+
 ### Ertelenen blok (en son — kullanıcının kısıtı)
 
 - **Domain (feedl.app) alındı (2026-09-04).** Kod tarafı hazır: tüm
