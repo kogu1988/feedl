@@ -1479,6 +1479,38 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   zaten bağlı olduğu için https://acme.feedl.app uygulamayı açar ve
   getWorkspaceId host-aware olduğundan 'acme' workspace'ini gösterir.
 
+### Sprint 48h — Paddle Billing + Plan Limitleri (Faz 5) (✅ 2026-09-04)
+
+> Paddle kararı uygulandı: sandbox'ta `feedl_` önekli Pro ürün/fiyat
+> oluşturuldu (diğer proje UIHub verileriyle karışmadı), plan + limit
+> alanları + checkout + webhook eklendi. P0 raporunun en kritik maddesi.
+
+- ☑ **Fiyat kararı (rakip analizi):** Free (1 board, 1 üye, 50 tracked user,
+  "Powered by feedl") + Pro $19/ay (yıllık $15/ay: sınırsız board, 10 üye,
+  özel domain, marka kaldırma) — Canny $79 altı, FeedLog self-host yüküne
+  karşı cazip. Sandbox'ta `feedl_` önekli: ürün `pro_01m1qe6qer9tqbf1y7mzvggjtv`,
+  aylık `pri_01m1qe78pe4s9t5x67649983fe`, yıllık `pri_01m1qe78wqmbcp1yxvvnh48x37`.
+  (UIHub ürünlerine dokunulmadı.)
+- ☑ **Şema (migration 0032, commit b0ce4aa):** `workspaces`'e plan
+  (free|pro, default free), paddle_customer_id, paddle_subscription_id,
+  tracked_user_limit (50), board_limit (1), member_limit (1).
+- ☑ **`lib/paddle.ts`:** Paddle Node SDK (sandbox/live Environment),
+  PLANS (free/pro limitleri), planFromString, getPlanLimits,
+  enforceLimit (board/member/trackedUser), verifyPaddleSignature
+  (HMAC-SHA256, `P-paddle-signature` header).
+- ☑ **Checkout:** `/dashboard/billing` + `billing-manager.tsx` —
+  initializePaddle (client token + sandbox env) + Paddle.Checkout.open
+  (customData.slug ile workspace eşleştirme); aylık/yıllık butonlar.
+- ☑ **Webhook:** `POST /api/webhooks/paddle` — imza doğrulama,
+  subscription.activated/updated → plan=pro, canceled/past_due → free;
+  workspace'i custom_data.slug ile eşleştirir.
+- ☑ **Rozet:** `portal/page.tsx`'te free plan'da "Powered by feedl".
+- ☑ npm test (17/17) + npm run build ✓ → commit → push.
+- **Kalan (kod dışı / sonraki):** Paddle webhook notification destination
+  oluştur + `PADDLE_WEBHOOK_SECRET` Vercel'e ekle; `NEXT_PUBLIC_PADDLE_*`
+  + `PADDLE_API_KEY` Vercel env; pro limitlerinin uygulanması (board/üye
+  oluşturma noktalarında `enforceLimit` çağrıları) bir sonraki adımda.
+
 ### Ertelenen blok (en son — kullanıcının kısıtı)
 
 - **Domain (feedl.app) alındı (2026-09-04).** Kod tarafı hazır: tüm
