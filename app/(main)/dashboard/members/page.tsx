@@ -44,7 +44,7 @@ export default async function MembersPage() {
   return (
     <main className="container mx-auto max-w-none p-4 sm:p-8">
       <div>
-        <h1 className="text-2xl font-bold">Üyeler</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Üyeler</h1>
         <p className="mt-2 text-muted-foreground">
           Workspace üyelerini ve rollerini yönet.
         </p>

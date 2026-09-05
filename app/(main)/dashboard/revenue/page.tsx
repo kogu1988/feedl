@@ -30,7 +30,7 @@ export default async function RevenuePage() {
   return (
     <main className="container mx-auto max-w-none p-4 sm:p-8">
       <div>
-        <h1 className="text-2xl font-bold">Gelir Raporu</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Gelir Raporu</h1>
         <p className="mt-2 text-muted-foreground">
           Şirketlerin MRR ve fırsat verisinden gelir etkisi, risk ve en
           kritik fikirler.

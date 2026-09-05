@@ -32,7 +32,7 @@ export default async function WorkspacesPage() {
   return (
     <main className="container mx-auto max-w-none p-4 sm:p-8">
       <div>
-        <h1 className="text-2xl font-bold">Workspace&apos;ler</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Workspace&apos;ler</h1>
         <p className="mt-2 text-muted-foreground">
           Her workspace kendi subdomain&apos;inde izole çalışır — örn. acme.feedl.app.
         </p>

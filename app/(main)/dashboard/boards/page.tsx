@@ -29,7 +29,7 @@ export default async function BoardsPage() {
   return (
     <main className="container mx-auto max-w-none p-4 sm:p-8">
       <div>
-        <h1 className="text-2xl font-bold">Board&apos;lar</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Board&apos;lar</h1>
         <p className="mt-2 text-muted-foreground">
           Feedback koleksiyonlarını yönet. Her board kendi portalına sahiptir.
         </p>

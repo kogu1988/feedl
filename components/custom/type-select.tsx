@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { CheckIcon, ChevronDownIcon, Loader2Icon } from "lucide-react";
 
+import { typeLabels } from "@/lib/post-format";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -13,13 +14,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-// Sprint 21: fikir türü seçenekleri (lib/post-format typeLabels ile aynı
-// karşılık — değerler postTypeEnum.enumValues'tan gelir).
-export const POST_TYPE_OPTIONS = [
-  { value: "feature", label: "Özellik" },
-  { value: "bug", label: "Hata" },
-  { value: "usability", label: "Kullanılabilirlik" },
-] as const;
+// Sprint 21: fikir türü seçenekleri — etiketler TEK kaynaktan (lib/post-format
+// typeLabels). Sıralı liste tutulur, etiketler typeLabels'ten türetilir.
+export const TYPE_ORDER = ["feature", "bug", "usability"] as const;
+
+export const POST_TYPE_OPTIONS = TYPE_ORDER.map((value) => ({
+  value,
+  label: typeLabels[value] ?? value,
+}));
 
 // Admin için tür seçici: seçim PATCH /api/admin/posts'e gider
 // (postType alanı), sayfa sunucu verisiyle tazelenir.

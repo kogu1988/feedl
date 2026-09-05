@@ -65,7 +65,7 @@ export default async function RoadmapPage() {
 
       <div className="mt-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Yol Haritası</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Yol Haritası</h1>
           <p className="mt-2 text-muted-foreground">
             Hangi özelliklerin planlandığını, geliştirildiğini ve yayınlandığını
             şeffafça takip et.

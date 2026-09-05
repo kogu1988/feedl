@@ -35,7 +35,7 @@ export default async function FieldsPage() {
   return (
     <main className="container mx-auto max-w-none p-4 sm:p-8">
       <div>
-        <h1 className="text-2xl font-bold">Özel Alanlar</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Özel Alanlar</h1>
         <p className="mt-2 text-muted-foreground">
           Fikirlere eklenecek kendi alanlarını tanımla. Herkese açık
           seçtiğin alanlar portalda görünür.

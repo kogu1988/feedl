@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { CheckIcon, ChevronDownIcon, Loader2Icon } from "lucide-react";
 
+import { statusLabels } from "@/lib/post-format";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -22,20 +23,25 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-export const POST_STATUS_OPTIONS = [
-  { value: "open", label: "Açık" },
-  { value: "under-review", label: "İncelemede" },
-  { value: "planned", label: "Planlandı" },
-  { value: "in-progress", label: "Geliştiriliyor" },
-  { value: "shipped", label: "Yayınlandı" },
-  { value: "closed", label: "Kapatıldı" },
+// Durum etiketleri TEK kaynaktan gelir: lib/post-format.ts statusLabels
+// (Sprint 9 "statusLabels dersi" — kopyalama yasak). Burada yalnızca
+// sıralı liste tutulur; etiketler statusLabels'ten türetilir.
+export const STATUS_ORDER = [
+  "open",
+  "under-review",
+  "planned",
+  "in-progress",
+  "shipped",
+  "closed",
 ] as const;
 
+export const POST_STATUS_OPTIONS = STATUS_ORDER.map((value) => ({
+  value,
+  label: statusLabels[value] ?? value,
+}));
+
 export function statusLabel(status: string): string {
-  return (
-    POST_STATUS_OPTIONS.find((option) => option.value === status)?.label ??
-    status
-  );
+  return statusLabels[status] ?? status;
 }
 
 // Admin için durum seçici: seçim PATCH /api/admin/posts'e gider,

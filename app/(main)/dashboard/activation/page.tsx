@@ -30,7 +30,7 @@ export default async function ActivationPage() {
   return (
     <main className="container mx-auto max-w-3xl p-4 sm:p-8">
       <div>
-        <h1 className="text-2xl font-bold">Aktivasyon</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Aktivasyon</h1>
         <p className="mt-2 text-muted-foreground">
           Platforma kayıt olan workspace&apos;lerin ürün döngüsünün hangi
           adımına kadar ilerlediğini izle.

@@ -91,7 +91,7 @@ export default async function MyVotesPage({
         ]}
       />
 
-      <h1 className="mt-6 text-2xl font-bold">Oyladıklarım</h1>
+      <h1 className="mt-6 text-2xl font-bold tracking-tight">Oyladıklarım</h1>
       <p className="mt-2 text-muted-foreground">
         Oy verdiğin fikirler, en son oyladığın üstte. Oyunu geri almak için oy
         butonuna tekrar bas.

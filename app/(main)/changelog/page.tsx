@@ -80,7 +80,7 @@ export default async function ChangelogPage() {
 
       <div className="mt-6 flex items-center gap-2">
         <MegaphoneIcon className="size-6" aria-hidden="true" />
-        <h1 className="text-2xl font-bold">Changelog</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Changelog</h1>
       </div>
       <p className="mt-1 text-muted-foreground">
         Yeni özellikler, iyileştirmeler ve düzeltmeler — en yeniden.

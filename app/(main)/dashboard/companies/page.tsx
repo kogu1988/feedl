@@ -122,7 +122,7 @@ export default async function CompaniesPage() {
 
   return (
     <main className="container mx-auto max-w-none p-4 sm:p-8">
-      <h1 className="text-2xl font-bold">Şirketler</h1>
+      <h1 className="text-2xl font-bold tracking-tight">Şirketler</h1>
       <p className="mt-2 text-muted-foreground">
         Müşteri şirketlerini, üyelerini ve MRR bağlamını yönet — üyelerin
         oyları dashboard&apos;da &quot;müşteri&quot; sayacını besler.

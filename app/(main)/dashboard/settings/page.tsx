@@ -34,7 +34,7 @@ export default async function SettingsPage() {
   return (
     <main className="container mx-auto max-w-none p-4 sm:p-8">
       <div>
-        <h1 className="text-2xl font-bold">Workspace Ayarları</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Workspace Ayarları</h1>
         <p className="mt-2 text-muted-foreground">
           Alan adı ve marka bilgilerini yönet. Subdomain, workspace bazlı
           portallar için kaynaktır.

@@ -65,7 +65,7 @@ export default async function InsightsPage() {
     <main className="container mx-auto max-w-5xl p-4 sm:p-8">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">AI İçgörüleri</h1>
+          <h1 className="text-2xl font-bold tracking-tight">AI İçgörüleri</h1>
           <p className="mt-2 text-muted-foreground">
             Geri bildirim korpusunu analiz eder — temalar, trendler, riskler ve
             hızlı kazanımlar. (En çok oy alan en fazla {MAX_CORPUS} fikir.)

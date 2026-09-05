@@ -143,7 +143,7 @@ export default async function ChangelogDetailPage({
               </span>
             ) : null}
           </div>
-          <h1 className="mt-2 text-2xl font-bold leading-snug">{entry.title}</h1>
+          <h1 className="mt-2 text-2xl font-bold tracking-tight leading-snug">{entry.title}</h1>
 
           {entry.imageUrl ? (
             <img
