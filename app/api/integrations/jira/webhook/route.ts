@@ -31,12 +31,15 @@ export async function POST(req: NextRequest) {
     }
 
     const rawBody = await req.text();
-    // Otomatik webhook (rest/webhooks/1.0) Jira imza göndermez; token URL
-    // query'sinde taşınır. Manuel Automation kuralı header gönderir.
+    // Otomatik webhook (rest/webhooks/1.0 + secret): Jira `X-Hub-Signature:
+    // sha256=<hmac>` başlığıyla imzalar. Manuel Automation kuralı ise
+    // `X-Jira-Signature`/`X-Feedl-Token` (statik secret) gönderir.
     const headerAuth =
-      req.headers.get("x-jira-signature") ?? req.headers.get("x-feedl-token") ?? "";
-    const queryAuth = req.nextUrl.searchParams.get("token") ?? "";
-    if (!verifyJiraSignature(rawBody, headerAuth || queryAuth)) {
+      req.headers.get("x-hub-signature") ??
+      req.headers.get("x-jira-signature") ??
+      req.headers.get("x-feedl-token") ??
+      "";
+    if (!verifyJiraSignature(rawBody, headerAuth)) {
       return NextResponse.json(
         { success: false, error: "Geçersiz Jira imzası." },
         { status: 401 },
