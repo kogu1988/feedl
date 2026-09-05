@@ -47,6 +47,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# npm auth (token içeren .npmrc asla commit'sinlenmemeli)
+.npmrc
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
