@@ -1735,6 +1735,23 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
 - **Karar/kayıt:** Intercom `ticket.state.updated` abonelikte açık ama kod
   işlemiyor — bu bilinçli (ticket takibi Intercom'un işi), ek özellik yok.
 
+### Sprint 49 — Public Fiyatlandırma Sayfası (Faz 5 ticarileşme) (✅ 2026-09-05)
+
+> Kullanıcı kararı: canlı tahsilat YOK — sandbox'ta kalınır; ancak ticarileşme
+> kod aşaması hazırlanır. `docs/plan.md` sonraki notlarının ilk seçilmiş konusu.
+
+- ☑ **`/pricing` public sayfası (commit 33eabff):** `app/(main)/pricing/page.tsx
+  (force-dynamic; workspace slug çözümü/fallback feedl).` Plan karşılaştırma:
+  Free vs Pro ($0/sonsuz; $19/ay $15 yıllık) — `components/custom/
+  pricing-manager.tsx` (client): yıllık/aylık geçiş (has izole), Free CTA
+  → /sign-up, Pro → Paddle.js Overlay checkout (customData.slug ile webhook
+  eşleşmesi). `middleware.ts` /pricing public; `site-header.tsx` nav'a "Fiyat".
+- ☑ npm test (17/17) + npm run build ✓ → commit → push.
+- **Kalan (kullanıcı tarafı):** Pro checkout gerçek tahsilat için sandbox
+  ürün/fiyat ID'leri + canlı dönüşte production ID'ler → env; `NEXT_PUBLIC
+  _PADDLE_*` env'leri Vercel'de set; Paddle dashboard notification
+  destination → https://feedl.app/api/webhooks/paddle + `PADDLE_WEBHOOK_SECRET`.
+
 ### 📝 Sonraki plan notları (kullanıcı onayıyla erteelenen/planlanacak)
 
 - **Ticarileşme (Paddle):** Canlı tahsilata geç YOK — sandbox'ta kalınacak.
