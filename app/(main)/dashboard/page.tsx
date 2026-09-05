@@ -15,6 +15,7 @@ import { RoadmapPlanner } from "@/components/custom/roadmap-planner";
 import { SavedViewBar } from "@/components/custom/saved-view-bar";
 import { BoardFilterSelect } from "@/components/custom/board-filter-select";
 import { OnboardingChecklist } from "@/components/custom/onboarding-checklist";
+import { ImportCsvButton } from "@/components/custom/import-csv-button";
 import {
   Card,
   CardContent,
@@ -227,6 +228,7 @@ export default async function DashboardPage({
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
+          <ImportCsvButton />
           <Button render={<a href="/api/admin/export" download />}>
             <DownloadIcon aria-hidden="true" />
             CSV İndir
