@@ -6,6 +6,7 @@ import { getWorkspaceId } from "@/lib/db/workspace";
 import { getDefaultBoardId } from "@/lib/db/board";
 import { classifyWidgetMessage } from "@/lib/ai/analysis";
 import { isSlackConfigured, parseSlackMessage, verifySlackSignature } from "@/lib/slack";
+import { resolveIntegrationByUrlToken } from "@/lib/integrations";
 import { posts, users } from "@/lib/db/schema";
 import { toWidgetUserId } from "@/lib/widget/jwt";
 import { postCreatedEventSchema } from "@/lib/validations/events";
@@ -13,10 +14,31 @@ import { inngest } from "@/inngest/client";
 
 // Sprint 48o — Slack Events API webhook. Slack app bu URL'ye mesaj event'i
 // POST eder; imza doğrulanır, message → AI triage → feedback oluşturulur.
-// Slack ilk kurulumda `url_verification` challenge'ına yanıt ister.
+// Sprint 63g: per-workspace (indexac) — webhook URL ?ws=<slug>&t=<urlToken>
+// taşıyorsa ilgili workspace'in signing secret'ı workspace_integrations'dan
+// çözülür; yoksa env (SLACK_SIGNING_SECRET) + host bazlı workspace (geriye
+// dönük uyumlu).
 export async function POST(req: NextRequest) {
   try {
-    if (!isSlackConfigured()) {
+    // Per-workspace context: ?ws&t varsa workspace_integrations'tan çöz.
+    const { searchParams } = req.nextUrl;
+    const wsParam = searchParams.get("ws");
+    const tokenParam = searchParams.get("t");
+    let integrationSecret: string | null = null;
+    let workspaceId: string | null = null;
+    if (wsParam && tokenParam) {
+      const resolved = await resolveIntegrationByUrlToken("slack", wsParam, tokenParam);
+      if (!resolved) {
+        return NextResponse.json(
+          { success: false, error: "Geçersiz Slack webhook token." },
+          { status: 403 },
+        );
+      }
+      integrationSecret = resolved.webhookSecret;
+      workspaceId = resolved.workspaceId;
+    }
+
+    if (!integrationSecret && !isSlackConfigured()) {
       return NextResponse.json(
         { success: false, error: "Slack yapılandırılmamış (SLACK_SIGNING_SECRET yok)." },
         { status: 503 },
@@ -26,7 +48,7 @@ export async function POST(req: NextRequest) {
     const rawBody = await req.text();
     const signature = req.headers.get("x-slack-signature") ?? "";
     const timestamp = req.headers.get("x-slack-request-timestamp") ?? "";
-    if (!verifySlackSignature(rawBody, signature, timestamp)) {
+    if (!verifySlackSignature(rawBody, signature, timestamp, integrationSecret)) {
       return NextResponse.json(
         { success: false, error: "Geçersiz Slack imzası." },
         { status: 401 },
@@ -63,14 +85,14 @@ export async function POST(req: NextRequest) {
     if (classification === "feedback") {
       // Sprint 48q: idempotency — aynı Slack mesajı (event_ts) tekrar gelirse
       // yeni post oluşturma (Slack retry/çift event).
-      const workspaceId = await getWorkspaceId();
+      const targetWorkspaceId = workspaceId ?? (await getWorkspaceId());
       const sourceRef = incoming.eventTs
         ? `slack:${incoming.eventTs}`
         : `slack:${incoming.userId ?? "unknown"}:${Date.now()}`;
       const [existing] = await getDb()
         .select({ id: posts.id })
         .from(posts)
-        .where(and(eq(posts.workspaceId, workspaceId), eq(posts.sourceRef, sourceRef)))
+        .where(and(eq(posts.workspaceId, targetWorkspaceId), eq(posts.sourceRef, sourceRef)))
         .limit(1);
       if (existing) {
         return NextResponse.json({
@@ -99,7 +121,7 @@ export async function POST(req: NextRequest) {
       const [created] = await getDb()
         .insert(posts)
         .values({
-          workspaceId,
+          workspaceId: targetWorkspaceId,
           boardId: await getDefaultBoardId(),
           userId,
           title,

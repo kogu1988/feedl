@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 
 import { WorkspaceSettings } from "@/components/custom/workspace-settings";
-import { LinearIntegration } from "@/components/custom/linear-integration";
+import { IntegrationsPanel } from "@/components/custom/integrations-panel";
 import { getAdminUserId, getNonAdminRedirectTarget } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
@@ -47,10 +47,11 @@ export default async function SettingsPage() {
         </p>
       ) : (
         <>
-          <div className="grid gap-6 xl:grid-cols-[1.5fr_1fr]">
+          <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
             <WorkspaceSettings initial={initial} />
-            <div className="space-y-6">
-              <LinearIntegration />
+            <div className="grid gap-6">
+              <h2 className="text-base font-semibold">Entegrasyonlar</h2>
+              <IntegrationsPanel />
             </div>
           </div>
         </>

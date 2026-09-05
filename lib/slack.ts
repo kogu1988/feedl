@@ -15,8 +15,9 @@ export function verifySlackSignature(
   body: string,
   signatureHeader: string,
   timestampHeader: string,
+  secretOverride?: string | null,
 ): boolean {
-  const secret = process.env.SLACK_SIGNING_SECRET;
+  const secret = secretOverride ?? process.env.SLACK_SIGNING_SECRET;
   if (!secret) return false;
   const ts = Number(timestampHeader);
   if (!Number.isFinite(ts)) return false;
