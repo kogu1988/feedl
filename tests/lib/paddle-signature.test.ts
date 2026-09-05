@@ -1,3 +1,4 @@
+import { createHmac } from "node:crypto";
 import { describe, expect, it, beforeAll } from "vitest";
 
 // Sprint 61 (Claude #2, KABUL) — Paddle webhook imzası + plan türetme.
@@ -17,11 +18,7 @@ describe("verifyPaddleSignature", () => {
   });
 
   it("accepts a valid signature", () => {
-    const crypto = require("node:crypto");
-    const h1 = crypto
-      .createHmac("sha256", secret)
-      .update(`${ts}:${payload}`)
-      .digest("hex");
+    const h1 = createHmac("sha256", secret).update(`${ts}:${payload}`).digest("hex");
     expect(verifyPaddleSignature(payload, `ts=${ts};h1=${h1}`)).toBe(true);
   });
 
