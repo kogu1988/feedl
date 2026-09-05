@@ -1854,6 +1854,27 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   npm paketine dönüştürme → npm publish + versiyonlama gerektirir (npm
   credentials). Bu adım ayrı bir workspace/kredi ister.
 
+### Sprint 54 — @feedl/widget npm Paketi (Platformlaşma #3) (✅ 2026-09-05)
+
+> Madde 3'ün ikinci parçası. Widget mantığı sunucuda tek yerde (widget.js);
+> npm paketi yalnızca script'i enjekte eden tipli yükleyici (Intercom npm
+> loader deseni). `portal/[slug]` custom-domain sprint'ine ertelendi (kabul).
+
+- ☑ **`packages/feedl-widget/` (commit 53074f5):** `package.json` (@feedl/widget,
+  type module, main/types/files, publishConfig public), `index.js` (ESM:
+  `init()` → widget.js'i idempotent enjekte eder, data-* öznitelikleri;
+  `identify()` → window.feedlWidget.identify; yüklenmeden önce jetonu
+  `__feedlWidgetIdentifyQueue`'da biriktirir), `index.d.ts` (tipler),
+  `README.md`, `LICENSE`, `.npmignore`.
+- ☑ **`public/widget.js`:** yüklendiğinde `__feedlWidgetIdentifyQueue`'yu
+  boşaltıp identify çağrılarını yeniden oynatır (npm loader ile uyumlu).
+- ☑ node --check (index.js + widget.js) + npm test (17/17) + build ✓
+  → commit → push.
+- **Kalan (kullanıcı tarafı):** npm hesabı (org `feedl`?) + `npm login`;
+  `npm publish` (ilk yayında `npm publish --access public`); sonra paket
+  sürümünü `npm version patch` ve republish ile yönet. Paket `packages/`
+  altında, repo kökündeki Next.js build'inden BAĞIMSIZ.
+
 ### 📝 Sonraki plan notları (kullanıcı onayıyla erteelenen/planlanacak)
 
 - **Ticarileşme (Paddle):** Canlı tahsilata geç YOK — sandbox'ta kalınacak.
