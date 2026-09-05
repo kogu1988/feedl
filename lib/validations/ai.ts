@@ -42,3 +42,16 @@ export const ideaRelationSchema = z.object({
 });
 
 export type IdeaRelation = z.infer<typeof ideaRelationSchema>;
+
+// Sprint 48l — widget mesaj sınıflandırması.
+export const widgetTriageSchema = z.object({
+  classification: z
+    .string()
+    .transform((v) => v.trim().toLowerCase())
+    .pipe(
+      z.enum(["feedback", "support", "clarify", "unrecognized"]),
+    ),
+  response: z.string().trim().max(500).optional(),
+});
+
+export type WidgetTriage = z.infer<typeof widgetTriageSchema>;

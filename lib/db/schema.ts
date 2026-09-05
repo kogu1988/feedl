@@ -279,6 +279,33 @@ export const workspaceInvites = pgTable("workspace_invites", {
 export type WorkspaceInvite = typeof workspaceInvites.$inferSelect;
 export type NewWorkspaceInvite = typeof workspaceInvites.$inferInsert;
 
+// Sprint 48l (madde 8, P1) — widget AI triage. Widget'ta yazılan mesajlar
+// AI ile sınıflandırılır (feedback/support/clarify/unrecognized); kayıt
+// audit için tutulur.
+export const widgetTriageEnum = pgEnum("widget_triage_type", [
+  "feedback",
+  "support",
+  "clarify",
+  "unrecognized",
+]);
+
+export const widgetTriages = pgTable("widget_triages", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  workspaceId: uuid("workspace_id")
+    .notNull()
+    .references(() => workspaces.id, { onDelete: "cascade" }),
+  userId: text("user_id"),
+  message: text("message").notNull(),
+  classification: widgetTriageEnum("classification").notNull(),
+  response: text("response"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export type WidgetTriage = typeof widgetTriages.$inferSelect;
+export type NewWidgetTriage = typeof widgetTriages.$inferInsert;
+
 export type Workspace = typeof workspaces.$inferSelect;
 export type NewWorkspace = typeof workspaces.$inferInsert;
 export type Post = typeof posts.$inferSelect;

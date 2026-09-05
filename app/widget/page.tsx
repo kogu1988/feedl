@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/custom/status-badge";
 import { WidgetPostForm } from "@/components/custom/widget-post-form";
 import { WidgetVoteButton } from "@/components/custom/widget-vote-button";
+import { WidgetTriage } from "@/components/custom/widget-triage";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { posts, votes } from "@/lib/db/schema";
@@ -143,12 +144,16 @@ export default async function WidgetPage({
       {session ? (
         <div className="mt-3">
           <WidgetPostForm />
+          <WidgetTriage />
         </div>
       ) : (
-        <p className="mt-3 rounded-lg border border-dashed bg-muted/30 p-3 text-xs text-muted-foreground">
-          Fikir gönderebilmek ve oy verebilmek için uygulamanız üzerinden
-          giriş yapmanız gerekir. Mevcut fikirleri aşağıdan inceleyebilirsiniz.
-        </p>
+        <>
+          <p className="mt-3 rounded-lg border border-dashed bg-muted/30 p-3 text-xs text-muted-foreground">
+            Fikir gönderebilmek ve oy verebilmek için uygulamanız üzerinden
+            giriş yapmanız gerekir. Mevcut fikirleri aşağıdan inceleyebilirsiniz.
+          </p>
+          <WidgetTriage />
+        </>
       )}
 
       {loadError ? (
