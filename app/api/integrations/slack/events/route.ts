@@ -5,7 +5,8 @@ import { getWorkspaceId } from "@/lib/db/workspace";
 import { getDefaultBoardId } from "@/lib/db/board";
 import { classifyWidgetMessage } from "@/lib/ai/analysis";
 import { isSlackConfigured, parseSlackMessage, verifySlackSignature } from "@/lib/slack";
-import { posts } from "@/lib/db/schema";
+import { posts, users } from "@/lib/db/schema";
+import { toWidgetUserId } from "@/lib/widget/jwt";
 import { postCreatedEventSchema } from "@/lib/validations/events";
 import { inngest } from "@/inngest/client";
 
@@ -59,6 +60,22 @@ export async function POST(req: NextRequest) {
 
     let createdPostId: string | null = null;
     if (classification === "feedback") {
+      // Slack kullanıcısını users tablosuna upsert et (posts.user_id FK şart).
+      const userId = incoming.userId
+        ? toWidgetUserId(incoming.userId)
+        : toWidgetUserId("slack");
+      await getDb()
+        .insert(users)
+        .values({
+          id: userId,
+          email: `${incoming.userId ?? "slack"}@widget.feedl.local`,
+          name: null,
+          role: "customer",
+        })
+        .onConflictDoUpdate({
+          target: users.id,
+          set: { updatedAt: new Date() },
+        });
       const title =
         incoming.text.split("\n").find((line) => line.trim())?.slice(0, 140) ??
         "Yeni geri bildirim";
@@ -67,7 +84,7 @@ export async function POST(req: NextRequest) {
         .values({
           workspaceId: await getWorkspaceId(),
           boardId: await getDefaultBoardId(),
-          userId: `widget_${incoming.userId ?? "slack"}`,
+          userId,
           title,
           description: incoming.text,
           source: "slack",
@@ -81,7 +98,7 @@ export async function POST(req: NextRequest) {
             postId: created.id,
             title: created.title,
             description: incoming.text,
-            userId: `widget_${incoming.userId ?? "slack"}`,
+            userId,
           }),
         });
       } catch (eventErr) {
