@@ -1,0 +1,1 @@
+ALTER TABLE "workspaces" ADD COLUMN "paddle_subscription_status" varchar(30);

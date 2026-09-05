@@ -58,9 +58,10 @@ next-env.d.ts
 .env*
 
 # Yerel/geliştirme dizinleri — repo dışında tutulur
-/migrations
+# Not (2026-09-05): /tests ve /migrations kullanıcı onayıyla repo'ya GERİ ALINDI
+# (Claude #2/#3 — CI'ın anlamlı olması). /docs, /scripts, .agents/skills ve
+# agent üretimi raporlar yerel kalır.
 /scripts
-/tests
 /docs
 /.agents/skills/feedl
 
