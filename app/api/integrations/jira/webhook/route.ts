@@ -31,8 +31,12 @@ export async function POST(req: NextRequest) {
     }
 
     const rawBody = await req.text();
-    const auth = req.headers.get("x-jira-signature") ?? req.headers.get("x-feedl-token") ?? "";
-    if (!verifyJiraSignature(rawBody, auth)) {
+    // Otomatik webhook (rest/webhooks/1.0) Jira imza göndermez; token URL
+    // query'sinde taşınır. Manuel Automation kuralı header gönderir.
+    const headerAuth =
+      req.headers.get("x-jira-signature") ?? req.headers.get("x-feedl-token") ?? "";
+    const queryAuth = req.nextUrl.searchParams.get("token") ?? "";
+    if (!verifyJiraSignature(rawBody, headerAuth || queryAuth)) {
       return NextResponse.json(
         { success: false, error: "Geçersiz Jira imzası." },
         { status: 401 },
