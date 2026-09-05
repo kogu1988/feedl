@@ -1553,6 +1553,21 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
 - ☑ npm test (17/17) + npm run build ✓ → commit → push.
 - **Sıradaki:** 4 — Workspace markalamasını uygula (logo/renk → portal).
 
+### Sprint 48k — Workspace Markalamasını Uygula (madde 8, P1) (✅ 2026-09-04)
+
+> brandColor/logoUrl kaydediliyordu ama portal hiç kullanmıyordu (ölü
+> alanlar). Artık üst bar + footer workspace markasını gösterir.
+
+- ☑ **`lib/db/workspace.ts`:** `getWorkspaceBrand()` — workspace name,
+  customDomain, brandColor, logoUrl (workspace yoksa default feedl).
+- ☑ **`SiteHeader`:** brand prop — logo varsa img, yoksa ChevronsUpIcon;
+  marka bloğu `brandColor` + `textOn()` kontrast rengi (WCAG tahmini:
+  aydınlatma > 0.55 → koyu mürekkep, değilse beyaz). Marka adı gösterilir.
+- ☑ **`(main)/layout.tsx`:** `getWorkspaceBrand()` çağrılır → SiteHeader
+  brand prop + footer workspace adı.
+- ☑ npm test (17/17) + npm run build ✓ → commit → push.
+- **Sıradaki:** 5 — Widget AI triage (feedback/support/clarify).
+
 ### Ertelenen blok (en son — kullanıcının kısıtı)
 
 - **Domain (feedl.app) alındı (2026-09-04).** Kod tarafı hazır: tüm
