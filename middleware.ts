@@ -38,6 +38,10 @@ const isPublicRoute = createRouteMatcher([
   "/api/widget(.*)",
   "/api/webhooks(.*)",
 
+  // Sprint 48o: Slack/Zendesk/Intercom entegrasyon webhook'ları — Slack
+  // kendi imzasıyla çağırır (lib/slack), Clerk oturumu gerekmez.
+  "/api/integrations(.*)",
+
   "/api/inngest(.*)",
 
   // Sprint 40: changelog e-posta aboneliği — anonim ziyaretçiler de
