@@ -24,12 +24,27 @@ function textOn(hex: string): string {
 // Sprint 36: üst bar site kabuğunun parçası — marka işareti ve aktif sayfa
 // durumu eklendi. usePathname client gerektirdiği için layout'tan buraya
 // taşındı; ClerkProvider (main) layout'unda kalır.
-const navItems = [
-  { href: "/portal", label: "Portal" },
-  { href: "/roadmap", label: "Yol Haritası" },
-  { href: "/portal/changelog", label: "Güncellemeler" },
-  { href: "/pricing", label: "Fiyat" },
-];
+// Sprint 50: nav satış (/, /demo, /pricing) ve ürün (/portal*, /roadmap*,
+// /dashboard*) yüzeylerine göre değişir. Satış sayfalarında portal/yol
+// haritası/güncellemeler çıkar; yerine Demo + Fiyat. Ürün sayfalarında
+// mevcut ürün nav'ı kalır.
+function navItemsFor(pathname: string) {
+  const isSales =
+    pathname === "/" ||
+    pathname.startsWith("/demo") ||
+    pathname.startsWith("/pricing");
+  if (isSales) {
+    return [
+      { href: "/demo", label: "Demo" },
+      { href: "/pricing", label: "Fiyat" },
+    ];
+  }
+  return [
+    { href: "/portal", label: "Portal" },
+    { href: "/roadmap", label: "Yol Haritası" },
+    { href: "/portal/changelog", label: "Güncellemeler" },
+  ];
+}
 
 function isActive(pathname: string, href: string) {
   if (href === "/portal") {
@@ -39,6 +54,9 @@ function isActive(pathname: string, href: string) {
       pathname === "/portal" ||
       (pathname.startsWith("/portal/") && pathname !== "/portal/changelog")
     );
+  }
+  if (href === "/demo") {
+    return pathname === "/demo";
   }
   return pathname === href || pathname.startsWith(`${href}/`);
 }
@@ -75,7 +93,7 @@ export function SiteHeader({ brand }: { brand?: { name: string; brandColor: stri
             className="flex min-w-0 items-center gap-0.5 text-sm sm:gap-1"
             aria-label="Site menüsü"
           >
-            {navItems.map((item) => (
+            {navItemsFor(pathname).map((item) => (
               <Link
                 key={item.href}
                 href={item.href}

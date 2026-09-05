@@ -32,6 +32,10 @@ const isPublicRoute = createRouteMatcher([
   // Clerk oturumu gerekmez).
   "/pricing",
 
+  // Sprint 50: public demo/ürün turu sayfası (satış landing'inin "Canlı
+  // Demo" butonu buraya gider; Clerk oturumu gerekmez).
+  "/demo",
+
   "/widget",
   "/api/posts(.*)",
 

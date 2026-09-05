@@ -3,7 +3,6 @@ import { SignUpButton } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
-import { ChevronUpIcon, SparklesIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -14,19 +13,22 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { StatusBadge } from "@/components/custom/status-badge";
+import { TypeBadge } from "@/components/custom/type-badge";
+import { SentimentBadge } from "@/components/custom/sentiment-badge";
 import { getDb } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 
-// "/" iki rol oynar (plan.md Sprint 9): giriş yapmışsa role'e göre (tek
-// kaynak: Neon users.role) dashboard/portala yönlendirir; ziyaretçiye
-// landing page gösterir.
+// Sprint 50 (Faz 4/cilama) — "/" artık SATIŞ landing'idir. Portal / yol
+// haritası / güncellemeler nav'dan çıkarıldı; ürün örnekleri /demo'ya taşındı.
+// Hedef: feedl'i (SaaS) satın alacak şirket temsilcisi. Portal yüzeyleri son
+// kullanıcıya ait olduğundan "fikir verme / göz at" çağrıları yerine
+// "Ücretsiz Başla", "Canlı Demo", "Fiyatlandırma" CTA'ları var.
+// Giriş yapmışsa role'e göre (tek kaynak: Neon users.role) dashboard/portal
+// yönlendirmesi KORUNUR (Sprint 9 davranışı).
 export default async function RootPage() {
   const { userId } = await auth();
 
   if (userId) {
-    // redirect() NEXT_REDIRECT hatası fırlatır; try içinde çağrılırsa
-    // catch bunu yakalayıp yanlış sayfaya yönlendirir. Bu yüzden hedef
-    // önce belirlenir, redirect try bloğunun DIŞINDA çağrılır.
     let target = "/portal";
     try {
       const [user] = await getDb()
@@ -47,25 +49,21 @@ export default async function RootPage() {
     redirect(target);
   }
 
-  // Sprint 36: ortalanmış hero + 3 özdeş kart yerine asimetrik hero —
-  // solda vaat, sağda ürünün kendisi (gerçek bir portal fikir kartı ve
-  // Autopilot çıktısı). Kart dizisi yerine gerçek bir sıra olan iş akışı
-  // şeridi geldi (Topla → Anla → Duyur).
   const steps = [
     {
       title: "Topla",
       description:
-        "Müşteriler fikrini paylaşır, başkaları oy verir. En çok istenen özellik kendiliğinden üst sıraya çıkar.",
+        "Müşterilerin istekleri tek bir panoya düşer; oylar en çok istenen özelliği üste taşır.",
     },
     {
       title: "Anla",
       description:
-        "Autopilot her fikri özetler, etiketler ve benzer istekleri işaretler; karar verirken kopyalarla uğraşmazsın.",
+        "Autopilot her fikri özetler, etiketler ve benzer istekleri işaretler; tahminle değil veriyle karar verirsin.",
     },
     {
       title: "Duyur",
       description:
-        "Yayına aldığında oy veren herkese e-posta gider, herkese açık yol haritası güncel kalır.",
+        "Yayına aldığında oy veren herkese e-posta gider; şeffaf yol haritası ve değişiklik günlüğü güncel kalır.",
     },
   ];
 
@@ -74,19 +72,26 @@ export default async function RootPage() {
       <section className="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-14">
         <div>
           <h1 className="max-w-lg text-4xl font-bold sm:text-5xl">
-            Müşterinin sesini ürün yol haritasına dönüştür
+            Müşteri isteklerini tahminle değil, veriyle önceliklendir.
           </h1>
           <p className="mt-4 max-w-xl text-lg text-muted-foreground">
-            Fikirleri tek yerde topla, oylamaya aç, AI ile analiz et. Hangi
-            özelliği geliştireceğine artık tahmin yürüterek değil, veriyle
-            karar ver.
+            Fikirleri toplamak, oylamak ve AI ile analiz etmek için tek
+            platform. Canny&apos;ye ücretsiz bir alternatif — ürününü müşteri
+            sesiyle şekillendir.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <SignUpButton>
-              <Button size="lg">Fikir vermeye başla</Button>
+              <Button size="lg">Ücretsiz Başla</Button>
             </SignUpButton>
-            <Button size="lg" variant="outline" render={<Link href="/portal" />}>
-              Fikirlere göz at
+            <Button size="lg" variant="outline" render={<Link href="/demo" />}>
+              Canlı Demo
+            </Button>
+            <Button
+              size="lg"
+              variant="ghost"
+              render={<Link href="/pricing" />}
+            >
+              Fiyatlandırma
             </Button>
           </div>
         </div>
@@ -95,35 +100,38 @@ export default async function RootPage() {
           <Card>
             <CardHeader>
               <div className="flex items-start justify-between gap-3">
-                <CardTitle className="text-base leading-snug">
+                <CardTitle className="leading-snug">
                   Karanlık mod desteği
                 </CardTitle>
-                <span className="inline-flex shrink-0 items-center gap-1 rounded-md border px-2.5 py-1.5 text-sm font-semibold tabular-nums">
-                  <ChevronUpIcon
-                    className="size-3.5 text-brand"
-                    aria-hidden="true"
-                  />
-                  128
+                <span className="inline-flex shrink-0 items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium">
+                  ▲ 128
                 </span>
               </div>
               <CardDescription className="flex flex-wrap items-center gap-2">
+                31 Ağustos 2026
                 <StatusBadge status="shipped" />
-                <span>32 yorum</span>
+                <TypeBadge type="feature" />
+                <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
+                  💬 32 yorum
+                </span>
               </CardDescription>
             </CardHeader>
-            <CardContent className="hidden" />
+            <CardContent className="grid gap-2">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <SentimentBadge sentiment="pozitif" />
+                <span className="inline-flex items-center rounded-md border px-2 py-0.5 text-xs">
+                  #karanlıkmod
+                </span>
+                <span className="inline-flex items-center rounded-md border px-2 py-0.5 text-xs">
+                  #tema
+                </span>
+              </div>
+              <p className="whitespace-pre-line text-sm text-muted-foreground">
+                Gözleri çok yoran açık temaya alternatif olarak karanlık mod
+                istiyoruz. Ayarlardan açılıp kapatılabilse iyi olur.
+              </p>
+            </CardContent>
           </Card>
-          <div className="mt-3 flex items-center gap-2 rounded-lg border border-brand/20 bg-brand-soft px-3 py-2.5">
-            <SparklesIcon
-              className="size-3.5 shrink-0 text-brand"
-              aria-hidden="true"
-            />
-            <p className="text-xs text-muted-foreground">
-              <span className="font-medium text-foreground">Autopilot:</span>{" "}
-              benzer 3 fikir tek başlıkta birleştirildi, şöyle özetlendi —
-              &quot;Mobil ve webde koyu tema isteniyor.&quot;
-            </p>
-          </div>
         </div>
       </section>
 
@@ -142,6 +150,21 @@ export default async function RootPage() {
             </li>
           ))}
         </ol>
+      </section>
+
+      <section className="mt-20 rounded-2xl border bg-card p-8 text-center sm:mt-24">
+        <h2 className="text-2xl font-bold tracking-tight">
+          Bugün ücretsiz başla
+        </h2>
+        <p className="mx-auto mt-2 max-w-md text-muted-foreground">
+          Kredi kartı gerekmez. 1 board, 1 üye ve 50 takipçi ile hemen toplamaya
+          başla.
+        </p>
+        <div className="mt-6 flex justify-center">
+          <SignUpButton>
+            <Button size="lg">Ücretsiz Başla</Button>
+          </SignUpButton>
+        </div>
       </section>
     </main>
   );
