@@ -1919,28 +1919,40 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
 
 > Kullanıcı kararı: **API token + webhook** yaklaşımı (OAuth 3LO yerine).
 > Jira Automation/Webhook → Issue created/updated → AI triage → feedback.
+> **Otomatikleştirme kuralı:** Müşteri elle Automation kuralı KURMAZ — API
+> token ile biz `rest/webhooks/1.0` üzerinden webhook'u kaydederiz (Sprint 58).
 
-- ☑ **`lib/jira.ts`:** verifyJiraSignature (X-Jira-Signature /
-  X-Feedl-Token — **statik secret karşılaştırması** Zendesk deseninde,
-  JIRA_WEBHOOK_SECRET; Jira Automation HMAC hesaplayamadığı için HMAC
-  yerine statik token), parseJiraPayload (issue_event_type_name/webhookEvent),
-  jiraTicketText (summary+description), jiraIdentity (id|key), isJiraConfigured.
-- ☑ **`POST /api/integrations/jira/webhook`:** imza doğrulama, Issue →
-  classifyWidgetMessage → feedback ise users upsert (widget_jira_<id>) +
-  post oluştur (source=jira, sourceRef=jira:<id|key>) + post/created.
+- ☑ **`lib/jira.ts`:**
+  - `isJiraConfigured` (JIRA_WEBHOOK_SECRET), `jiraAuthReady`
+    (JIRA_BASE_URL/EMAIL/API_TOKEN), `jiraCreds`, `jiraWebhookUrl`.
+  - `registerJiraWebhook`: `events` + `secret` ile `rest/webhooks/1.0`'a
+    kaydeder (idempotent — zaten bizim URL'miz varsa atlar). `secret`
+    verildiği için Jira `X-Hub-Signature: sha256=<hmac>` imzalar.
+  - `verifyJiraSignature`: `X-Hub-Signature` (HMAC-SHA256 ham gövde) VEYA
+    `X-Jira-Signature`/`X-Feedl-Token` (statik secret) doğrular.
+  - `parseJiraPayload`, `jiraTicketText`, `jiraIdentity`.
+- ☑ **`POST /api/integrations/jira/register`:** env kontrolü (isteğe bağlı
+  `JIRA_REGISTER_SECRET`), `registerJiraWebhook` çağırır, sonucu döner.
+- ☑ **`POST /api/integrations/jira/webhook`:** `X-Hub-Signature` HMAC
+  doğrulaması, Issue → `classifyWidgetMessage` → feedback ise users upsert
+  (widget_jira_<id>) + post (source=jira, sourceRef=jira:<id|key>) +
+  post/created. `?token=` query artık kullanılmıyor.
 - ☑ middleware `/api/integrations(.*)` zaten public → ek değişiklik yok.
 - ☑ npm test (17/17) + build ✓ → commit → push.
-- ☑ **Vercel env (`feedl` projesi — feedl.app):** `JIRA_WEBHOOK_SECRET`
-  (üretildi/eklendi), `JIRA_API_TOKEN` (kullanıcı sağladı/eklendi).
+- ☑ **Vercel env (`feedl` projesi — feedl.app):** `JIRA_WEBHOOK_SECRET`,
+  `JIRA_API_TOKEN` (çalışan yeni token), `JIRA_BASE_URL`
+  (https://feedl.atlassian.net), `JIRA_EMAIL` (oguzkir@gmail.com).
   (Not: `feedl` ve `feedl.co` iki ayrı Vercel projesi; `feedl.app` → `feedl`
   projesi. Env bu projeye eklenmeli.)
-- **Kalan (kullanıcı tarafı):** 1) Jira Automation: yeni kural → trigger
-  Issue created/updated → action Send Web Request: URL
-  https://feedl.app/api/integrations/jira/webhook, Method POST, Body JSON +
-  custom header `X-Jira-Signature: <JIRA_WEBHOOK_SECRET>` (statik token,
-  HMAC değil). 2) (opsiyonel) REST iyileştirmesi için `JIRA_BASE_URL`
-  (https://<kurum>.atlassian.net) + `JIRA_EMAIL`; şu an webhook akışı
-  bunları kullanmıyor.
+- ☑ **Canlı doğrulama:** `POST /api/integrations/jira/register` → webhook
+  kaydedildi (`events: [jira:issue_created, jira:issue_updated]`,
+  `isSigned: true`, id 2). Gerçek Jira issue (`SCRUM-7`, id 10006) → feedl
+  post kaydı (`source_ref=jira:10006`) → AI classification feedback. HMAC
+  doğrulaması: doğru → 200, yanlış → 401.
+- **Kalan:** Jira Automation kuralına gerek YOK. Müşteri akışı (ileride
+  workspace ayarları): token + site + email gir → `POST /register` → otomatik
+  webhook. Şu an env tabanlı (tek default workspace) çalışıyor; per-workspace
+  kayıt ileride.
   Jira webhook payload'ı `{ issue: { id, key, fields: { summary,
   description, creator } } }` şemasında olmalı.
 
