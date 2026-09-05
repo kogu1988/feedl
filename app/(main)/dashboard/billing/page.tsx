@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 
 import { BillingManager } from "@/components/custom/billing-manager";
-import { getAdminUserId } from "@/lib/auth/admin";
+import { getAdminUserId, getNonAdminRedirectTarget } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { workspaces } from "@/lib/db/schema";
@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 export default async function BillingPage() {
   const adminId = await getAdminUserId();
   if (!adminId) {
-    redirect("/portal");
+    redirect(await getNonAdminRedirectTarget());
   }
 
   let data: Awaited<ReturnType<typeof loadWorkspace>> | null = null;

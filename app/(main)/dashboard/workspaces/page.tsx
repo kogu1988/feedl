@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { WorkspacesManager } from "@/components/custom/workspaces-manager";
-import { getAdminUserId } from "@/lib/auth/admin";
+import { getAdminUserId, getNonAdminRedirectTarget } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { asc, eq, count } from "drizzle-orm";
 import { boards, workspaces } from "@/lib/db/schema";
@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 export default async function WorkspacesPage() {
   const adminId = await getAdminUserId();
   if (!adminId) {
-    redirect("/portal");
+    redirect(await getNonAdminRedirectTarget());
   }
 
   let items: Awaited<ReturnType<typeof loadWorkspaces>> = [];

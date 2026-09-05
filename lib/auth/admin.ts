@@ -77,3 +77,14 @@ export async function getDashboardScope(): Promise<"admin" | "team" | null> {
   if (role === "admin" || role === "team") return role;
   return null;
 }
+
+// Admin-only sayfaya ekip üyesi (contributor) doğrudan URL ile girerse
+// /dashboard'a, member/son kullanıcı ise /portal'a yönlendir (kullanıcı onaylı
+// yetki matrisi — "takım üyesi ürün operasyonundan dışarı atılmaz, portalda
+// kaybolmaz").
+export async function getNonAdminRedirectTarget(): Promise<string> {
+  const userId = await getSessionUserId();
+  if (!userId) return "/portal";
+  const role = await getRole(userId);
+  return role === "team" ? "/dashboard" : "/portal";
+}

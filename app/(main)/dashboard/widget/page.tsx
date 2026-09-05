@@ -11,7 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { getAdminUserId } from "@/lib/auth/admin";
+import { getAdminUserId, getNonAdminRedirectTarget } from "@/lib/auth/admin";
 import { trDateTimeFormatter } from "@/lib/post-format";
 import { isWidgetConfigured } from "@/lib/widget/jwt";
 import { listWidgetOrigins } from "@/lib/widget/origins";
@@ -23,7 +23,7 @@ export const dynamic = "force-dynamic";
 export default async function WidgetAdminPage() {
   const adminId = await getAdminUserId();
   if (!adminId) {
-    redirect("/portal");
+    redirect(await getNonAdminRedirectTarget());
   }
 
   // Snippet, ziyaret edilen adresi otomatik izler (domain değişirse güncel kalır).

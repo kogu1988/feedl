@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { asc, eq } from "drizzle-orm";
 
 import { MembersManager } from "@/components/custom/members-manager";
-import { getAdminUserId } from "@/lib/auth/admin";
+import { getAdminUserId, getNonAdminRedirectTarget } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { listWorkspaceMembers } from "@/lib/db/membership";
@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 export default async function MembersPage() {
   const adminId = await getAdminUserId();
   if (!adminId) {
-    redirect("/portal");
+    redirect(await getNonAdminRedirectTarget());
   }
 
   let members: Awaited<ReturnType<typeof listWorkspaceMembers>> = [];

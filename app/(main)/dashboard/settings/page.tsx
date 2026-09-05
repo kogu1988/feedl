@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 
 import { WorkspaceSettings } from "@/components/custom/workspace-settings";
 import { LinearIntegration } from "@/components/custom/linear-integration";
-import { getAdminUserId } from "@/lib/auth/admin";
+import { getAdminUserId, getNonAdminRedirectTarget } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { workspaces } from "@/lib/db/schema";
@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 export default async function SettingsPage() {
   const adminId = await getAdminUserId();
   if (!adminId) {
-    redirect("/portal");
+    redirect(await getNonAdminRedirectTarget());
   }
 
   let initial: Awaited<ReturnType<typeof loadWorkspace>> | null = null;

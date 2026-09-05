@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { RevenueReportView } from "@/components/custom/revenue-report";
-import { getAdminUserId } from "@/lib/auth/admin";
+import { getAdminUserId, getNonAdminRedirectTarget } from "@/lib/auth/admin";
 import { loadRevenueReport } from "@/lib/db/revenue-report";
 
 // Canlı veri: her istekte DB'den okunur.
@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 export default async function RevenuePage() {
   const adminId = await getAdminUserId();
   if (!adminId) {
-    redirect("/portal");
+    redirect(await getNonAdminRedirectTarget());
   }
 
   let report: Awaited<ReturnType<typeof loadRevenueReport>> | null = null;
