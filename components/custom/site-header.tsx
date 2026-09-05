@@ -28,17 +28,32 @@ function textOn(hex: string): string {
 // /dashboard*) yüzeylerine göre değişir. Satış sayfalarında portal/yol
 // haritası/güncellemeler çıkar; yerine Demo + Fiyat. Ürün sayfalarında
 // mevcut ürün nav'ı kalır.
+// Sprint 63+ (IA standardı — kullanıcı onayı): yüzeyler netleştirildi —
+//   satış/marka (/ , /demo, /pricing, /contact, /privacy, /terms) → Demo+Fiyat
+//   auth/işlem (/sign-in, /sign-up, /onboarding, /invites) → nav YOK
+//   admin (/dashboard*) → yalnız "Portal" (public board'a atla; sidebar zaten nav)
+//   public topluluk (/portal*, /roadmap*, /changelog*) → Portal+Yol+Güncellemeler
+const SALES_PREFIXES = ["/", "/demo", "/pricing", "/contact", "/privacy", "/terms"];
+const AUTH_APP_PREFIXES = ["/sign-in", "/sign-up", "/onboarding", "/invites"];
+const ADMIN_PREFIX = "/dashboard";
+
 function navItemsFor(pathname: string) {
-  const isSales =
-    pathname === "/" ||
-    pathname.startsWith("/demo") ||
-    pathname.startsWith("/pricing");
-  if (isSales) {
+  if (pathname.startsWith(ADMIN_PREFIX)) {
+    return [{ href: "/portal", label: "Portal" }];
+  }
+  // Satış/marka yüzeyleri: yeni müşteri CTA'sı. Legal/şirket sayfaları da
+  // satış tarafına ait (public footer'da pazarlama nav'ıyla aynı dünya).
+  if (SALES_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
     return [
       { href: "/demo", label: "Demo" },
       { href: "/pricing", label: "Fiyat" },
     ];
   }
+  // Auth/işlem yüzeyleri: üst bar ürün nav'ı göstermez (footer da gizli).
+  if (AUTH_APP_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
+    return [];
+  }
+  // Public topluluk yüzeyleri (portal, roadmap, changelog).
   return [
     { href: "/portal", label: "Portal" },
     { href: "/roadmap", label: "Yol Haritası" },
