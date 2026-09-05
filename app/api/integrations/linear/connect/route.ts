@@ -1,0 +1,136 @@
+import { NextResponse } from "next/server";
+import { eq } from "drizzle-orm";
+import { z } from "zod";
+
+import { getAdminUserId } from "@/lib/auth/admin";
+import { getDb } from "@/lib/db";
+import { getWorkspaceId } from "@/lib/db/workspace";
+import { workspaceIntegrations, workspaces } from "@/lib/db/schema";
+import { linearCreateWebhook, linearViewer } from "@/lib/linear-api";
+
+// Sprint 58 (madde 2) — per-workspace Linear otomasyonu.
+// Workspace admin'i Linear API key girer → biz Linear GraphQL `webhookCreate`
+// ile webhook'u OTOMATİK oluştururuz (Linear UI'da manuel kural YOK) →
+// secret + id kaydedilir → entegrasyon hazır.
+// URL'ye per-workspace token gömülür (?ws=<slug>&t=<urlToken>).
+
+const LINEAR_RESOURCE_TYPES = ["Issue", "Comment", "CustomerNeed"];
+
+const connectSchema = z.object({
+  apiKey: z.string().trim().min(1, "Linear API key gerekli.").max(300),
+  teamId: z.string().trim().max(100).optional().nullable(),
+});
+
+function randomToken(): string {
+  const crypto = require("node:crypto");
+  return crypto.randomBytes(32).toString("hex");
+}
+
+export async function POST(req: Request) {
+  try {
+    const adminId = await getAdminUserId();
+    if (!adminId) {
+      return NextResponse.json(
+        { success: false, error: "Bu işlem için admin yetkisi gerekir." },
+        { status: 403 },
+      );
+    }
+
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json(
+        { success: false, error: "Geçersiz istek gövdesi." },
+        { status: 400 },
+      );
+    }
+    const parsed = connectSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { success: false, error: "Linear API key geçersiz." },
+        { status: 400 },
+      );
+    }
+    const apiKey = parsed.data.apiKey;
+    const teamId = parsed.data.teamId || null;
+
+    // API key'i doğrula (viewer sorgusu) — geçersizse erken dön.
+    const viewer = await linearViewer(apiKey);
+    if (!viewer) {
+      return NextResponse.json(
+        { success: false, error: "Linear API key geçersiz. Settings > Account > Security & Access'ten yeni key oluştur." },
+        { status: 400 },
+      );
+    }
+
+    const workspaceId = await getWorkspaceId();
+    const [workspace] = await getDb()
+      .select({ slug: workspaces.slug })
+      .from(workspaces)
+      .where(eq(workspaces.id, workspaceId))
+      .limit(1);
+    if (!workspace) {
+      return NextResponse.json(
+        { success: false, error: "Workspace bulunamadı." },
+        { status: 500 },
+      );
+    }
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://feedl.app";
+    const urlToken = randomToken();
+    const webhookUrl = `${appUrl}/api/integrations/linear/webhook?ws=${encodeURIComponent(workspace.slug)}&t=${encodeURIComponent(urlToken)}`;
+
+    const created = await linearCreateWebhook(apiKey, {
+      label: "feedl",
+      url: webhookUrl,
+      resourceTypes: LINEAR_RESOURCE_TYPES,
+      allPublicTeams: !teamId,
+      teamId,
+    });
+    if (!created.ok || !created.webhook) {
+      return NextResponse.json(
+        { success: false, error: created.error ?? "Linear webhook oluşturulamadı." },
+        { status: 502 },
+      );
+    }
+
+    // Yeni kaydı yaz (upsert: workspace+provider benzersiz).
+    await getDb()
+      .insert(workspaceIntegrations)
+      .values({
+        workspaceId,
+        provider: "linear",
+        webhookId: created.webhook.id,
+        webhookSecret: created.webhook.secret ?? null,
+        urlToken,
+        resourceTypes: LINEAR_RESOURCE_TYPES,
+        linearTeamId: teamId,
+        status: "connected",
+        updatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: [workspaceIntegrations.workspaceId, workspaceIntegrations.provider],
+        set: {
+          webhookId: created.webhook.id,
+          webhookSecret: created.webhook.secret ?? null,
+          urlToken,
+          resourceTypes: LINEAR_RESOURCE_TYPES,
+          linearTeamId: teamId,
+          status: "connected",
+          updatedAt: new Date(),
+        },
+      });
+
+    return NextResponse.json({
+      success: true,
+      data: { webhookId: created.webhook.id, viewer: viewer.viewer },
+    });
+  } catch (err) {
+    console.error("POST /api/integrations/linear/connect failed:", err);
+    return NextResponse.json(
+      { success: false, error: "Linear bağlantısı kurulamadı. Lütfen tekrar deneyin." },
+      { status: 500 },
+    );
+  }
+}

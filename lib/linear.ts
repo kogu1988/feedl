@@ -7,16 +7,29 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 // feedback. Doğrulama: `X-Linear-Signature` başlığı — webhook signing secret
 // ile ham gövdenin HMAC-SHA256'sı (hex). Kurumsal imaj: uygulama adı feedl.
 
-// Linear webhook imza doğrulaması.
-export function verifyLinearSignature(
+// Belirli bir secret ile imza doğrula (per-workspace kayıt secret'ı dahil).
+export function verifyLinearSignatureWithSecret(
   rawBody: string,
   signatureHeader: string,
+  secret: string | null | undefined,
 ): boolean {
-  const secret = process.env.LINEAR_WEBHOOK_SECRET;
   if (!secret) return false;
   const value = (signatureHeader || "").trim();
   const expected = createHmac("sha256", secret).update(rawBody).digest("hex");
   return safeEqual(value, expected);
+}
+
+// Global env secret (LINEAR_WEBHOOK_SECRET) ile imza doğrula — geriye dönük
+// tek-workspace manuel webhook yolu.
+export function verifyLinearSignature(
+  rawBody: string,
+  signatureHeader: string,
+): boolean {
+  return verifyLinearSignatureWithSecret(
+    rawBody,
+    signatureHeader,
+    process.env.LINEAR_WEBHOOK_SECRET,
+  );
 }
 
 function safeEqual(a: string, b: string): boolean {

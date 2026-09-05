@@ -1024,3 +1024,47 @@ export const postCustomValues = pgTable(
 
 export type PostCustomValue = typeof postCustomValues.$inferSelect;
 export type NewPostCustomValue = typeof postCustomValues.$inferInsert;
+
+// Per-workspace entegrasyon kaydı (Sprint 58 — per-workspace otomasyon).
+// Her workspace kendi dış servis bağlantısını (ör. Linear webhook) tutar;
+// gelen webhook ?ws=<slug>&t=<urlToken> ile doğru workspace'e yönlendirilir.
+// webhookSecret: Linear'ın HMAC doğrulama anahtarı (connect anında döner).
+// urlToken: her workspace'e özel, URL'ye gömülen yüksek entropili gizli.
+export const workspaceIntegrations = pgTable(
+  "workspace_integrations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    provider: varchar("provider", { length: 40 }).notNull(),
+    // Dış servis webhook id'si (silme/refresh için).
+    webhookId: text("webhook_id"),
+    // Linear webhook signing secret (HMAC anahtarı).
+    webhookSecret: text("webhook_secret"),
+    // URL'ye gömülen per-workspace token (?t=).
+    urlToken: text("url_token"),
+    // Abone olunan Linear resourceTypes (Issue/Comment/CustomerNeed vb.).
+    resourceTypes: text("resource_types").array(),
+    // Opsiyonel: belirli bir Linear ekibi.
+    linearTeamId: text("linear_team_id"),
+    // connected | error | disconnected
+    status: varchar("status", { length: 20 }).notNull().default("connected"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("workspace_integrations_workspace_provider_key").on(
+      table.workspaceId,
+      table.provider,
+    ),
+    index("workspace_integrations_provider_idx").on(table.provider),
+  ],
+);
+
+export type WorkspaceIntegration = typeof workspaceIntegrations.$inferSelect;
+export type NewWorkspaceIntegration = typeof workspaceIntegrations.$inferInsert;
