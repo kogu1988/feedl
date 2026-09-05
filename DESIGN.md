@@ -91,6 +91,9 @@ sınırlıdır.
   `text-2xl bold tracking-tight` (marketing yüzeyi, app'ten büyük);
   mock kart oy/yorum sayaçları `font-mono tabular-nums`.
 - Prose satır uzunluğu **<80ch** (`max-w-prose` / `max-w-3xl`).
+- Her sayfada **tek `h1`**; sayfa başlığı asla `CardTitle` (div)
+  olarak yazılmaz — kart başlıkları `CardTitle` kalır, sayfa başlığı
+  gerçek `h1` elemanıdır (portal fikir detayı düzeltmesi, 2026-09-05).
 - Yasak tell'ler: ALL-CAPS eyebrow etiketi, başlıkta tek kelimeyi
   renkli/italik vurgulama, dekoratif mono mini-etiket.
 
@@ -128,6 +131,14 @@ Ayarlar); altta UserButton. Bileşen: `app-sidebar` — dashboard altı
   mobil) → araç çubuğu (FilterTabs solda, kayıtlı görünüm + aksiyonlar
   sağda) → tablo → yönetim bölümleri kart grupları halinde; ritim
   `space-y-6/8`.
+- **Bölüm sekmeleri (2026-09-05):** uzun admin sayfaları tek yığın
+  olmaz — dashboard `?tab=` ile iş akışına bölünür (Genel Bakış /
+  Fikirler / Yayın / Planlama / Entegrasyonlar). Desen: FilterTabs,
+  value `""` varsayılan bölüm; KPI şeridi her sekmede kalır, kart
+  grupları sekmeyle değişir (anlık RSC swap, geçiş animasyonu yok —
+  §8). Sekme içi filtreler (status/tag/per/board/page) ve kayıtlı
+  görünümler (`saved-view-bar` `preserveParams`) `tab` parametresini
+  korumak zorunda.
 - **Sayfa deseni (public):** portal tek kolon kart listesi (oy düğmesi
   solda); detay `lg`'de 2 kolon (2fr içerik / 1fr meta); dokunma hedefi
   ≥40px.

@@ -55,8 +55,18 @@ export const dynamic = "force-dynamic";
 const rangeOptions = [
   { value: "7", label: "Son 7 Gün" },
   { value: "14", label: "Son 14 Gün" },
-  { value: "30", label: "Son 1 Ay" },
+  { value: "30", label: "Son 30 Gün" },
   { value: "365", label: "Son 1 Yıl" },
+];
+
+// Dashboard sekmeleri (?tab=): kart yığınını iş akışına göre böler.
+// value "" Genel Bakış'tır ve temiz path'e gider (FilterTabs kuralı).
+const sectionOptions = [
+  { value: "", label: "Genel Bakış" },
+  { value: "fikirler", label: "Fikirler" },
+  { value: "yayin", label: "Yayın" },
+  { value: "planlama", label: "Planlama" },
+  { value: "entegrasyon", label: "Entegrasyonlar" },
 ];
 
 export default async function DashboardPage({
@@ -69,6 +79,7 @@ export default async function DashboardPage({
     per?: string;
     page?: string;
     board?: string;
+    tab?: string;
   }>;
 }) {
   // Middleware girişi garanti eder; admin rolü tek kaynaktan (DB) doğrulanır.
@@ -80,7 +91,7 @@ export default async function DashboardPage({
   // plan.md Sprint 12: durum filtresi ?status= ile gelir; geçersiz değer
   // "Tümü"ne düşer. İstatistikler her zaman TÜM fikirlerden hesaplanır,
   // filtre yalnızca tabloyu etkiler.
-  const { status: rawStatus, tag: rawTag, range: rawRange, per: rawPer, page: rawPage, board: rawBoard } = await searchParams;
+  const { status: rawStatus, tag: rawTag, range: rawRange, per: rawPer, page: rawPage, board: rawBoard, tab: rawTab } = await searchParams;
   const statusFilter =
     postStatusEnum.enumValues.find((value) => value === rawStatus) ?? null;
   // Sprint 21: etiket filtresi (portal ile aynı normalize kuralı).
@@ -90,6 +101,14 @@ export default async function DashboardPage({
   const activeBoard = boardSlug
     ? await resolveBoardBySlug(boardSlug, true)
     : null;
+  // Sekme bölümü: whitelist dışındaki değerler Genel Bakış'a düşer.
+  const section =
+    rawTab === "fikirler" ||
+    rawTab === "yayin" ||
+    rawTab === "planlama" ||
+    rawTab === "entegrasyon"
+      ? rawTab
+      : "";
   // Sprint 29: analitik dönemi (?range=); geçersiz değer 7 güne düşer.
   const rangeDays =
     rawRange === "14" || rawRange === "30" || rawRange === "365"
@@ -226,268 +245,297 @@ export default async function DashboardPage({
         </div>
       ) : null}
 
-      {!loadError ? (
+      <div className="mt-8">
+        <FilterTabs
+          paramName="tab"
+          basePath="/dashboard"
+          active={section}
+          options={sectionOptions}
+        />
+      </div>
+
+      {section === "" ? (
+        <>
+          {!loadError ? (
+            <Card className="mt-8">
+              <CardHeader>
+                <CardTitle>Analitik</CardTitle>
+                <CardDescription>
+                  Seçili dönemin özeti, duygu dağılımı ve en çok oy alan
+                  fikirler.
+                </CardDescription>
+                <div className="pt-2">
+                  <FilterTabs
+                    paramName="range"
+                    basePath="/dashboard"
+                    active={String(rangeDays)}
+                    extraParams={{
+                      ...(statusFilter ? { status: statusFilter } : {}),
+                      ...(tagFilter ? { tag: tagFilter } : {}),
+                      ...(boardSlug ? { board: boardSlug } : {}),
+                    }}
+                    options={rangeOptions}
+                  />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <AnalyticsOverview
+                  data={{
+                    rangeLabel,
+                    weekly: weeklyCounts,
+                    sentiment: sentimentCounts,
+                    topPosts,
+                  }}
+                />
+              </CardContent>
+            </Card>
+          ) : null}
+
+          <Card className="mt-8">
+            <CardHeader>
+              <CardTitle>Autopilot Inbox</CardTitle>
+              <CardDescription>
+                AI duplicate şüphelendiğinde artık otomatik birleştirmez —
+                karar senin. Onaylamak birleştirir (oylar/yorumlar taşınır),
+                red ve yoksay yalnızca öneriyi kapatır.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {!loadError ? (
+                <AutopilotInbox suggestions={inboxSuggestions} />
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Öneriler yüklenemedi.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </>
+      ) : null}
+
+      {section === "yayin" ? (
         <Card className="mt-8">
           <CardHeader>
-            <CardTitle>Analitik</CardTitle>
+            <CardTitle>Güncellemeler (Changelog)</CardTitle>
             <CardDescription>
-              Seçili dönemin özeti, duygu dağılımı ve en çok oy alan fikirler.
+              Portalın herkese açık duyuru sayfasına içerik yaz —{" "}
+              <Link
+                href="/portal/changelog"
+                className="underline underline-offset-4 hover:text-foreground"
+              >
+                /portal/changelog
+              </Link>
             </CardDescription>
-            <div className="pt-2">
-              <FilterTabs
-                paramName="range"
-                basePath="/dashboard"
-                active={String(rangeDays)}
-                extraParams={{
-                  ...(statusFilter ? { status: statusFilter } : {}),
-                  ...(tagFilter ? { tag: tagFilter } : {}),
-                  ...(boardSlug ? { board: boardSlug } : {}),
-                }}
-                options={rangeOptions}
-              />
-            </div>
           </CardHeader>
           <CardContent>
-            <AnalyticsOverview
-              data={{
-                rangeLabel,
-                weekly: weeklyCounts,
-                sentiment: sentimentCounts,
-                topPosts,
-              }}
+            <ChangelogAdmin
+              entries={changelogData.entries}
+              shippedPosts={changelogData.shippedPosts}
             />
           </CardContent>
         </Card>
       ) : null}
 
-      <Card className="mt-8">
-        <CardHeader>
-          <CardTitle>Autopilot Inbox</CardTitle>
-          <CardDescription>
-            AI duplicate şüphelendiğinde artık otomatik birleştirmez — karar
-            senin. Onaylamak birleştirir (oylar/yorumlar taşınır), red ve
-            yoksay yalnızca öneriyi kapatır.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {!loadError ? (
-            <AutopilotInbox suggestions={inboxSuggestions} />
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              Öneriler yüklenemedi.
-            </p>
-          )}
-        </CardContent>
-      </Card>
+      {section === "planlama" ? (
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle>İç Roadmap (Planlama)</CardTitle>
+            <CardDescription>
+              Planlanan ve geliştirilen fikirlere sahip ata, hedef tarih ve
+              etki/efor puanı ver — skor = etki ÷ efor. Müşteri bunu görmez.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <RoadmapPlanner
+              rows={plannerData.rows}
+              admins={plannerData.admins}
+            />
+          </CardContent>
+        </Card>
+      ) : null}
 
-      <Card className="mt-8">
-        <CardHeader>
-          <CardTitle>Güncellemeler (Changelog)</CardTitle>
-          <CardDescription>
-            Portalın herkese açık duyuru sayfasına içerik yaz —{" "}
-            <Link
-              href="/portal/changelog"
-              className="underline underline-offset-4 hover:text-foreground"
-            >
-              /portal/changelog
-            </Link>
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ChangelogAdmin
-            entries={changelogData.entries}
-            shippedPosts={changelogData.shippedPosts}
-          />
-        </CardContent>
-      </Card>
-
-      <Card className="mt-8">
-        <CardHeader>
-          <CardTitle>İç Roadmap (Planlama)</CardTitle>
-          <CardDescription>
-            Planlanan ve geliştirilen fikirlere sahip ata, hedef tarih ve
-            etki/efor puanı ver — skor = etki ÷ efor. Müşteri bunu görmez.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <RoadmapPlanner
-            rows={plannerData.rows}
-            admins={plannerData.admins}
-          />
-        </CardContent>
-      </Card>
-
-      <Card className="mt-8">
-        <CardHeader>
-          <CardTitle>Fikirler</CardTitle>
-          <CardDescription>
-            {loadError
-              ? "Liste yüklenemedi."
-              : statusFilter
-                ? `Filtrede ${totalCount} fikir — durumu satırdan değiştirebilirsin.`
-                : `Toplam ${totalCount} fikir — durumu satırdan değiştirebilirsin.`}
-          </CardDescription>
-          {!loadError && boardItems.length > 1 ? (
-            <div className="pt-2">
-              <BoardFilterSelect
-                boards={boardItems.map((board) => ({
-                  id: board.id,
-                  name: board.name,
-                  slug: board.slug,
-                  visibility: board.visibility,
-                }))}
-                boardSlug={boardSlug}
-              />
-            </div>
-          ) : null}
-          {!loadError && rows.length > 0 ? (
-            <div className="grid gap-2 pt-2">
-              <FilterTabs
-                paramName="status"
-                basePath="/dashboard"
-                active={statusFilter ?? ""}
-                extraParams={{
-                  ...(tagFilter ? { tag: tagFilter } : {}),
-                  ...(boardSlug ? { board: boardSlug } : {}),
-                  ...(per !== "5" ? { per } : {}),
-                }}
-                options={[
-                  { value: "", label: "Tümü" },
-                  ...postStatusEnum.enumValues.map((value) => ({
-                    value,
-                    label: statusLabels[value] ?? value,
-                  })),
-                ]}
-              />
-              {tagOptions.length > 0 ? (
+      {section === "fikirler" ? (
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle>Fikirler</CardTitle>
+            <CardDescription>
+              {loadError
+                ? "Liste yüklenemedi."
+                : statusFilter
+                  ? `Filtrede ${totalCount} fikir — durumu satırdan değiştirebilirsin.`
+                  : `Toplam ${totalCount} fikir — durumu satırdan değiştirebilirsin.`}
+            </CardDescription>
+            {!loadError && boardItems.length > 1 ? (
+              <div className="pt-2">
+                <BoardFilterSelect
+                  boards={boardItems.map((board) => ({
+                    id: board.id,
+                    name: board.name,
+                    slug: board.slug,
+                    visibility: board.visibility,
+                  }))}
+                  boardSlug={boardSlug}
+                />
+              </div>
+            ) : null}
+            {!loadError && rows.length > 0 ? (
+              <div className="grid gap-2 pt-2">
                 <FilterTabs
-                  paramName="tag"
+                  paramName="status"
                   basePath="/dashboard"
-                  active={tagFilter}
+                  active={statusFilter ?? ""}
                   extraParams={{
-                    ...(statusFilter ? { status: statusFilter } : {}),
+                    ...(section ? { tab: section } : {}),
+                    ...(tagFilter ? { tag: tagFilter } : {}),
                     ...(boardSlug ? { board: boardSlug } : {}),
                     ...(per !== "5" ? { per } : {}),
                   }}
                   options={[
-                    { value: "", label: "Tüm Etiketler" },
-                    ...tagOptions.map((option) => ({
-                      value: option.name,
-                      label: `#${option.name} (${option.count})`,
+                    { value: "", label: "Tümü" },
+                    ...postStatusEnum.enumValues.map((value) => ({
+                      value,
+                      label: statusLabels[value] ?? value,
                     })),
                   ]}
                 />
-              ) : null}
-              <SavedViewBar
-                views={views}
-                currentParams={Object.fromEntries(
-                  [
-                    ["status", statusFilter],
-                    ["tag", tagFilter],
-                    ["board", boardSlug || null],
-                  ].filter(
-                    (pair): pair is [string, string] =>
-                      pair[1] !== null && pair[1] !== "",
-                  ),
-                )}
-              />
-            </div>
-          ) : null}
-        </CardHeader>
-        <CardContent>
-          {loadError ? (
-            <p className="rounded-md border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
-              Fikirler yüklenemedi. Sayfayı yenilemeyi dene.
-            </p>
-          ) : rows.length === 0 && (statusFilter || tagFilter) ? (
-            <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
-              Bu filtrede fikir yok.
-            </p>
-          ) : rows.length === 0 ? (
-            <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
-              Henüz fikir yok. Portala gönderilen ilk fikir burada görünecek.
-            </p>
-          ) : (
-            <PostsTable
-              rows={rows.map((row) => ({
-                id: row.id,
-                title: row.title,
-                status: row.status,
-                postType: row.postType,
-                boardId: row.boardId,
-                mergedIntoId: row.mergedIntoId,
-                sentimentLabel: row.sentimentLabel,
-                aiKeywords: row.aiKeywords,
-                createdAtLabel: dateFormatter.format(row.createdAt),
-                voteCount: row.voteCount,
-                customerCount: customerCountByPost.get(row.id) ?? 0,
-                revenueScore: computeRevenueScore({
+                {tagOptions.length > 0 ? (
+                  <FilterTabs
+                    paramName="tag"
+                    basePath="/dashboard"
+                    active={tagFilter}
+                    extraParams={{
+                      ...(section ? { tab: section } : {}),
+                      ...(statusFilter ? { status: statusFilter } : {}),
+                      ...(boardSlug ? { board: boardSlug } : {}),
+                      ...(per !== "5" ? { per } : {}),
+                    }}
+                    options={[
+                      { value: "", label: "Tüm Etiketler" },
+                      ...tagOptions.map((option) => ({
+                        value: option.name,
+                        label: `#${option.name} (${option.count})`,
+                      })),
+                    ]}
+                  />
+                ) : null}
+                <SavedViewBar
+                  views={views}
+                  currentParams={Object.fromEntries(
+                    [
+                      ["status", statusFilter],
+                      ["tag", tagFilter],
+                      ["board", boardSlug || null],
+                    ].filter(
+                      (pair): pair is [string, string] =>
+                        pair[1] !== null && pair[1] !== "",
+                    ),
+                  )}
+                  preserveParams={section ? { tab: section } : undefined}
+                />
+              </div>
+            ) : null}
+          </CardHeader>
+          <CardContent>
+            {loadError ? (
+              <p className="rounded-md border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+                Fikirler yüklenemedi. Sayfayı yenilemeyi dene.
+              </p>
+            ) : rows.length === 0 && (statusFilter || tagFilter) ? (
+              <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+                Bu filtrede fikir yok.
+              </p>
+            ) : rows.length === 0 ? (
+              <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+                Henüz fikir yok. Portala gönderilen ilk fikir burada görünecek.
+              </p>
+            ) : (
+              <PostsTable
+                rows={rows.map((row) => ({
+                  id: row.id,
+                  title: row.title,
+                  status: row.status,
+                  postType: row.postType,
+                  boardId: row.boardId,
+                  mergedIntoId: row.mergedIntoId,
+                  sentimentLabel: row.sentimentLabel,
+                  aiKeywords: row.aiKeywords,
+                  createdAtLabel: dateFormatter.format(row.createdAt),
                   voteCount: row.voteCount,
                   customerCount: customerCountByPost.get(row.id) ?? 0,
-                  mrrTotal: revenueContexts.mrrByPost.get(row.id) ?? 0,
-                  openOpportunityValue:
-                    revenueContexts.opportunityValueByPost.get(row.id) ?? 0,
-                }),
-              }))}
-              tagOptions={tagOptions.map((option) => ({
-                id: option.id,
-                name: option.name,
-              }))}
-              boardOptions={boardItems.map((board) => ({
-                id: board.id,
-                name: board.name,
-              }))}
-            />
-          )}
-          {!loadError && rows.length > 0 ? (
-            <PaginationFooter
-              basePath="/dashboard"
-              page={currentPage}
-              totalPages={totalPages}
-              per={per}
-              extraParams={{
-                ...(statusFilter ? { status: statusFilter } : {}),
-                ...(tagFilter ? { tag: tagFilter } : {}),
-                ...(boardSlug ? { board: boardSlug } : {}),
-              }}
-              pageParams={{
-                ...(statusFilter ? { status: statusFilter } : {}),
-                ...(tagFilter ? { tag: tagFilter } : {}),
-                ...(boardSlug ? { board: boardSlug } : {}),
-                ...(per !== "5" ? { per } : {}),
-              }}
-            />
-          ) : null}
-        </CardContent>
-      </Card>
+                  revenueScore: computeRevenueScore({
+                    voteCount: row.voteCount,
+                    customerCount: customerCountByPost.get(row.id) ?? 0,
+                    mrrTotal: revenueContexts.mrrByPost.get(row.id) ?? 0,
+                    openOpportunityValue:
+                      revenueContexts.opportunityValueByPost.get(row.id) ?? 0,
+                  }),
+                }))}
+                tagOptions={tagOptions.map((option) => ({
+                  id: option.id,
+                  name: option.name,
+                }))}
+                boardOptions={boardItems.map((board) => ({
+                  id: board.id,
+                  name: board.name,
+                }))}
+              />
+            )}
+            {!loadError && rows.length > 0 ? (
+              <PaginationFooter
+                basePath="/dashboard"
+                page={currentPage}
+                totalPages={totalPages}
+                per={per}
+                extraParams={{
+                  ...(section ? { tab: section } : {}),
+                  ...(statusFilter ? { status: statusFilter } : {}),
+                  ...(tagFilter ? { tag: tagFilter } : {}),
+                  ...(boardSlug ? { board: boardSlug } : {}),
+                }}
+                pageParams={{
+                  ...(section ? { tab: section } : {}),
+                  ...(statusFilter ? { status: statusFilter } : {}),
+                  ...(tagFilter ? { tag: tagFilter } : {}),
+                  ...(boardSlug ? { board: boardSlug } : {}),
+                  ...(per !== "5" ? { per } : {}),
+                }}
+              />
+            ) : null}
+          </CardContent>
+        </Card>
+      ) : null}
 
-      <Card className="mt-8">
-        <CardHeader>
-          <CardTitle>API Anahtarları</CardTitle>
-          <CardDescription>
-            Public API (/api/v1) uçlarını programatik kullanım için üret.
-            Anahtarlar SHA-256 karmasıyla saklanır; tam değer yalnızca
-            oluşturma anında gösterilir.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ApiKeysManager items={apiKeyItems} />
-        </CardContent>
-      </Card>
+      {section === "entegrasyon" ? (
+        <>
+          <Card className="mt-8">
+            <CardHeader>
+              <CardTitle>API Anahtarları</CardTitle>
+              <CardDescription>
+                Public API (/api/v1) uçlarını programatik kullanım için üret.
+                Anahtarlar SHA-256 karmasıyla saklanır; tam değer yalnızca
+                oluşturma anında gösterilir.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ApiKeysManager items={apiKeyItems} />
+            </CardContent>
+          </Card>
 
-      <Card className="mt-8">
-        <CardHeader>
-          <CardTitle>Webhook&apos;lar</CardTitle>
-          <CardDescription>
-            Seçtiğin olaylar gerçekleşince URL&apos;ne HMAC-SHA256 imzalı POST
-            gönderilir (X-Feedl-Signature başlığı). Teslimat Inngest ile
-            otomatik yeniden denenir.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <WebhooksManager items={webhookItems} />
-        </CardContent>
-      </Card>
+          <Card className="mt-8">
+            <CardHeader>
+              <CardTitle>Webhook&apos;lar</CardTitle>
+              <CardDescription>
+                Seçtiğin olaylar gerçekleşince URL&apos;ne HMAC-SHA256 imzalı
+                POST gönderilir (X-Feedl-Signature başlığı). Teslimat Inngest
+                ile otomatik yeniden denenir.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <WebhooksManager items={webhookItems} />
+            </CardContent>
+          </Card>
+        </>
+      ) : null}
     </main>
   );
 }

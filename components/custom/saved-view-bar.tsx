@@ -19,9 +19,13 @@ export interface SavedViewItem {
 export function SavedViewBar({
   views,
   currentParams,
+  preserveParams,
 }: {
   views: SavedViewItem[];
   currentParams: Record<string, string>;
+  // Görünüm linklerine eklenen kalıcı parametreler (örn. dashboard
+  // ?tab=fikirler): kayıtlı görünüm tıklanınca ilgili sekme korunur.
+  preserveParams?: Record<string, string>;
 }) {
   const [name, setName] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -85,6 +89,15 @@ export function SavedViewBar({
 
   const busy = isSaving || isPending || deletingId !== null;
 
+  const viewHref = (params: string) => {
+    const merged = new URLSearchParams(params);
+    for (const [key, value] of Object.entries(preserveParams ?? {})) {
+      merged.set(key, value);
+    }
+    const qs = merged.toString();
+    return qs ? `/dashboard?${qs}` : "/dashboard";
+  };
+
   return (
     <div className="grid gap-2">
       {views.length > 0 ? (
@@ -95,7 +108,7 @@ export function SavedViewBar({
               className="inline-flex items-center overflow-hidden rounded-full border"
             >
               <Link
-                href={`/dashboard?${view.params}`}
+                href={viewHref(view.params)}
                 className="px-2.5 py-1 text-xs font-medium transition-colors hover:bg-accent"
               >
                 {view.name}
