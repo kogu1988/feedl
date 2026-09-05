@@ -45,6 +45,8 @@ export default async function BillingPage() {
         <BillingManager
           plan={data.plan}
           paddleSubscriptionId={data.paddleSubscriptionId}
+          paddleCustomerId={data.paddleCustomerId}
+          paddleSubscriptionStatus={data.paddleSubscriptionStatus}
           workspaceSlug={data.slug}
           pricing={{
             monthlyPriceId:
@@ -62,6 +64,8 @@ async function loadWorkspace() {
     .select({
       plan: workspaces.plan,
       paddleSubscriptionId: workspaces.paddleSubscriptionId,
+      paddleCustomerId: workspaces.paddleCustomerId,
+      paddleSubscriptionStatus: workspaces.paddleSubscriptionStatus,
       slug: workspaces.slug,
     })
     .from(workspaces)

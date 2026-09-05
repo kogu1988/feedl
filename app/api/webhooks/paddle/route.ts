@@ -61,19 +61,39 @@ export async function POST(req: Request) {
       );
     }
 
-    // Sprint 52: planı aboneliğin `status` alanından türet (eşleştirmedeki
-    // tek gerçek) — trialing/active → pro; canceled/paused/past_due/dunned
-    // → free. event_type yalnız ikincil bilgi (ignored kararında kullanılır);
-    // böylece canlı yenileme/duraklatma/iptal durumları sağlıklı işlenir.
+    // Sprint 52/60: planı aboneliğin `status` alanından türet (tek gerçek).
+    // trialing/active → pro; canceled/paused/past_due/dunned/expired → free.
+    // Sprint 60: `paddleSubscriptionStatus` da saklanır — billing sayfası
+    // gerçek durumu (ödeme gecikmesi/iptal) gösterir.
     const subscriptionStatus = (data.status as string | undefined) ?? "";
     let plan: "pro" | "free" | null = null;
     if (["trialing", "active"].includes(subscriptionStatus)) {
       plan = "pro";
-    } else if (["canceled", "paused", "past_due", "dunned"].includes(subscriptionStatus)) {
+    } else if (
+      ["canceled", "paused", "past_due", "dunned", "expired"].includes(subscriptionStatus)
+    ) {
       plan = "free";
     }
 
     if (!plan) {
+      // Bilinmeyen/diğer olaylar (örn. subscription.updated, price change)
+      // yoksayılır; kimlikler yine saklanır (durum kaybolmaz).
+      const subscriptionId =
+        (data.id as string | undefined) ??
+        (data.subscription_id as string | undefined) ??
+        null;
+      const customerId = (data.customer_id as string | undefined) ?? null;
+      if (subscriptionStatus && (subscriptionId || customerId)) {
+        await getDb()
+          .update(workspaces)
+          .set({
+            paddleSubscriptionStatus: subscriptionStatus || null,
+            ...(subscriptionId ? { paddleSubscriptionId: subscriptionId } : {}),
+            ...(customerId ? { paddleCustomerId: customerId } : {}),
+            updatedAt: new Date(),
+          })
+          .where(eq(workspaces.slug, slug));
+      }
       return NextResponse.json({ success: true, data: { ignored: eventType } });
     }
 
@@ -87,13 +107,14 @@ export async function POST(req: Request) {
       .update(workspaces)
       .set({
         plan,
+        paddleSubscriptionStatus: subscriptionStatus || null,
         ...(plan === "pro" ? { paddleSubscriptionId: subscriptionId } : {}),
         ...(customerId ? { paddleCustomerId: customerId } : {}),
         updatedAt: new Date(),
       })
       .where(eq(workspaces.slug, slug));
 
-    return NextResponse.json({ success: true, data: { plan, slug } });
+    return NextResponse.json({ success: true, data: { plan, slug, status: subscriptionStatus } });
   } catch (err) {
     console.error("POST /api/webhooks/paddle failed:", err);
     return NextResponse.json(

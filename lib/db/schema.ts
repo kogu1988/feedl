@@ -191,6 +191,10 @@ export const workspaces = pgTable("workspaces", {
   plan: varchar("plan", { length: 20 }).notNull().default("free"),
   paddleCustomerId: varchar("paddle_customer_id", { length: 40 }),
   paddleSubscriptionId: varchar("paddle_subscription_id", { length: 40 }),
+  // Sprint 60 (billing hardening): Paddle abonelik durumu — active/trialing/
+  // canceled/past_due/paused/dunned/expired. Billing sayfası gerçek durumu
+  // gösterir; ödeme gecikmesi uyarısı için kullanılır.
+  paddleSubscriptionStatus: varchar("paddle_subscription_status", { length: 30 }),
   trackedUserLimit: integer("tracked_user_limit").notNull().default(50),
   boardLimit: integer("board_limit").notNull().default(1),
   memberLimit: integer("member_limit").notNull().default(1),
