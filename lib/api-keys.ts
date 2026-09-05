@@ -73,7 +73,7 @@ export type RateLimitResult = {
 // Lazy singleton: env yoksa null, varsa Ratelimit. Modül başına bir kez
 // kurulur; serverless instance'ı boyunca önbelleklenir. Sprint 60: farklı
 // limit/window'lar için birden çok limiter önbellek (harita).
-let sharedLimiters = new Map<string, Ratelimit>();
+const sharedLimiters = new Map<string, Ratelimit>();
 function getSharedLimiter(max: number, windowSec: number): Ratelimit | null {
   const url = process.env.UPSTASH_REDIS_REST_URL?.trim();
   const token = process.env.UPSTASH_REDIS_REST_TOKEN?.trim();
