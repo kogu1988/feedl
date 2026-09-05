@@ -21,7 +21,34 @@ const typeToEnum = Object.fromEntries(
   Object.entries(typeLabels).map(([k, v]) => [v.toLowerCase(), k]),
 );
 
-// CSV başlık takma adları → normalize kanonik alan adı.
+// Canny CSV statüleri → feedl status enum'u (İngilizce).
+const cannyStatusToEnum: Record<string, string> = {
+  open: "open",
+  "under review": "under-review",
+  under_review: "under-review",
+  planned: "planned",
+  "in progress": "in-progress",
+  in_progress: "in-progress",
+  completed: "shipped",
+  shipped: "shipped",
+  done: "shipped",
+  closed: "closed",
+  archive: "closed",
+};
+
+// Canny CSV başlık takma adları → feedl kanonik alan adı.
+const cannyHeaderAliases: Record<string, string> = {
+  name: "title",
+  headline: "title",
+  body: "description",
+  content: "description",
+  details: "description",
+  state: "status",
+  category: "tags",
+  labels: "tags",
+};
+
+// CSV/Canny başlık takma adları → normalize kanonik alan adı.
 const headerAliases: Record<string, string> = {
   başlık: "title",
   baslik: "title",
@@ -38,6 +65,7 @@ const headerAliases: Record<string, string> = {
   tags: "tags",
   etiket: "tags",
   tag: "tags",
+  ...cannyHeaderAliases,
 };
 
 export interface ImportResult {
@@ -49,6 +77,7 @@ export interface ImportResult {
 export async function importPosts(
   headers: string[],
   rows: string[][],
+  source: string = "import",
 ): Promise<ImportResult> {
   // Başlık sütununu normalize et.
   const canonical: string[] = headers.map(
@@ -112,6 +141,7 @@ export async function importPosts(
 
     const status =
       statusToEnum[statusRaw] ??
+      cannyStatusToEnum[statusRaw] ??
       (["open", "under-review", "planned", "in-progress", "shipped", "closed"].includes(statusRaw)
         ? statusRaw
         : "open");
@@ -133,7 +163,7 @@ export async function importPosts(
           description: description || rawTitle,
           status: status as (typeof VALID_STATUSES)[number],
           postType: postType ?? null,
-          source: "import",
+          source,
         })
         .returning({ id: posts.id });
       existingTitles.add(titleKey);

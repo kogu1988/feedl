@@ -216,7 +216,7 @@ export default async function PostDetailPage({
   const showSidebar = isAdmin || publicCustomFields.length > 0;
 
   return (
-    <main className="container mx-auto max-w-none p-4 sm:p-8">
+    <main className="container mx-auto max-w-6xl p-4 sm:p-8">
       <PageBreadcrumb
         items={[{ label: "Portal", href: "/portal" }, { label: post.title }]}
       />

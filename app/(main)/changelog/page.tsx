@@ -62,7 +62,7 @@ export default async function ChangelogPage() {
   }
 
   return (
-    <main className="container mx-auto max-w-none p-4 sm:p-8">
+    <main className="container mx-auto max-w-6xl p-4 sm:p-8">
       <Link
         href="/portal"
         className="inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
@@ -116,7 +116,7 @@ export default async function ChangelogPage() {
                 </div>
                 <h2 className="text-lg font-semibold leading-snug">
                   <Link
-                    href={`/portal/changelog/${entry.id}`}
+                    href={`/changelog/${entry.id}`}
                     className="underline-offset-4 transition-colors hover:text-primary hover:underline"
                   >
                     {entry.title}

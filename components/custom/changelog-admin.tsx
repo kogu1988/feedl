@@ -234,7 +234,7 @@ export function ChangelogAdmin({
         {error ? <p className="text-xs text-destructive">{error}</p> : null}
         {success ? (
           <p className="text-xs text-emerald-600 dark:text-emerald-400">
-            Duyuru yayınlandı — /portal/changelog sayfasında görünüyor.
+            Duyuru yayınlandı — /changelog sayfasında görünüyor.
           </p>
         ) : null}
         <div>

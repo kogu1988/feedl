@@ -108,10 +108,10 @@ export default async function ChangelogDetailPage({
   }
 
   return (
-    <main className="container mx-auto max-w-none p-4 sm:p-8">
+    <main className="container mx-auto max-w-6xl p-4 sm:p-8">
       <PageBreadcrumb
         items={[
-          { label: "Güncellemeler", href: "/portal/changelog" },
+          { label: "Güncellemeler", href: "/changelog" },
           { label: entry?.title ?? "Duyuru" },
         ]}
       />

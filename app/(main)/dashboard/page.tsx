@@ -335,10 +335,10 @@ export default async function DashboardPage({
             <CardDescription>
               Portalın herkese açık duyuru sayfasına içerik yaz —{" "}
               <Link
-                href="/portal/changelog"
+                href="/changelog"
                 className="underline underline-offset-4 hover:text-foreground"
               >
-                /portal/changelog
+                /changelog
               </Link>
             </CardDescription>
           </CardHeader>
