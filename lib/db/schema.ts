@@ -524,9 +524,10 @@ export const changelogEntries = pgTable("changelog_entries", {
   imageUrl: text("image_url"),
   // label: örn. "yeni", "iyileştirme", "düzeltme" — filtreleme için.
   label: text("label"),
-  publishedAt: timestamp("published_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
+  // Sprint 48n: draft/published yaşam döngüsü. publishedAt draft'ta null;
+  // yayınlanınca set edilir. Mevcut satırlar 'published' olur.
+  status: varchar("status", { length: 20 }).notNull().default("published"),
+  publishedAt: timestamp("published_at", { withTimezone: true }),
   createdBy: text("created_by")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),

@@ -37,6 +37,7 @@ async function loadEntry(id: string) {
       and(
         eq(changelogEntries.id, id),
         eq(changelogEntries.workspaceId, workspaceId),
+        eq(changelogEntries.status, "published"),
       ),
     )
     .limit(1);
@@ -120,7 +121,7 @@ export default async function ChangelogDetailPage({
         <article className="mt-6">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm text-muted-foreground">
-              {trDateTimeFormatter.format(entry.publishedAt)}
+              {entry.publishedAt ? trDateTimeFormatter.format(entry.publishedAt) : ""}
             </span>
             {entry.label ? (
               <span

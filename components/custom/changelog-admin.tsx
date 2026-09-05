@@ -15,6 +15,7 @@ export interface ChangelogEntryItem {
   title: string;
   body: string;
   label: string | null;
+  status: string;
   publishedAtLabel: string;
 }
 
@@ -40,6 +41,7 @@ export function ChangelogAdmin({
   const [body, setBody] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [label, setLabel] = useState("");
+  const [status, setStatus] = useState("published");
   const [selectedPosts, setSelectedPosts] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -77,6 +79,7 @@ export function ChangelogAdmin({
           ...(imageUrl.trim() ? { imageUrl: imageUrl.trim() } : {}),
           ...(label ? { label } : {}),
           ...(selectedPosts.size > 0 ? { postIds: [...selectedPosts] } : {}),
+          status,
         }),
       });
       const json = (await res.json()) as { success?: boolean; error?: string };
@@ -95,6 +98,26 @@ export function ChangelogAdmin({
       setError("Bağlantı hatası.");
     } finally {
       setBusy(false);
+    }
+  };
+
+  const publish = async (id: string) => {
+    setError(null);
+    setDeletingId(id);
+    try {
+      const res = await fetch(`/api/admin/changelog/${id}/publish`, {
+        method: "POST",
+      });
+      const json = (await res.json()) as { success?: boolean; error?: string };
+      if (!res.ok || !json.success) {
+        setError(json.error ?? "Yayınlanamadı.");
+        return;
+      }
+      router.refresh();
+    } catch {
+      setError("Bağlantı hatası.");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -170,6 +193,20 @@ export function ChangelogAdmin({
             ))}
           </datalist>
         </div>
+        <div className="flex items-center gap-2">
+          <Label htmlFor="changelog-status" className="text-xs text-muted-foreground">
+            Durum
+          </Label>
+          <select
+            id="changelog-status"
+            value={status}
+            onChange={(event) => setStatus(event.target.value)}
+            className="h-8 w-32 rounded-lg border border-input bg-transparent px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+          >
+            <option value="published">Yayınla</option>
+            <option value="draft">Taslak</option>
+          </select>
+        </div>
         {shippedPosts.length > 0 ? (
           <div className="grid gap-1.5 rounded-md border p-3">
             <p className="text-xs font-medium text-muted-foreground">
@@ -223,24 +260,36 @@ export function ChangelogAdmin({
               <div className="grid gap-0.5">
                 <span className="text-sm font-medium">{entry.title}</span>
                 <span className="text-xs text-muted-foreground">
+                  {entry.status === "draft" ? (
+                    <span className="mr-1 rounded bg-muted px-1.5 py-0.5 text-xs">
+                      Taslak
+                    </span>
+                  ) : null}
                   {entry.publishedAtLabel}
                   {entry.label ? ` · ${entry.label}` : ""}
                 </span>
               </div>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="text-destructive hover:text-destructive"
-                onClick={() => void remove(entry.id)}
-                disabled={deletingId === entry.id}
-                aria-label={`${entry.title} duyurusunu sil`}
-              >
-                {deletingId === entry.id ? (
-                  <Loader2Icon className="size-4 animate-spin" />
-                ) : (
-                  <Trash2Icon className="size-4" aria-hidden="true" />
-                )}
-              </Button>
+              <div className="flex shrink-0 items-center gap-1">
+                {entry.status === "draft" ? (
+                  <Button variant="outline" size="sm" onClick={() => void publish(entry.id)}>
+                    Yayınla
+                  </Button>
+                ) : null}
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => void remove(entry.id)}
+                  disabled={deletingId === entry.id}
+                  aria-label={`${entry.title} duyurusunu sil`}
+                >
+                  {deletingId === entry.id ? (
+                    <Loader2Icon className="size-4 animate-spin" />
+                  ) : (
+                    <Trash2Icon className="size-4" aria-hidden="true" />
+                  )}
+                </Button>
+              </div>
             </div>
           ))
         )}

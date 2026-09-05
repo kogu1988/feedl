@@ -26,6 +26,8 @@ const createSchema = z.object({
   // Sprint 40: serbest metin etiket — öneriler admin UI'da datalist ile.
   label: z.string().trim().min(1).max(40).optional(),
   postIds: z.array(z.uuid()).max(20).optional(),
+  // Sprint 48n: draft (yayınsız) veya published (anında yayınla).
+  status: z.enum(["draft", "published"]).default("published"),
 });
 
 export async function GET() {
@@ -91,7 +93,8 @@ export async function POST(req: Request) {
         { status: 400 },
       );
     }
-    const { title, body: entryBody, imageUrl, label, postIds } = parsed.data;
+    const { title, body: entryBody, imageUrl, label, postIds, status } = parsed.data;
+    const isDraft = status === "draft";
 
     // Gövde değişken adı çakışması: insert değerlerini ayrı kur.
     const [created] = await getDb()
@@ -102,6 +105,8 @@ export async function POST(req: Request) {
         body: entryBody,
         imageUrl: imageUrl ?? null,
         label: label ?? null,
+        status,
+        publishedAt: isDraft ? null : new Date(),
         createdBy: adminId,
       })
       .returning({ id: changelogEntries.id });
@@ -114,20 +119,22 @@ export async function POST(req: Request) {
     }
 
     // Sprint 40: duyuru yayınlandı — abonelere e-posta (best-effort;
-    // event gönderilemezse duyuru kaydı etkilenmez).
-    const event = changelogPublishedEventSchema.safeParse({
-      entryId: created.id,
-      title,
-      body: entryBody,
-    });
-    if (event.success) {
-      try {
-        await inngest.send({ name: "changelog/published", data: event.data });
-      } catch (eventErr) {
-        console.error(
-          "changelog/published event could not be sent:",
-          eventErr instanceof Error ? eventErr.message : eventErr,
-        );
+    // event gönderilemezse duyuru kaydı etkilenmez). Yalnızca published.
+    if (!isDraft) {
+      const event = changelogPublishedEventSchema.safeParse({
+        entryId: created.id,
+        title,
+        body: entryBody,
+      });
+      if (event.success) {
+        try {
+          await inngest.send({ name: "changelog/published", data: event.data });
+        } catch (eventErr) {
+          console.error(
+            "changelog/published event could not be sent:",
+            eventErr instanceof Error ? eventErr.message : eventErr,
+          );
+        }
       }
     }
 

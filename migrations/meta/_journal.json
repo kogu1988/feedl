@@ -246,6 +246,13 @@
       "when": 1788568187120,
       "tag": "0034_widget_triage",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1788596356853,
+      "tag": "0035_changelog_draft",
+      "breakpoints": true
     }
   ]
 }

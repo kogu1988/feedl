@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
-import { desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { ArrowLeftIcon, MegaphoneIcon } from "lucide-react";
 
 import { ChangelogSubscribeForm } from "@/components/custom/changelog-subscribe-form";
@@ -101,7 +101,7 @@ export default async function ChangelogPage() {
               <CardHeader>
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-sm text-muted-foreground">
-                    {trDateTimeFormatter.format(entry.publishedAt)}
+                    {entry.publishedAt ? trDateTimeFormatter.format(entry.publishedAt) : ""}
                   </span>
                   {entry.label ? (
                     <span
@@ -172,7 +172,7 @@ async function loadEntries() {
       publishedAt: changelogEntries.publishedAt,
     })
     .from(changelogEntries)
-    .where(eq(changelogEntries.workspaceId, await getWorkspaceId()))
+    .where(and(eq(changelogEntries.workspaceId, await getWorkspaceId()), eq(changelogEntries.status, "published")))
     .orderBy(desc(changelogEntries.publishedAt))
     .limit(50);
 

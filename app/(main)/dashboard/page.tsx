@@ -715,6 +715,7 @@ async function loadChangelogData() {
       title: changelogEntries.title,
       body: changelogEntries.body,
       label: changelogEntries.label,
+      status: changelogEntries.status,
       publishedAt: changelogEntries.publishedAt,
     })
     .from(changelogEntries)
@@ -740,7 +741,10 @@ async function loadChangelogData() {
       title: row.title,
       body: row.body,
       label: row.label,
-      publishedAtLabel: trDateTimeFormatter.format(row.publishedAt),
+      status: row.status,
+      publishedAtLabel: row.publishedAt
+        ? trDateTimeFormatter.format(row.publishedAt)
+        : "Taslak",
     })),
     shippedPosts: shippedRows,
   };
