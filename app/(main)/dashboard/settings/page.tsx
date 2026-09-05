@@ -47,8 +47,12 @@ export default async function SettingsPage() {
         </p>
       ) : (
         <>
-          <WorkspaceSettings initial={initial} />
-          <LinearIntegration />
+          <div className="grid gap-6 xl:grid-cols-[1.5fr_1fr]">
+            <WorkspaceSettings initial={initial} />
+            <div className="space-y-6">
+              <LinearIntegration />
+            </div>
+          </div>
         </>
       )}
     </main>
