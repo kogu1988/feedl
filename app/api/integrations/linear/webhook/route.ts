@@ -7,7 +7,7 @@ import { getDefaultBoardId } from "@/lib/db/board";
 import { classifyWidgetMessage } from "@/lib/ai/analysis";
 import {
   isLinearConfigured,
-  linearIssueText,
+  linearDataText,
   parseLinearPayload,
   verifyLinearSignature,
 } from "@/lib/linear";
@@ -47,12 +47,12 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       );
     }
-    const { action, issue } = parseLinearPayload(payload as Record<string, unknown>);
-    if (!issue) {
+    const { action, type, data } = parseLinearPayload(payload as Record<string, unknown>);
+    if (!data) {
       return NextResponse.json({ success: true, data: { ignored: true } });
     }
 
-    const { title, body: message } = linearIssueText(issue);
+    const { title, body: message } = linearDataText(type, data);
     if (!message) {
       return NextResponse.json({ success: true, data: { ignored: true } });
     }
@@ -63,8 +63,8 @@ export async function POST(req: NextRequest) {
     let createdPostId: string | null = null;
     if (classification === "feedback") {
       const workspaceId = await getWorkspaceId();
-      // Sprint 48q: aynı Linear Issue (id) tekrar post edilmesin.
-      const sourceRef = issue.id ? `linear:${issue.id}` : null;
+      // Sprint 48q: aynı Linear Issue/Comment (id) tekrar post edilmesin.
+      const sourceRef = data.id ? `linear:${data.id}` : null;
       if (sourceRef) {
         const [existing] = await getDb()
           .select({ id: posts.id })
@@ -79,14 +79,14 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      const identity = issue.id ?? "linear";
+      const identity = data.id ?? "linear";
       const userId = toWidgetUserId(`linear_${identity}`);
       await getDb()
         .insert(users)
         .values({
           id: userId,
           email: `linear-${identity}@widget.feedl.local`,
-          name: issue.team?.name ?? null,
+          name: data.team?.name ?? null,
           role: "customer",
         })
         .onConflictDoUpdate({
