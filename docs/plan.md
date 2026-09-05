@@ -1897,23 +1897,31 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
 
 ### Sprint 56 — Linear Connector (Madde 2 — ilk parça) (✅ 2026-09-05)
 
-> Madde 2'nin ilk gerçek connector'ı: Linear webhook'u (Issue.create/update) →
-> AI triage → feedback. Slack/Zendesk desenini izler. **Jira (Atlassian)
-> OAuth gerektirir** (OAuth app + consumer key/secret + site URL) — ayrı sprint.
+> Madde 2'nin ilk gerçek connector'ı: Linear webhook'u (Issue/Comment/
+> CustomerRequest) → AI triage → feedback. Slack/Zendesk desenini izler.
+> **Kullanıcı kararı:** şimdilik MANUEL webhook (Linear UI'da oluşturuldu);
+> per-workspace otomasyonu (Linear API key + GraphQL webhookCreate) sonraki
+> sprint.
 
-- ☑ **`lib/linear.ts` (commit …):** verifyLinearSignature (`X-Linear-Signature`,
+- ☑ **`lib/linear.ts`:** verifyLinearSignature (`X-Linear-Signature`,
   gövde HMAC-SHA256 hex, LINEAR_WEBHOOK_SECRET), parseLinearPayload
-  (action/data), linearIssueText (başlık+açıklama), isLinearConfigured.
+  (action/type/data), **linearDataText** — Issue/CustomerRequest
+  (title+description), Comment (ana issue başlığı + `— yorum`), isLinearConfigured.
 - ☑ **`POST /api/integrations/linear/webhook`:** imza doğrulama,
-  Issue → classifyWidgetMessage → feedback ise users upsert
-  (widget_linear_<id>) + post oluştur (source=linear,
-  sourceRef=linear:<issue.id>) + post/created. Sprint 48q idempotency.
+  Issue/Comment/CustomerRequest → classifyWidgetMessage → feedback ise
+  users upsert (widget_linear_<id>) + post (source=linear,
+  sourceRef=linear:<data.id>) + post/created. Sprint 48q idempotency.
 - ☑ middleware `/api/integrations(.*)` zaten public → Linear ek değişiklik yok.
 - ☑ npm test (17/17) + build ✓ → commit → push.
-- **Kalan (kullanıcı tarafı):** Linear ayarları → Webhooks → yeni webhook:
-  URL https://feedl.app/api/integrations/linear/webhook + event'ler
-  (Issue create/update) → `LINEAR_WEBHOOK_SECRET` (Linear webhook signing
-  secret) Vercel env. (Linear API key opsiyonel, şu an kod kullanmıyor.)
+- ☑ **Vercel env (`feedl` projesi):** `LINEAR_WEBHOOK_SECRET`
+  (lin_wh_…) eklendi. **Kullanıcı Linear webhook'u oluşturdu:** URL
+  https://feedl.app/api/integrations/linear/webhook, event'ler
+  Issues-CustomerNeeds-Comment.
+- ☑ **Canlı doğrulama:** Issue → 200/feedback post (`linear:lin-100001`),
+  Comment → 200/feedback post (`linear:lin-com-1002`, başlık
+  "Mobil uygulama — yorum"), yanlış imza → 401.
+- **Kalan:** per-workspace otomasyonu (Linear API key + `webhookCreate` + DB
+  workspace_integrations) — sonraki sprint.
 
 ### Sprint 57 — Jira Connector (Madde 2 — kalan) (✅ 2026-09-05)
 
