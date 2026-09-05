@@ -9,7 +9,6 @@ import {
   checkRateLimit,
 } from "@/lib/api-keys";
 import { getDb } from "@/lib/db";
-import { getWorkspaceId } from "@/lib/db/workspace";
 import { getDefaultBoardId } from "@/lib/db/board";
 import { apiKeys, posts } from "@/lib/db/schema";
 import { postCreatedEventSchema } from "@/lib/validations/events";
@@ -104,11 +103,12 @@ export async function POST(req: NextRequest) {
     const [created] = await getDb()
       .insert(posts)
       .values({
-        workspaceId: await getWorkspaceId(),
+        // Tenant izolasyonu: API anahtarının workspace'i (host değil).
+        workspaceId: key.workspaceId,
         userId: author.id,
         title: autoTitle,
         description: parsed.data.message,
-        boardId: await getDefaultBoardId(),
+        boardId: await getDefaultBoardId(key.workspaceId),
         source: `inbound:${parsed.data.source}`,
       })
       .returning({ id: posts.id, title: posts.title });

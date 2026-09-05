@@ -8,7 +8,6 @@ import {
   checkRateLimit,
 } from "@/lib/api-keys";
 import { getDb } from "@/lib/db";
-import { getWorkspaceId } from "@/lib/db/workspace";
 import { apiKeys, comments, posts, users, votes } from "@/lib/db/schema";
 
 const sqlCountVotes = sql<number>`(SELECT count(*) FROM ${votes} WHERE ${votes.postId} = ${posts.id})`;
@@ -61,7 +60,8 @@ export async function GET(
       .from(posts)
       .where(
         and(
-          eq(posts.workspaceId, await getWorkspaceId()),
+          // Tenant izolasyonu: API anahtarının workspace'i (host değil).
+          eq(posts.workspaceId, key.workspaceId),
           eq(posts.id, id),
           isNull(posts.mergedIntoId),
         ),

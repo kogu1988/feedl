@@ -9,7 +9,6 @@ import {
   checkRateLimit,
 } from "@/lib/api-keys";
 import { getDb } from "@/lib/db";
-import { getWorkspaceId } from "@/lib/db/workspace";
 import { getDefaultBoardId } from "@/lib/db/board";
 import { apiKeys, posts } from "@/lib/db/schema";
 import {
@@ -87,7 +86,8 @@ export async function GET(req: NextRequest) {
     const tagLower = tagParam ? tagParam.toLocaleLowerCase("tr") : null;
 
     const conditions = [
-      eq(posts.workspaceId, await getWorkspaceId()),
+      // Tenant izolasyonu: API anahtarının workspace'i (host değil).
+      eq(posts.workspaceId, key.workspaceId),
       isNull(posts.mergedIntoId),
     ];
     if (statusFilter) {
@@ -103,7 +103,7 @@ export async function GET(req: NextRequest) {
             .innerJoin(tags, eq(tags.id, postTags.tagId))
             .where(
               and(
-                eq(tags.workspaceId, await getWorkspaceId()),
+                eq(tags.workspaceId, key.workspaceId),
                 eq(tags.name, tagLower),
               ),
             ),
@@ -253,11 +253,12 @@ export async function POST(req: NextRequest) {
     const [created] = await getDb()
       .insert(posts)
       .values({
-        workspaceId: await getWorkspaceId(),
+        // Tenant izolasyonu: API anahtarının workspace'i (host değil).
+        workspaceId: key.workspaceId,
         userId: author.id,
         title: parsed.data.title,
         description: parsed.data.description,
-        boardId: await getDefaultBoardId(),
+        boardId: await getDefaultBoardId(key.workspaceId),
         source: "api",
       })
       .returning({ id: posts.id, title: posts.title });

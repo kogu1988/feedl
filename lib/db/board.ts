@@ -15,8 +15,10 @@ const DEFAULT_BOARD_SLUG = "genel";
 let cachedBoardId: string | null = null;
 let cachedWorkspaceId: string | null = null;
 
-export async function getDefaultBoardId(): Promise<string> {
-  const workspaceId = await getWorkspaceId();
+export async function getDefaultBoardId(
+  workspaceIdOverride?: string,
+): Promise<string> {
+  const workspaceId = workspaceIdOverride ?? (await getWorkspaceId());
   if (cachedBoardId && cachedWorkspaceId === workspaceId) {
     return cachedBoardId;
   }

@@ -8,7 +8,6 @@ import {
   checkRateLimit,
 } from "@/lib/api-keys";
 import { getDb } from "@/lib/db";
-import { getWorkspaceId } from "@/lib/db/workspace";
 import { apiKeys, changelogEntries } from "@/lib/db/schema";
 
 // Sprint 43 — Public API (P4.2): yayınlanmış duyuru listesi. Webhook
@@ -45,7 +44,8 @@ export async function GET(req: NextRequest) {
     );
 
     const db = getDb();
-    const where = eq(changelogEntries.workspaceId, await getWorkspaceId());
+    // Tenant izolasyonu: API anahtarının workspace'i (host değil).
+    const where = eq(changelogEntries.workspaceId, key.workspaceId);
 
     const [{ total }] = await db
       .select({ total: sql<number>`count(*)::int` })

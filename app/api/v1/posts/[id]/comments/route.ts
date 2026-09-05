@@ -9,7 +9,6 @@ import {
   checkRateLimit,
 } from "@/lib/api-keys";
 import { getDb } from "@/lib/db";
-import { getWorkspaceId } from "@/lib/db/workspace";
 import { apiKeys, comments, postFollowers, posts } from "@/lib/db/schema";
 import { commentCreatedEventSchema } from "@/lib/validations/events";
 import { upsertApiUser } from "@/lib/users/api-user";
@@ -85,7 +84,8 @@ export async function POST(
       .from(posts)
       .where(
         and(
-          eq(posts.workspaceId, await getWorkspaceId()),
+          // Tenant izolasyonu: API anahtarının workspace'i (host değil).
+          eq(posts.workspaceId, key.workspaceId),
           eq(posts.id, id),
         ),
       )

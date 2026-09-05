@@ -8,7 +8,6 @@ import {
   checkRateLimit,
 } from "@/lib/api-keys";
 import { getDb } from "@/lib/db";
-import { getWorkspaceId } from "@/lib/db/workspace";
 import { apiKeys, postFollowers, posts, votes } from "@/lib/db/schema";
 import {
   voteCreatedEventSchema,
@@ -29,13 +28,13 @@ async function countVotes(postId: string): Promise<number> {
   return row?.value ?? 0;
 }
 
-async function loadPublicPost(postId: string) {
+async function loadPublicPost(postId: string, workspaceId: string) {
   const [post] = await getDb()
     .select({ id: posts.id, mergedIntoId: posts.mergedIntoId })
     .from(posts)
     .where(
       and(
-        eq(posts.workspaceId, await getWorkspaceId()),
+        eq(posts.workspaceId, workspaceId),
         eq(posts.id, postId),
       ),
     )
@@ -99,7 +98,7 @@ export async function POST(
       );
     }
 
-    const post = await loadPublicPost(id);
+    const post = await loadPublicPost(id, key.workspaceId);
     if (!post) {
       return NextResponse.json(
         { success: false, error: "Fikir bulunamadı." },
@@ -189,7 +188,7 @@ export async function DELETE(
       );
     }
 
-    const post = await loadPublicPost(id);
+    const post = await loadPublicPost(id, key.workspaceId);
     if (!post) {
       return NextResponse.json(
         { success: false, error: "Fikir bulunamadı." },

@@ -32,7 +32,10 @@ export function generateWebhookSecret(): string {
 }
 
 // Bearer anahtarını doğrular; geçerli (revoke edilmemiş) kaydı döner.
-// Ağır hash gerekmez (anahtar yüksek entropili), SHA-256 yeterlidir.
+// Security audit (Sprint 60): anahtar, host-bazlı getWorkspaceId() ile DEĞİL,
+// yalnızca karmasıyla bulunur. Tenant'ın gerçek kaynağı **key.workspaceId**'dir
+// — v1 route'ları işlemleri bu id ile scope'lar (gerçek çok kiracılı izolasyon;
+// workspace B'nin anahtarı, host ne olursa olsun yalnızca workspace B'ye erişir).
 export async function authenticateApiKey(
   req: Request,
 ): Promise<ApiKey | null> {
@@ -46,12 +49,12 @@ export async function authenticateApiKey(
     .from(apiKeys)
     .where(
       and(
-        eq(apiKeys.workspaceId, await getWorkspaceId()),
         eq(apiKeys.keyHash, hashApiKey(match[1])),
         isNull(apiKeys.revokedAt),
       ),
     )
     .limit(1);
+  // Revoke edilmiş anahtar geçerli sayılmaz.
   return record ?? null;
 }
 
