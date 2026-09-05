@@ -1511,6 +1511,22 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   + `PADDLE_API_KEY` Vercel env; pro limitlerinin uygulanması (board/üye
   oluşturma noktalarında `enforceLimit` çağrıları) bir sonraki adımda.
 
+### Sprint 48i — Plan Limitlerini Uygula (Faz 5) (✅ 2026-09-04)
+
+> 48h'nin "sonraki adım"ı: pro limitlerinin gerçek engellenmesi. Board ve
+> üye oluşturma noktalarına enforceLimit bağlandı.
+
+- ☑ **Board limiti (commit bec110f):** `POST /api/admin/boards` mevcut
+  board sayısı plan boardLimit'e ulaştıysa 403 (free'de 1 board).
+- ☑ **Üye limiti:** `POST /api/admin/members` mevcut üye sayısı
+  plan memberLimit'e ulaştıysa 403 (free'de 1 üye; pro'da 10).
+- ☑ npm test (17/17) + npm run build ✓ → commit → push.
+- **Sıradaki (PM raporu §5):** 3 — Davet akışı (email invitation) + rol
+  granülerliği; 4 — Workspace markalamasını uygula (logo/renk → portal);
+  5 — Widget AI triage; 6 — Guest mode; 7 — Changelog draft/reaction;
+  8 — ilk gerçek connector. (Paddle webhook secret/Vercel env kullanıcı
+  tarafındadır; kod buna bağımlı değil.)
+
 ### Ertelenen blok (en son — kullanıcının kısıtı)
 
 - **Domain (feedl.app) alındı (2026-09-04).** Kod tarafı hazır: tüm
