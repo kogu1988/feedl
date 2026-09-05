@@ -102,3 +102,31 @@ export async function getWorkspaceId(): Promise<string> {
   cached = { host, id };
   return id;
 }
+
+// Sprint 48k: workspace marka bilgisi (portal üst barı/logo). Marka yoksa
+// default feedl değerleri.
+export interface WorkspaceBrand {
+  name: string;
+  customDomain: string | null;
+  brandColor: string | null;
+  logoUrl: string | null;
+}
+
+export async function getWorkspaceBrand(): Promise<WorkspaceBrand> {
+  try {
+    const [row] = await getDb()
+      .select({
+        name: workspaces.name,
+        customDomain: workspaces.customDomain,
+        brandColor: workspaces.brandColor,
+        logoUrl: workspaces.logoUrl,
+      })
+      .from(workspaces)
+      .where(eq(workspaces.id, await getWorkspaceId()))
+      .limit(1);
+    if (row) return row;
+  } catch {
+    // workspace yok → default
+  }
+  return { name: "feedl", customDomain: null, brandColor: null, logoUrl: null };
+}

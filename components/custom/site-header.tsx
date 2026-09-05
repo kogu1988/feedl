@@ -9,6 +9,18 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/custom/theme-toggle";
 import { cn } from "@/lib/utils";
 
+// Sprint 48k: marka renginin üzerinde okunur yazı rengi (WCAG kontrast
+// tahmini). Açık renklerde koyu mürekkep, koyu renklerde beyaz.
+function textOn(hex: string): string {
+  const value = hex.replace("#", "");
+  if (value.length !== 6) return "#2b0e04";
+  const r = parseInt(value.slice(0, 2), 16);
+  const g = parseInt(value.slice(2, 4), 16);
+  const b = parseInt(value.slice(4, 6), 16);
+  const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+  return luminance > 0.55 ? "#2b0e04" : "#ffffff";
+}
+
 // Sprint 36: üst bar site kabuğunun parçası — marka işareti ve aktif sayfa
 // durumu eklendi. usePathname client gerektirdiği için layout'tan buraya
 // taşındı; ClerkProvider (main) layout'unda kalır.
@@ -30,8 +42,11 @@ function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function SiteHeader() {
+export function SiteHeader({ brand }: { brand?: { name: string; brandColor: string | null; logoUrl: string | null } }) {
   const pathname = usePathname();
+  const workspaceName = brand?.name ?? "feedl";
+  const brandColor = brand?.brandColor ?? "#ff5c35";
+  const logoUrl = brand?.logoUrl ?? null;
 
   return (
     <header className="border-b">
@@ -42,12 +57,18 @@ export function SiteHeader() {
             className="flex shrink-0 items-center gap-1.5 font-bold tracking-tight"
           >
             <span
-              className="flex size-6 items-center justify-center rounded-md bg-brand text-primary-foreground"
+              className="flex size-6 items-center justify-center rounded-md"
+              style={{ backgroundColor: brandColor, color: textOn(brandColor) }}
               aria-hidden="true"
             >
-              <ChevronsUpIcon className="size-3.5" />
+              {logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={logoUrl} alt="" className="size-4 object-contain" />
+              ) : (
+                <ChevronsUpIcon className="size-3.5" />
+              )}
             </span>
-            <span className="text-base">feedl</span>
+            <span className="text-base">{workspaceName}</span>
           </Link>
           <nav
             className="flex min-w-0 items-center gap-0.5 text-sm sm:gap-1"

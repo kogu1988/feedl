@@ -4,6 +4,7 @@ import { shadcn } from "@clerk/ui/themes";
 
 import { SiteHeader } from "@/components/custom/site-header";
 import { ThemeProvider } from "@/components/custom/theme-provider";
+import { getWorkspaceBrand } from "@/lib/db/workspace";
 
 // Sprint 32: site üst barı ClerkProvider ile birlikte (main) route group'una
 // taşındı. /widget iframe içinde bu layout'u KULLANMAZ — root layout bare
@@ -15,11 +16,13 @@ const footerLinks = [
   { href: "/portal/changelog", label: "Güncellemeler" },
 ];
 
-export default function MainLayout({
+export default async function MainLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Sprint 48k: workspace markası (subdomain'e göre) üst bara taşınır.
+  const brand = await getWorkspaceBrand();
   return (
     <ClerkProvider appearance={{ theme: shadcn }}>
       <ThemeProvider
@@ -29,12 +32,12 @@ export default function MainLayout({
         disableTransitionOnChange
       >
       <div className="flex min-h-svh flex-col">
-        <SiteHeader />
+        <SiteHeader brand={brand} />
         <div className="flex-1">{children}</div>
         <footer className="border-t">
           <div className="container mx-auto flex max-w-5xl flex-col gap-4 px-4 py-8 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-muted-foreground">
-              <span className="font-semibold text-foreground">feedl</span>
+              <span className="font-semibold text-foreground">{brand.name}</span>
               {" "}— müşteri geri bildirimini ürün kararına dönüştürür.
             </p>
             <nav
