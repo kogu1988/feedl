@@ -71,40 +71,42 @@ export type RateLimitResult = {
 };
 
 // Lazy singleton: env yoksa null, varsa Ratelimit. Modül başına bir kez
-// kurulur; serverless instance'ı boyunca önbelleklenir.
-let sharedLimiter: Ratelimit | null | undefined;
-function getSharedLimiter(): Ratelimit | null {
-  if (sharedLimiter !== undefined) return sharedLimiter;
+// kurulur; serverless instance'ı boyunca önbelleklenir. Sprint 60: farklı
+// limit/window'lar için birden çok limiter önbellek (harita).
+let sharedLimiters = new Map<string, Ratelimit>();
+function getSharedLimiter(max: number, windowSec: number): Ratelimit | null {
   const url = process.env.UPSTASH_REDIS_REST_URL?.trim();
   const token = process.env.UPSTASH_REDIS_REST_TOKEN?.trim();
-  sharedLimiter =
-    url && token
-      ? new Ratelimit({
-          redis: new Redis({ url, token }),
-          limiter: Ratelimit.slidingWindow(
-            RATE_LIMIT_MAX,
-            `${RATE_LIMIT_WINDOW_MS / 1000} s`,
-          ),
-          // Kullanıcı kuralı: paylaşılan Upstash alanında feedl öneki zorunlu.
-          prefix: "feedl:rl",
-        })
-      : null;
-  return sharedLimiter;
+  if (!url || !token) return null;
+  const key = `${max}:${windowSec}`;
+  const cached = sharedLimiters.get(key);
+  if (cached) return cached;
+  const limiter = new Ratelimit({
+    redis: new Redis({ url, token }),
+    limiter: Ratelimit.slidingWindow(max, `${windowSec} s`),
+    // Kullanıcı kuralı: paylaşılan Upstash alanında feedl öneki zorunlu.
+    prefix: "feedl:rl",
+  });
+  sharedLimiters.set(key, limiter);
+  return limiter;
 }
 
 const buckets = new Map<string, number[]>();
 
-function inProcessRateLimit(keyId: string): RateLimitResult {
+function inProcessRateLimit(
+  keyId: string,
+  max: number,
+  windowSec: number,
+): RateLimitResult {
   const now = Date.now();
-  const windowStart = now - RATE_LIMIT_WINDOW_MS;
+  const windowMs = windowSec * 1000;
+  const windowStart = now - windowMs;
   const hits = (buckets.get(keyId) ?? []).filter((t) => t > windowStart);
-  if (hits.length >= RATE_LIMIT_MAX) {
+  if (hits.length >= max) {
     buckets.set(keyId, hits);
     return {
       allowed: false,
-      retryAfterSec: Math.ceil(
-        (hits[0] + RATE_LIMIT_WINDOW_MS - now) / 1000,
-      ),
+      retryAfterSec: Math.ceil((hits[0] + windowMs - now) / 1000),
     };
   }
   hits.push(now);
@@ -120,8 +122,15 @@ function inProcessRateLimit(keyId: string): RateLimitResult {
   return { allowed: true, retryAfterSec: 0 };
 }
 
-export async function checkRateLimit(keyId: string): Promise<RateLimitResult> {
-  const limiter = getSharedLimiter();
+// Opsiyonel limit/window geçersiz kılma (Sprint 60) — farklı scope'lar farklı
+// limit kullanabilsin. Varsayılan 60 istek/60s (geriye dönük uyumlu).
+export async function checkRateLimit(
+  keyId: string,
+  opts?: { limit?: number; windowSec?: number },
+): Promise<RateLimitResult> {
+  const max = opts?.limit ?? RATE_LIMIT_MAX;
+  const windowSec = opts?.windowSec ?? RATE_LIMIT_WINDOW_MS / 1000;
+  const limiter = getSharedLimiter(max, windowSec);
   if (limiter) {
     try {
       const { success, reset } = await limiter.limit(keyId);
@@ -139,7 +148,7 @@ export async function checkRateLimit(keyId: string): Promise<RateLimitResult> {
       );
     }
   }
-  return inProcessRateLimit(keyId);
+  return inProcessRateLimit(keyId, max, windowSec);
 }
 
 // v1 yanıtlarında ortak envelope kullanılır; 401/429 hataları için hazır

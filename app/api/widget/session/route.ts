@@ -14,6 +14,7 @@ import {
 } from "@/lib/widget/jwt";
 import { isOriginAllowed } from "@/lib/widget/origins";
 import { requestOrigin } from "@/lib/widget/http";
+import { enforceRateLimit, clientIpFrom } from "@/lib/rate-limit";
 
 // Widget oturumu (plan.md Sprint 32): müşteri uygulaması imzaladığı kısa
 // ömürlü JWT'yi parent sayfadan buraya gönderir; feedl widget kullanıcısını
@@ -72,6 +73,12 @@ export async function POST(req: NextRequest) {
         { status: 403 },
       );
     }
+
+    // Sprint 60: widget oturum oluşturma — IP bazlı (session çiftliği önler).
+    const rl = await enforceRateLimit("widget:session", clientIpFrom(req), {
+      limit: 30,
+    });
+    if (!rl.allowed) return rl.response!;
 
     let body: unknown;
     try {

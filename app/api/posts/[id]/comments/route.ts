@@ -10,6 +10,7 @@ import { comments, postFollowers, posts } from "@/lib/db/schema";
 import { createCommentSchema } from "@/lib/validations/comment";
 import { commentCreatedEventSchema } from "@/lib/validations/events";
 import { inngest } from "@/inngest/client";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 // POST /api/posts/[id]/comments — fikre yorum yazar (plan.md Sprint 10).
 // Rota middleware'da /api/posts(.*) public deseniyle eşleşir; giriş
@@ -27,6 +28,13 @@ export async function POST(
         { status: 401 },
       );
     }
+
+    // Sprint 60: yorum — kullanıcı sıkı frekans limiti (spam/intern notları).
+    const rl = await enforceRateLimit("comments:user", userId, {
+      limit: 12,
+      windowSec: 60,
+    });
+    if (!rl.allowed) return rl.response!;
 
     const { id } = await params;
     const parsedId = z.uuid().safeParse(id);

@@ -13,6 +13,7 @@ import { getWidgetSession } from "@/lib/widget/jwt";
 import { isOriginAllowed } from "@/lib/widget/origins";
 import { requestOrigin } from "@/lib/widget/http";
 import { inngest } from "@/inngest/client";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 async function countVotes(postId: string): Promise<number> {
   const [row] = await getDb()
@@ -46,6 +47,10 @@ export async function POST(req: NextRequest) {
         { status: 403 },
       );
     }
+
+    // Sprint 60: widget oy — session kullanıcısı bazlı.
+    const rl = await enforceRateLimit("widget:votes", session.userId, { limit: 60 });
+    if (!rl.allowed) return rl.response!;
 
     let body: unknown;
     try {
@@ -148,6 +153,10 @@ export async function DELETE(req: NextRequest) {
         { status: 401 },
       );
     }
+
+    // Sprint 60: widget oy geri alma — session kullanıcısı bazlı.
+    const rl = await enforceRateLimit("widget:votes", session.userId, { limit: 60 });
+    if (!rl.allowed) return rl.response!;
 
     const rawPostId = new URL(req.url).searchParams.get("postId") ?? "";
     const parsedPostId = voteSchema.shape.postId.safeParse(rawPostId);

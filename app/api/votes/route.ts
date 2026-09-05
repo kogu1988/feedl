@@ -12,6 +12,7 @@ import {
 } from "@/lib/validations/events";
 import { voteSchema } from "@/lib/validations/vote";
 import { inngest } from "@/inngest/client";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 async function countVotes(postId: string): Promise<number> {
   const [row] = await getDb()
@@ -33,6 +34,10 @@ export async function POST(req: Request) {
         { status: 401 },
       );
     }
+
+    // Sprint 60: oy mutation'ı — kullanıcı bazlı limit.
+    const rl = await enforceRateLimit("votes:user", userId, { limit: 60 });
+    if (!rl.allowed) return rl.response!;
 
     let body: unknown;
     try {
@@ -137,6 +142,10 @@ export async function DELETE(req: Request) {
         { status: 401 },
       );
     }
+
+    // Sprint 60: oy geri alma — kullanıcı bazlı limit.
+    const rl = await enforceRateLimit("votes:user", userId, { limit: 60 });
+    if (!rl.allowed) return rl.response!;
 
     const rawPostId = new URL(req.url).searchParams.get("postId") ?? "";
     const parsedPostId = z.uuid().safeParse(rawPostId);

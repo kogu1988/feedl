@@ -9,6 +9,7 @@ import { postFollowers, posts, votes, boards } from "@/lib/db/schema";
 import { createPostSchema } from "@/lib/validations/post";
 import { inngest } from "@/inngest/client";
 import { buildPostSearch } from "@/lib/post-search";
+import { enforceRateLimit, clientIpFrom } from "@/lib/rate-limit";
 
 // GET /api/posts — herkese açık fikir listesi (en son eklenen en üstte),
 // oy sayılarıyla birlikte. Opsiyonel ?q= ile çok kelimeli, diakritik
@@ -77,6 +78,19 @@ export async function POST(req: Request) {
         { status: 401 },
       );
     }
+
+    // Sprint 60 (rate limit hardening): kullanıcı + IP bazlı; ayrıca kullanıcı
+    // başına kısa pencere frekans limiti (AI maliyet amplifikasyonunu keser —
+    // her post ai-autopilot tetikler).
+    const userRl = await enforceRateLimit("posts:user", userId, { limit: 10 });
+    if (!userRl.allowed) return userRl.response!;
+    const ipRl = await enforceRateLimit("posts:ip", clientIpFrom(req), { limit: 30 });
+    if (!ipRl.allowed) return ipRl.response!;
+    const freqRl = await enforceRateLimit("posts:freq", userId, {
+      limit: 3,
+      windowSec: 60,
+    });
+    if (!freqRl.allowed) return freqRl.response!;
 
     let body: unknown;
     try {

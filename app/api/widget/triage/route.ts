@@ -11,6 +11,7 @@ import { isOriginAllowed } from "@/lib/widget/origins";
 import { requestOrigin } from "@/lib/widget/http";
 import { postCreatedEventSchema } from "@/lib/validations/events";
 import { inngest } from "@/inngest/client";
+import { enforceRateLimit, clientIpFrom } from "@/lib/rate-limit";
 
 // Sprint 48l — widget AI triage. Mesajı sınıflandırır; feedback ise post
 // oluşturur (ve post/created yayınlar), support/clarify/unrecognized ise
@@ -30,6 +31,15 @@ export async function POST(req: NextRequest) {
         { status: 403 },
       );
     }
+
+    // Sprint 60 (rate limit hardening): her triage mesajı bir LLM çağrısıdır.
+    // Sıkı pencere limiti (session kullanıcısı / IP) AI maliyetini korur.
+    const triageRl = await enforceRateLimit(
+      "widget:triage",
+      session?.userId ?? clientIpFrom(req),
+      { limit: 6, windowSec: 60 },
+    );
+    if (!triageRl.allowed) return triageRl.response!;
 
     let body: unknown;
     try {

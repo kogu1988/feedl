@@ -11,6 +11,7 @@ import { comments } from "@/lib/db/schema";
 import { commentDeletedEventSchema } from "@/lib/validations/events";
 import { editCommentSchema } from "@/lib/validations/comment";
 import { inngest } from "@/inngest/client";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 // Sprint 24: yorum düzenleme ve silme. Kendi yorumunu herkes yönetir;
 // admin her yorumu yönetebilir (Canny moderasyon modeli). İç notlar zaten
@@ -49,6 +50,10 @@ export async function PATCH(
         { status: 401 },
       );
     }
+
+    // Sprint 60: yorum düzenleme — kullanıcı bazlı.
+    const rl = await enforceRateLimit("comments:user", userId, { limit: 60 });
+    if (!rl.allowed) return rl.response!;
 
     const { commentId } = await params;
     const comment = await loadComment(commentId);
@@ -123,6 +128,10 @@ export async function DELETE(
         { status: 401 },
       );
     }
+
+    // Sprint 60: yorum silme — kullanıcı bazlı.
+    const rl = await enforceRateLimit("comments:user", userId, { limit: 60 });
+    if (!rl.allowed) return rl.response!;
 
     const { commentId } = await params;
     const comment = await loadComment(commentId);

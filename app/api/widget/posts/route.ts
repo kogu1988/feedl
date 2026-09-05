@@ -11,6 +11,7 @@ import { inngest } from "@/inngest/client";
 import { getWidgetSession } from "@/lib/widget/jwt";
 import { isOriginAllowed } from "@/lib/widget/origins";
 import { requestOrigin } from "@/lib/widget/http";
+import { enforceRateLimit, clientIpFrom } from "@/lib/rate-limit";
 
 // Widget fikir listesi (plan.md Sprint 32): iframe içindeki kompakt arayüz
 // portal ile aynı arama altyapısını (lib/post-search) kullanır. Birleşmiş
@@ -107,6 +108,18 @@ export async function POST(req: NextRequest) {
         { status: 403 },
       );
     }
+
+    // Sprint 60: widget fikir oluşturma — AI autopilot maliyet amplifikasyonunu
+    // kesmek için session kullanıcısı + IP frekans limiti.
+    const rl = await enforceRateLimit("widget:posts", session.userId, {
+      limit: 8,
+      windowSec: 60,
+    });
+    if (!rl.allowed) return rl.response!;
+    const ipRl = await enforceRateLimit("widget:posts:ip", clientIpFrom(req), {
+      limit: 30,
+    });
+    if (!ipRl.allowed) return ipRl.response!;
 
     let body: unknown;
     try {
