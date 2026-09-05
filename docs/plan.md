@@ -1828,6 +1828,32 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   https://feedl.app/api/webhooks/paddle + `PADDLE_WEBHOOK_SECRET`; sonra
   gerçek ödeme testi.
 
+### Sprint 53 — Roadmap Sürükle-Bırak (Platformlaşma #3) (✅ 2026-09-05)
+
+> Madde 3'ün ilk güvenli/yararlı parçası: admin için roadmap kanban'ında
+> kartları kolonlar arasında sürükleyerek durum değiştirme (Canny modeli).
+
+- ☑ **`components/custom/roadmap-columns.tsx` (commit 9b5b524):** client
+  kanban — native HTML5 drag&drop (yeni bağımlılık yok). Sadece `isAdmin`
+  için: kartlar `draggable`, kolonlar `onDragOver/onDrop`; drop →
+  `PATCH /api/admin/posts {postId,status}` (mevcut admin auth + event +
+  history) + optimistik güncelleme + hata durumunda geri alma + busy
+  göstergesi. Ziyaretçi için salt-okunur.
+- ☑ **`app/(main)/roadmap/page.tsx`:** `getAdminUserId()` ile isAdmin tespiti;
+  `RoadmapColumns` kullanır; admin ipucu metni. Paylaşılan Card/StatusBadge/
+  CommentCountBadge (tutarlılık).
+- ☑ npm test (17/17) + npm run build ✓ → commit → push.
+- **Karar bekleniyor (portal/[slug]):** `app/(main)/portal/[id]` (post detay)
+  dinamik segmentiyle aynı derinlikte `portal/[slug]` eklense Next.js
+  "conflicting routes" hatası verir. Bu yüzden board'a özel temiz URL şu ana
+  kadar ertelendi (plan notu). Seçenekler: (a) middleware rewrite
+  `/portal/:slug` (uuid değilse) → `/portal?board=:slug`; (b) tek dinamik
+  segment `[id]` içinde uuid→detay / slug→board ayrımı (invaziv); (c)
+  custom-domain sprint'ine ertele (öneri). Kullanıcı onayı bekleniyor.
+- **Not (@feedl/widget npm paketi):** `public/widget.js` script olarak var;
+  npm paketine dönüştürme → npm publish + versiyonlama gerektirir (npm
+  credentials). Bu adım ayrı bir workspace/kredi ister.
+
 ### 📝 Sonraki plan notları (kullanıcı onayıyla erteelenen/planlanacak)
 
 - **Ticarileşme (Paddle):** Canlı tahsilata geç YOK — sandbox'ta kalınacak.
