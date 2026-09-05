@@ -21,6 +21,14 @@ export async function POST(req: Request) {
     const raw = await req.text();
 
     const secret = process.env.PADDLE_WEBHOOK_SECRET;
+    const isLive = process.env.PADDLE_ENV !== "sandbox";
+    // Üretimde imza ZORUNLUDUR; sandbox'ta secret yoksa geliştirme kolaylığı.
+    if (isLive && !secret) {
+      return NextResponse.json(
+        { success: false, error: "PADDLE_WEBHOOK_SECRET üretimde zorunlu." },
+        { status: 400 },
+      );
+    }
     if (secret && !verifyPaddleSignature(raw, signature)) {
       return NextResponse.json(
         { success: false, error: "Geçersiz imza." },

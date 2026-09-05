@@ -22,7 +22,7 @@ interface EmbeddingResponse {
 /** Tek metni 2048 boyutlu vektöre çevirir (docs/prompts.md §3). */
 export async function embedText(input: string): Promise<number[]> {
   const safeInput = maskPii(input);
-  const response = await fetch(`${OPENROUTER_BASE_URL}/embeddings`, {
+  const response = await fetchWithRetry(`${OPENROUTER_BASE_URL}/embeddings`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${getApiKey()}`,
@@ -50,10 +50,40 @@ interface ChatResponse {
   choices?: Array<{ message?: { content?: string } }>;
 }
 
+// Geçici OpenRouter/ücretsiz 429/5xx hatalarında sınırlı yeniden deneme.
+// Free sağlayıcılar yoğunlukta geçici 429 dönebilir; tek denemeyle pes
+// etmek yerine kısa beklemeli 2 ek deneme yapar (Inngest retry katmanına
+// da düşer, ama kalıcı araya girip bekleme maliyetini düşürür).
+const RETRY_DELAYS_MS = [800, 2000];
+const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504]);
+
+async function fetchWithRetry(
+  url: string,
+  init: RequestInit,
+): Promise<Response> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
+    try {
+      const response = await fetch(url, init);
+      if (!RETRYABLE_STATUS.has(response.status) || attempt === RETRY_DELAYS_MS.length) {
+        return response;
+      }
+    } catch (err) {
+      lastError = err;
+      if (attempt === RETRY_DELAYS_MS.length) throw err;
+    }
+    if (attempt < RETRY_DELAYS_MS.length) {
+      await new Promise((resolve) => setTimeout(resolve, RETRY_DELAYS_MS[attempt]));
+    }
+  }
+  throw lastError;
+}
+
 /**
  * LLM çağrısı yapar, yanıttaki ilk `{` ile son `}` arası JSON'u çıkarır ve
  * verilen Zod şemasıyla doğrular. Serbest modeller JSON'u markdown çiti
- * içine sarabildiği için çıkarım adımı şarttır.
+ * içine sarabildiği için çıkarım adımı şarttır. 429/5xx'te kısa beklemeli
+ * yeniden dener.
  * Parse/validasyon hatası fırlatır → Inngest retry ile fonksiyon tekrar dener.
  */
 export async function chatJson<T>(options: {
@@ -62,7 +92,7 @@ export async function chatJson<T>(options: {
   schema: ZodType<T>;
   maxTokens?: number;
 }): Promise<T> {
-  const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
+  const response = await fetchWithRetry(`${OPENROUTER_BASE_URL}/chat/completions`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${getApiKey()}`,

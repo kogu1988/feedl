@@ -221,3 +221,63 @@ export function intercomIdentity(item: IntercomItem): string {
 export function isIntercomConfigured(): boolean {
   return Boolean(process.env.INTERCOM_APP_ID);
 }
+
+// Müşteri contact bilgisi: webhook'tan `contacts[].id` gelir ama e-posta/
+// telefon yoktur. `INTERCOM_ACCESS_TOKEN` ile Intercom API'den gerçek bilgi
+// çekilir (enrichment). PII: ağ isteği başarısız olursa graceful şekilde null
+// döner (webhook'u durdurmaz).
+export interface IntercomContactInfo {
+  email: string | null;
+  name: string | null;
+  phone: string | null;
+}
+
+export function isIntercomTokenConfigured(): boolean {
+  return Boolean(process.env.INTERCOM_ACCESS_TOKEN);
+}
+
+export async function fetchIntercomContact(
+  contactId: string,
+): Promise<IntercomContactInfo> {
+  const token = process.env.INTERCOM_ACCESS_TOKEN;
+  if (!token || !contactId) return { email: null, name: null, phone: null };
+  try {
+    const res = await fetch(`https://api.intercom.io/contacts/${contactId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+        "Intercom-Version": "2.16",
+      },
+      // Webhook akışını bloklamasın: kısa zaman aşımı.
+      signal: AbortSignal.timeout(4000),
+    });
+    if (!res.ok) return { email: null, name: null, phone: null };
+    const data = (await res.json()) as Record<string, unknown>;
+    return {
+      email: typeof data.email === "string" ? data.email : null,
+      name: typeof data.name === "string" ? data.name : null,
+      phone: typeof data.phone === "string" && data.phone ? data.phone : null,
+    };
+  } catch (err) {
+    console.error("intercom contact fetch failed:", err instanceof Error ? err.message : err);
+    return { email: null, name: null, phone: null };
+  }
+}
+
+// Item'dan ilk contact id'sini çıkarır (webhook'ta contacts[].id).
+export function intercomContactId(item: IntercomItem): string | null {
+  const contacts = field(item, "contacts", "contacts");
+  if (Array.isArray(contacts)) {
+    for (const c of contacts as Array<Record<string, unknown>>) {
+      if (typeof c.id === "string" && c.id) return c.id;
+    }
+  } else if (typeof contacts === "object" && contacts !== null) {
+    const nested = (contacts as Record<string, unknown>)["contacts"];
+    if (Array.isArray(nested)) {
+      for (const c of nested as Array<Record<string, unknown>>) {
+        if (typeof c.id === "string" && c.id) return c.id;
+      }
+    }
+  }
+  return null;
+}

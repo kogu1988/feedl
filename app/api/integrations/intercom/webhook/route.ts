@@ -6,10 +6,13 @@ import { getWorkspaceId } from "@/lib/db/workspace";
 import { getDefaultBoardId } from "@/lib/db/board";
 import { classifyWidgetMessage } from "@/lib/ai/analysis";
 import {
+  fetchIntercomContact,
+  intercomContactId,
   intercomIdentity,
   intercomItemText,
   intercomSourceRef,
   isIntercomConfigured,
+  isIntercomTokenConfigured,
   parseIntercomPayload,
   verifyIntercomWebhook,
 } from "@/lib/intercom";
@@ -98,24 +101,30 @@ export async function POST(req: NextRequest) {
       // Contact id varsa onu, yoksa conversation/ticket id'yi kimlik olarak kullan.
       const identity = intercomIdentity(item);
       const userId = toWidgetUserId(`intercom_${identity}`);
-      const contact = item.contact;
-      const contactName =
-        typeof contact === "object" && contact !== null
-          ? typeof (contact as Record<string, unknown>).name === "string"
-            ? ((contact as Record<string, unknown>).name as string)
-            : null
-          : null;
+      // Intercom'tan gerçek e-posta/telefon/kanıt çek (enrichment). Token
+      // yoksa veya istek başarısızsa graceful: widget yedeği kalır.
+      const contactId = intercomContactId(item);
+      const contactInfo = isIntercomTokenConfigured() && contactId
+        ? await fetchIntercomContact(contactId)
+        : { email: null, name: null, phone: null };
+      const email = contactInfo.email ?? `intercom-${identity}@widget.feedl.local`;
       await getDb()
         .insert(users)
         .values({
           id: userId,
-          email: `intercom-${identity}@widget.feedl.local`,
-          name: contactName,
+          email,
+          name: contactInfo.name ?? null,
+          phone: contactInfo.phone ?? null,
           role: "customer",
         })
         .onConflictDoUpdate({
           target: users.id,
-          set: { updatedAt: new Date() },
+          set: {
+            email,
+            ...(contactInfo.name ? { name: contactInfo.name } : {}),
+            ...(contactInfo.phone ? { phone: contactInfo.phone } : {}),
+            updatedAt: new Date(),
+          },
         });
 
       const [created] = await getDb()

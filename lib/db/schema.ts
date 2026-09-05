@@ -35,6 +35,9 @@ export const users = pgTable("users", {
   id: text("id").primaryKey(),
   email: text("email").notNull(),
   name: text("name"),
+  // Sprint 48s: Intercom/ticket connector'lardan zenginleştirilen gerçek
+  // müşteri iletişim bilgisi (phone opsiyonel; phone olmayan kanallarda null).
+  phone: text("phone"),
   role: userRoleEnum("role").notNull().default("customer"),
   // Sprint 26: e-posta tercihleri + token'lı unsubscribe (bildirim
   // e-postalarının altındaki link bu token ile çalışır).

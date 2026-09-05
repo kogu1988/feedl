@@ -1705,6 +1705,53 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   (mesaj içeriği/müşteri bilgisi için, şimdilik kod kullanmıyor) + opsiyonel
   `INTERCOM_WEBHOOK_SECRET`.
 
+### Sprint 48s — Intercom Contact Zenginleştirme + AI/Paddle Dayanıklılık (✅ 2026-09-05)
+
+> Kullanıcı kararları: Intercom `ticket.state.updated` gerekmiyor (ticket
+> takibi Intercom'un işi, feedl feedback'e odaklı). Contact bilgisi gerçek
+> e-posta/telefon ile zenginleştirilecek. Paddle sandbox'ta kalacak ama webhook
+> hazır bekleyecek. Free LLM için OpenRouter ücretsiz modelleri test edildi.
+
+- ☑ **Intercom contact zenginleştirme (migration 0037, commit …):**
+  `users.phone` kolonu; `fetchIntercomContact` (INTERCOM_ACCESS_TOKEN ile
+  GET /contacts/{id} → email/name/phone; timeout + graceful null),
+  `intercomContactId` (webhook contacts[].id). Route'ta kullanıcı gerçek
+  e-posta/telefon/kanıt ile upsert edilir; token yoksa widget yedeği kalır.
+- ☑ **AI dayanıklılık (lib/ai/openrouter.ts):** `chatJson` + `embedText`'e
+  kısa beklemeli retry (429/5xx → 800ms, 2000ms; Inngest retry katmanına
+  da düşer). Model önerisi: **minimax/minimax-m3:free KALIR** — canlı test
+  (2026-09-05): 3 Türkçe vaka → feedback/support/clarify doğru + geçerli
+  JSON; z-ai/glm-5.2:free boş yanıt + 429 verdi (elenir), nemotron-lightning
+  JSON bozuyor. 429'lar geçici (yoğunluk) — retry doğru çözüm, model değişimi
+  değil.
+- ☑ **Paddle webhook sandbox-hazır (lib/paddle.ts + route):** imza doğrulama
+  mevcut (P-paddle-signature ts/h1); üretimde (PADDLE_ENV ≠ sandbox) secret
+  zorunlu yapıldı — sandbox'ta geliştirme kolaylığı korunur. Paddle dashboard
+  webhook adımı ileride: notification destination →
+  https://feedl.app/api/webhooks/paddle + secret → PADDLE_WEBHOOK_SECRET env.
+- ☑ **Upstash rate-limit:** lib/api-keys.ts zaten @upstash/ratelimit + kayan
+  pencere kullanıyor (feedl:rl prefix, 60/dk); env'ler Vercel'de set; in-process
+  fallback var. Revizyon gerekmedi (gerekli görülen kısım zaten tamam).
+- **Karar/kayıt:** Intercom `ticket.state.updated` abonelikte açık ama kod
+  işlemiyor — bu bilinçli (ticket takibi Intercom'un işi), ek özellik yok.
+
+### 📝 Sonraki plan notları (kullanıcı onayıyla erteelenen/planlanacak)
+
+- **Ticarileşme (Paddle):** Canlı tahsilata geç YOK — sandbox'ta kalınacak.
+  Kod hazır (overlay checkout + plan limitleri + webhook). Gelecekte:
+  `/pricing` pazarlama sayfası, canlı ürün/fiyat ID'leri,
+  `PADDLE_WEBHOOK_SECRET` + production API key, gerçek tahsilat testi.
+- **Entegrasyonlar (plan notu):** Jira, Linear, GitHub, Intercom dışı
+  connector'lar — planlanacak; şu an sadece Slack/Zendesk/Intercom var.
+- **Platformlaşma (plan notu):** `@feedl/widget` npm paketi; roadmap'te
+  drag-and-drop; custom domain → `portal/[slug]` temiz URL (şu an ?board=).
+  Public API: idempotency key + OpenAPI dokümanı.
+- **Kalite/güvenlik (plan notu):** E2E/Playwright smoke test; email
+  deliverability izleme (bounce/spam); pg_trgm index migration'a kodlama.
+- **Repo temizliği (bekle):** `.agents/skills/feedl/code-architect.md` ve
+  `design-architect.md` untracked — kullanıcı talimatı bekleniyor (şimdilik
+  dokunulmadı).
+
 ### Ertelenen blok (en son — kullanıcının kısıtı)
 
 - **Domain (feedl.app) alındı (2026-09-04).** Kod tarafı hazır: tüm
