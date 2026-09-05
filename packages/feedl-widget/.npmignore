@@ -1,0 +1,7 @@
+node_modules/
+*.log
+.yarn/
+.pnpm/
+.turbo/
+# Sadece yayınlanan dosyalar package.json "files" ile sınırlı; yine de
+# geliştirme/depo artıkları dışarıda kalsın.

@@ -140,6 +140,17 @@
     window.feedlWidget.identify = widgetApi.identify;
   }
 
+  // @feedl/widget npm yükleyicisi, widget.js yüklenmeden önce identify
+  // çağırırsa jetonları `__feedlWidgetIdentifyQueue`'da biriktirir; burada
+  // yüklendiğinde yeniden oynatılır.
+  var pending = window.__feedlWidgetIdentifyQueue;
+  if (pending && pending.length) {
+    window.__feedlWidgetIdentifyQueue = [];
+    for (var i = 0; i < pending.length; i += 1) {
+      widgetApi.identify({ token: pending[i] });
+    }
+  }
+
   var CSS = [
     ".feedl-widget-launcher{position:fixed;right:20px;bottom:20px;z-index:2147483000;",
     "display:inline-flex;align-items:center;gap:8px;padding:12px 18px;border:0;border-radius:9999px;",

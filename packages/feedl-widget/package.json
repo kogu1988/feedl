@@ -1,0 +1,21 @@
+{
+  "name": "@feedl/widget",
+  "version": "0.1.0",
+  "description": "feedl geri bildirim widget'ını müşteri sitesine gömmek için resmi yükleyici. <script> embed (feedl.app/widget.js) yerine bundler/TypeScript ile kullanılabilir.",
+  "type": "module",
+  "main": "./index.js",
+  "types": "./index.d.ts",
+  "files": ["index.js", "index.d.ts", "README.md", "LICENSE"],
+  "exports": {
+    ".": {
+      "import": "./index.js",
+      "types": "./index.d.ts"
+    }
+  },
+  "sideEffects": false,
+  "keywords": ["feedl", "feedback", "widget", "embed", "canny", "roadmap"],
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  }
+}
