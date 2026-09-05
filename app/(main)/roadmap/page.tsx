@@ -1,6 +1,6 @@
 import { and, countDistinct, desc, eq, inArray, isNull, or } from "drizzle-orm";
-import Link from "next/link";
 
+import { PageBreadcrumb } from "@/components/custom/page-breadcrumb";
 import { RoadmapColumns } from "@/components/custom/roadmap-columns";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId, isShowcaseRequest } from "@/lib/db/workspace";
@@ -56,7 +56,14 @@ export default async function RoadmapPage() {
       className="container mx-auto max-w-6xl p-4 sm:p-8"
       inert={showcaseMode || undefined}
     >
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <PageBreadcrumb
+        items={[
+          { label: "Portal", href: "/portal" },
+          { label: "Yol Haritası" },
+        ]}
+      />
+
+      <div className="mt-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Yol Haritası</h1>
           <p className="mt-2 text-muted-foreground">
@@ -64,19 +71,11 @@ export default async function RoadmapPage() {
             şeffafça takip et.
           </p>
         </div>
-        <div className="flex flex-col items-end gap-1">
-          <Link
-            href="/portal"
-            className="inline-block text-sm font-medium text-primary underline-offset-4 hover:underline"
-          >
-            ← Portala dön
-          </Link>
-          {isAdmin && (
-            <span className="text-xs text-muted-foreground">
-              Kartları sürükleyerek durumu değiştirebilirsin.
-            </span>
-          )}
-        </div>
+        {isAdmin && (
+          <span className="text-xs text-muted-foreground">
+            Kartları sürükleyerek durumu değiştirebilirsin.
+          </span>
+        )}
       </div>
 
       {loadError ? (

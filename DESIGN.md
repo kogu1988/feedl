@@ -137,11 +137,13 @@ Ayarlar); altta UserButton. Bileşen: `app-sidebar` — dashboard altı
   kartı + durum geçmişi + yorumlar, sağda ~340px "Detaylar" yan
   paneli (admin panelleri + herkese açık özel alanlar). Mobilde tek
   kolon; yan panel alta düşer. Canny/Frill post-detay deseni.
-- **Breadcrumb (2026-09-05):** `components/custom/page-breadcrumb.tsx`
-  — alt sayfalarda (`portal/[id]`, `portal/oyladiklarim`,
-  `changelog/[id]`) "Portal / Başlık" biçiminde konum verir; "...dön"
-  back-link'lerinin yerini aldı. Son öğe `aria-current="page"` +
-  `truncate`; ayraç ChevronRight. Tek seviyeli sayfalarda, dashboard
+- **Breadcrumb (2026-09-05, rev. 2):** `components/custom/page-breadcrumb.tsx`
+  — alt sayfalarda (`portal/[id]`, `portal/oyladiklarim`, `changelog`,
+  `changelog/[id]`, `roadmap`) "Portal / Başlık" biçiminde konum verir;
+  "...dön" back-link'lerinin yerini aldı (changelog ArrowLeft,
+  roadmap sağdaki ← linkiydi). Breadcrumb her zaman `<main>`'in ilk
+  elemanı, solda; ilk içerik bloğu `mt-6`. Son öğe `aria-current="page"`
+  + `truncate`; ayraç ChevronRight. Tek seviyeli sayfalarda, dashboard
   ve widget'ta breadcrumb YOK (üst bar + sidebar konumu zaten verir).
 - **Genişlik disiplini (2026-09-05, rev. 3 — işe göre hizalama):**
   **Herkese açık yüzeyler** (landing, demo, pricing, portal + alt

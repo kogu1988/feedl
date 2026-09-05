@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
 import { and, desc, eq, inArray } from "drizzle-orm";
-import { ArrowLeftIcon, MegaphoneIcon } from "lucide-react";
+import { MegaphoneIcon } from "lucide-react";
 
 import { ChangelogSubscribeForm } from "@/components/custom/changelog-subscribe-form";
 import { MarkdownContent } from "@/components/custom/markdown-content";
+import { PageBreadcrumb } from "@/components/custom/page-breadcrumb";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId, isShowcaseRequest } from "@/lib/db/workspace";
@@ -70,15 +71,14 @@ export default async function ChangelogPage() {
       className="container mx-auto max-w-6xl p-4 sm:p-8"
       inert={showcaseMode || undefined}
     >
-      <Link
-        href="/portal"
-        className="inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
-      >
-        <ArrowLeftIcon className="size-4" aria-hidden="true" />
-        Portala dön
-      </Link>
+      <PageBreadcrumb
+        items={[
+          { label: "Portal", href: "/portal" },
+          { label: "Güncellemeler" },
+        ]}
+      />
 
-      <div className="mt-4 flex items-center gap-2">
+      <div className="mt-6 flex items-center gap-2">
         <MegaphoneIcon className="size-6" aria-hidden="true" />
         <h1 className="text-2xl font-bold">Changelog</h1>
       </div>

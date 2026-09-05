@@ -120,6 +120,7 @@ export default async function ChangelogDetailPage({
     >
       <PageBreadcrumb
         items={[
+          { label: "Portal", href: "/portal" },
           { label: "Güncellemeler", href: "/changelog" },
           { label: entry?.title ?? "Duyuru" },
         ]}

@@ -246,7 +246,7 @@ export default async function PostDetailPage({
 
       <div
         className={cn(
-          "mt-4 grid items-start gap-6 lg:gap-8",
+          "mt-6 grid items-start gap-6 lg:gap-8",
           showSidebar && "lg:grid-cols-[minmax(0,1fr)_340px]",
         )}
       >
