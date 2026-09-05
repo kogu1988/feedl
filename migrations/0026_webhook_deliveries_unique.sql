@@ -1,1 +1,0 @@
-CREATE UNIQUE INDEX "webhook_deliveries_endpoint_event_payload_key" ON "webhook_deliveries" USING btree ("endpoint_id","event","payload");
