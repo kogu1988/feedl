@@ -1568,6 +1568,25 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
 - ☑ npm test (17/17) + npm run build ✓ → commit → push.
 - **Sıradaki:** 5 — Widget AI triage (feedback/support/clarify).
 
+### Sprint 48l — Widget AI Triage (madde 8, P1) (✅ 2026-09-04)
+
+> FeedLog'un en güçlü özelliği: widget mesajını AI sınıflar (feedback /
+> support / clarify / unrecognized) ve ona göre davranır.
+
+- ☑ **Şema (migration 0034, commit 58be6ee):** `widget_triage` enum
+  (feedback/support/clarify/unrecognized) + `widget_triages` tablosu
+  (workspace_id, user_id, message, classification, response, created_at).
+- ☑ **AI:** `classifyWidgetMessage` (lib/ai/analysis) — maskPii + LLM
+  sınıflandırma + widgetTriageSchema; sistem prompt injection guard.
+- ☑ **API:** `POST /api/widget/triage` — origin/session kontrolü;
+  feedback → post oluştur + post/created yayınla (girişliyse),
+  support/clarify/unrecognized → yönlendirme yanıtı; audit kaydı.
+- ☑ **UI:** `components/custom/widget-triage.tsx` — widget'ta "Farklı bir
+  konu mu?" açılır sohbet; mesaj → AI sınıfla → yanıt/fikir. `app/widget/
+  page.tsx`'e eklendi (oturumlu ve anonim).
+- ☑ npm test (17/17) + npm run build ✓ → commit → push.
+- **Sıradaki:** 6 — Guest mode + identity merge.
+
 ### Ertelenen blok (en son — kullanıcının kısıtı)
 
 - **Domain (feedl.app) alındı (2026-09-04).** Kod tarafı hazır: tüm
