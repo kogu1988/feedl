@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  BarChart3Icon,
   Building2Icon,
   Columns3Icon,
   CreditCardIcon,
@@ -37,6 +38,7 @@ const navGroups = [
       { href: "/dashboard", label: "Genel Bakış", icon: LayoutDashboardIcon },
       { href: "/dashboard/boards", label: "Board'lar", icon: Columns3Icon },
       { href: "/dashboard/revenue", label: "Gelir", icon: TrendingUpIcon },
+      { href: "/dashboard/activation", label: "Aktivasyon", icon: BarChart3Icon },
     ],
   },
   {
