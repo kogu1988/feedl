@@ -30,7 +30,7 @@ const surfaces = [
     title: "Güncellemeler",
     description:
       "Yayına alınan her özellik, oy verenlere e-posta ile duyurulur ve değişiklik günlüğüne düşer.",
-    href: "/portal/changelog",
+    href: "/changelog",
     icon: MegaphoneIcon,
   },
 ];

@@ -17,7 +17,7 @@ const footerColumns = [
     links: [
       { href: "/portal", label: "Fikir Portalı" },
       { href: "/roadmap", label: "Yol Haritası" },
-      { href: "/portal/changelog", label: "Güncellemeler" },
+      { href: "/changelog", label: "Güncellemeler" },
       { href: "/demo", label: "Demo" },
     ],
   },

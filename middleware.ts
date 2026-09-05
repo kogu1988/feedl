@@ -27,6 +27,10 @@ const isPublicRoute = createRouteMatcher([
 
   "/roadmap(.*)",
 
+  // Changelog 2026-09-05'te /portal altından üst seviyeye taşındı —
+  // herkese açık kalır (anonim ziyaretçi abone olabilir).
+  "/changelog(.*)",
+
   "/invites(.*)",
 
   // Sprint 49: public fiyatlandırma sayfası (Paddle checkout sandbox/live,

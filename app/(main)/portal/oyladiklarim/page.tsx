@@ -36,7 +36,7 @@ export default async function MyVotesPage({
 
   if (!userId) {
     return (
-      <main className="container mx-auto max-w-none p-4 sm:p-8">
+      <main className="container mx-auto max-w-6xl p-4 sm:p-8">
         <PageBreadcrumb
           items={[
             { label: "Portal", href: "/portal" },
@@ -85,7 +85,7 @@ export default async function MyVotesPage({
   }
 
   return (
-    <main className="container mx-auto max-w-none p-4 sm:p-8">
+    <main className="container mx-auto max-w-6xl p-4 sm:p-8">
       <PageBreadcrumb
         items={[
           { label: "Portal", href: "/portal" },

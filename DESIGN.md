@@ -120,7 +120,7 @@ Ayarlar); altta UserButton. Bileşen: `app-sidebar` — dashboard altı
   `sticky top-0 z-40 bg-background`; container **her sayfada tam genişlik**
   (`max-w-none`) — admin/public ayrımı yoktur; marka karosu (`size-6 rounded-md bg-brand`
   + ChevronsUpIcon koyu mürekkep), aktif nav vurgusu `bg-muted`
-  (`usePathname`; `/portal/changelog` hariç `/portal*` Portal'ı aktif eder);
+  (`usePathname`; `/portal*` Portal'ı, `/changelog*` Güncellemeler'i aktif eder);
   sağda `ThemeToggle` + Clerk butonları.
 - **Alt bar:** `border-t`, tek satır marka cümlesi + 3 bağlantı
   (Portal / Yol Haritası / Güncellemeler).
@@ -138,19 +138,20 @@ Ayarlar); altta UserButton. Bileşen: `app-sidebar` — dashboard altı
   paneli (admin panelleri + herkese açık özel alanlar). Mobilde tek
   kolon; yan panel alta düşer. Canny/Frill post-detay deseni.
 - **Breadcrumb (2026-09-05):** `components/custom/page-breadcrumb.tsx`
-  — yalnız portal alt sayfalarında (`portal/[id]`, `changelog/[id]`,
-  `oyladiklarim`) "Portal / Başlık" biçiminde konum verir; "...dön"
+  — alt sayfalarda (`portal/[id]`, `portal/oyladiklarim`,
+  `changelog/[id]`) "Portal / Başlık" biçiminde konum verir; "...dön"
   back-link'lerinin yerini aldı. Son öğe `aria-current="page"` +
   `truncate`; ayraç ChevronRight. Tek seviyeli sayfalarda, dashboard
   ve widget'ta breadcrumb YOK (üst bar + sidebar konumu zaten verir).
-- **Genişlik disiplini (2026-09-05, rev. 2 — işe göre hizalama):**
-  **Uygulama sayfaları** (dashboard, portal, roadmap, admin ekranları)
-  tam genişlik `max-w-none` + **sola yaslı** — sidebar'lı veri yüzeyi,
-  tablo/liste yoğunluğu için. **Pazarlama sayfaları** (landing, demo,
-  pricing) ortalanmış kolon: `container mx-auto max-w-6xl` — gösteri/
-  okuma ölçeği ister; landing hero'sundaki asimetrik bloklar kolon
-  içinde kalır. İçeride uzun okuma metinleri (legal, changelog gövdesi,
-  boş durum metinleri) her iki tipte de `max-w-prose` alabilir.
+- **Genişlik disiplini (2026-09-05, rev. 3 — işe göre hizalama):**
+  **Herkese açık yüzeyler** (landing, demo, pricing, portal + alt
+  sayfaları, roadmap, changelog) ortalanmış kolon: `container mx-auto
+  max-w-6xl` — gösteri/okuma ölçeği ister; landing hero'sundaki
+  asimetrik bloklar kolon içinde kalır. **Uygulama sayfaları**
+  (dashboard + admin ekranları) tam genişlik `max-w-none` + **sola
+  yaslı** — sidebar'lı veri yüzeyi, tablo/liste yoğunluğu için.
+  İçeride uzun okuma metinleri (legal, changelog gövdesi, boş durum
+  metinleri) her iki tipte de `max-w-prose` alabilir.
 - **Sayfa deseni (admin):** başlık satırı (h1 + muted açıklama solda,
   primary aksiyon sağda) → KPI şeridi (4 kart; 2×2 tablet, tek kolon
   mobil) → araç çubuğu (FilterTabs solda, kayıtlı görünüm + aksiyonlar

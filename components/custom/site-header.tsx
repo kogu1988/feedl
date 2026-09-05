@@ -42,18 +42,15 @@ function navItemsFor(pathname: string) {
   return [
     { href: "/portal", label: "Portal" },
     { href: "/roadmap", label: "Yol Haritası" },
-    { href: "/portal/changelog", label: "Güncellemeler" },
+    { href: "/changelog", label: "Güncellemeler" },
   ];
 }
 
 function isActive(pathname: string, href: string) {
   if (href === "/portal") {
-    // Changelog'un kendi menü girdisi var; /portal ve detay sayfaları
-    // (/portal/[id], /portal/oyladiklarim) Portal'ı aktif eder.
-    return (
-      pathname === "/portal" ||
-      (pathname.startsWith("/portal/") && pathname !== "/portal/changelog")
-    );
+    // /portal ve alt sayfaları ([id], oyladiklarim) Portal'ı aktif eder;
+    // changelog üst seviyede (/changelog), kendi kuralıyla aktif olur.
+    return pathname === "/portal" || pathname.startsWith("/portal/");
   }
   if (href === "/demo") {
     return pathname === "/demo";
