@@ -56,3 +56,18 @@ next-env.d.ts
 
 .vercel
 .env*
+
+# Yerel/geliştirme dizinleri — repo dışında tutulur
+/migrations
+/scripts
+/tests
+/docs
+/.agents/skills/feedl
+
+# Agent üretimi rapor/skill dosyaları (proje-özel)
+/docs/code-architect.md
+/docs/codebase_report.md
+/docs/design-architect.md
+/docs/design_report.md
+/.agents/skills/feedl/code_architect_skill.md
+/.agents/skills/feedl/design_architect_skill.md
