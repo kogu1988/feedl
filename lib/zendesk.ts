@@ -16,19 +16,34 @@ export interface ZendeskTicket {
   comment?: { body?: string };
 }
 
-// Webhook secret doğrulaması. Zendesk webhook'a custom header ekleriz
-// (ör. `X-Feedl-Token: <ZENDESK_WEBHOOK_SECRET>`); burada karşılaştırılır.
-// Ayrıca isteğe bağlı HMAC imza desteği (Zendesk-Signature) eklenebilir.
-export function verifyZendeskToken(tokenHeader: string): boolean {
-  const secret = process.env.ZENDESK_WEBHOOK_SECRET;
-  if (!secret) return false;
+// Webhook secret doğrulaması. Zendesk webhook'ta Authentication="API key"
+// seçilirse X-Api-Key başlığı gönderilir; ayrıca Authorization: Bearer ve
+// X-Feedl-Token (eski) desteklenir. Yeterince uzun sekret ile karşılaştır.
+function safeEqual(a: string, b: string): boolean {
   try {
-    const a = Buffer.from(tokenHeader);
-    const b = Buffer.from(secret);
-    return a.length === b.length && timingSafeEqual(a, b);
+    const ba = Buffer.from(a);
+    const bb = Buffer.from(b);
+    return ba.length === bb.length && timingSafeEqual(ba, bb);
   } catch {
     return false;
   }
+}
+
+export function verifyZendeskToken(headerValue: string): boolean {
+  const secret = process.env.ZENDESK_WEBHOOK_SECRET ?? "";
+  if (!secret) return false;
+  const value = headerValue.replace(/^Bearer\s+/i, "").trim();
+  return safeEqual(value, secret);
+}
+
+// İstek başlıklarından kimlik doğrulama değerini çıkar (çoklu kaynak).
+export function zendeskAuthFromHeaders(headers: Headers): string {
+  return (
+    headers.get("x-api-key") ??
+    headers.get("x-feedl-token") ??
+    headers.get("authorization") ??
+    ""
+  );
 }
 
 // Zendesk ticket gövdesinden çekilecek feedback metni (uzun, anlamlı).

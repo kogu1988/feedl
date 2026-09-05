@@ -4,7 +4,7 @@ import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { getDefaultBoardId } from "@/lib/db/board";
 import { classifyWidgetMessage } from "@/lib/ai/analysis";
-import { isZendeskConfigured, verifyZendeskToken, zendeskTicketText, type ZendeskTicket } from "@/lib/zendesk";
+import { isZendeskConfigured, verifyZendeskToken, zendeskAuthFromHeaders, zendeskTicketText, type ZendeskTicket } from "@/lib/zendesk";
 import { posts, users } from "@/lib/db/schema";
 import { toWidgetUserId } from "@/lib/widget/jwt";
 import { postCreatedEventSchema } from "@/lib/validations/events";
@@ -21,8 +21,8 @@ export async function POST(req: NextRequest) {
         { status: 503 },
       );
     }
-    const token = req.headers.get("x-feedl-token") ?? req.headers.get("x-zendesk-token") ?? "";
-    if (!verifyZendeskToken(token)) {
+    const auth = zendeskAuthFromHeaders(req.headers);
+    if (!verifyZendeskToken(auth)) {
       return NextResponse.json(
         { success: false, error: "Geçersiz Zendesk token." },
         { status: 401 },
@@ -38,7 +38,9 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       );
     }
-    const ticket = (payload as { ticket?: ZendeskTicket }).ticket;
+    // Ticket kaynağı: Zendesk events `event.data.ticket`, trigger `ticket`.
+    const p = payload as { ticket?: ZendeskTicket; event?: { data?: { ticket?: ZendeskTicket } } };
+    const ticket = p.ticket ?? p.event?.data?.ticket;
     if (!ticket) {
       // Zendesk test/istenmeyen — sessizce 200.
       return NextResponse.json({ success: true, data: { ignored: true } });
