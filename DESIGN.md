@@ -206,7 +206,11 @@ prop'unu `AppSidebar`'a geçirir.
   `companies-manager`, `opportunity-link-controls`, `widget-post-form`,
   `widget-vote-button`, `widget-setup`, `api-keys-manager`,
   `webhooks-manager`, `saved-view-bar`, `analytics-overview`,
-  `not-found-view`.
+  `not-found-view`, `page-breadcrumb`, `notice`.
+- **Hata/bilgi kutusu tek kaynak (2026-09-06):** destructive hata bildirimleri
+  `notice.tsx` (Notice) bileşeninden geçer — satır içi kompakt `size="sm"`,
+  sayfa düzeyi `size="md"`; `rounded-md` (DESIGN.md §5 küçük eleman radius).
+  Kopya `border-destructive/…` kutuları yazılmaz.
 - Yeni bileşen: primitive gerekirse `ui/`, ürün kalıbı `custom/`; mümkünse
   mevcut `status-badge` / `type-badge` gibi tek kaynakları yeniden kullan.
 
