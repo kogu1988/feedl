@@ -1746,6 +1746,10 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   pricing-manager.tsx` (client): yıllık/aylık geçiş (has izole), Free CTA
   → /sign-up, Pro → Paddle.js Overlay checkout (customData.slug ile webhook
   eşleşmesi). `middleware.ts` /pricing public; `site-header.tsx` nav'a "Fiyat".
+  **UX revizyonu (commit 562510e):** Aylık/Yıllık switch Pro kartının İÇİNE
+  alındı (varsayılan YILLIK — yıllıkta aylık eşdeğeri $15/ay + "yıllık $180",
+  aylıkta $19/ay); Pro/Free butonları kart içi dipte aynı hizada
+  (flex-col + mt-auto).
 - ☑ npm test (17/17) + npm run build ✓ → commit → push.
 - **Kalan (kullanıcı tarafı):** Pro checkout gerçek tahsilat için sandbox
   ürün/fiyat ID'leri + canlı dönüşte production ID'ler → env; `NEXT_PUBLIC
