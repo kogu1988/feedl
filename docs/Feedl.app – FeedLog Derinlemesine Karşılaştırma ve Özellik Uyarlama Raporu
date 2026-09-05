@@ -1,15 +1,15 @@
-# Feedl.co – FeedLog Derinlemesine Karşılaştırma ve Özellik Uyarlama Raporu
+# Feedl.app – FeedLog Derinlemesine Karşılaştırma ve Özellik Uyarlama Raporu
 
 **Araştırma tarihi:** 5 Eylül 2026  
 **Karşılaştırılan Feedl sürümü:** `32e22e26be8d69a08bbaf99ffce6065c2dac34f5` — “Add theme toggle to site header”  
 **Karşılaştırılan FeedLog sürümü:** `8ef559a4d032500f5535683b17a3b9ab58a417e4` — 28 Ağustos 2026  
-**Kaynaklar:** [FeedLog ana sitesi](https://feedlog.ai/), [FeedLog yardım merkezi](https://help.feedlog.ai/), [FeedLog GitHub reposu](https://github.com/linkcraftstudio/feedlog), Feedl.co’nun güncel kaynak kodu.
+**Kaynaklar:** [FeedLog ana sitesi](https://feedlog.ai/), [FeedLog yardım merkezi](https://help.feedlog.ai/), [FeedLog GitHub reposu](https://github.com/linkcraftstudio/feedlog), Feedl.app’nun güncel kaynak kodu.
 
 ## 1. Yönetici özeti
 
 FeedLog, Canny’ye yakın temel geri bildirim döngüsünü daha dar fakat daha rafine bir ürün yüzeyiyle sunuyor: board, post, vote, comments, status, public roadmap, changelog, duplicate merge ve ürün içine gömülen widget. FeedLog’un en belirgin stratejik farkları ise **MIT lisansı ve self-hosting**, gerçek **workspace/organization + multi-board** temeli, **host ürünün oturumuna bağlanan widget**, **AI destekli feedback/support/clarify triage** ve deployment’ın Cloudflare Workers, Vercel ve Docker arasında aynı ürün davranışını koruması.
 
-Feedl.co, son geliştirmelerle FeedLog’un birçok görünür özelliğini yalnızca yakalamakla kalmayıp bazı yönetim ve gelir bağlamı alanlarında ileri geçmiştir. Feedl’de comments, internal notes, threaded replies, merge/unmerge, status history, tags/type, saved views, bağımsız changelog, notifications, full-text/vector search, internal roadmap scoring, companies, opportunities, revenue scoring, Autopilot Inbox, widget, public read API ve HMAC webhooks bulunmaktadır. Buna karşılık Feedl’in en büyük açığı, **çok kiracılı workspace/organization/board modelinin veri tabanında bulunmaması**dır. Bu nedenle mevcut ürün, tek bir ürünün feedback portalı olarak güçlüdür; Canny veya FeedLog sınıfında genellenebilir SaaS platformu olarak henüz aynı seviyede değildir.
+Feedl.app, son geliştirmelerle FeedLog’un birçok görünür özelliğini yalnızca yakalamakla kalmayıp bazı yönetim ve gelir bağlamı alanlarında ileri geçmiştir. Feedl’de comments, internal notes, threaded replies, merge/unmerge, status history, tags/type, saved views, bağımsız changelog, notifications, full-text/vector search, internal roadmap scoring, companies, opportunities, revenue scoring, Autopilot Inbox, widget, public read API ve HMAC webhooks bulunmaktadır. Buna karşılık Feedl’in en büyük açığı, **çok kiracılı workspace/organization/board modelinin veri tabanında bulunmaması**dır. Bu nedenle mevcut ürün, tek bir ürünün feedback portalı olarak güçlüdür; Canny veya FeedLog sınıfında genellenebilir SaaS platformu olarak henüz aynı seviyede değildir.
 
 > **Ana karar:** FeedLog’dan ilk olarak marka veya ekran kopyalamak değil, Feedl’in ürün temelini çok kiracılı hale getirmek; ardından FeedLog’un widget AI triage, guest identity, workspace settings, public roadmap/changelog UX ve self-host/deployment yaklaşımını seçici biçimde uyarlamak gerekir.
 
@@ -21,7 +21,7 @@ FeedLog’un ürün akışı yalnızca portal formundan ibaret değil. Feedback 
 
 Changelog, roadmap’den ayrı bir yayın yüzeyi olarak tasarlanmış. Entry’ler draft, published veya needs update olabilir; Markdown gövde, cover image, New/Improved/Fixed kategorileri ve reaction’lar destekleniyor. Roadmap dashboard’ında drag-and-drop, board filtresi ve belirli status’te post oluşturma aksiyonu bulunuyor.[^3]
 
-| FeedLog alanı | Gerçek davranış | Feedl.co’deki karşılık | Değerlendirme |
+| FeedLog alanı | Gerçek davranış | Feedl.app’deki karşılık | Değerlendirme |
 |---|---|---|---|
 | Board | Workspace içinde board container; varsayılan board’lar, sıralama, açıklama | Global portal ve `posts` içinde board alanı bulunmuyor | **Kritik Feedl açığı** |
 | Post | Title, Markdown description, attachment, author, status | Posts, status, type, tags, AI alanları, widget origin | Feedl içerik çekirdeği daha zengin; board kapsamı eksik |
@@ -35,7 +35,7 @@ Changelog, roadmap’den ayrı bir yayın yüzeyi olarak tasarlanmış. Entry’
 | Workspace | Organization, members, roles, custom domain, branding | Global admin/customer rolü | **En kritik mimari fark** |
 | Deployment | Cloudflare, Vercel, Docker; Postgres + vector + blob | Feedl’in mevcut SaaS odaklı deployment’ı | Self-host isteyen müşteri için FeedLog avantajlı |
 
-## 3. FeedLog’dan Feedl.co’ye alınabilecek en değerli özellikler
+## 3. FeedLog’dan Feedl.app’ye alınabilecek en değerli özellikler
 
 ### 3.1 Workspace, organization ve board katmanı — P0
 
@@ -93,7 +93,7 @@ Feedl için önerilen API `@feedl/widget` altında `createWidget`, `auth.getToke
 
 FeedLog, PostgreSQL 17+ ve `vector` extension zorunluluğuyla Docker, Vercel ve Cloudflare Workers seçeneklerini aynı ürün davranışıyla sunuyor. S3-compatible blob storage, OpenAI-compatible endpoint, Resend ve OAuth optional olarak yapılandırılıyor.[^8]
 
-Feedl.co’nun hedefi yalnızca hosted SaaS ise bu özellik kısa vadede zorunlu değildir. Ancak “Canny alternatifi” ve özellikle Avrupa’daki veri egemenliği, on-premise veya private cloud talepleri hedefleniyorsa iki dağıtım hattı düşünülmelidir: hosted multi-tenant SaaS ve tek tenant/self-host edition. Bu karar kod yazmadan önce lisans, support, upgrade, migration, storage ve secret management açısından netleştirilmelidir.
+Feedl.app’nun hedefi yalnızca hosted SaaS ise bu özellik kısa vadede zorunlu değildir. Ancak “Canny alternatifi” ve özellikle Avrupa’daki veri egemenliği, on-premise veya private cloud talepleri hedefleniyorsa iki dağıtım hattı düşünülmelidir: hosted multi-tenant SaaS ve tek tenant/self-host edition. Bu karar kod yazmadan önce lisans, support, upgrade, migration, storage ve secret management açısından netleştirilmelidir.
 
 ### 3.10 Domain event ve entegrasyon mimarisi — P1
 
@@ -101,9 +101,9 @@ FeedLog’un kaynak kodunda `feedback.created`, `widget.message-received`, `widg
 
 Feedl’de Inngest, email ve webhook dispatch zaten var. FeedLog’dan alınması gereken şey Inngest’i değiştirmek değil, business facts ile delivery mekanizmasını birbirinden ayırmaktır. Örneğin `post.created`, `post.status_changed`, `comment.created`, `merge.completed`, `changelog.published`, `widget.message.resolved` olayları typed envelope ile tanımlanmalı. Inngest, email, webhook, analytics ve AI worker’ları bu olaylara subscriber olmalıdır. Kritik teslimatlar için yalnızca in-process best-effort listener değil, persistent queue/outbox kullanılmalıdır.
 
-## 4. FeedLog’da olup Feedl.co’de eksik veya zayıf kalan alanlar
+## 4. FeedLog’da olup Feedl.app’de eksik veya zayıf kalan alanlar
 
-| Alan | Feedl.co durumu | Önerilen işlem | Öncelik |
+| Alan | Feedl.app durumu | Önerilen işlem | Öncelik |
 |---|---|---|---|
 | Organization/workspace | Şemada yok; global admin/customer modeli | Tüm tenant ilişkilerini ekle, default org migration yap | P0 |
 | Board entity | Post’ta board kapsamı bulunmuyor | Board CRUD, reorder, description, filter, unique slug | P0 |
@@ -123,7 +123,7 @@ Feedl’de Inngest, email ve webhook dispatch zaten var. FeedLog’dan alınmas�
 | API | Read API + API key MVP | Write scopes, pagination, idempotency, docs | P1 |
 | Integration catalog | Webhook var | Slack/Linear/Jira/Zendesk/Intercom gibi connector’lar | P2 |
 
-## 5. Feedl.co’nun FeedLog’dan daha güçlü olduğu alanlar
+## 5. Feedl.app’nun FeedLog’dan daha güçlü olduğu alanlar
 
 Feedl’in mevcut kapsamı FeedLog’un basit feedback-board odağının ötesine geçiyor. Özellikle **Companies**, **Company Members**, **Opportunities**, deal value, stage ve revenue scoring, müşteri talebini doğrudan ticari önceliklendirmeye bağlama açısından FeedLog’un dokümante edilen çekirdek ürününden daha ileri bir konum sunuyor. Bu özellikler Feedl’in farklılaştırıcı alanı olarak korunmalı ve kolayca feda edilmemelidir.
 
@@ -167,7 +167,7 @@ Typed domain events/outbox, write-capable API scopes, idempotency keys, paginati
 
 FeedLog’dan alınabilecek en yüksek değerli unsur “daha fazla ekran” değil, **olgun bir feedback SaaS temelinin nasıl sınırlandırıldığıdır**: workspace birinci sınıf nesnedir; board’lar tenant içinde yaşar; widget host ürünün identity’sine bağlanır; AI yalnızca öneri üretmez, support ve clarify durumlarını ayırır; changelog yayın sürümleriyle yönetilir; self-host deployment baştan ürün sözleşmesinin parçasıdır.
 
-Feedl.co bugün FeedLog’un çekirdek feedback döngüsünün önemli bölümüne sahiptir ve companies/opportunities/revenue scoring ile farklılaşmaktadır. En doğru strateji, FeedLog’u birebir kopyalamak değil, **FeedLog’un workspace, widget AI, guest identity, changelog versioning ve deployment disiplinini; Feedl’in revenue-aware prioritization, Autopilot Inbox, analytics ve webhook/API altyapısıyla birleştirmektir.**
+Feedl.app bugün FeedLog’un çekirdek feedback döngüsünün önemli bölümüne sahiptir ve companies/opportunities/revenue scoring ile farklılaşmaktadır. En doğru strateji, FeedLog’u birebir kopyalamak değil, **FeedLog’un workspace, widget AI, guest identity, changelog versioning ve deployment disiplinini; Feedl’in revenue-aware prioritization, Autopilot Inbox, analytics ve webhook/API altyapısıyla birleştirmektir.**
 
 ### Kaynaklar
 

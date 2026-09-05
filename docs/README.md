@@ -1,6 +1,6 @@
 # feedl - AI Destekli Müşteri Geri Bildirim Platformu
 
-**Domain:** feedl.co (planlandı)  
+**Domain:** feedl.app  
 **Solo Founder:** (Sen)
 
 ---
@@ -49,7 +49,7 @@ OPENROUTER_API_KEY=
 INNGEST_EVENT_KEY=
 INNGEST_SIGNING_KEY=
 
-### Email (Resend) - Domain feedl.co doğrulanmalı
+### Email (Resend) - Domain feedl.app doğrulanmalı
 RESEND_API_KEY=
 
 ### Email Test (Ethereal.email) - Geliştirme ortamı

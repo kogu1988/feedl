@@ -1107,7 +1107,7 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   unsubscribe `type=changelog` satırı siler. Mail konusu:
   "🎉 Yeni duyuru: {başlık}".
 - ☑ **Batch 3b ek — onaylı mail metinleri (2026-09-04, commit
-  70e0858):** mail footer "Bu e-postayı feedl.co duyurularına abone
+  70e0858):** mail footer "Bu e-postayı feedl.app duyurularına abone
   olduğun için alıyorsun." + link "Feedl aboneliğinden çık" (html +
   text); çıkış sayfası "bağlantı bulunamadı" varyantı
   "Bu bağlantısı geçersiz veya abonelik zaten kaldırılmış." olarak
@@ -1942,8 +1942,8 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
 - ☑ **Vercel env (`feedl` projesi — feedl.app):** `JIRA_WEBHOOK_SECRET`,
   `JIRA_API_TOKEN` (çalışan yeni token), `JIRA_BASE_URL`
   (https://feedl.atlassian.net), `JIRA_EMAIL` (oguzkir@gmail.com).
-  (Not: `feedl` ve `feedl.co` iki ayrı Vercel projesi; `feedl.app` → `feedl`
-  projesi. Env bu projeye eklenmeli.)
+  (Not: eski `feedl.co` Vercel projesi silindi; production → `feedl` projesi
+  (feedl.app).)
 - ☑ **Canlı doğrulama:** `POST /api/integrations/jira/register` → webhook
   kaydedildi (`events: [jira:issue_created, jira:issue_updated]`,
   `isSigned: true`, id 2). Gerçek Jira issue (`SCRUM-7`, id 10006) → feedl
