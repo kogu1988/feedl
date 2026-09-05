@@ -39,7 +39,7 @@ export default async function RootPage() {
     let target = "/portal";
     try {
       const role = await getRole(userId);
-      if (role === "admin") {
+      if (role === "admin" || role === "team") {
         target = "/dashboard";
       }
     } catch (err) {

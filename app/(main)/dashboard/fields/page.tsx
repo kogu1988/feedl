@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { asc, eq } from "drizzle-orm";
 
 import { CustomFieldsManager } from "@/components/custom/custom-fields-manager";
-import { getAdminUserId } from "@/lib/auth/admin";
+import { getTeamUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { customFields } from "@/lib/db/schema";
@@ -14,8 +14,8 @@ export const dynamic = "force-dynamic";
 // kendi tanımladığı alanlar (metin/seçim/sayı/tarih) eklenir.
 export default async function FieldsPage() {
   // Middleware girişi garanti eder; admin rolü tek kaynaktan (DB) doğrulanır.
-  const adminId = await getAdminUserId();
-  if (!adminId) {
+  const teamId = await getTeamUserId();
+  if (!teamId) {
     redirect("/portal");
   }
 

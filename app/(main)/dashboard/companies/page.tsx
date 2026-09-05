@@ -7,7 +7,7 @@ import {
   type OpportunityView,
   type UserOption,
 } from "@/components/custom/companies-manager";
-import { getAdminUserId } from "@/lib/auth/admin";
+import { getTeamUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import {
@@ -24,8 +24,8 @@ export const dynamic = "force-dynamic";
 // gruplanır (fan-out yok); kullanıcılar üye seçici için tek sorguda gelir.
 export default async function CompaniesPage() {
   // Middleware girişi garanti eder; admin rolü tek kaynaktan (DB) doğrulanır.
-  const adminId = await getAdminUserId();
-  if (!adminId) {
+  const teamId = await getTeamUserId();
+  if (!teamId) {
     redirect("/portal");
   }
 

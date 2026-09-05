@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { ActivationFunnel } from "@/components/custom/activation-funnel";
-import { getAdminUserId } from "@/lib/auth/admin";
+import { getTeamUserId } from "@/lib/auth/admin";
 import { loadActivationFunnel } from "@/lib/db/activation";
 
 // Canlı veri.
@@ -10,8 +10,8 @@ export const dynamic = "force-dynamic";
 // Sprint 60 (madde — activation funnel): Operator görünümü — tüm
 // workspace'lerin hangi aşamaya ulaştığını ölçer.
 export default async function ActivationPage() {
-  const adminId = await getAdminUserId();
-  if (!adminId) {
+  const teamId = await getTeamUserId();
+  if (!teamId) {
     redirect("/portal");
   }
 

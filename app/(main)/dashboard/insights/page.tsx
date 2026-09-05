@@ -3,7 +3,7 @@ import { asc, count, desc, eq } from "drizzle-orm";
 
 import { CorpusInsights } from "@/components/custom/corpus-insights";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { getAdminUserId } from "@/lib/auth/admin";
+import { getTeamUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { posts, votes } from "@/lib/db/schema";
@@ -19,8 +19,8 @@ export const maxDuration = 60;
 const MAX_CORPUS = 60;
 
 export default async function InsightsPage() {
-  const adminId = await getAdminUserId();
-  if (!adminId) {
+  const teamId = await getTeamUserId();
+  if (!teamId) {
     redirect("/portal");
   }
 

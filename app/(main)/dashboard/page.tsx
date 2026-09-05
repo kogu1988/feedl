@@ -24,7 +24,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { getAdminUserId } from "@/lib/auth/admin";
+import { getTeamUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { loadOnboardingState } from "@/lib/db/onboarding";
@@ -86,8 +86,8 @@ export default async function DashboardPage({
   }>;
 }) {
   // Middleware girişi garanti eder; admin rolü tek kaynaktan (DB) doğrulanır.
-  const adminId = await getAdminUserId();
-  if (!adminId) {
+  const teamId = await getTeamUserId();
+  if (!teamId) {
     redirect("/portal");
   }
 

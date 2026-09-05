@@ -38,7 +38,7 @@ const navGroups = [
     items: [
       { href: "/dashboard", label: "Genel Bakış", icon: LayoutDashboardIcon },
       { href: "/dashboard/boards", label: "Board'lar", icon: Columns3Icon },
-      { href: "/dashboard/revenue", label: "Gelir", icon: TrendingUpIcon },
+      { href: "/dashboard/revenue", label: "Gelir", icon: TrendingUpIcon, adminOnly: true },
       { href: "/dashboard/activation", label: "Aktivasyon", icon: BarChart3Icon },
       { href: "/dashboard/insights", label: "AI İçgörüleri", icon: SparklesIcon },
     ],
@@ -47,83 +47,96 @@ const navGroups = [
     label: "Yönetim",
     items: [
       { href: "/dashboard/companies", label: "Şirketler", icon: Building2Icon },
-      { href: "/dashboard/members", label: "Üyeler", icon: UsersIcon },
+      { href: "/dashboard/members", label: "Üyeler", icon: UsersIcon, adminOnly: true },
       { href: "/dashboard/fields", label: "Alanlar", icon: ListTreeIcon },
       {
         href: "/dashboard/workspaces",
         label: "Çalışma Alanları",
         icon: LayersIcon,
+        adminOnly: true,
       },
     ],
   },
   {
     label: "Sistem",
     items: [
-      { href: "/dashboard/widget", label: "Widget", icon: PuzzleIcon },
-      { href: "/dashboard/billing", label: "Faturalama", icon: CreditCardIcon },
-      { href: "/dashboard/settings", label: "Ayarlar", icon: SettingsIcon },
+      { href: "/dashboard/widget", label: "Widget", icon: PuzzleIcon, adminOnly: true },
+      { href: "/dashboard/billing", label: "Faturalama", icon: CreditCardIcon, adminOnly: true },
+      { href: "/dashboard/settings", label: "Ayarlar", icon: SettingsIcon, adminOnly: true },
     ],
   },
 ];
+
+// Sprint 63+ (yetki matrisi — kullanıcı onayı): dashboard yalnız
+// owner/admin (tam) + contributor (kısmi team) tarafından görülür.
+// adminOnly öğeler (gelir, üyeler, çalışma alanları, sistem) yalnız
+// "admin" kademesine görünür; "team" kademesinde gizlenir.
+type DashboardScope = "admin" | "team" | null;
 
 function isActive(pathname: string, href: string) {
   if (href === "/dashboard") return pathname === "/dashboard";
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-function NavList({ collapsed }: { collapsed: boolean }) {
+function NavList({ collapsed, scope }: { collapsed: boolean; scope: DashboardScope }) {
   const pathname = usePathname();
   return (
     <nav aria-label="Yönetim menüsü" className="flex-1 overflow-y-auto p-2">
-      {navGroups.map((group) => (
-        <div key={group.label} className="mb-3 last:mb-0">
-          <p
-            className={cn(
-              "px-2.5 pb-1 text-xs font-medium text-sidebar-foreground/50",
-              collapsed && "hidden",
-            )}
-          >
-            {group.label}
-          </p>
-          <div className="space-y-0.5">
-            {group.items.map((item) => {
-              const active = isActive(pathname, item.href);
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  aria-current={active ? "page" : undefined}
-                  title={collapsed ? item.label : undefined}
-                  className={cn(
-                    "relative flex h-9 cursor-pointer items-center gap-2.5 rounded-md px-2.5 text-sm font-medium transition-colors",
-                    "hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
-                    active
-                      ? "bg-sidebar-accent text-sidebar-foreground"
-                      : "text-sidebar-foreground/70",
-                    collapsed && "justify-center px-0",
-                  )}
-                >
-                  {active && (
-                    <span
-                      aria-hidden="true"
-                      className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-brand"
-                    />
-                  )}
-                  <item.icon className="size-4 shrink-0" aria-hidden="true" />
-                  <span className={cn("truncate", collapsed && "hidden")}>
-                    {item.label}
-                  </span>
-                </Link>
-              );
-            })}
+      {navGroups.map((group) => {
+        const visibleItems = group.items.filter(
+          (item) => scope === "admin" || !((item as { adminOnly?: boolean }).adminOnly),
+        );
+        if (visibleItems.length === 0) return null;
+        return (
+          <div key={group.label} className="mb-3 last:mb-0">
+            <p
+              className={cn(
+                "px-2.5 pb-1 text-xs font-medium text-sidebar-foreground/50",
+                collapsed && "hidden",
+              )}
+            >
+              {group.label}
+            </p>
+            <div className="space-y-0.5">
+              {visibleItems.map((item) => {
+                const active = isActive(pathname, item.href);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    aria-current={active ? "page" : undefined}
+                    title={collapsed ? item.label : undefined}
+                    className={cn(
+                      "relative flex h-9 cursor-pointer items-center gap-2.5 rounded-md px-2.5 text-sm font-medium transition-colors",
+                      "hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
+                      active
+                        ? "bg-sidebar-accent text-sidebar-foreground"
+                        : "text-sidebar-foreground/70",
+                      collapsed && "justify-center px-0",
+                    )}
+                  >
+                    {active && (
+                      <span
+                        aria-hidden="true"
+                        className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-brand"
+                      />
+                    )}
+                    <item.icon className="size-4 shrink-0" aria-hidden="true" />
+                    <span className={cn("truncate", collapsed && "hidden")}>
+                      {item.label}
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </nav>
   );
 }
 
-export function AppSidebar() {
+export function AppSidebar({ scope }: { scope?: DashboardScope | null }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -189,7 +202,7 @@ export function AppSidebar() {
             )}
           </button>
         </div>
-        <NavList collapsed={collapsed} />
+        <NavList collapsed={collapsed} scope={scope ?? null} />
         <div
           className={cn(
             "flex items-center gap-2 border-t border-sidebar-border p-2.5",
@@ -253,7 +266,7 @@ export function AppSidebar() {
               <XIcon className="size-4" aria-hidden="true" />
             </button>
           </div>
-          <NavList collapsed={false} />
+          <NavList collapsed={false} scope={scope ?? null} />
           <div className="flex items-center gap-2 border-t border-sidebar-border p-2.5">
             <UserButton />
             <span className="text-sm text-sidebar-foreground/70">Hesap</span>

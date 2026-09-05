@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { BoardsManager } from "@/components/custom/boards-manager";
-import { getAdminUserId } from "@/lib/auth/admin";
+import { getTeamUserId } from "@/lib/auth/admin";
 import { listBoards } from "@/lib/db/board";
 
 // Canlı veri: her istekte DB'den okunur.
@@ -9,8 +9,8 @@ export const dynamic = "force-dynamic";
 
 // Sprint 48b (madde 8) — board yönetimi. Feedback koleksiyonları.
 export default async function BoardsPage() {
-  const adminId = await getAdminUserId();
-  if (!adminId) {
+  const teamId = await getTeamUserId();
+  if (!teamId) {
     redirect("/portal");
   }
 
