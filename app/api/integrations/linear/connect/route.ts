@@ -1,3 +1,5 @@
+import { randomBytes } from "node:crypto";
+
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
@@ -22,8 +24,7 @@ const connectSchema = z.object({
 });
 
 function randomToken(): string {
-  const crypto = require("node:crypto");
-  return crypto.randomBytes(32).toString("hex");
+  return randomBytes(32).toString("hex");
 }
 
 export async function POST(req: Request) {
