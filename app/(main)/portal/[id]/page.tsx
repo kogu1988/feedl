@@ -212,7 +212,7 @@ export default async function PostDetailPage({
   }
 
   return (
-    <main className="container mx-auto max-w-3xl p-4 sm:p-8">
+    <main className="container mx-auto max-w-none p-4 sm:p-8">
       <Link
         href="/portal"
         className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
@@ -285,7 +285,7 @@ export default async function PostDetailPage({
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
-          <p className="whitespace-pre-line text-sm leading-relaxed">
+          <p className="max-w-prose whitespace-pre-line text-sm leading-relaxed">
             {post.description}
           </p>
 

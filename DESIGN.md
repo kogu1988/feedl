@@ -111,8 +111,8 @@ Ayarlar); altta UserButton. Bileşen: `app-sidebar` — dashboard altı
 - `app/(main)/layout.tsx`: `ClerkProvider(shadcn)` > `ThemeProvider` >
   `flex min-h-svh flex-col` (üst bar / flex-1 içerik / alt bar).
 - **Üst bar** (`components/custom/site-header.tsx`): `h-14`,
-  `sticky top-0 z-40 bg-background`; container `max-w-5xl`, admin'de
-  (`/dashboard*`) tam genişlik (`max-w-none`); marka karosu (`size-6 rounded-md bg-brand`
+  `sticky top-0 z-40 bg-background`; container **her sayfada tam genişlik**
+  (`max-w-none`) — admin/public ayrımı yoktur; marka karosu (`size-6 rounded-md bg-brand`
   + ChevronsUpIcon koyu mürekkep), aktif nav vurgusu `bg-muted`
   (`usePathname`; `/portal/changelog` hariç `/portal*` Portal'ı aktif eder);
   sağda `ThemeToggle` + Clerk butonları.
@@ -124,8 +124,13 @@ Ayarlar); altta UserButton. Bileşen: `app-sidebar` — dashboard altı
   (`text-2xl bold tracking-tight`); eyebrow pill YOK. Kapanış CTA
   paneli `bg-brand-soft` — marka ailesinden tek bold leke; üzerinde
   mürekkep metin + mercan buton (beyaz-on-mercan yok, §1).
-- Genişlik disiplini: içerik `max-w-5xl`; dashboard tabloları tam genişlik
-  container üzerinden. Alan sol bakışa değil, işe göre hizalanır.
+- **Genişlik disiplini (2026-09-05, tam genişlik kararı):** her sayfa
+  container'ı `max-w-none` ile ekranın tamamını kullanır — `max-w-3xl/4xl/5xl/6xl`
+  sayfa container'ı olarak KULLANILMAZ. İçerik **sola yaslı** dizilir
+  (`mx-auto text-center` hero blokları yok). Alan sol bakışa değil, işe
+  göre hizalanır. İstisna: uzun okuma metinleri (legal, changelog gövdesi,
+  boş durum metinleri) içeride `max-w-prose` ile satır uzunluğu sınırı
+  alabilir — sayfa container'ı yine tam genişlik kalır.
 - **Sayfa deseni (admin):** başlık satırı (h1 + muted açıklama solda,
   primary aksiyon sağda) → KPI şeridi (4 kart; 2×2 tablet, tek kolon
   mobil) → araç çubuğu (FilterTabs solda, kayıtlı görünüm + aksiyonlar

@@ -51,7 +51,7 @@ export default async function MainLayout({
         <SiteHeader brand={brand} />
         <div className="flex-1">{children}</div>
         <footer className="border-t">
-          <div className="container mx-auto max-w-5xl px-4 py-10">
+          <div className="container mx-auto max-w-none px-4 py-10">
             <div className="grid gap-8 sm:grid-cols-2 sm:gap-10 lg:grid-cols-4">
               <div className="lg:col-span-2">
                 <p className="text-sm text-muted-foreground">

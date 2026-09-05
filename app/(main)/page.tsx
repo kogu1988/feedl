@@ -134,7 +134,7 @@ export default async function RootPage() {
   ];
 
   return (
-    <main className="container mx-auto max-w-5xl px-4 pb-16 pt-12 sm:pt-20">
+    <main className="container mx-auto max-w-none px-4 pb-16 pt-12 sm:pt-20">
       <section className="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-14">
         <div>
           <h1 className="hero-rise max-w-lg text-4xl font-bold sm:text-5xl">
@@ -201,7 +201,7 @@ export default async function RootPage() {
       </section>
 
       <section className="mt-20 sm:mt-24">
-        <div className="mx-auto max-w-2xl text-center">
+        <div className="max-w-2xl">
           <h2 className="text-2xl font-bold tracking-tight">
             Geri bildirimden ürün kararına her şey
           </h2>

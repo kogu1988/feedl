@@ -6,7 +6,7 @@ import { NotFoundView } from "@/components/custom/not-found-view";
 // app/(main)/not-found.tsx
 export default function NotFound() {
   return (
-    <main className="container mx-auto max-w-3xl p-4 sm:p-8">
+    <main className="container mx-auto max-w-none p-4 sm:p-8">
       <NotFoundView />
     </main>
   );

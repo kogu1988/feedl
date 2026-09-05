@@ -25,14 +25,14 @@ export default async function PricingPage() {
   }
 
   return (
-    <main className="container mx-auto max-w-4xl px-4 py-12 sm:py-16">
-      <div className="text-center">
+    <main className="container mx-auto max-w-none px-4 py-12 sm:py-16">
+      <div>
         <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
           Geri bildirimi ürüne dönüştürmek için fiyatlandırma
         </h1>
-        <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
+        <p className="mt-3 max-w-xl text-muted-foreground">
           Her ölçekte ekip için basit, kullanıcı başına değil ekip başına
-          fiyatlandırma. Ücretsiz başlayın, büyüdükte Pro&apos;a geçin.
+          fiyatlandırma. Ücretsiz başlayın, büyüdüğünüzde Pro&apos;ya geçin.
         </p>
       </div>
 
@@ -40,7 +40,7 @@ export default async function PricingPage() {
         <PricingManager workspaceSlug={slug} />
       </div>
 
-      <p className="mt-10 text-center text-xs text-muted-foreground">
+      <p className="mt-10 text-xs text-muted-foreground">
         Ödeme Paddle tarafından güvenle işlenir (merchant of record). Fiyatlar
         USD, vergi dahildir.
       </p>

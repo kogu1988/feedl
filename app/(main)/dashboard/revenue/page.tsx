@@ -28,7 +28,7 @@ export default async function RevenuePage() {
   }
 
   return (
-    <main className="container mx-auto max-w-5xl p-4 sm:p-8">
+    <main className="container mx-auto max-w-none p-4 sm:p-8">
       <div>
         <h1 className="text-2xl font-bold">Gelir Raporu</h1>
         <p className="mt-2 text-muted-foreground">

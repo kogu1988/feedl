@@ -108,7 +108,7 @@ export default async function ChangelogDetailPage({
   }
 
   return (
-    <main className="container mx-auto max-w-3xl p-4 sm:p-8">
+    <main className="container mx-auto max-w-none p-4 sm:p-8">
       <Link
         href="/portal/changelog"
         className="inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
@@ -144,7 +144,7 @@ export default async function ChangelogDetailPage({
             />
           ) : null}
 
-          <div className="mt-5">
+          <div className="mt-5 max-w-prose">
             <MarkdownContent content={entry.body} />
           </div>
 

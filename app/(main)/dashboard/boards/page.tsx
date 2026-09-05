@@ -27,7 +27,7 @@ export default async function BoardsPage() {
   }
 
   return (
-    <main className="container mx-auto max-w-4xl p-4 sm:p-8">
+    <main className="container mx-auto max-w-none p-4 sm:p-8">
       <div>
         <h1 className="text-2xl font-bold">Board&apos;lar</h1>
         <p className="mt-2 text-muted-foreground">

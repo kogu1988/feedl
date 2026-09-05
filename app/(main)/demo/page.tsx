@@ -37,16 +37,16 @@ const surfaces = [
 
 export default function DemoPage() {
   return (
-    <main className="container mx-auto max-w-5xl px-4 pb-16 pt-12 sm:pt-20">
-      <section className="text-center">
-        <h1 className="mx-auto max-w-2xl text-4xl font-bold tracking-tight sm:text-5xl">
+    <main className="container mx-auto max-w-none px-4 pb-16 pt-12 sm:pt-20">
+      <section>
+        <h1 className="max-w-2xl text-4xl font-bold tracking-tight sm:text-5xl">
           feedl gerçekte nasıl görünüyor?
         </h1>
-        <p className="mx-auto mt-4 max-w-xl text-lg text-muted-foreground">
+        <p className="mt-4 max-w-xl text-lg text-muted-foreground">
           Aşağıdaki yüzeyler feedl&apos;in canlı örnekleridir. Kendi müşterilerinin
           isteklerini bu şekilde toplayıp, analiz edip duyurabilirsin.
         </p>
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+        <div className="mt-8 flex flex-wrap items-center gap-3">
           <SignUpButton>
             <Button size="lg">Ücretsiz Başla</Button>
           </SignUpButton>
@@ -84,7 +84,7 @@ export default function DemoPage() {
           Portalda her fikir bu şekilde görünür; oy, durum, duygu ve etiketler
           otomatik dolar.
         </p>
-        <div className="mx-auto mt-6 max-w-2xl" aria-hidden="true">
+        <div className="mt-6 max-w-2xl" aria-hidden="true">
           <DemoPostCard
             title="Karanlık mod desteği"
             date="31 Ağustos 2026"

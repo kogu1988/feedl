@@ -20,7 +20,7 @@ export default function ErrorPage({
   console.error("Page error boundary:", error.message, error.digest);
 
   return (
-    <main className="container mx-auto max-w-3xl p-4 sm:p-8">
+    <main className="container mx-auto max-w-none p-4 sm:p-8">
       <div className="mt-16 rounded-lg border border-dashed p-10 text-center sm:p-16">
         <div className="mx-auto flex size-12 items-center justify-center rounded-full border border-border bg-muted/40">
           <AlertTriangleIcon
