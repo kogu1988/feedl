@@ -1643,6 +1643,26 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   → Signing Secret → Vercel env `SLACK_SIGNING_SECRET` (+ opsiyonel
   `SLACK_BOT_TOKEN`). Sonra test.
 
+### Sprint 48p — Zendesk Connector (madde 10) (✅ 2026-09-04)
+
+> İkinci gerçek connector — Zendesk Trigger → Webhook (target) ile
+> ticket.created → AI triage → feedback. Kullanıcı kurumsal imaj için
+> kişisel isim kullanmadı; uygulama feedl olarak adlandırılır.
+
+- ☑ **`lib/zendesk.ts` (commit a365d1c):** verifyZendeskToken (custom
+  header X-Feedl-Token, ZENDESK_WEBHOOK_SECRET), zendeskTicketText
+  (subject + description → title/body), isZendeskConfigured.
+- ☑ **`POST /api/integrations/zendesk/webhook`:** token doğrulama,
+  ticket → zendeskTicketText → classifyWidgetMessage → feedback ise
+  users upsert (widget_zendesk_<ticket>) + post oluştur (source=zendesk)
+  + post/created. Kurumsal: uygulama adı feedl.
+- ☑ middleware `/api/integrations(.*)` public (Slack ile ortak).
+- ☑ npm test (17/17) + npm run build ✓ → commit → push.
+- **Kalan (kullanıcı tarafı):** Zendesk Admin → Apps → Webhooks → yeni
+  webhook: URL https://feedl.app/api/integrations/zendesk/webhook + custom
+  header `X-Feedl-Token: <ZENDESK_WEBHOOK_SECRET>`; Trigger (ticket.created)
+  → bu webhook. Vercel env `ZENDESK_WEBHOOK_SECRET`.
+
 ### Ertelenen blok (en son — kullanıcının kısıtı)
 
 - **Domain (feedl.app) alındı (2026-09-04).** Kod tarafı hazır: tüm
