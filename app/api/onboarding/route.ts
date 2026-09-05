@@ -105,10 +105,39 @@ export async function POST(req: Request) {
     try {
       const [created] = await getDb()
         .insert(workspaces)
-        .values({ name: parsed.data.name, slug: wsSlug })
-        .returning({ id: workspaces.id, name: workspaces.name, slug: workspaces.slug });
+        .values({
+          name: parsed.data.name,
+          slug: wsSlug,
+          // Onboarding her zaman FREE plan ile başlar (Faz 5 kararı). Schema
+          // default'ları zaten free (free: 1 board, 1 üye, 50 takipçi); burada
+          // açıkça yazmak intent'i ve limit kontrolünün tabanını belgeler.
+          plan: "free",
+          memberLimit: 1,
+          boardLimit: 1,
+          trackedUserLimit: 50,
+        })
+        .returning({
+          id: workspaces.id,
+          name: workspaces.name,
+          slug: workspaces.slug,
+          plan: workspaces.plan,
+          memberLimit: workspaces.memberLimit,
+          boardLimit: workspaces.boardLimit,
+          trackedUserLimit: workspaces.trackedUserLimit,
+        });
 
-      // Varsayılan board + owner (aynı workspace).
+      // Sprint 63 (rev., madde limit kontrolü): free tier her zaman 1 board +
+      // 1 owner (üye) oluşturmaya izin verir. Yine de oluşturulan kaynak
+      // sayıları workspace'in kendi limitlerine sığıyor mu doğrula — plan
+      // limiti misconfigure ise (örn. 0) baştan reddet, sessizce aşma.
+      if (created.boardLimit < 1 || created.memberLimit < 1) {
+        throw new Error(
+          `Board/üye limiti çok düşük (board=${created.boardLimit}, üye=${created.memberLimit}).`,
+        );
+      }
+
+      // Varsayılan board + owner (aynı workspace). Board sayısı 1 ≤ boardLimit,
+      // üye sayısı 1 ≤ memberLimit (yeni workspace boş başlar).
       await getDb().insert(boards).values({
         workspaceId: created.id,
         name: "Genel",

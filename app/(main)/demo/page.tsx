@@ -47,7 +47,7 @@ export default function DemoPage() {
           isteklerini bu şekilde toplayıp, analiz edip duyurabilirsin.
         </p>
         <div className="mt-8 flex flex-wrap items-center gap-3">
-          <SignUpButton>
+          <SignUpButton forceRedirectUrl="/onboarding">
             <Button size="lg">Ücretsiz Başla</Button>
           </SignUpButton>
           <Button size="lg" variant="outline" render={<Link href="/pricing" />}>

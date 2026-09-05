@@ -19,7 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { DemoPostCard } from "@/components/custom/demo-post-card";
 import { getDb } from "@/lib/db";
-import { users, workspaceMembers } from "@/lib/db/schema";
+import { users } from "@/lib/db/schema";
 
 // Sprint 50 (Faz 4/cilama) — "/" artık SATIŞ landing'idir. Portal / yol
 // haritası / güncellemeler nav'dan çıkarıldı; ürün örnekleri /demo'ya taşındı.
@@ -42,19 +42,11 @@ export default async function RootPage() {
 
       if (user?.role === "admin") {
         target = "/dashboard";
-      } else {
-        // Sprint 63: Yeni müşteri (henüz workspace üyesi değil, admin değil)
-        // landing'den self-serve onboarding'e yönlendirilir. Portal uç
-        // kullanıcıları (üyelik sahibi) mevcut davranışta /portal'da kalır.
-        const [member] = await getDb()
-          .select({ id: workspaceMembers.id })
-          .from(workspaceMembers)
-          .where(eq(workspaceMembers.userId, userId))
-          .limit(1);
-        if (!member) {
-          target = "/onboarding";
-        }
       }
+      // Sprint 63 (rev.): onboarding'e YALNIZCA SaaS-funnel signup butonlarının
+      // redirectUrl'u ile gidilir (landing/demo "Ücretsiz Başla"). Burada `/`
+      // kuralı admin→dashboard / diğer→portal kalır — portal uç kullanıcısı
+      // (müşterinin müşterisi) onboarding'e hiç gönderilmez.
     } catch (err) {
       console.error(
         "Root page role lookup failed:",
@@ -164,7 +156,7 @@ export default async function RootPage() {
             className="hero-rise mt-8 flex flex-wrap items-center gap-3"
             style={{ animationDelay: "120ms" }}
           >
-            <SignUpButton>
+            <SignUpButton forceRedirectUrl="/onboarding">
               <Button size="lg">Ücretsiz Başla</Button>
             </SignUpButton>
             <Button size="lg" variant="outline" render={<Link href="/demo" />}>
@@ -250,7 +242,7 @@ export default async function RootPage() {
           başla.
         </p>
         <div className="mt-6 flex justify-center">
-          <SignUpButton>
+          <SignUpButton forceRedirectUrl="/onboarding">
             <Button size="lg">Ücretsiz Başla</Button>
           </SignUpButton>
         </div>

@@ -8,6 +8,17 @@ import { cookies } from "next/headers";
 // Sprint 63 (onboarding): kullanıcının aktif workspace slug'ı çerezde tutulur
 // (feedl_active_ws). Self-serve onboarding sonrası kullanıcı kendi oluşturduğu
 // workspace'e "girer". SADECE bu çerez varsa host yerine o slug tercih edilir.
+//
+// GÜVENLİK MODELİ (Sprint 63 rev.): bu çerez bir YETKİ BARIYERİ DEĞİL, yalnızca
+// hangi workspace bağlamında çalışılacağını seçen bir ROUTING İPUCU'DUR.
+// İstemci onu istediği slug'a değiştirebilir; ancak:
+//  - Admin/dashboard erişimi getAdminUserId → getWorkspaceRole ile PER-WORKSPACE
+//    doğrulanır — çerez başka bir workspace'i işaret etse de kullanıcının o
+//    workspace'te owner/admin/üye olması gerekir, aksi halde rol null → erişim yok.
+//  - Portal yazma (post/vote/comment) yalnızca public board'lara açıktır; private
+//    board'lar portal üzerinden zaten reddedilir (app/api/posts/route.ts).
+// Yani çerez doğrudan başka bir kiracının admin verisine erişim sağlamaz;
+// güvenlik sınırı = rol kontrolü + board visibility kontrolü.
 const ACTIVE_WS_COOKIE = "feedl_active_ws";
 
 // Sprint 48e (madde 8): subdomain routing — getWorkspaceId artık isteğin
@@ -91,6 +102,16 @@ export async function resolveWorkspaceByHost(
     );
   }
   return fallback;
+}
+
+// Showcase (vitrin) modu: feedl kök host'undaki (feedl.app / www /
+// NEXT_PUBLIC_APP_URL) portal/roadmap/changelog yüzeyleri ziyaretçiye vitrin
+// olarak sunulur — tanıtım amaçlı, etkileşim kapalı. Müşteri subdomain'leri
+// (acme.feedl.app) gerçek portal olarak etkileşimli kalmaya devam eder.
+// Sayfalar bunu oturum kontrolüyle birleştirir: üye/admin girişliyse vitrin
+// değil gerçek kullanım (dogfooding) söz konusudur.
+export async function isShowcaseRequest(): Promise<boolean> {
+  return isFeedlRootHost(await getRequestHost());
 }
 
 // Request başına workspace id cache'i: aynı request'te birden çok çağrı
