@@ -143,13 +143,14 @@ Ayarlar); altta UserButton. Bileşen: `app-sidebar` — dashboard altı
   back-link'lerinin yerini aldı. Son öğe `aria-current="page"` +
   `truncate`; ayraç ChevronRight. Tek seviyeli sayfalarda, dashboard
   ve widget'ta breadcrumb YOK (üst bar + sidebar konumu zaten verir).
-- **Genişlik disiplini (2026-09-05, tam genişlik kararı):** her sayfa
-  container'ı `max-w-none` ile ekranın tamamını kullanır — `max-w-3xl/4xl/5xl/6xl`
-  sayfa container'ı olarak KULLANILMAZ. İçerik **sola yaslı** dizilir
-  (`mx-auto text-center` hero blokları yok). Alan sol bakışa değil, işe
-  göre hizalanır. İstisna: uzun okuma metinleri (legal, changelog gövdesi,
-  boş durum metinleri) içeride `max-w-prose` ile satır uzunluğu sınırı
-  alabilir — sayfa container'ı yine tam genişlik kalır.
+- **Genişlik disiplini (2026-09-05, rev. 2 — işe göre hizalama):**
+  **Uygulama sayfaları** (dashboard, portal, roadmap, admin ekranları)
+  tam genişlik `max-w-none` + **sola yaslı** — sidebar'lı veri yüzeyi,
+  tablo/liste yoğunluğu için. **Landing** (`app/(main)/page.tsx`)
+  ortalanmış kolon: `container mx-auto max-w-6xl` — pazarlama sayfası
+  gösteri/okuma ölçeği ister; hero'daki asimetrik bloklar kolon içinde
+  kalır. İçeride uzun okuma metinleri (legal, changelog gövdesi, boş
+  durum metinleri) her iki tipte de `max-w-prose` alabilir.
 - **Sayfa deseni (admin):** başlık satırı (h1 + muted açıklama solda,
   primary aksiyon sağda) → KPI şeridi (4 kart; 2×2 tablet, tek kolon
   mobil) → araç çubuğu (FilterTabs solda, kayıtlı görünüm + aksiyonlar
