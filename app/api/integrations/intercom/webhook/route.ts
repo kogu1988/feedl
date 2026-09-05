@@ -6,6 +6,7 @@ import { getWorkspaceId } from "@/lib/db/workspace";
 import { getDefaultBoardId } from "@/lib/db/board";
 import { classifyWidgetMessage } from "@/lib/ai/analysis";
 import {
+  intercomIdentity,
   intercomItemText,
   intercomSourceRef,
   isIntercomConfigured,
@@ -95,14 +96,21 @@ export async function POST(req: NextRequest) {
       }
 
       // Contact id varsa onu, yoksa conversation/ticket id'yi kimlik olarak kullan.
-      const identity = item.contact?.id ?? item.id ?? item.ticketId ?? "intercom";
+      const identity = intercomIdentity(item);
       const userId = toWidgetUserId(`intercom_${identity}`);
+      const contact = item.contact;
+      const contactName =
+        typeof contact === "object" && contact !== null
+          ? typeof (contact as Record<string, unknown>).name === "string"
+            ? ((contact as Record<string, unknown>).name as string)
+            : null
+          : null;
       await getDb()
         .insert(users)
         .values({
           id: userId,
           email: `intercom-${identity}@widget.feedl.local`,
-          name: item.contact?.name ?? null,
+          name: contactName,
           role: "customer",
         })
         .onConflictDoUpdate({
