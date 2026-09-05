@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { BoxesIcon, BuildingIcon, DownloadIcon, LayoutGridIcon, PieChartIcon, PuzzleIcon, SettingsIcon, SlidersHorizontalIcon, UsersIcon } from "lucide-react";
+import { BoxesIcon, BuildingIcon, CreditCardIcon, DownloadIcon, LayoutGridIcon, PieChartIcon, PuzzleIcon, SettingsIcon, SlidersHorizontalIcon, UsersIcon } from "lucide-react";
 import { and, asc, count, countDistinct, desc, eq, gte, inArray, isNull } from "drizzle-orm";
 
 import { FilterTabs } from "@/components/custom/filter-tabs";
@@ -202,6 +202,10 @@ export default async function DashboardPage({
           <Button variant="outline" render={<Link href="/dashboard/workspaces" />}>
             <BoxesIcon aria-hidden="true" />
             Workspace&apos;ler
+          </Button>
+          <Button variant="outline" render={<Link href="/dashboard/billing" />}>
+            <CreditCardIcon aria-hidden="true" />
+            Faturalandırma
           </Button>
           <Button variant="outline" render={<Link href="/dashboard/members" />}>
             <UsersIcon aria-hidden="true" />

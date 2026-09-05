@@ -172,6 +172,15 @@ export const workspaces = pgTable("workspaces", {
   customDomain: varchar("custom_domain", { length: 200 }),
   brandColor: varchar("brand_color", { length: 20 }),
   logoUrl: text("logo_url"),
+  // Sprint 48h (Faz 5): plan + limitler + Paddle bağlantısı. plan
+  // free|pro; limitler workspace başına kaynak sınırları; Paddle
+  // customer/subscription kimlikleri abonelik webhook'undan doldurulur.
+  plan: varchar("plan", { length: 20 }).notNull().default("free"),
+  paddleCustomerId: varchar("paddle_customer_id", { length: 40 }),
+  paddleSubscriptionId: varchar("paddle_subscription_id", { length: 40 }),
+  trackedUserLimit: integer("tracked_user_limit").notNull().default(50),
+  boardLimit: integer("board_limit").notNull().default(1),
+  memberLimit: integer("member_limit").notNull().default(1),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
