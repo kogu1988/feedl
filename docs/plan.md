@@ -1966,6 +1966,36 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   Jira webhook payload'ı `{ issue: { id, key, fields: { summary,
   description, creator } } }` şemasında olmalı.
 
+### Sprint 58 — Per-Workspace Linear Otomasyonu (Madde 2) (✅ 2026-09-05)
+
+> Kullanıcı kararı: per-workspace otomasyonu + önerilen sıra (DB → API →
+> connect → webhook route → UI). Linear GraphQL `webhookCreate` ile webhook
+> OTOMATİK oluşturulur — kullanıcı Linear UI'da manuel kural kurmaz.
+
+- ☑ **DB (`workspace_integrations` migration 0038):** workspace_id, provider,
+  webhook_id, webhook_secret, url_token, resource_types, linear_team_id,
+  status. `UNIQUE(workspace_id, provider)` + provider index.
+- ☑ **`lib/linear-api.ts`:** `linearViewer` (key doğrula), `linearCreateWebhook`
+  (GraphQL `webhookCreate` — `resourceTypes` zorunlu, `secret` OLABILIR döner),
+  `linearDeleteWebhook`, `linearListWebhooks`. **Gerçek şema teyit:**
+  `resourceTypes` enum: Issue/Comment/CustomerNeed (CustomerRequest değil);
+  `secret` döner (`lin_wh_…`).
+- ☑ **`POST /api/integrations/linear/connect` (admin-only):** `getAdminUserId`
+  → Linear key doğrula (`linearViewer`) → workspace slug al → URL
+  `?ws=<slug>&t=<32-byte-token>` → `webhookCreate` → record upsert.
+- ☑ **Webhook route per-workspace:** `?ws=<slug>&t=<token>` varsa →
+  `workspace_integrations` kaydından `urlToken` + `webhookSecret` ile doğrula,
+  workspace id'yi slug'dan çöz; `?ws=` yoksa global `LINEAR_WEBHOOK_SECRET`
+  + default workspace (geriye dönük uyumlu).
+- ☑ **UI (`dashboard/settings`):** `LinearIntegration` kartı — API key input +
+  `POST /connect` + başarı/hata durumu.
+- ☑ **Doğrulama:** connect no-auth → 403; per-workspace: doğru token+imza →
+  200, yanlış token → 401, yanlış imza → 401.
+- ☑ `npm run build` ✓ → commit → push (main).
+- **Not:** Linear UI commit'i yanlışlıkla `design/modernization` branch'ine
+  gitti — `main`'e cherry-pick edildi (8775936).
+- **Kalan:** `webhookDelete`/disconnect UI (şu an sadece connect var).
+
 ### 📝 Sonraki plan notları (kullanıcı onayıyla erteelenen/planlanacak)
 
 - **Ticarileşme (Paddle):** Canlı tahsilata geç YOK — sandbox'ta kalınacak.
