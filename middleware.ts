@@ -36,6 +36,11 @@ const isPublicRoute = createRouteMatcher([
   // Demo" butonu buraya gider; Clerk oturumu gerekmez).
   "/demo",
 
+  // Sprint 50: yasal/şirket sayfaları (footer) — public, Clerk gerekmez.
+  "/privacy",
+  "/terms",
+  "/contact",
+
   "/widget",
   "/api/posts(.*)",
 

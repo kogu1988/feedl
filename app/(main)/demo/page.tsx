@@ -3,16 +3,7 @@ import { RocketIcon, RouteIcon, MegaphoneIcon } from "lucide-react";
 import { SignUpButton } from "@clerk/nextjs";
 
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { StatusBadge } from "@/components/custom/status-badge";
-import { TypeBadge } from "@/components/custom/type-badge";
-import { SentimentBadge } from "@/components/custom/sentiment-badge";
+import { DemoPostCard } from "@/components/custom/demo-post-card";
 
 // Sprint 50 (Faz 4/cilama) — public /demo. Ürünün çalışan örnek yüzeylerini
 // sunan bir tur sayfası: portal / yol haritası / güncellemeler. Satış
@@ -94,41 +85,17 @@ export default function DemoPage() {
           otomatik dolar.
         </p>
         <div className="mx-auto mt-6 max-w-2xl" aria-hidden="true">
-          <Card>
-            <CardHeader>
-              <div className="flex items-start justify-between gap-3">
-                <CardTitle className="leading-snug">
-                  Karanlık mod desteği
-                </CardTitle>
-                <span className="inline-flex shrink-0 items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium">
-                  ▲ 128
-                </span>
-              </div>
-              <CardDescription className="flex flex-wrap items-center gap-2">
-                31 Ağustos 2026
-                <StatusBadge status="shipped" />
-                <TypeBadge type="feature" />
-                <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
-                  💬 32 yorum
-                </span>
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-2">
-              <div className="flex flex-wrap items-center gap-1.5">
-                <SentimentBadge sentiment="pozitif" />
-                <span className="inline-flex items-center rounded-md border px-2 py-0.5 text-xs">
-                  #karanlıkmod
-                </span>
-                <span className="inline-flex items-center rounded-md border px-2 py-0.5 text-xs">
-                  #tema
-                </span>
-              </div>
-              <p className="whitespace-pre-line text-sm text-muted-foreground">
-                Gözleri çok yoran açık temaya alternatif olarak karanlık mod
-                istiyoruz. Ayarlardan açılıp kapatılabilse iyi olur.
-              </p>
-            </CardContent>
-          </Card>
+          <DemoPostCard
+            title="Karanlık mod desteği"
+            date="31 Ağustos 2026"
+            status="shipped"
+            type="feature"
+            sentiment="pozitif"
+            tags={["karanlıkmod", "tema"]}
+            description="Gözleri çok yoran açık temaya alternatif olarak karanlık mod istiyoruz. Ayarlardan açılıp kapatılabilse iyi olur."
+            voteCount={128}
+            commentCount={32}
+          />
         </div>
       </section>
     </main>

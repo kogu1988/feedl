@@ -3,18 +3,21 @@ import { SignUpButton } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
+import {
+  BarChart3Icon,
+  BracesIcon,
+  MessageSquareTextIcon,
+  PaletteIcon,
+  PlugIcon,
+  RouteIcon,
+  ShieldCheckIcon,
+  SparklesIcon,
+  UsersIcon,
+  WorkflowIcon,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { StatusBadge } from "@/components/custom/status-badge";
-import { TypeBadge } from "@/components/custom/type-badge";
-import { SentimentBadge } from "@/components/custom/sentiment-badge";
+import { DemoPostCard } from "@/components/custom/demo-post-card";
 import { getDb } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 
@@ -67,6 +70,69 @@ export default async function RootPage() {
     },
   ];
 
+  const features = [
+    {
+      title: "AI Autopilot",
+      description:
+        "Her fikir otomatik özetlenir, etiketlenir ve benzer isteklerle eşleştirilir. Kopyalarla uğraşmazsın.",
+      icon: SparklesIcon,
+    },
+    {
+      title: "Oylama & Yol Haritası",
+      description:
+        "Müşteriler oy verir, en çok istenen öne çıkar. Planlanan / geliştirilen / yayınlanan şeffaf bir yol haritası oluştur.",
+      icon: RouteIcon,
+    },
+    {
+      title: "Değişiklik Günlüğü",
+      description:
+        "Yayına aldığında oy verenlere otomatik e-posta gider; güncellemeler herkese açık bir günlüğe düşer.",
+      icon: MessageSquareTextIcon,
+    },
+    {
+      title: "Ekip & Rol Yönetimi",
+      description:
+        "Sahip, admin, katkıcı rolleriyle ekibin doğru kişiyi doğru işe yönlendirir; iç notlar gizli kalır.",
+      icon: UsersIcon,
+    },
+    {
+      title: "Entegrasyonlar",
+      description:
+        "Slack, Zendesk ve Intercom üzerinden gelen destek konuşmaları otomatik olarak fikre dönüşür.",
+      icon: PlugIcon,
+    },
+    {
+      title: "Public API & Webhook",
+      description:
+        "Fikirleri oku ve dışa aktar; olaylara webhook ile abone ol, iş akışlarına bağla.",
+      icon: BracesIcon,
+    },
+    {
+      title: "Marka & Alan Adı",
+      description:
+        "Kendi logon, rengin ve alan adınla herkese açık bir topluluk portalı kur.",
+      icon: PaletteIcon,
+    },
+    {
+      title: "Gelir Skoru",
+      description:
+        "Oy, müşteri ve fırsat değerini birleştirerek hangi özelliğin en çok getireceğini önceliklendir.",
+      icon: BarChart3Icon,
+    },
+    {
+      title: "Güvenlik & Gizlilik",
+      description:
+        "Rol bazlı erişim, anahtar ile doğrulanmış API ve iç notların müşteriye sızmaması.",
+      icon: ShieldCheckIcon,
+    },
+    {
+      title: "İş Akışı & Görünümler",
+      description:
+        "Kayıtlı filtreler, toplu aksiyonlar ve sunucu tarafı sayfalama ile kalabalık panoları yönet.",
+      icon: WorkflowIcon,
+    },
+  ];
+
   return (
     <main className="container mx-auto max-w-5xl px-4 pb-16 pt-12 sm:pt-20">
       <section className="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-14">
@@ -97,41 +163,17 @@ export default async function RootPage() {
         </div>
 
         <div aria-hidden="true">
-          <Card>
-            <CardHeader>
-              <div className="flex items-start justify-between gap-3">
-                <CardTitle className="leading-snug">
-                  Karanlık mod desteği
-                </CardTitle>
-                <span className="inline-flex shrink-0 items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium">
-                  ▲ 128
-                </span>
-              </div>
-              <CardDescription className="flex flex-wrap items-center gap-2">
-                31 Ağustos 2026
-                <StatusBadge status="shipped" />
-                <TypeBadge type="feature" />
-                <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
-                  💬 32 yorum
-                </span>
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-2">
-              <div className="flex flex-wrap items-center gap-1.5">
-                <SentimentBadge sentiment="pozitif" />
-                <span className="inline-flex items-center rounded-md border px-2 py-0.5 text-xs">
-                  #karanlıkmod
-                </span>
-                <span className="inline-flex items-center rounded-md border px-2 py-0.5 text-xs">
-                  #tema
-                </span>
-              </div>
-              <p className="whitespace-pre-line text-sm text-muted-foreground">
-                Gözleri çok yoran açık temaya alternatif olarak karanlık mod
-                istiyoruz. Ayarlardan açılıp kapatılabilse iyi olur.
-              </p>
-            </CardContent>
-          </Card>
+          <DemoPostCard
+            title="Karanlık mod desteği"
+            date="31 Ağustos 2026"
+            status="shipped"
+            type="feature"
+            sentiment="pozitif"
+            tags={["karanlıkmod", "tema"]}
+            description="Gözleri çok yoran açık temaya alternatif olarak karanlık mod istiyoruz. Ayarlardan açılıp kapatılabilse iyi olur."
+            voteCount={128}
+            commentCount={32}
+          />
         </div>
       </section>
 
@@ -150,6 +192,38 @@ export default async function RootPage() {
             </li>
           ))}
         </ol>
+      </section>
+
+      <section className="mt-20 sm:mt-24">
+        <div className="mx-auto max-w-2xl text-center">
+          <p className="inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium text-muted-foreground">
+            Özellikler
+          </p>
+          <h2 className="mt-4 text-2xl font-bold tracking-tight sm:text-3xl">
+            Geri bildirimden ürün kararına her şey
+          </h2>
+          <p className="mt-3 text-muted-foreground">
+            Toplama, analiz, önceliklendirme ve duyuruyu tek bir platformda
+            birleştir. Müşterin ne ister, ekibin ne geliştirir — hepsi şeffaf.
+          </p>
+        </div>
+
+        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {features.map((feature) => (
+            <div
+              key={feature.title}
+              className="rounded-2xl border bg-card p-5"
+            >
+              <div className="flex size-9 items-center justify-center rounded-lg border bg-background">
+                <feature.icon className="size-5 text-brand" aria-hidden="true" />
+              </div>
+              <h3 className="mt-4 font-semibold">{feature.title}</h3>
+              <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+                {feature.description}
+              </p>
+            </div>
+          ))}
+        </div>
       </section>
 
       <section className="mt-20 rounded-2xl border bg-card p-8 text-center sm:mt-24">
