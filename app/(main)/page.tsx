@@ -2,7 +2,6 @@ import Link from "next/link";
 import { SignUpButton } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import { eq } from "drizzle-orm";
 import {
   BarChart3Icon,
   BracesIcon,
@@ -16,37 +15,33 @@ import {
   WorkflowIcon,
 } from "lucide-react";
 
+import { getRole } from "@/lib/auth/admin";
 import { Button } from "@/components/ui/button";
 import { DemoPostCard } from "@/components/custom/demo-post-card";
-import { getDb } from "@/lib/db";
-import { users } from "@/lib/db/schema";
 
 // Sprint 50 (Faz 4/cilama) — "/" artık SATIŞ landing'idir. Portal / yol
 // haritası / güncellemeler nav'dan çıkarıldı; ürün örnekleri /demo'ya taşındı.
 // Hedef: feedl'i (SaaS) satın alacak şirket temsilcisi. Portal yüzeyleri son
 // kullanıcıya ait olduğundan "fikir verme / göz at" çağrıları yerine
 // "Ücretsiz Başla", "Canlı Demo", "Fiyatlandırma" CTA'ları var.
-// Giriş yapmışsa role'e göre (tek kaynak: Neon users.role) dashboard/portal
-// yönlendirmesi KORUNUR (Sprint 9 davranışı).
+// Giriş yapmışsa role'e göre dashboard/portal yönlendirmesi. Rolün tek kaynağı
+// Neon (Sprint 48c-2): önce workspace_members (owner/admin → admin) sonra
+// users.role fallback. `getRole` kullanılır — ham users.role sütunu, owner'ı
+// workspace'te yaşayan (Clerk webhook'undan gelen) hesaplarda yanlış → portal'a
+// düşürürdü (kullanıcı bildirdi: "admin giriş yaptı ama portal'a yönlendim").
+// Sprint 63 (rev.): onboarding'e YALNIZCA SaaS-funnel signup butonlarının
+// redirectUrl'u ile gidilir; burada admin→dashboard / diğer→portal kalır —
+// portal uç kullanıcısı onboarding'e hiç gönderilmez.
 export default async function RootPage() {
   const { userId } = await auth();
 
   if (userId) {
     let target = "/portal";
     try {
-      const [user] = await getDb()
-        .select({ role: users.role })
-        .from(users)
-        .where(eq(users.id, userId))
-        .limit(1);
-
-      if (user?.role === "admin") {
+      const role = await getRole(userId);
+      if (role === "admin") {
         target = "/dashboard";
       }
-      // Sprint 63 (rev.): onboarding'e YALNIZCA SaaS-funnel signup butonlarının
-      // redirectUrl'u ile gidilir (landing/demo "Ücretsiz Başla"). Burada `/`
-      // kuralı admin→dashboard / diğer→portal kalır — portal uç kullanıcısı
-      // (müşterinin müşterisi) onboarding'e hiç gönderilmez.
     } catch (err) {
       console.error(
         "Root page role lookup failed:",
