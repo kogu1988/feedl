@@ -1601,9 +1601,29 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   anonim kimlik yok, `widget_<sub>` gerçek müşteri kimliği.
 - ☑ npm test (17/17) + npm run build ✓ → commit → push.
 - **Not:** Anonim guest mode (FeedLog tarzı) FEEDLOG-doğru olurdu ama
-  Canny'nin kanıtlanmış modeli Identify'dir; ileride guest mode gerekirse
+  Canny'nin kanıtlanmış modeli Identify'dır; ileride guest mode gerekirse
   spam/rate-limit + merge kurallarıyla (parite raporu P0.2 sarı şartı)
   eklenir.
+
+### Sprint 48n — Changelog Draft/Publish + Reaction (madde 8, P1) (✅ 2026-09-04)
+
+> FeedLog'un draft → published yaşam döngüsü; şu an entry yayınlanınca
+> direkt public. Reaction'lar bu sprint'te kapsam dışı (şema hazırlandı,
+> UI reaction sonra).
+
+- ☑ **Şema (migration 0035, commit 615b3bb):** `changelog_entries`'e
+  `status` (draft|published, default published) + `publishedAt` nullable
+  (draft'ta null). Mevcut satırlar 'published' (publishedAt dolu).
+- ☑ **API:** `POST /api/admin/changelog` status alır (draft → publishedAt
+  null + event yok; published → publishedAt now + event).
+  `POST /api/admin/changelog/[id]/publish` — draft'ı yayınla (publishedAt + event).
+- ☑ **Portal:** `portal/changelog` + `[id]` yalnız `status='published'`
+  gösterir (draft 404/public görünmez); publishedAt null-safe format.
+- ☑ **Admin UI:** `changelog-admin.tsx` status select (Yayınla/Taslak),
+  listede "Taslak" rozeti + "Yayınla" butonu, `status` prop + publish
+  aksiyon. Dashboard loadChangelogData status taşır.
+- ☑ npm test (17/17) + npm run build ✓ → commit → push.
+- **Not:** Reaction (emoji) şeması/UI sonraki adım; draft modeli tamam.
 
 ### Ertelenen blok (en son — kullanıcının kısıtı)
 
