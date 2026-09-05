@@ -3,45 +3,65 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const footerColumns = [
-  {
-    title: "Ürün",
-    links: [
-      { href: "/portal", label: "Fikir Portalı" },
-      { href: "/roadmap", label: "Yol Haritası" },
-      { href: "/changelog", label: "Güncellemeler" },
-      { href: "/demo", label: "Demo" },
-    ],
-  },
-  {
-    title: "Şirket",
-    links: [
-      { href: "/pricing", label: "Fiyatlandırma" },
-      { href: "/contact", label: "İletişim" },
-      { href: "/privacy", label: "Gizlilik Politikası" },
-      { href: "/terms", label: "Kullanım Şartları" },
-    ],
-  },
-];
-
-// Rakip standardı (Canny, Linear, Featurebase): admin uygulaması, kayıt
-// funnel'ı ve auth yüzeylerinde pazarlama footer'ı yok — içerik alanı
-// sayfa sonuna kadar uzanır. Satış ve kamusal topluluk sayfalarında tam
-// footer kalır. Yasal sayfalar (/privacy, /terms) kamusal olduğu için
-// uygulamadan da erişilebilir kalır.
-const APP_PREFIXES = [
+// Sprint 63+ (IA standardı — kullanıcı onayı): footer, üst bar yüzey
+// ayrımıyla birlikte linklenir —
+//   satış/marka (/, /demo, /pricing, /contact, legal): "Ürün" kolonunda
+//     Demo + Fiyat (canlı board/yol haritası/güncelleme linkleri YOK —
+//     bunlar tanıtım için değil, gerçek müşteri yüzeyi).
+//   public topluluk (/portal*, /roadmap*, /changelog*): Portal / Yol
+//     Haritası / Güncellemeler + Şirket/legal.
+//   admin ve auth/işlem yüzeyleri: footer render edilmez (APP_PREFIXES).
+const PRIVATE_APP_PREFIXES = [
   "/dashboard",
   "/onboarding",
   "/invites",
   "/sign-in",
   "/sign-up",
 ];
+const SALES_PREFIXES = ["/", "/demo", "/pricing", "/contact", "/privacy", "/terms"];
+
+const companyLinks = [
+  { href: "/pricing", label: "Fiyatlandırma" },
+  { href: "/contact", label: "İletişim" },
+  { href: "/privacy", label: "Gizlilik Politikası" },
+  { href: "/terms", label: "Kullanım Şartları" },
+];
+
+function footerColumnsFor(pathname: string) {
+  // Satış/marka yüzeyi: ürün kolonunda yalnız Demo + Fiyat — müşteri
+  // board'larını (portal/yol/güncelleme) satış landing'inde tanımlamayız.
+  if (SALES_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
+    return [
+      {
+        title: "Ürün",
+        links: [
+          { href: "/demo", label: "Demo" },
+          { href: "/pricing", label: "Fiyatlandırma" },
+        ],
+      },
+      { title: "Şirket", links: companyLinks },
+    ];
+  }
+  // Public topluluk yüzeyi (portal, roadmap, changelog).
+  return [
+    {
+      title: "Ürün",
+      links: [
+        { href: "/portal", label: "Fikir Portalı" },
+        { href: "/roadmap", label: "Yol Haritası" },
+        { href: "/changelog", label: "Güncellemeler" },
+      ],
+    },
+    { title: "Şirket", links: companyLinks },
+  ];
+}
 
 export function SiteFooter({ brand }: { brand: { name: string } }) {
   const pathname = usePathname();
-  if (APP_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
+  if (PRIVATE_APP_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
     return null;
   }
+  const footerColumns = footerColumnsFor(pathname);
   return (
     <footer className="border-t">
       <div className="container mx-auto max-w-none px-4 py-10">
