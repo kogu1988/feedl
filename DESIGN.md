@@ -5,6 +5,9 @@
 > gerekirse önce buranın güncellenmesi, sonra koda yansıtılması gerekir.
 > Renk ve tipografi değerleri `app/globals.css` içindeki gerçek token'lardan
 > birebir alınmıştır; kod eşleşmezse kod gerçek kaynaktır.
+> 2026-09-05 revizyonu: yapısal slate sidebar, hibrit kabuk, hareket
+> disiplini ve tipografi ölçeği eklendi (karar süreci:
+> `docs/design_report.md`).
 
 ## 1. Tasarım İlkesi
 
@@ -16,6 +19,11 @@
   söz değil eylem ("Kaydet", yayınlandığında "Yayınlandı").
 - Mercan zemin üzerine **beyaz değil koyu mürekkep** — white-on-coral
   3.1:1 (AA başarısız), ink-on-coral 5.9:1 ✓.
+- **Renk bütçesi 90/5/5:** ~%90 nötrler (zemin/kart/border/metin), ~%5
+  anlamsal rozetler, ~%5 mercan. Mercan yalnız **eylemde** görünür
+  (buton, oy, odak, aktif durum) — asla dekorda veya başlık vurgusunda.
+- **Gölge = yükseklik, dekor değil.** Statik kart gölgesizdir; gölge
+  yalnız yüzen katmanı ve hover kaldırmasını anlatır (bkz. §5).
 
 ## 2. Renk Sistemi
 
@@ -32,7 +40,7 @@
   modda aynı koyu mürekkep; değiştirilmez).
 - `--ring` = `#ff8c66` (her iki modda — odak halkası da mercan).
 - Nötrler shadcn varsayılanı (oklch); koyu modda `--background` 0.145,
-  `--card` / `--popover` 0.205.
+  `--card` / `--popover` 0.205 (sidebar hariç — aşağıda yapısal slate).
 - `@theme inline` ile `bg-brand`, `text-brand-soft`, `border-brand` vb.
   utility'ler açıldı. `--radius` tabanı `0.625rem`; `radius-sm`..`radius-4xl`
   türetilmiş.
@@ -50,6 +58,24 @@
 - Destructive (kırmızı) mercanla aynı sıcak ailede — karıştırma; canlıda
   sorun olursa derinleştirilecek ama başka renkle değiştirilmez.
 
+### Yapısal slate — admin sidebar yüzeyi (2026-09-05 kararı)
+
+Aksan değil **nötr yapı**: yalnız admin sidebar zemininde. Değerler
+Tailwind slate ailesinin oklch karşılıkları; `--sidebar-*` tokenları
+artık bu değerleri taşır (`app/globals.css`).
+
+| Token | Açık mod | Koyu mod | Kullanım |
+|-------|----------|----------|----------|
+| `--sidebar` | slate-900 `oklch(0.208 0.042 265.755)` | slate-950 `oklch(0.129 0.042 264.695)` | Kabuk zemini |
+| `--sidebar-foreground` | slate-100 `oklch(0.968 0.007 247.896)` | aynı | Metin |
+| `--sidebar-primary` | `var(--brand)` | `var(--brand)` | Aktif nav — mercan, eylem rengi |
+| `--sidebar-primary-foreground` | `#2b0e04` | `#2b0e04` | Mürekkep — kural 2 geçerli |
+| `--sidebar-accent` | slate-800 `oklch(0.279 0.041 260.031)` | aynı | Hover yüzeyi |
+| `--sidebar-border` | `oklch(1 0 0 / 8%)` | `oklch(1 0 0 / 10%)` | Ayırıcılar |
+
+Slate içerik alanına, butonlara, rozetlere sızmaz; sidebar kabuğuyla
+sınırlıdır.
+
 ## 3. Tipografi
 
 - **Metin + başlık:** Manrope (latin + latin-ext, Türkçe destekli) —
@@ -58,13 +84,30 @@
   sayaçlar, tablo sayıları).
 - Başlıklar h1–h4: `letter-spacing: -0.02em` (globals.css `@layer base`).
 - E-posta şablonları **sistem fontu** — kasıtlı, dokunma.
+- **Ölçek (2026-09-05):** display `text-4xl/5xl` (yalnız landing hero) →
+  h1 `text-2xl bold tracking-tight` → h2 `text-base semibold` (bölüm) →
+  gövde `text-sm` → meta/caption `text-xs text-muted-foreground`. KPI
+  sayıları: `font-mono text-3xl tabular-nums`.
+- Prose satır uzunluğu **<80ch** (`max-w-prose` / `max-w-3xl`).
+- Yasak tell'ler: ALL-CAPS eyebrow etiketi, başlıkta tek kelimeyi
+  renkli/italik vurgulama, dekoratif mono mini-etiket.
 
 ## 4. Kabuk ve Yerleşim
+
+**Hibrit kabuk (2026-09-05 kararı; batch 2'de uygulandı):** public
+yüzeyler (portal, roadmap, changelog, landing) üst bar + footer düzeninde
+kalır; **yalnız admin `/dashboard`** 240px daralabilir sidebar alır
+(56px ikon rayına iner; mobilde çekmece). Sidebar nav gerçek route setiyle
+3 grup: Genel (Genel Bakış / Board'lar / Gelir), Yönetim (Şirketler /
+Üyeler / Alanlar / Çalışma Alanları), Sistem (Widget / Faturalama /
+Ayarlar); altta UserButton. Bileşen: `app-sidebar` — dashboard altı
+`layout.tsx` sağlar; rail durumu localStorage.
 
 - `app/(main)/layout.tsx`: `ClerkProvider(shadcn)` > `ThemeProvider` >
   `flex min-h-svh flex-col` (üst bar / flex-1 içerik / alt bar).
 - **Üst bar** (`components/custom/site-header.tsx`): `h-14`,
-  `container mx-auto max-w-5xl`; marka karosu (`size-6 rounded-md bg-brand`
+  `sticky top-0 z-40 bg-background`; container `max-w-5xl`, admin'de
+  (`/dashboard*`) tam genişlik (`max-w-none`); marka karosu (`size-6 rounded-md bg-brand`
   + ChevronsUpIcon koyu mürekkep), aktif nav vurgusu `bg-muted`
   (`usePathname`; `/portal/changelog` hariç `/portal*` Portal'ı aktif eder);
   sağda `ThemeToggle` + Clerk butonları.
@@ -75,6 +118,14 @@
   çalışır" 1-2-3 şeridi (Topla / Anla / Duyur).
 - Genişlik disiplini: içerik `max-w-5xl`; dashboard tabloları tam genişlik
   container üzerinden. Alan sol bakışa değil, işe göre hizalanır.
+- **Sayfa deseni (admin):** başlık satırı (h1 + muted açıklama solda,
+  primary aksiyon sağda) → KPI şeridi (4 kart; 2×2 tablet, tek kolon
+  mobil) → araç çubuğu (FilterTabs solda, kayıtlı görünüm + aksiyonlar
+  sağda) → tablo → yönetim bölümleri kart grupları halinde; ritim
+  `space-y-6/8`.
+- **Sayfa deseni (public):** portal tek kolon kart listesi (oy düğmesi
+  solda); detay `lg`'de 2 kolon (2fr içerik / 1fr meta); dokunma hedefi
+  ≥40px.
 
 ## 5. Bileşenler
 
@@ -84,7 +135,7 @@
   `ghost` `destructive` (soft) `link`; boyutlar `default` `xs` `sm` `lg`
   `icon` `icon-xs` `icon-sm` `icon-lg`.
 - **`components/custom/`** — ürün kalıpları. Başlıca: `site-header`,
-  `theme-toggle`, `status-badge`, `sentiment-badge`, `type-badge`,
+  `app-sidebar`, `theme-toggle`, `status-badge`, `sentiment-badge`, `type-badge`,
   `vote-button`, `comment-card`, `comment-form`, `filter-tabs`,
   `keyword-chips`, `tag-chips`, `posts-table`, `autopilot-inbox`,
   `merge-controls`, `roadmap-planner`, `changelog-admin`, `new-post-dialog`,
@@ -95,11 +146,33 @@
 - Yeni bileşen: primitive gerekirse `ui/`, ürün kalıbı `custom/`; mümkünse
   mevcut `status-badge` / `type-badge` gibi tek kaynakları yeniden kullan.
 
+### Kart rolleri ve yükseklik (2026-09-05)
+
+"Her karta aynı radius + aynı gölge" klişesine panzehir — kart dört rol
+oynar:
+
+| Rol | Gölge | Radius | Hover |
+|-----|-------|--------|-------|
+| Yüzey kartı (içerik) | yok | `radius-lg` | yok |
+| Etkileşimli kart (kanban, portal fikir) | hover'da `shadow-xs` | `radius-lg` | `translateY(-2px)` + cursor-pointer, 150ms |
+| Yüzen katman (dialog/popover/dropdown/toast) | `shadow-md/lg` | `radius-xl` | giriş animasyonu |
+| KPI kartı (mono sayı) | yok | `radius-lg` | yok |
+
+- Gölge kademeleri: `shadow-xs` (hover), `shadow-md` (popover),
+  `shadow-lg` (dialog). **`transition: all` yasak** — yalnız
+  `transform` / `opacity` / renk özellikleri geçiş yapar.
+- Koyu modda yükseklik sinyali gölgeden değil **border aydınlanması +
+  zemin farkından** gelir (kart 0.205 vs zemin 0.145).
+- Radius disiplini: kart/buton `lg`, dialog `xl`, rozet/avatar `full`,
+  input `md` — her rolde tek değer.
+
 ## 6. Koyu Mod
 
 - **next-themes** (`components/custom/theme-provider.tsx`); `(main)`
   layout'unda `attribute="class"`, `defaultTheme="system"`,
   `enableSystem`, `disableTransitionOnChange`.
+- `defaultTheme="system"` **karara bağlandı** (2026-09-05): global dark
+  default YOK; public portal kullanıcının sistem tercihini izler.
 - `.dark` class tabanlı (`@custom-variant dark (&:is(.dark *))`).
 - Her token'ın `.dark` karşılığı globals.css'te tanımlı — yeni token eklerken
   iki modu birlikte tanımla.
@@ -120,7 +193,32 @@
    ton türetilir.
 4. Widget CSS'i (kendi görünümü) izole kalır; taşıma/renk değişikliği yapma.
 5. Destructive kırmızısıyla mercan karıştırılmaz.
-6. Doğrulama **yalnızca** `npm run build`; `npm run dev` kullanılmaz,
+7. Doğrulama **yalnızca** `npm run build`; `npm run dev` kullanılmaz,
    canlıda kullanıcı testi tercih edilir.
+8. `transition: all` yazılmaz; geçiş yalnız `transform` / `opacity` /
+   renk özelliklerinde, 150–200ms ease-out (bkz. §8).
+9. Sayfa başına en fazla bir orkestralanmış an (landing hero girişi);
+   `prefers-reduced-motion` her zaman saygı görür.
+10. Butonlar pointer imleç: `@layer base` kuralı (globals.css) —
+    Tailwind v4 preflight varsayılanını ezer.
+
+## 8. Hareket (2026-09-05)
+
+Hareket **eyleme cevap verir**; süs değildir. Süreler: hızlı 150ms
+(hover, popover), taban 200ms (dialog, durum geçişi), `ease-out`
+(`--ease-out-quart` globals.css'te).
+
+| İzinli (eylem geri bildirimi) | Yasak |
+|-------------------------------|-------|
+| Dialog: fade + `scale 0.96→1`, 200ms | Her section'a fade-up |
+| Popover: fade + 4px slide, 150ms | Her kartta hover animasyonu |
+| Oy düğmesi: `scale 0.95→1` pop + sayaç güncellenmesi | KPI sayaç animasyonu |
+| Rozet durum geçişi: renk 200ms | Döngülü/loop animasyonlar, parallax |
+| Toast: alttan slide | Sayfa geçiş animasyonları |
+| Tek orkestra: landing hero tek seferlik kademeli fade-up (`.hero-rise`, 60ms aralık, 450ms; reduced-motion gecikmeyi de sıfırlar) | |
+
+`@media (prefers-reduced-motion: reduce)` bloğu globals.css'te tüm
+dekoratif süreleri etkisizleştirir. FilterTabs optimistic davranışı
+("eyleme cevap" örneği) korunur.
 7. Her UI değişikliği küçük batch + ayrı commit; kullanıcıya isim vermeden
    uygula, deploy sonrası kısa test listesi sun.
