@@ -49,18 +49,24 @@ export async function POST(req: NextRequest) {
     }
 
     const { item, topic } = parseIntercomPayload(body);
-    if (!item || !item.conversationMessage?.body) {
-      // İlgisiz/boş event (ör. conversation.updated, hiç mesaj yok) — sessizce 200.
+    // topic filtre: conversation.* herhangi biri işlenebilir çünkü gerçek
+    // teslimat topic'i (`conversation.user.created`) sürümler arası değişebilir
+    // (ör. `conversation_part.created`). Güvenlik zaten app_id doğrulamasıyla
+    // sağlanır; mesaj gövdesi yoksa aşağıda zaten ignored döner.
+    if (topic && !topic.startsWith("conversation")) {
       return NextResponse.json({ success: true, data: { ignored: true } });
     }
 
-    // Sadece kullanıcı/lead yeni mesajı ele al (topic filtre ekstra güvenlik).
-    if (topic && !["conversation.user.created", "conversation.user.updated"].includes(topic)) {
+    if (!item || typeof item !== "object") {
+      // İlgisiz/boş event (ör. data.item yok) — sessizce 200.
       return NextResponse.json({ success: true, data: { ignored: true } });
     }
 
     const { title, body: message } = intercomConversationText(item);
     if (!message) {
+      // Teşhis: geçerli webhook ama mesaj gövdesi bulunamadı — gerçek payload
+      // yapısını görmek için ayrıntılar loglanır.
+      console.error("intercom ignored: no message body", JSON.stringify({ topic, item }));
       return NextResponse.json({ success: true, data: { ignored: true } });
     }
 

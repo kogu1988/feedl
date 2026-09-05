@@ -13,11 +13,16 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 // Intercom `conversation.user.created` webhook notifikasyonu `data.item`
 // alanında bir "conversation" nesnesi taşır. İçinde ilk mesaj + contact.
+// Farklı Intercom sürümleri mesajı birkaç alana koyabilir: birincil
+// `conversation_message`, güncellemede `last_message`/`first_message`,
+// veya `parts` dizisi. Hepsini toplayıp en anlamlı gövdeyi seçiyoruz.
 export interface IntercomConversation {
   id?: string;
-  conversationMessage?: {
-    body?: string;
-  };
+  conversationMessage?: { body?: string };
+  lastMessage?: { body?: string };
+  firstMessage?: { body?: string };
+  message?: { body?: string };
+  parts?: Array<{ body?: string }>;
   contact?: {
     id?: string;
     email?: string | null;
@@ -80,11 +85,20 @@ export function parseIntercomPayload(
   };
 }
 
-// Conversation'dan çekilecek feedback metni (ilk mesaj gövdesi).
+// Conversation'dan çekilecek feedback metni (ilk mesaj gövdesi). Mesajın
+// birden fazla olası alandan çıkarılabilmesi için tüm adayları toplarız ve
+// ilk dolu olanı seçeriz (Intercom sürümleri arasındaki fark için).
 export function intercomConversationText(
   item: IntercomConversation,
 ): { title: string; body: string } {
-  const bodyText = item.conversationMessage?.body?.trim() ?? "";
+  const candidates: Array<string | undefined> = [
+    item.conversationMessage?.body,
+    item.lastMessage?.body,
+    item.firstMessage?.body,
+    item.message?.body,
+    ...(item.parts ?? []).map((part) => part.body),
+  ];
+  const bodyText = candidates.find((b) => b && b.trim())?.trim() ?? "";
   const body = bodyText.slice(0, 4000);
   const title =
     bodyText.split("\n").find((line) => line.trim())?.slice(0, 140) ??
