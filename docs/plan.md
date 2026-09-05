@@ -1941,9 +1941,11 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
 - ☑ npm test (17/17) + build ✓ → commit → push.
 - ☑ **Vercel env (`feedl` projesi — feedl.app):** `JIRA_WEBHOOK_SECRET`,
   `JIRA_API_TOKEN` (çalışan yeni token), `JIRA_BASE_URL`
-  (https://feedl.atlassian.net), `JIRA_EMAIL` (oguzkir@gmail.com).
+  (https://feedl.atlassian.net), `JIRA_EMAIL` (oguzkir@gmail.com),
+  `JIRA_REGISTER_SECRET` (register ucunu goruma — `X-Register-Secret`
+  header). 
   (Not: eski `feedl.co` Vercel projesi silindi; production → `feedl` projesi
-  (feedl.app).)
+  (feedl.app). `JIRA_REGISTER_SECRET` olmadan register 401 döner.)
 - ☑ **Canlı doğrulama:** `POST /api/integrations/jira/register` → webhook
   kaydedildi (`events: [jira:issue_created, jira:issue_updated]`,
   `isSigned: true`, id 2). Gerçek Jira issue (`SCRUM-7`, id 10006) → feedl
