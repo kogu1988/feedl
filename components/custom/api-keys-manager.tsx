@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { CopyIcon, KeyRoundIcon, Loader2Icon, TrashIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/custom/empty-state";
 import { Input } from "@/components/ui/input";
 
 export interface ApiKeyItem {
@@ -148,10 +149,10 @@ export function ApiKeysManager({ items }: { items: ApiKeyItem[] }) {
       ) : null}
 
       {items.length === 0 ? (
-        <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+        <EmptyState>
           Henüz API anahtarı yok. /api/v1 uçlarını kullanmak için bir anahtar
           üret.
-        </p>
+        </EmptyState>
       ) : (
         <ul className="divide-y rounded-md border">
           {items.map((item) => (

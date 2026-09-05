@@ -4,6 +4,7 @@ import { auth } from "@clerk/nextjs/server";
 
 import { ClerkTriggerButton } from "@/components/custom/clerk-trigger-button";
 import { CommentCountBadge } from "@/components/custom/comment-count-badge";
+import { EmptyState } from "@/components/custom/empty-state";
 import { Notice } from "@/components/custom/notice";
 import { PaginationFooter } from "@/components/custom/pagination-footer";
 import { PageBreadcrumb } from "@/components/custom/page-breadcrumb";
@@ -45,17 +46,17 @@ export default async function MyVotesPage({
             { label: "Oyladıklarım" },
           ]}
         />
-        <div className="mt-8 rounded-lg border border-dashed p-10 text-center">
-          <p className="font-medium">Oyladıklarını görmek için giriş yap</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Oy verdiğin fikirler burada listelenir.
-          </p>
-          <div className="mt-4">
+        <EmptyState
+          size="lg"
+          title="Oyladıklarını görmek için giriş yap"
+          action={
             <ClerkTriggerButton mode="sign-in" size="lg">
               Giriş yap
             </ClerkTriggerButton>
-          </div>
-        </div>
+          }
+        >
+          Oy verdiğin fikirler burada listelenir.
+        </EmptyState>
       </main>
     );
   }
@@ -105,19 +106,20 @@ export default async function MyVotesPage({
             Fikirler yüklenemedi. Sayfayı yenilemeyi dene.
           </Notice>
         ) : rows.length === 0 ? (
-          <div className="rounded-lg border border-dashed p-10 text-center">
-            <p className="font-medium">Henüz kimseye oy vermedin</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Beğendiğin fikirlere oy ver; en çok istenenler yol haritasına
-              girer.
-            </p>
-            <Button
-              className="mt-4"
-              render={<Link href="/portal" />}
-            >
-              Fikirlere göz at
-            </Button>
-          </div>
+          <EmptyState
+            size="lg"
+            title="Henüz kimseye oy vermedin"
+            action={
+              <Button
+                render={<Link href="/portal" />}
+              >
+                Fikirlere göz at
+              </Button>
+            }
+          >
+            Beğendiğin fikirlere oy ver; en çok istenenler yol haritasına
+            girer.
+          </EmptyState>
         ) : (
           rows.map((post) => (
             <Card key={post.id}>

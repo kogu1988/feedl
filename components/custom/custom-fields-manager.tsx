@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 
 import { Notice } from "@/components/custom/notice";
+import { EmptyState } from "@/components/custom/empty-state";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -220,14 +221,11 @@ export function CustomFieldsManager({
       )}
 
       {fields.length === 0 ? (
-        <div className="rounded-lg border border-dashed p-8 text-center">
-          <p className="text-sm text-muted-foreground">
-            Henüz özel alan yok.
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Alan Ekle ile ilk alanını tanımla.
-          </p>
-        </div>
+        <EmptyState
+          title="Henüz özel alan yok."
+        >
+          Alan Ekle ile ilk alanını tanımla.
+        </EmptyState>
       ) : (
         <ul className="divide-y rounded-lg border">
           {fields.map((field, idx) => (

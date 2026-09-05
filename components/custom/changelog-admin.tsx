@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Loader2Icon, MegaphoneIcon, Trash2Icon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/custom/empty-state";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -248,9 +249,9 @@ export function ChangelogAdmin({
       <div className="grid content-start gap-2">
         <h3 className="text-sm font-semibold">Mevcut duyurular</h3>
         {entries.length === 0 ? (
-          <p className="rounded-lg border border-dashed p-4 text-center text-xs text-muted-foreground">
+          <EmptyState>
             Henüz duyuru yok.
-          </p>
+          </EmptyState>
         ) : (
           entries.map((entry) => (
             <div

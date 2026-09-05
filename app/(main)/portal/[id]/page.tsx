@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 import { CustomValuesPanel } from "@/components/custom/custom-values-panel";
+import { EmptyState } from "@/components/custom/empty-state";
 import { PageBreadcrumb } from "@/components/custom/page-breadcrumb";
 import {
   CommentCard,
@@ -386,9 +387,9 @@ export default async function PostDetailPage({
         </Show>
 
         {commentRows.length === 0 ? (
-          <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+          <EmptyState>
             Henüz yorum yok — ilk yorumu sen yaz.
-          </p>
+          </EmptyState>
         ) : (
           commentRows
             .filter((comment) => !comment.parentId)

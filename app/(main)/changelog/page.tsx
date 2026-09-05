@@ -4,6 +4,7 @@ import { and, desc, eq, inArray } from "drizzle-orm";
 import { MegaphoneIcon } from "lucide-react";
 
 import { ChangelogSubscribeForm } from "@/components/custom/changelog-subscribe-form";
+import { EmptyState } from "@/components/custom/empty-state";
 import { Notice } from "@/components/custom/notice";
 import { MarkdownContent } from "@/components/custom/markdown-content";
 import { PageBreadcrumb } from "@/components/custom/page-breadcrumb";
@@ -100,9 +101,9 @@ export default async function ChangelogPage() {
             Duyurular yüklenemedi. Sayfayı yenilemeyi dene.
           </Notice>
         ) : entries.length === 0 ? (
-          <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+          <EmptyState>
             Henüz duyuru yok — ilk güncelleme burada duyurulacak.
-          </p>
+          </EmptyState>
         ) : (
           entries.map((entry) => (
             <Card key={entry.id}>

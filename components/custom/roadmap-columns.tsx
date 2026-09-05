@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Loader2Icon } from "lucide-react";
 
+import { EmptyState } from "@/components/custom/empty-state";
 import {
   Card,
   CardContent,
@@ -128,15 +129,20 @@ export function RoadmapColumns({
             </h2>
 
             {columnPosts.length === 0 ? (
-              <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+              <EmptyState
+                size="sm"
+                className="p-4"
+                action={
+                  <Link
+                    href="/portal"
+                    className="mt-1 inline-block font-medium text-primary underline-offset-4 hover:underline"
+                  >
+                    Portaldan fikir öner →
+                  </Link>
+                }
+              >
                 Bu kolonda henüz fikir yok.
-                <Link
-                  href="/portal"
-                  className="mt-2 inline-block font-medium text-primary underline-offset-4 hover:underline"
-                >
-                  Portaldan fikir öner →
-                </Link>
-              </div>
+              </EmptyState>
             ) : (
               columnPosts.map((post) => (
                 <Card

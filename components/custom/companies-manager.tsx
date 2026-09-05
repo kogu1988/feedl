@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/custom/empty-state";
 import {
   Dialog,
   DialogContent,
@@ -793,10 +794,10 @@ export function CompaniesManager({
       ) : null}
 
       {items.length === 0 ? (
-        <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+        <EmptyState>
           Henüz şirket yok. Üyeleri bağladıkça &quot;kaç müşteri istedi&quot;
           sayacı kullanılabilir hale gelir.
-        </p>
+        </EmptyState>
       ) : (
         <ul className="grid gap-3">
           {items.map((company) => {

@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/custom/empty-state";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -239,10 +240,10 @@ export function WebhooksManager({ items }: { items: WebhookItem[] }) {
       ) : null}
 
       {items.length === 0 ? (
-        <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+        <EmptyState>
           Kayıtlı webhook yok. Seçtiğin olaylar gerçekleşince URL&apos;ne imzalı
           POST gönderilir.
-        </p>
+        </EmptyState>
       ) : (
         <ul className="divide-y rounded-md border">
           {items.map((item) => (

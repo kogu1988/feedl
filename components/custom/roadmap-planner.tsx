@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Loader2Icon } from "lucide-react";
 
 import { StatusBadge } from "@/components/custom/status-badge";
+import { EmptyState } from "@/components/custom/empty-state";
 import {
   Table,
   TableBody,
@@ -78,10 +79,10 @@ export function RoadmapPlanner({
 
   if (rows.length === 0) {
     return (
-      <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+      <EmptyState>
         Planlanan veya geliştirilen fikir yok — durumlarını güncelleyince
         burada görünür.
-      </p>
+      </EmptyState>
     );
   }
 

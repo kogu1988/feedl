@@ -2,6 +2,7 @@ import Link from "next/link";
 import { and, count, desc, eq, isNull, sql } from "drizzle-orm";
 
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/custom/empty-state";
 import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/custom/status-badge";
 import { WidgetPostForm } from "@/components/custom/widget-post-form";
@@ -199,9 +200,9 @@ export default async function WidgetPage({
       </ul>
 
       {!loadError && rows.length === 0 ? (
-        <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+        <EmptyState>
           {q ? "Aramanla eşleşen fikir yok." : "Henüz fikir yok. İlk gönderen sen ol!"}
-        </p>
+        </EmptyState>
       ) : null}
     </main>
   );

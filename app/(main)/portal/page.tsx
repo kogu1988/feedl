@@ -6,6 +6,7 @@ import { Show } from "@clerk/nextjs";
 import { RocketIcon, SearchIcon, ThumbsUpIcon } from "lucide-react";
 
 import { CommentCountBadge } from "@/components/custom/comment-count-badge";
+import { EmptyState } from "@/components/custom/empty-state";
 import { Notice } from "@/components/custom/notice";
 import { ClerkTriggerButton } from "@/components/custom/clerk-trigger-button";
 import { NewPostDialog } from "@/components/custom/new-post-dialog";
@@ -358,43 +359,47 @@ export default async function PortalPage({
             Fikirler yüklenemedi. Sayfayı yenilemeyi dene.
           </Notice>
         ) : rows.length === 0 && (searchQuery || tagFilter) ? (
-          <div className="rounded-lg border border-dashed p-10 text-center">
-            <p className="font-medium">Aramanla eşleşen fikir yok</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Belki de bu özelliği ilk sen istersin — gönder ya da aramayı
-              temizle.
-            </p>
-            <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-              <Show when="signed-in">
-                <NewPostDialog />
-              </Show>
-              <Show when="signed-out">
-                <ClerkTriggerButton mode="sign-in">
-                  Bu fikri ilk sen gönder
-                </ClerkTriggerButton>
-              </Show>
-              <Button variant="outline" render={<Link href="/portal" />}>
-                Aramayı temizle
-              </Button>
-            </div>
-          </div>
+          <EmptyState
+            size="lg"
+            title="Aramanla eşleşen fikir yok"
+            action={
+              <>
+                <Show when="signed-in">
+                  <NewPostDialog />
+                </Show>
+                <Show when="signed-out">
+                  <ClerkTriggerButton mode="sign-in">
+                    Bu fikri ilk sen gönder
+                  </ClerkTriggerButton>
+                </Show>
+                <Button variant="outline" render={<Link href="/portal" />}>
+                  Aramayı temizle
+                </Button>
+              </>
+            }
+          >
+            Belki de bu özelliği ilk sen istersin — gönder ya da aramayı
+            temizle.
+          </EmptyState>
         ) : rows.length === 0 ? (
-          <div className="rounded-lg border border-dashed p-10 text-center">
-            <p className="font-medium">Henüz fikir yok</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              İlk fikri sen gönder; ürün yol haritası buradan başlıyor.
-            </p>
-            <div className="mt-4 flex justify-center">
-              <Show when="signed-in">
-                <NewPostDialog />
-              </Show>
-              <Show when="signed-out">
-                <ClerkTriggerButton mode="sign-in">
-                  İlk fikri sen gönder
-                </ClerkTriggerButton>
-              </Show>
-            </div>
-          </div>
+          <EmptyState
+            size="lg"
+            title="Henüz fikir yok"
+            action={
+              <>
+                <Show when="signed-in">
+                  <NewPostDialog />
+                </Show>
+                <Show when="signed-out">
+                  <ClerkTriggerButton mode="sign-in">
+                    İlk fikri sen gönder
+                  </ClerkTriggerButton>
+                </Show>
+              </>
+            }
+          >
+            İlk fikri sen gönder; ürün yol haritası buradan başlıyor.
+          </EmptyState>
         ) : (
           <>
             {shippedPosts.length > 0 && (

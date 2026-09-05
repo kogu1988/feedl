@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/custom/notice";
+import { EmptyState } from "@/components/custom/empty-state";
 import { getTeamUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
@@ -273,59 +274,61 @@ export default async function DashboardPage({
       {section === "" ? (
         <>
           {!loadError ? (
-            <Card className="mt-8">
-              <CardHeader>
-                <CardTitle>Analitik</CardTitle>
-                <CardDescription>
-                  Seçili dönemin özeti, duygu dağılımı ve en çok oy alan
-                  fikirler.
-                </CardDescription>
-                <div className="pt-2">
-                  <FilterTabs
-                    paramName="range"
-                    basePath="/dashboard"
-                    active={String(rangeDays)}
-                    extraParams={{
-                      ...(statusFilter ? { status: statusFilter } : {}),
-                      ...(tagFilter ? { tag: tagFilter } : {}),
-                      ...(boardSlug ? { board: boardSlug } : {}),
+            <div className="grid gap-8 xl:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Analitik</CardTitle>
+                  <CardDescription>
+                    Seçili dönemin özeti, duygu dağılımı ve en çok oy alan
+                    fikirler.
+                  </CardDescription>
+                  <div className="pt-2">
+                    <FilterTabs
+                      paramName="range"
+                      basePath="/dashboard"
+                      active={String(rangeDays)}
+                      extraParams={{
+                        ...(statusFilter ? { status: statusFilter } : {}),
+                        ...(tagFilter ? { tag: tagFilter } : {}),
+                        ...(boardSlug ? { board: boardSlug } : {}),
+                      }}
+                      options={rangeOptions}
+                    />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <AnalyticsOverview
+                    data={{
+                      rangeLabel,
+                      weekly: weeklyCounts,
+                      sentiment: sentimentCounts,
+                      topPosts,
                     }}
-                    options={rangeOptions}
                   />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <AnalyticsOverview
-                  data={{
-                    rangeLabel,
-                    weekly: weeklyCounts,
-                    sentiment: sentimentCounts,
-                    topPosts,
-                  }}
-                />
-              </CardContent>
-            </Card>
-          ) : null}
+                </CardContent>
+              </Card>
 
-          <Card className="mt-8">
-            <CardHeader>
-              <CardTitle>Autopilot Inbox</CardTitle>
-              <CardDescription>
-                AI duplicate şüphelendiğinde artık otomatik birleştirmez —
-                karar senin. Onaylamak birleştirir (oylar/yorumlar taşınır),
-                red ve yoksay yalnızca öneriyi kapatır.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {!loadError ? (
-                <AutopilotInbox suggestions={inboxSuggestions} />
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  Öneriler yüklenemedi.
-                </p>
-              )}
-            </CardContent>
-          </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Autopilot Inbox</CardTitle>
+                  <CardDescription>
+                    AI duplicate şüphelendiğinde artık otomatik birleştirmez —
+                    karar senin. Onaylamak birleştirir (oylar/yorumlar taşınır),
+                    red ve yoksay yalnızca öneriyi kapatır.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {!loadError ? (
+                    <AutopilotInbox suggestions={inboxSuggestions} />
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Öneriler yüklenemedi.
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          ) : null}
         </>
       ) : null}
 
@@ -457,13 +460,13 @@ export default async function DashboardPage({
                 Fikirler yüklenemedi. Sayfayı yenilemeyi dene.
               </Notice>
             ) : rows.length === 0 && (statusFilter || tagFilter) ? (
-              <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+              <EmptyState>
                 Bu filtrede fikir yok.
-              </p>
+              </EmptyState>
             ) : rows.length === 0 ? (
-              <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+              <EmptyState>
                 Henüz fikir yok. Portala gönderilen ilk fikir burada görünecek.
-              </p>
+              </EmptyState>
             ) : (
               <PostsTable
                 rows={rows.map((row) => ({
@@ -523,33 +526,35 @@ export default async function DashboardPage({
 
       {section === "entegrasyon" ? (
         <>
-          <Card className="mt-8">
-            <CardHeader>
-              <CardTitle>API Anahtarları</CardTitle>
-              <CardDescription>
-                Public API (/api/v1) uçlarını programatik kullanım için üret.
-                Anahtarlar SHA-256 karmasıyla saklanır; tam değer yalnızca
-                oluşturma anında gösterilir.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ApiKeysManager items={apiKeyItems} />
-            </CardContent>
-          </Card>
+          <div className="grid gap-8 xl:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>API Anahtarları</CardTitle>
+                <CardDescription>
+                  Public API (/api/v1) uçlarını programatik kullanım için üret.
+                  Anahtarlar SHA-256 karmasıyla saklanır; tam değer yalnızca
+                  oluşturma anında gösterilir.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ApiKeysManager items={apiKeyItems} />
+              </CardContent>
+            </Card>
 
-          <Card className="mt-8">
-            <CardHeader>
-              <CardTitle>Webhook&apos;lar</CardTitle>
-              <CardDescription>
-                Seçtiğin olaylar gerçekleşince URL&apos;ne HMAC-SHA256 imzalı
-                POST gönderilir (X-Feedl-Signature başlığı). Teslimat Inngest
-                ile otomatik yeniden denenir.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <WebhooksManager items={webhookItems} />
-            </CardContent>
-          </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Webhook&apos;lar</CardTitle>
+                <CardDescription>
+                  Seçtiğin olaylar gerçekleşince URL&apos;ne HMAC-SHA256 imzalı
+                  POST gönderilir (X-Feedl-Signature başlığı). Teslimat Inngest
+                  ile otomatik yeniden denenir.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <WebhooksManager items={webhookItems} />
+              </CardContent>
+            </Card>
+          </div>
         </>
       ) : null}
     </main>
