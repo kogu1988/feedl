@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { and, eq } from "drizzle-orm";
 
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
@@ -56,6 +57,22 @@ export async function POST(req: NextRequest) {
 
     let createdPostId: string | null = null;
     if (classification === "feedback") {
+      const workspaceId = await getWorkspaceId();
+      // Sprint 48q: aynı Zendesk ticket'ı (id) tekrar post edilmesin.
+      const sourceRef = ticket.id ? `zendesk:${ticket.id}` : null;
+      if (sourceRef) {
+        const [existing] = await getDb()
+          .select({ id: posts.id })
+          .from(posts)
+          .where(and(eq(posts.workspaceId, workspaceId), eq(posts.sourceRef, sourceRef)))
+          .limit(1);
+        if (existing) {
+          return NextResponse.json({
+            success: true,
+            data: { classification, postId: existing.id, duplicate: true },
+          });
+        }
+      }
       const userId = toWidgetUserId(`zendesk_${ticket.id ?? "ticket"}`);
       await getDb()
         .insert(users)
@@ -70,12 +87,13 @@ export async function POST(req: NextRequest) {
       const [created] = await getDb()
         .insert(posts)
         .values({
-          workspaceId: await getWorkspaceId(),
+          workspaceId,
           boardId: await getDefaultBoardId(),
           userId,
           title,
           description: body,
           source: "zendesk",
+          ...(sourceRef ? { sourceRef } : {}),
         })
         .returning({ id: posts.id, title: posts.title });
       createdPostId = created.id;

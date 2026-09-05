@@ -131,6 +131,10 @@ export const posts = pgTable(
     // Sprint 44: fikrin geldiği kaynak — portal | widget_embed | api | inbound:<ad>
     // Connector'ların (madde 7) Autopilot'u bu alanla izlenebilir kılar.
     source: varchar("source", { length: 60 }),
+    // Sprint 48q: connector kaynak referansı — Slack event_ts, Zendesk
+    // ticket.id vb. Aynı kaynak (mesaj/ticket) tekrar gelirse idempotent
+    // reddedilir (çift post engellenir). Portal/widget/api satırları null.
+    sourceRef: varchar("source_ref", { length: 120 }),
     // Sprint 27: Türkçe full-text arama kolonu (GENERATED ALWAYS STORED).
     // İki-argümanlı to_tsvector('turkish', ...) immutable olduğu için
     // generated kolonda kullanılabilir.
@@ -148,6 +152,12 @@ export const posts = pgTable(
     index("posts_created_at_idx").on(table.createdAt),
     index("posts_workspace_created_idx").on(table.workspaceId, table.createdAt),
     index("posts_search_vector_idx").using("gin", table.searchVector),
+    // Sprint 48q: aynı connector kaynağı (sourceRef) bir kez post edilir.
+    // sourceRef null olanlar (portal/api) bu unique'e girmez (null hariç).
+    uniqueIndex("posts_workspace_source_ref_key").on(
+      table.workspaceId,
+      table.sourceRef,
+    ),
   ],
 );
 

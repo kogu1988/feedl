@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { and, eq } from "drizzle-orm";
 
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
@@ -60,7 +61,23 @@ export async function POST(req: NextRequest) {
 
     let createdPostId: string | null = null;
     if (classification === "feedback") {
-      // Slack kullanıcısını users tablosuna upsert et (posts.user_id FK şart).
+      // Sprint 48q: idempotency — aynı Slack mesajı (event_ts) tekrar gelirse
+      // yeni post oluşturma (Slack retry/çift event).
+      const workspaceId = await getWorkspaceId();
+      const sourceRef = incoming.eventTs
+        ? `slack:${incoming.eventTs}`
+        : `slack:${incoming.userId ?? "unknown"}:${Date.now()}`;
+      const [existing] = await getDb()
+        .select({ id: posts.id })
+        .from(posts)
+        .where(and(eq(posts.workspaceId, workspaceId), eq(posts.sourceRef, sourceRef)))
+        .limit(1);
+      if (existing) {
+        return NextResponse.json({
+          success: true,
+          data: { classification, postId: existing.id, duplicate: true },
+        });
+      }
       const userId = incoming.userId
         ? toWidgetUserId(incoming.userId)
         : toWidgetUserId("slack");
@@ -82,12 +99,13 @@ export async function POST(req: NextRequest) {
       const [created] = await getDb()
         .insert(posts)
         .values({
-          workspaceId: await getWorkspaceId(),
+          workspaceId,
           boardId: await getDefaultBoardId(),
           userId,
           title,
           description: incoming.text,
           source: "slack",
+          sourceRef,
         })
         .returning({ id: posts.id, title: posts.title });
       createdPostId = created.id;

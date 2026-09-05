@@ -42,6 +42,7 @@ export interface SlackIncomingMessage {
   text: string;
   userId: string | null;
   channel: string | null;
+  eventTs: string | null;
 }
 
 export function parseSlackMessage(payload: Record<string, unknown>): SlackIncomingMessage | null {
@@ -59,6 +60,7 @@ export function parseSlackMessage(payload: Record<string, unknown>): SlackIncomi
     text,
     userId: typeof event.user === "string" ? event.user : null,
     channel: typeof event.channel === "string" ? event.channel : null,
+    eventTs: typeof event.ts === "string" ? event.ts : null,
   };
 }
 
