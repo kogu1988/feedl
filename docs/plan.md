@@ -1681,25 +1681,29 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
 
 ### Sprint 48r — Intercom Connector (madde 8, madde 10) (✅ hazır, kullanıcı kurulumu bekleniyor)
 
-> Üçüncü gerçek connector — Intercom Developer Hub Webhooks ile
-> `conversation.user.created` (kullanıcı/lead'den yeni mesaj) → AI triage →
-> feedback. Kurumsal imaj: uygulama adı feedl; kişisel isim kullanılmaz.
+> Üçüncü gerçek connector — Intercom Developer Hub Webhooks ile hem
+> `conversation.user.created` (kullanıcı/lead yeni mesajı) hem
+> `ticket.created`/`.updated` (Intercom Tickets) → AI triage → feedback.
+> Kurumsal imaj: uygulama adı feedl; kişisel isim kullanılmaz.
 
 - ☑ **`lib/intercom.ts`:** verifyIntercomWebhook (gövde `app_id` ==
   INTERCOM_APP_ID; opsiyonel `X-Intercom-Signature` HMAC-SHA256 ile
-  INTERCOM_WEBHOOK_SECRET), parseIntercomPayload, intercomConversationText
-  (ilk mesaj gövdesi → title/body), isIntercomConfigured.
+  INTERCOM_WEBHOOK_SECRET), parseIntercomPayload, intercomItemText (conversation
+  + ticket `ticket_parts`/`ticket_attributes` → title/body), intercomSourceRef
+  (`intercom:<id>`), isIntercomConfigured.
 - ☑ **`POST /api/integrations/intercom/webhook`:** app_id doğrulama,
-  conversation.user.created → classifyWidgetMessage → feedback ise users
-  upsert (widget_intercom_<contact|conversation>) + post oluştur
-  (source=intercom, sourceRef=intercom:<conversation_id>) + post/created.
+  conversation.* veya ticket.* → classifyWidgetMessage → feedback ise users
+  upsert (widget_intercom_<contact|id>) + post oluştur (source=intercom,
+  sourceRef=intercom:<id>) + post/created.
 - ☑ middleware `/api/integrations(.*)` public (Slack/Zendesk ile ortak).
 - ☑ npm test (17/17) + npm run build ✓ → commit → push bekleniyor.
 - **Kalan (kullanıcı tarafı):** Intercom Developer Hub → Webhooks → yeni
   subscription: URL https://feedl.app/api/integrations/intercom/webhook,
-  topic `conversation.user.created`; Vercel env `INTERCOM_APP_ID` (qry6m4ro)
-  + opsiyonel `INTERCOM_ACCESS_TOKEN` (mesaj içeriği/müşteri bilgisi için,
-  şimdilik kod kullanmıyor) + opsiyonel `INTERCOM_WEBHOOK_SECRET`.
+  topic `conversation.user.created` **ve/veya** `ticket.created` (kullanıcının
+  Intercom'ta ticket oluşturması varsa ticket topic şart); Vercel env
+  `INTERCOM_APP_ID` (qry6m4ro) + opsiyonel `INTERCOM_ACCESS_TOKEN`
+  (mesaj içeriği/müşteri bilgisi için, şimdilik kod kullanmıyor) + opsiyonel
+  `INTERCOM_WEBHOOK_SECRET`.
 
 ### Ertelenen blok (en son — kullanıcının kısıtı)
 

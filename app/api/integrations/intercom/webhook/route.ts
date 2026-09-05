@@ -6,7 +6,8 @@ import { getWorkspaceId } from "@/lib/db/workspace";
 import { getDefaultBoardId } from "@/lib/db/board";
 import { classifyWidgetMessage } from "@/lib/ai/analysis";
 import {
-  intercomConversationText,
+  intercomItemText,
+  intercomSourceRef,
   isIntercomConfigured,
   parseIntercomPayload,
   verifyIntercomWebhook,
@@ -16,10 +17,11 @@ import { toWidgetUserId } from "@/lib/widget/jwt";
 import { postCreatedEventSchema } from "@/lib/validations/events";
 import { inngest } from "@/inngest/client";
 
-// Sprint 48r — Intercom webhook. Developer Hub Webhooks → conversation.user.created
-// (kullanıcı/lead'den yeni mesaj) → AI triage → feedback oluştur.
-// Doğrulama app_id üzerinden (Intercom imza başlığı göndermez); ayrıca
-// opsiyonel INTERCOM_WEBHOOK_SECRET ile `X-Intercom-Signature` desteklenir.
+// Sprint 48r — Intercom webhook. Developer Hub Webhooks → konuşma/ticket
+// olayları (`conversation.user.created`, `ticket.created`/`.updated`) →
+// AI triage → feedback oluştur. Doğrulama app_id üzerinden (Intercom imza
+// başlığı göndermez); ayrıca opsiyonel INTERCOM_WEBHOOK_SECRET ile
+// `X-Intercom-Signature` desteklenir.
 export async function POST(req: NextRequest) {
   try {
     if (!isIntercomConfigured()) {
@@ -49,11 +51,11 @@ export async function POST(req: NextRequest) {
     }
 
     const { item, topic } = parseIntercomPayload(body);
-    // topic filtre: conversation.* herhangi biri işlenebilir çünkü gerçek
-    // teslimat topic'i (`conversation.user.created`) sürümler arası değişebilir
-    // (ör. `conversation_part.created`). Güvenlik zaten app_id doğrulamasıyla
-    // sağlanır; mesaj gövdesi yoksa aşağıda zaten ignored döner.
-    if (topic && !topic.startsWith("conversation")) {
+    // Hem conversation.* hem ticket.* topic'leri işlenir: Intercom'ta müşteri
+    // mesajı conversation (`conversation.user.created`) olarak, ticket oluşturma
+    // (`ticket.created`) olarak gelebilir. Güvenlik app_id doğrulamasında,
+    // mesaj gövdesi yoksa aşağıda ignored döner.
+    if (topic && !topic.startsWith("conversation") && !topic.startsWith("ticket")) {
       return NextResponse.json({ success: true, data: { ignored: true } });
     }
 
@@ -62,7 +64,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, data: { ignored: true } });
     }
 
-    const { title, body: message } = intercomConversationText(item);
+    const { title, body: message } = intercomItemText(item, topic);
     if (!message) {
       // Teşhis: geçerli webhook ama mesaj gövdesi bulunamadı — gerçek payload
       // yapısını görmek için ayrıntılar loglanır.
@@ -76,9 +78,8 @@ export async function POST(req: NextRequest) {
     let createdPostId: string | null = null;
     if (classification === "feedback") {
       const workspaceId = await getWorkspaceId();
-      // Sprint 48q: aynı Intercom conversation'ı (id) tekrar post edilmesin.
-      const conversationId = item.id;
-      const sourceRef = conversationId ? `intercom:${conversationId}` : null;
+      // Sprint 48q: aynı Intercom conversation/ticket (id) tekrar post edilmesin.
+      const sourceRef = intercomSourceRef(item, topic);
       if (sourceRef) {
         const [existing] = await getDb()
           .select({ id: posts.id })
@@ -93,8 +94,8 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // Contact id varsa onu, yoksa conversation id'yi kimlik olarak kullan.
-      const identity = item.contact?.id ?? conversationId ?? "conversation";
+      // Contact id varsa onu, yoksa conversation/ticket id'yi kimlik olarak kullan.
+      const identity = item.contact?.id ?? item.id ?? item.ticketId ?? "intercom";
       const userId = toWidgetUserId(`intercom_${identity}`);
       await getDb()
         .insert(users)
