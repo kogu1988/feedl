@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ClerkProvider } from "@clerk/nextjs";
+import { trTR } from "@clerk/localizations";
 import { shadcn } from "@clerk/ui/themes";
 
 import { SiteHeader } from "@/components/custom/site-header";
@@ -40,7 +41,7 @@ export default async function MainLayout({
   // Sprint 48k: workspace markası (subdomain'e göre) üst bara taşınır.
   const brand = await getWorkspaceBrand();
   return (
-    <ClerkProvider appearance={{ theme: shadcn }}>
+    <ClerkProvider localization={trTR} appearance={{ theme: shadcn }}>
       <ThemeProvider
         attribute="class"
         defaultTheme="system"
