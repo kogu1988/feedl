@@ -3,8 +3,8 @@ import Link from "next/link";
 
 import { RoadmapColumns } from "@/components/custom/roadmap-columns";
 import { getDb } from "@/lib/db";
-import { getWorkspaceId } from "@/lib/db/workspace";
-import { getAdminUserId } from "@/lib/auth/admin";
+import { getWorkspaceId, isShowcaseRequest } from "@/lib/db/workspace";
+import { getAdminUserId, getSessionUserId } from "@/lib/auth/admin";
 import { roadmapStatuses } from "@/lib/post-format";
 import { boards, comments, posts, votes } from "@/lib/db/schema";
 
@@ -38,6 +38,12 @@ export default async function RoadmapPage() {
     loadError = true;
   }
 
+  // Vitrin modu: feedl kök hostundaki ziyaretçiye demo yüzey etkileşimsiz
+  // sunulur (kart linkleri + admin sürükleme inert). Girişli kullanıcı için
+  // gerçek kullanım; müşteri subdomainleri hiç vitrin değildir.
+  const showcaseMode =
+    (await isShowcaseRequest()) && !(await getSessionUserId());
+
   const columns = roadmapStatuses
     .map((status) => ({
       status,
@@ -46,7 +52,10 @@ export default async function RoadmapPage() {
     }));
 
   return (
-    <main className="container mx-auto max-w-6xl p-4 sm:p-8">
+    <main
+      className="container mx-auto max-w-6xl p-4 sm:p-8"
+      inert={showcaseMode || undefined}
+    >
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Yol Haritası</h1>

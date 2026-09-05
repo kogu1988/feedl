@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { getDb } from "@/lib/db";
-import { getWorkspaceId } from "@/lib/db/workspace";
+import { getWorkspaceId, isShowcaseRequest } from "@/lib/db/workspace";
 import { getRole } from "@/lib/auth/admin";
 import { listBoards, resolveBoardBySlug } from "@/lib/db/board";
 import { getPlanLimits } from "@/lib/paddle";
@@ -92,6 +92,10 @@ export default async function PortalPage({
   const boardSlug = (rawBoard ?? "").trim().toLowerCase().slice(0, 80);
 
   const { userId } = await auth();
+  // Vitrin modu: feedl kök hostundaki ziyaretçiye demo yüzey etkileşimsiz
+  // sunulur (buton/input/link tıklanamaz — inert). Girişli üye/admin için
+  // sayfa gerçek kullanımda kalır; müşteri subdomainleri hiç vitrin değildir.
+  const showcaseMode = (await isShowcaseRequest()) && !userId;
   let isAdmin = false;
   try {
     const { getRole } = await import("@/lib/auth/admin");
@@ -219,7 +223,10 @@ export default async function PortalPage({
     : allBoards.filter((board) => board.visibility === "public");
 
   return (
-    <main className="container mx-auto max-w-6xl p-4 sm:p-8">
+    <main
+      className="container mx-auto max-w-6xl p-4 sm:p-8"
+      inert={showcaseMode || undefined}
+    >
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Fikir Portalı</h1>

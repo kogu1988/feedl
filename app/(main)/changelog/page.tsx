@@ -7,7 +7,7 @@ import { ChangelogSubscribeForm } from "@/components/custom/changelog-subscribe-
 import { MarkdownContent } from "@/components/custom/markdown-content";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { getDb } from "@/lib/db";
-import { getWorkspaceId } from "@/lib/db/workspace";
+import { getWorkspaceId, isShowcaseRequest } from "@/lib/db/workspace";
 import {
   changelogEntries,
   changelogPostLinks,
@@ -46,9 +46,13 @@ export default async function ChangelogPage() {
 
   // Abonelik kutusunda e-posta ön-dolu: girişli kullanıcının feedl'deki
   // e-postası (Clerk webhook ile senkron). Lookup başarısızsa alan boş kalır.
+  const { userId } = await auth();
+  // Vitrin modu: feedl kök hostundaki ziyaretçiye demo yüzey etkileşimsiz
+  // sunulur (abonelik formu + linkler inert). Girişli kullanıcı için gerçek
+  // kullanım; müşteri subdomainleri hiç vitrin değildir.
+  const showcaseMode = (await isShowcaseRequest()) && !userId;
   let defaultEmail: string | undefined;
   try {
-    const { userId } = await auth();
     if (userId) {
       const [row] = await getDb()
         .select({ email: users.email })
@@ -62,7 +66,10 @@ export default async function ChangelogPage() {
   }
 
   return (
-    <main className="container mx-auto max-w-6xl p-4 sm:p-8">
+    <main
+      className="container mx-auto max-w-6xl p-4 sm:p-8"
+      inert={showcaseMode || undefined}
+    >
       <Link
         href="/portal"
         className="inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"

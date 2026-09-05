@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { auth } from "@clerk/nextjs/server";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
@@ -8,7 +9,7 @@ import { MarkdownContent } from "@/components/custom/markdown-content";
 import { PageBreadcrumb } from "@/components/custom/page-breadcrumb";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { getDb } from "@/lib/db";
-import { getWorkspaceId } from "@/lib/db/workspace";
+import { getWorkspaceId, isShowcaseRequest } from "@/lib/db/workspace";
 import { changelogEntries, changelogPostLinks, posts } from "@/lib/db/schema";
 import { trDateTimeFormatter } from "@/lib/post-format";
 
@@ -107,8 +108,16 @@ export default async function ChangelogDetailPage({
     notFound();
   }
 
+  // Vitrin modu: feedl kök hostundaki ziyaretçiye demo yüzey etkileşimsiz
+  // sunulur (ilgili fikir linkleri inert). Müşteri subdomainleri etkilenmez.
+  const { userId } = await auth();
+  const showcaseMode = (await isShowcaseRequest()) && !userId;
+
   return (
-    <main className="container mx-auto max-w-6xl p-4 sm:p-8">
+    <main
+      className="container mx-auto max-w-6xl p-4 sm:p-8"
+      inert={showcaseMode || undefined}
+    >
       <PageBreadcrumb
         items={[
           { label: "Güncellemeler", href: "/changelog" },

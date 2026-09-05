@@ -42,7 +42,7 @@ import { cn } from "@/lib/utils";
 import { getRole } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { loadCustomerCounts } from "@/lib/db/customer-counts";
-import { getWorkspaceId } from "@/lib/db/workspace";
+import { getWorkspaceId, isShowcaseRequest } from "@/lib/db/workspace";
 import {
   boards,
   comments,
@@ -86,6 +86,10 @@ export default async function PostDetailPage({
   const postId = parsedId.data;
 
   const { userId } = await auth();
+  // Vitrin modu: feedl kök hostundaki ziyaretçiye demo yüzey etkileşimsiz
+  // sunulur (oy/yorum/takip butonları inert). Girişli kullanıcı için gerçek
+  // kullanım; müşteri subdomainleri hiç vitrin değildir.
+  const showcaseMode = (await isShowcaseRequest()) && !userId;
   let isAdmin = false;
   try {
     isAdmin = userId ? (await getRole(userId)) === "admin" : false;
@@ -216,7 +220,10 @@ export default async function PostDetailPage({
   const showSidebar = isAdmin || publicCustomFields.length > 0;
 
   return (
-    <main className="container mx-auto max-w-6xl p-4 sm:p-8">
+    <main
+      className="container mx-auto max-w-6xl p-4 sm:p-8"
+      inert={showcaseMode || undefined}
+    >
       <PageBreadcrumb
         items={[{ label: "Portal", href: "/portal" }, { label: post.title }]}
       />
