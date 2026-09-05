@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 
 import { WorkspaceSettings } from "@/components/custom/workspace-settings";
+import { LinearIntegration } from "@/components/custom/linear-integration";
 import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
@@ -45,7 +46,10 @@ export default async function SettingsPage() {
           Workspace yüklenemedi. Lütfen sayfayı yenile.
         </p>
       ) : (
-        <WorkspaceSettings initial={initial} />
+        <>
+          <WorkspaceSettings initial={initial} />
+          <LinearIntegration />
+        </>
       )}
     </main>
   );
