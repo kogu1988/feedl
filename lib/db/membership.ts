@@ -8,7 +8,7 @@ import { users, workspaceMembers } from "./schema";
 // katmandan doğrular; geriye dönük uyumluluk için users.role='admin' de
 // kabul edilir (geçiş dönemi). Roller: owner | admin | member.
 
-export type WorkspaceMemberRole = "owner" | "admin" | "member";
+export type WorkspaceMemberRole = "owner" | "admin" | "member" | "contributor";
 
 export async function getWorkspaceRole(
   userId: string,

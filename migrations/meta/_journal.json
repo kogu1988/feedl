@@ -232,6 +232,13 @@
       "when": 1788566900192,
       "tag": "0032_paddle_plan",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1788567506916,
+      "tag": "0033_invites",
+      "breakpoints": true
     }
   ]
 }

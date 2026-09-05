@@ -18,7 +18,7 @@ export async function getRole(userId: string): Promise<string | null> {
   if (membershipRole === "owner" || membershipRole === "admin") {
     return "admin";
   }
-  if (membershipRole === "member") {
+  if (membershipRole === "member" || membershipRole === "contributor") {
     return "customer";
   }
   // Geçiş dönemi: workspace_members'da yoksa global users.role (admin). Bu,

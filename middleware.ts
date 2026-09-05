@@ -26,6 +26,8 @@ const isPublicRoute = createRouteMatcher([
 
   "/roadmap(.*)",
 
+  "/invites(.*)",
+
   "/widget",
   "/api/posts(.*)",
 

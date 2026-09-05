@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2Icon, TrashIcon, UserPlusIcon } from "lucide-react";
+import { Loader2Icon, MailIcon, TrashIcon, UserPlusIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -23,7 +23,7 @@ import { Input } from "@/components/ui/input";
 export interface MemberView {
   id: string;
   userId: string;
-  role: "owner" | "admin" | "member";
+  role: "owner" | "admin" | "member" | "contributor";
   createdAt: Date;
   name: string | null;
   email: string;
@@ -38,12 +38,14 @@ const roleLabels: Record<string, string> = {
   owner: "Sahip",
   admin: "Yönetici",
   member: "Üye",
+  contributor: "Katkıcı",
 };
 
 const roleOptions = [
   { value: "owner", label: "Sahip" },
   { value: "admin", label: "Yönetici" },
   { value: "member", label: "Üye" },
+  { value: "contributor", label: "Katkıcı" },
 ] as const;
 
 const selectClassName =
@@ -59,14 +61,44 @@ export function MembersManager({
   const [members, setMembers] = useState<MemberView[]>(initial);
   const [addedUserId, setAddedUserId] = useState("");
   const [addedRole, setAddedRole] = useState<"member" | "admin" | "owner">("member");
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState("member");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+  const [inviting, setInviting] = useState(false);
 
   async function refresh() {
     const res = await fetch("/api/admin/members", { cache: "no-store" });
     const json = await res.json();
     if (json.success) setMembers(json.data);
+  }
+
+  async function invite() {
+    setError(null);
+    if (!inviteEmail.trim()) {
+      setError("Davet e-postası gerekli.");
+      return;
+    }
+    setInviting(true);
+    try {
+      const res = await fetch("/api/admin/invites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: inviteEmail.trim(), role: inviteRole }),
+      });
+      const json = await res.json();
+      if (!json.success) {
+        setError(json.error || "Davet gönderilemedi.");
+        return;
+      }
+      setInviteEmail("");
+      setError("Davet e-postası gönderildi.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Davet gönderilemedi.");
+    } finally {
+      setInviting(false);
+    }
   }
 
   async function add() {
@@ -140,63 +172,114 @@ export function MembersManager({
     <div className="mt-6 space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-xs text-muted-foreground">{members.length} üye</p>
-        <Dialog>
-          <DialogTrigger render={<Button />}>
-            <UserPlusIcon aria-hidden="true" />
-            Üye Ekle
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Üye Ekle</DialogTitle>
-              <DialogDescription>
-                Var olan bir kullanıcıyı workspace&apos;e ekle.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="member-user">Kullanıcı</Label>
-                <select
-                  id="member-user"
-                  className={selectClassName}
-                  value={addedUserId}
-                  onChange={(e) => setAddedUserId(e.target.value)}
-                >
-                  <option value="">Kullanıcı seç</option>
-                  {userOptions.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.label}
-                    </option>
-                  ))}
-                </select>
+        <div className="flex flex-wrap gap-2">
+          <Dialog>
+            <DialogTrigger render={<Button />}>
+              <UserPlusIcon aria-hidden="true" />
+              Üye Ekle
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Üye Ekle</DialogTitle>
+                <DialogDescription>
+                  Var olan bir kullanıcıyı workspace&apos;e ekle.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="member-user">Kullanıcı</Label>
+                  <select
+                    id="member-user"
+                    className={selectClassName}
+                    value={addedUserId}
+                    onChange={(e) => setAddedUserId(e.target.value)}
+                  >
+                    <option value="">Kullanıcı seç</option>
+                    {userOptions.map((user) => (
+                      <option key={user.id} value={user.id}>
+                        {user.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="member-role">Rol</Label>
+                  <select
+                    id="member-role"
+                    className={selectClassName}
+                    value={addedRole}
+                    onChange={(e) =>
+                      setAddedRole(e.target.value as "owner" | "admin" | "member")
+                    }
+                  >
+                    {roleOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="member-role">Rol</Label>
-                <select
-                  id="member-role"
-                  className={selectClassName}
-                  value={addedRole}
-                  onChange={(e) =>
-                    setAddedRole(e.target.value as "owner" | "admin" | "member")
-                  }
-                >
-                  {roleOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+              <DialogFooter>
+                <Button onClick={add} disabled={adding}>
+                  {adding && (
+                    <Loader2Icon className="animate-spin" aria-hidden="true" />
+                  )}
+                  Ekle
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          <Dialog>
+            <DialogTrigger render={<Button variant="outline" />}>
+              <MailIcon aria-hidden="true" />
+              Davet Gönder
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Davet Gönder</DialogTitle>
+                <DialogDescription>
+                  E-posta ile yeni üye davet et — 7 gün geçerli.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="invite-email">E-posta</Label>
+                  <Input
+                    id="invite-email"
+                    type="email"
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
+                    placeholder="ornek@firma.com"
+                    maxLength={200}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="invite-role">Rol</Label>
+                  <select
+                    id="invite-role"
+                    className={selectClassName}
+                    value={inviteRole}
+                    onChange={(e) => setInviteRole(e.target.value)}
+                  >
+                    <option value="member">Üye</option>
+                    <option value="contributor">Katkıcı</option>
+                    <option value="admin">Yönetici</option>
+                    <option value="owner">Sahip</option>
+                  </select>
+                </div>
               </div>
-            </div>
-            <DialogFooter>
-              <Button onClick={add} disabled={adding}>
-                {adding && (
-                  <Loader2Icon className="animate-spin" aria-hidden="true" />
-                )}
-                Ekle
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+              <DialogFooter>
+                <Button onClick={invite} disabled={inviting}>
+                  {inviting && (
+                    <Loader2Icon className="animate-spin" aria-hidden="true" />
+                  )}
+                  Davet Gönder
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {error && (

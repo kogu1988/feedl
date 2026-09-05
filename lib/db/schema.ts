@@ -230,6 +230,7 @@ export const workspaceMemberRoleEnum = pgEnum("workspace_member_role", [
   "owner",
   "admin",
   "member",
+  "contributor",
 ]);
 
 export const workspaceMembers = pgTable("workspace_members", {
@@ -254,6 +255,29 @@ export const workspaceMembers = pgTable("workspace_members", {
   ),
   index("workspace_members_user_idx").on(table.userId),
 ]);
+
+// Sprint 48j (madde 8, P1) — davet akışı. Tek kullanımlık, süreli davet
+// token'ı. Kabul edilince workspace_members'e üye eklenir.
+export const workspaceInvites = pgTable("workspace_invites", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  workspaceId: uuid("workspace_id")
+    .notNull()
+    .references(() => workspaces.id, { onDelete: "cascade" }),
+  email: text("email").notNull(),
+  role: workspaceMemberRoleEnum("role").notNull().default("member"),
+  token: text("token").notNull().unique(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+  createdBy: text("created_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export type WorkspaceInvite = typeof workspaceInvites.$inferSelect;
+export type NewWorkspaceInvite = typeof workspaceInvites.$inferInsert;
 
 export type Workspace = typeof workspaces.$inferSelect;
 export type NewWorkspace = typeof workspaces.$inferInsert;

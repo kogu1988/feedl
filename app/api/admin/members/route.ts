@@ -20,7 +20,7 @@ import { enforceLimit } from "@/lib/paddle";
 // Sprint 48c-2 (madde 8) — workspace üyeleri ve rol matrisi. Üye ekle/rol
 // değiştir/çıkar; roller owner/admin/member. Son owner kaldırılamaz.
 
-const roleEnum = z.enum(["owner", "admin", "member"]);
+const roleEnum = z.enum(["owner", "admin", "member", "contributor"]);
 const memberSchema = z.object({
   userId: z.string().min(1, "Kullanıcı gerekli."),
   role: roleEnum.default("member"),
