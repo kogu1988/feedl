@@ -43,7 +43,7 @@ export function ActivationFunnel({ data }: { data: ActivationFunnelView }) {
                 </div>
                 <div className="h-2 overflow-hidden rounded-full bg-muted">
                   <div
-                    className="h-full rounded-full bg-brand transition-all"
+                    className="h-full rounded-full bg-brand transition-[width]"
                     style={{
                       width: `${Math.round((step.count / maxCount) * 100)}%`,
                       opacity: step.count === 0 ? 0.25 : 1,
