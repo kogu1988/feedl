@@ -1804,6 +1804,30 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   `sm:grid-cols-2 lg:grid-cols-3` responsive; lucide ikonlar + brand rengi.
 - ☑ npm test (17/17) + npm run build ✓ → commit → push.
 
+### Sprint 52 — Paddle Canlı Geçiş Hazırlığı (Faz 5 ticarileşme) (✅ 2026-09-05)
+
+> Kullanıcı kararı: canlı tahsilat HÂLÂ SANDBOX'ta kalır; ama kod canlı geçişe
+> hazırlanır (bir süre daha canlı aktif edilmez). Amaç: sandbox↔live geçişi
+> saf env değişimi + Paddle dashboard webhook kurulumu olsun.
+
+- ☑ **`components/custom/plan-config.ts` (commit 20c22b8):** fiyat/price-id
+  TEK kaynak — `getPlanEnv()`, `PRO_PLAN` (monthlyPrice $19,
+  yearlyMonthlyPrice $15, yearlyTotal $180, monthlyPriceId/yearlyPriceId),
+  `isPro()`. billing-manager + pricing-manager buradan okur; hardcoded $19/$15
+  ve raw `<button>` kullanımı giderildi (Button komponenti).
+- ☑ **Webhook sağlamlaştırma (app/api/webhooks/paddle):** plan artık
+  aboneliğin `status` alanından türetiliyor (trialing/active → pro;
+  canceled/paused/past_due/dunned → free) — canlı yenileme/ihan/duraklatma
+  sağlıklı işlenir. `PADDLE_ENV ≠ sandbox` ise secret zorunlu (tekrar).
+- ☑ npm test (17/17) + npm run build ✓ → commit → push.
+- **Kalan (kullanıcı tarafı, canlıya geçişte):** Paddle Dashboard → belki
+  üründe production fiyat oluştur (feedl_ öneki), production API key +
+  client token + price ID'leri → aynı env'lere (PADDLE_ENV=live + canlı
+  `PADDLE_API_KEY`/`NEXT_PUBLIC_PADDLE_CLIENT_TOKEN`/pro price ID'leri);
+  Paddle webhook notification destination →
+  https://feedl.app/api/webhooks/paddle + `PADDLE_WEBHOOK_SECRET`; sonra
+  gerçek ödeme testi.
+
 ### 📝 Sonraki plan notları (kullanıcı onayıyla erteelenen/planlanacak)
 
 - **Ticarileşme (Paddle):** Canlı tahsilata geç YOK — sandbox'ta kalınacak.
