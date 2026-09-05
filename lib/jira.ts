@@ -151,6 +151,7 @@ export async function registerJiraWebhook(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
+      name: "feedl",
       url: jiraWebhookUrl(token),
       webhookEvents: JIRA_WEBHOOK_EVENTS,
       jqlFilter: "",
