@@ -1875,6 +1875,26 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
   sürümünü `npm version patch` ve republish ile yönet. Paket `packages/`
   altında, repo kökündeki Next.js build'inden BAĞIMSIZ.
 
+### Sprint 55 — Board Temiz URL `portal/[slug]` (Platformlaşma #3) (✅ 2026-09-05)
+
+> Kullanıcı kararı: `portal/[slug]` bugün yapılsın (önce custom-domain
+> sprint'ine ertelenmişti). Daha önceki teşhis: mevcut `portal/[id]` (post
+> detay) dinamik segmentiyle `portal/[slug]` aynı derinlikte conflict verir.
+> Çözüm: **middleware rewrite** — URL değişmez, board görünümü `?board=`
+> render edilir.
+
+- ☑ **`middleware.ts` (commit 835e77a):** `portalBoardRewrite` —
+  `/portal/:slug` (uuid değil, ayrılmış static değil: changelog/oyladiklarim)
+  → `NextResponse.rewrite('/portal?board=slug')`. URL `/portal/<slug>` olarak
+  kalır; `[id]` (uuid) post detayı ve statik sayfalar korunur. Middleware
+  boyutu 97.9→98.1 kB (rewrite mantığı).
+- ☑ **`app/(main)/portal/page.tsx`:** `buildPortalHref` — ek filtre yoksa
+  `/portal/<slug>` (temiz), filtre/sıralama/tag varsa `?board=&…`.
+- ☑ Canlı doğrulama: `/portal/ozellik-istekleri` → 200, URL değişmez,
+  board adı render; uuid post detay + /portal/changelog + /portal/oyladiklarim
+  → 200 (regression yok).
+- ☑ npm test (17/17) + build ✓ → commit → push → deploy.
+
 ### 📝 Sonraki plan notları (kullanıcı onayıyla erteelenen/planlanacak)
 
 - **Ticarileşme (Paddle):** Canlı tahsilata geç YOK — sandbox'ta kalınacak.
