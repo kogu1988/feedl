@@ -94,56 +94,79 @@ function isTicketItem(item: IntercomItem, topic: string | null): boolean {
   if (topic?.startsWith("ticket")) return true;
   const parts = field(item, "ticket_parts", "ticketParts");
   const ticketId = field(item, "ticket_id", "ticketId");
+  const nestedParts =
+    typeof parts === "object" && parts !== null
+      ? (parts as Record<string, unknown>)["ticket_parts" as keyof typeof parts]
+      : parts;
   return (
-    (Array.isArray(parts) && parts.length > 0) || typeof ticketId === "string"
+    (Array.isArray(nestedParts) && nestedParts.length > 0) ||
+    typeof ticketId === "string"
   );
 }
 
-// Ticket'ta title/subject custom alanlar `ticket_attributes` içinde gelir.
+// `ticket_attributes` içinden ilk dolu title-alamı döner (Intercom custom
+// alan adı `_default_title_`, basit kurulumlarda `title`/`subject` vb.).
 function ticketTitle(item: IntercomItem, topic: string | null): string {
   const attrs = field(item, "ticket_attributes", "ticketAttributes");
   if (typeof attrs === "object" && attrs !== null) {
     const a = attrs as Record<string, unknown>;
-    for (const key of ["title", "subject"]) {
+    // Önce bilinen alan adları.
+    for (const key of ["_default_title_", "title", "subject"]) {
       if (typeof a[key] === "string" && (a[key] as string).trim()) {
         return (a[key] as string).trim();
       }
     }
+    // Sonra herhangi bir `*_title_`/`*title*` benzeri alanı dene.
+    for (const [k, v] of Object.entries(a)) {
+      if (typeof v === "string" && v.trim() && /title/i.test(k)) {
+        return v.trim();
+      }
+    }
   }
-  // Bazı kurulumlar subject'i doğrudan item'a da yazar.
   const direct = fieldStr(item, "subject", "subject");
   if (direct.trim()) return direct.trim();
   return "Intercom destek talebi";
 }
 
+// `ticket_parts` hem düz dizi hem `{type, ticket_parts:[...]}` şeklinde gelir.
+function ticketPartBodies(item: IntercomItem): string[] {
+  const raw = field(item, "ticket_parts", "ticketParts");
+  let list: Array<{ body?: unknown; part_type?: unknown }> = [];
+  if (Array.isArray(raw)) {
+    list = raw as Array<{ body?: unknown; part_type?: unknown }>;
+  } else if (typeof raw === "object" && raw !== null) {
+    const nested = (raw as Record<string, unknown>)["ticket_parts"];
+    if (Array.isArray(nested)) list = nested as Array<{ body?: unknown; part_type?: unknown }>;
+  }
+  return list
+    .map((p) => (typeof p.body === "string" ? p.body : ""))
+    .filter((b) => b.trim());
+}
+
 // Item'dan çekilecek feedback metni (ilk mesaj gövdesi). Hem snake_case hem
 // camelCase alan adlarını tanır; topic'e göre conversation veya ticket kısmı
-// önceliklenir (ticket şart: bilet parçaları önce).
+// önceliklenir (ticket şart: bilet parçaları + custom alanlar önce).
 export function intercomItemText(
   item: IntercomItem,
   topic: string | null,
 ): { title: string; body: string } {
   if (isTicketItem(item, topic)) {
-    const parts = field(item, "ticket_parts", "ticketParts");
-    let partBodies: string[] = [];
-    if (Array.isArray(parts)) {
-      partBodies = (parts as Array<{ body?: unknown; type?: string }>)
-        .map((p) => (typeof p.body === "string" ? p.body : ""))
-        .filter((b) => b.trim());
-    }
-    // ticket_attributes altındaki description da ek kaynak.
+    const partBodies = ticketPartBodies(item);
+    // ticket_attributes altındaki _default_title_ / _default_description_
+    // custom alanları: Intercom ticket formunun başlığı/aciklaması.
     const attrs = field(item, "ticket_attributes", "ticketAttributes") as
       | Record<string, unknown>
       | undefined;
+    let attrTitle = "";
     let attrDescription = "";
-    if (attrs && typeof attrs.description === "string") {
-      attrDescription = attrs.description.trim();
-    } else if (attrs && typeof attrs.subject === "string") {
-      attrDescription = attrs.subject.trim();
+    if (attrs && typeof attrs === "object") {
+      if (typeof attrs._default_title_ === "string") attrTitle = (attrs._default_title_ as string).trim();
+      if (typeof attrs._default_description_ === "string") attrDescription = (attrs._default_description_ as string).trim();
+      if (!attrTitle && typeof attrs.subject === "string") attrTitle = (attrs.subject as string).trim();
     }
-    const bodyText = (partBodies.join("\n") || attrDescription).trim();
+    const bodyText = (partBodies.join("\n") || attrDescription || attrTitle).trim();
     const body = bodyText.slice(0, 4000);
-    const title = ticketTitle(item, topic).slice(0, 140);
+    const title = (ticketTitle(item, topic) || attrTitle).slice(0, 140);
     return { title: title || "Intercom destek talebi", body };
   }
 
@@ -168,12 +191,16 @@ export function intercomItemText(
   return { title, body };
 }
 
-// Kaynak kimliği: conversation.id veya ticket.id/ticket_id.
+// Kaynak kimliği: ticket için `ticket_id` (kullanıcının gördüğü numara);
+// conversation için `id`/`conversation_id`.
 export function intercomSourceRef(item: IntercomItem, topic: string | null): string | null {
+  // Ticket: `ticket_id` (130693865) öncelikli — `id` Intercom iç kimliğidir.
+  if (topic?.startsWith("ticket") || field(item, "ticket_id", "ticketId")) {
+    const ticketId = fieldStr(item, "ticket_id", "ticketId");
+    if (ticketId) return `intercom:${ticketId}`;
+  }
   const id =
-    fieldStr(item, "id", "id") ||
-    fieldStr(item, "ticket_id", "ticketId") ||
-    fieldStr(item, "conversation_id", "conversationId");
+    fieldStr(item, "id", "id") || fieldStr(item, "conversation_id", "conversationId");
   if (!id) return null;
   return `intercom:${id}`;
 }
