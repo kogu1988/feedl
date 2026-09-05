@@ -1040,6 +1040,10 @@ export const workspaceIntegrations = pgTable(
     provider: varchar("provider", { length: 40 }).notNull(),
     // Dış servis webhook id'si (silme/refresh için).
     webhookId: text("webhook_id"),
+    // Dış servis API key — webhook silme/refresh için saklanır (Linear key).
+    // Not: üretimde şifreli saklanmalı; şimdilik workspace sahibinin kendi
+    // API key'i olduğu için düz tutulur (Canny/Intercom modeli).
+    apiKey: text("api_key"),
     // Linear webhook signing secret (HMAC anahtarı).
     webhookSecret: text("webhook_secret"),
     // URL'ye gömülen per-workspace token (?t=).
