@@ -1780,6 +1780,30 @@ sınıflandırması (✅ = parite var, 🔧 = revizyon genişletmeli,
 - ☑ **`middleware.ts`:** /demo public; /pricing zaten public.
 - ☑ npm test (17/17) + npm run build ✓ → commit → push.
 
+### Sprint 51 — Bileşen Tutarlılığı + Footer + Landing Özellikler Bölümü (✅ 2026-09-05)
+
+> Kullanıcı şikâyeti: landing/demo kartlarında chevron (▲) varken portalda
+> thumbs-up; tutarsızlık kabul edilemez. Ayrıca footer'da demo linki yok,
+> landing sade ve özellikler bölümü yok. Amaç: aynı standart her yerde +
+> responsive + kurumsal tanıtım.
+
+- ☑ **`DemoPostCard` (commit 501d66a):** portal fikir kartının GÖRSEL birebir
+  karşılığı, etkileşimsiz. Aynı Badge/Button stilleri: ThumbsUpIcon + outline
+  Button (VoteButton görünümü), MessageSquareIcon + yorum sayısı (statik),
+  StatusBadge/TypeBadge/SentimentBadge + yuvarlak etiket çipleri (TagChips
+  görünümü ama link'siz). landing + /demo aynı bileşeni kullanır.
+- ☑ **Footer çok sütunlu (layout):** Ürün (Portal/Yol Haritası/Güncellemeler/
+  Demo) + Şirket (Fiyatlandırma/İletişim/Gizlilik/Kullanım Şartları) + marka
+  blok + telif satırı. `sm:grid-cols-2 lg:grid-cols-4` responsive.
+- ☑ **Yasal/şirket stub sayfaları:** /privacy, /terms, /contact (içerik sonra;
+  linkler 404 olmasın) + `middleware.ts` public'e eklendi.
+- ☑ **Landing özellikler bölümü:** "Özellikler" başlıklı grid (10 kart):
+  AI Autopilot, Oylama & Yol Haritası, Değişiklik Günlüğü, Ekip & Rol,
+  Entegrasyonlar (Slack/Zendesk/Intercom), Public API & Webhook, Marka &
+  Alan Adı, Gelir Skoru, Güvenlik & Gizlilik, İş Akışı & Görünümler.
+  `sm:grid-cols-2 lg:grid-cols-3` responsive; lucide ikonlar + brand rengi.
+- ☑ npm test (17/17) + npm run build ✓ → commit → push.
+
 ### 📝 Sonraki plan notları (kullanıcı onayıyla erteelenen/planlanacak)
 
 - **Ticarileşme (Paddle):** Canlı tahsilata geç YOK — sandbox'ta kalınacak.
