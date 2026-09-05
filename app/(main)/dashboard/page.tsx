@@ -119,6 +119,10 @@ export default async function DashboardPage({
   const rangeLabel =
     rangeOptions.find((option) => option.value === String(rangeDays))?.label ??
     "Son 7 Gün";
+  // h1 aktif sekmenin adını taşır — sidebar'daki adla ("Genel Bakış") tutarlı.
+  const sectionLabel =
+    sectionOptions.find((option) => option.value === section)?.label ??
+    "Genel Bakış";
   // Sprint 39: tablo sayfalaması — 5 varsayılan, 25/50/Tümü (ortak parse).
   const { per, perSize, requestedPage } = parsePagination(rawPer, rawPage);
 
@@ -216,7 +220,7 @@ export default async function DashboardPage({
     <main className="container mx-auto max-w-none p-4 sm:p-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Admin Paneli</h1>
+          <h1 className="text-2xl font-bold">{sectionLabel}</h1>
           <p className="mt-2 text-muted-foreground">
             Fikirleri incele, durumlarını güncelleyerek yol haritasını yönet.
           </p>
