@@ -44,6 +44,10 @@ function buildPortalHref(
   boardSlug: string,
   extra?: { q?: string; sort?: string; tag?: string },
 ): string {
+  // Temiz URL: ek filtre/sıralama/arama yoksa `/portal/<slug>` (Sprint 55
+  // middleware rewrite ile board görünümünü render eder, URL değişmez).
+  const needsQuery = extra?.q || extra?.sort || extra?.tag;
+  if (!needsQuery) return `/portal/${encodeURIComponent(boardSlug)}`;
   const params = new URLSearchParams();
   params.set("board", boardSlug);
   if (extra?.q) params.set("q", extra.q);

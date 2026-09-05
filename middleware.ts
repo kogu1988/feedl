@@ -1,5 +1,6 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
 // Public route'lar (standarts.md §1.1):
 // - "/" ve "/portal" sayfa görünümü herkese açık (public read)
@@ -63,9 +64,35 @@ const isPublicRoute = createRouteMatcher([
 
 ]);
 
-// Middleware SADECE giriş kontrolü yapar. Admin yetkisi tek kaynak olarak
-// Neon users.role alanından sayfa/API içinde kontrol edilir (plan.md Sprint 1).
+// Sprint 55 (Platformlaşma #3) — board temiz URL: `/portal/:slug` (uuid
+// değil, ayrılmış static değil) → `/portal?board=:slug` REWRITE edilir.
+// Böylece URL `/portal/feature-requests` olarak KALIR (redirect değil),
+// post detayı ([id] / uuid) ve statik sayfalar (changelog, oyladiklarim)
+// korunur. Eski [id] sayfasındaki slug→?board redirect'i yedeğe düşer.
+const RESERVED_PORTAL_SEGMENTS = new Set(["changelog", "oyladiklarim"]);
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const BOARD_SLUG_RE = /^[a-z0-9][a-z0-9-]{1,78}$/;
+
+function portalBoardRewrite(req: NextRequest): NextResponse | null {
+  const { pathname } = req.nextUrl;
+  const match = /^\/portal\/([^/]+)\/?$/.exec(pathname);
+  if (!match) return null;
+  const slug = match[1];
+  // UUID → post detay ([id]); statik segmentler → değişmez.
+  if (UUID_RE.test(slug) || RESERVED_PORTAL_SEGMENTS.has(slug)) return null;
+  if (!BOARD_SLUG_RE.test(slug)) return null;
+  const url = req.nextUrl.clone();
+  url.pathname = "/portal";
+  url.search = `?board=${encodeURIComponent(slug)}`;
+  return NextResponse.rewrite(url);
+}
+
+// Middleware SADECE giriş kontrolü + board temiz URL rewrite'i yapar. Admin
+// yetkisi tek kaynak olarak Neon users.role alanından sayfa/API içinde kontrol
+// edilir (plan.md Sprint 1).
 export default clerkMiddleware(async (auth, req: NextRequest) => {
+  const rewrite = portalBoardRewrite(req);
+  if (rewrite) return rewrite;
   if (!isPublicRoute(req)) {
     await auth.protect();
   }
