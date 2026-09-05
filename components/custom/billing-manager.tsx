@@ -75,7 +75,7 @@ export function BillingManager({
           <p className="mt-2 text-xs text-muted-foreground">
             {pro
               ? "Tüm özellikler açık. Yönetim Paddle üzerinden."
-              : "Sınırlı özellikler — Pro&apos;a geçerek tamamını aç."}
+              : "Sınırlı özellikler — Pro&apos;ya geçerek tamamını aç."}
           </p>
         </div>
         <div className="rounded-lg border p-4">
@@ -94,13 +94,13 @@ export function BillingManager({
       {!pro ? (
         <div className="flex flex-wrap gap-2">
           <Button onClick={() => openCheckout(pricing.monthlyPriceId)}>
-            Pro&apos;a Geç (aylık)
+            Pro&apos;ya Geç (aylık)
           </Button>
           <Button
             variant="outline"
             onClick={() => openCheckout(pricing.yearlyPriceId)}
           >
-            Pro&apos;a Geç (yıllık, %20 indirim)
+            Pro&apos;ya Geç (yıllık, %20 indirim)
           </Button>
         </div>
       ) : (

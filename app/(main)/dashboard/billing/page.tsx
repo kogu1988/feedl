@@ -11,7 +11,7 @@ import { workspaces } from "@/lib/db/schema";
 export const dynamic = "force-dynamic";
 
 // Sprint 48h (Faz 5) — abonelik/faturalandırma. Workspace plan bilgisini
-// gösterir; Pro'a yükseltme Paddle.js checkout ile (billing-manager client).
+// gösterir; Pro'ya yükseltme Paddle.js checkout ile (billing-manager client).
 export default async function BillingPage() {
   const adminId = await getAdminUserId();
   if (!adminId) {
@@ -32,7 +32,7 @@ export default async function BillingPage() {
       <div>
         <h1 className="text-2xl font-bold">Faturalandırma</h1>
         <p className="mt-2 text-muted-foreground">
-          Planını ve kullanım limitlerini gösterir. Pro&apos;a geçişle tüm
+          Planını ve kullanım limitlerini gösterir. Pro&apos;ya geçişle tüm
           özellikleri aç.
         </p>
       </div>
