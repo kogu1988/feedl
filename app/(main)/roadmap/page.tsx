@@ -43,8 +43,7 @@ export default async function RoadmapPage() {
       status,
       title: columnMeta[status]?.title ?? status,
       dotClass: columnMeta[status]?.dotClass ?? "bg-muted",
-    }))
-    .filter((c) => c.status !== "open" && c.status !== "under-review" && c.status !== "closed");
+    }));
 
   return (
     <main className="container mx-auto max-w-6xl p-4 sm:p-8">

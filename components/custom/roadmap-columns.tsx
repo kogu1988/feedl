@@ -88,10 +88,6 @@ export function RoadmapColumns({
     }
   }
 
-  function columnFor(status: string) {
-    return columns.find((c) => c.status === status);
-  }
-
   const byStatus = (status: string) =>
     posts.filter((p) => effectiveStatus(p) === status);
 

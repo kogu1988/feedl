@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { initializePaddle, type Paddle } from "@paddle/paddle-js";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -110,7 +111,12 @@ export function PricingManager({ workspaceSlug }: { workspaceSlug: string }) {
           </div>
           <FeatureList items={freeFeatures} />
           <div className="mt-auto pt-6">
-            <Button size="lg" variant="outline" className="w-full" render={<a href="/sign-up" />}>
+            <Button
+              size="lg"
+              variant="outline"
+              className="w-full"
+              render={<Link href="/sign-up" />}
+            >
               Hemen Başla
             </Button>
           </div>
