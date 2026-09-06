@@ -1,5 +1,6 @@
 import { eq, or } from "drizzle-orm";
 import { z } from "zod";
+import { cache } from "react";
 
 import { getDb } from "./index";
 import { workspaces } from "./schema";
@@ -174,12 +175,13 @@ export async function isShowcaseRequest(): Promise<boolean> {
   return isFeedlRootHost(await getRequestHost());
 }
 
-// Request başına workspace id cache'i: aynı request'te birden çok çağrı
-// DB'yi tekrar vurmasın. host değişimi (farklı request) farklı instance'ta
-// izole olur; serverless'ta her istek yeni izlenim — kısa ömürlü cache yeterli.
-let cached: { host: string; id: string } | null = null;
-
-export async function getWorkspaceId(): Promise<string> {
+// Sprint 63w (B8) — fetchWorkspaceId React.cache() ile REQUEST-SCOPED memoized.
+// Eski module-level `cached` global'i sinsi bir bug içeriyordu: widget çerezi
+// (workspace A) feedl.app host'unda çözülünce `cached={host:feedl.app,id:A}`
+// yazılıyordu; aynı container'da sıradaki PORTAL isteği (feedl.app) host eşleşince
+// YANLIŞLIKLA A'nın id'sini döndürebiliyordu. React.cache istek başına çalışır,
+// state request'ler arası SIZMAZ (her istek kendi izole cache'ini alır).
+const fetchWorkspaceId = cache(async (): Promise<string> => {
   const host = await getRequestHost();
 
   // Sprint 63p — widget tenant-aware: widget oturumu (httpOnly feedl_widget
@@ -195,9 +197,7 @@ export async function getWorkspaceId(): Promise<string> {
       .where(eq(workspaces.slug, wsSession.workspaceSlug))
       .limit(1);
     if (widgetRow) {
-      const id = workspaceIdSchema.parse(widgetRow.id);
-      cached = { host, id };
-      return id;
+      return workspaceIdSchema.parse(widgetRow.id);
     }
   }
 
@@ -210,19 +210,15 @@ export async function getWorkspaceId(): Promise<string> {
       .where(eq(workspaces.slug, activeSlug))
       .limit(1);
     if (row) {
-      const id = workspaceIdSchema.parse(row.id);
-      cached = { host, id };
-      return id;
+      return workspaceIdSchema.parse(row.id);
     }
   }
-  if (cached && cached.host === host) {
-    return cached.id;
-  }
+
   const resolved = await resolveWorkspaceByHost(host);
-  const id = workspaceIdSchema.parse(resolved.id);
-  cached = { host, id };
-  return id;
-}
+  return workspaceIdSchema.parse(resolved.id);
+});
+
+export const getWorkspaceId = fetchWorkspaceId;
 
 async function readActiveWorkspaceCookie(): Promise<string | null> {
   try {
