@@ -798,103 +798,126 @@ export const corpusInsights = inngest.createFunction(
         .where(eq(workspaces.id, workspaceId));
     });
 
-    // Sprint 63n — defense-in-depth: workspace artık pro değilse (downgrade
-    // veya sırada bekleyen eski event) LLM çağrısı ÜRETME. Kuyrukta kalan bir
-    // event bile maliyet doğurmaz; cache'e "pro gerekir" notu yazılır.
-    const planKey = await step.run("check-plan", async () => {
-      const [row] = await db
-        .select({ plan: workspaces.plan })
-        .from(workspaces)
-        .where(eq(workspaces.id, workspaceId))
-        .limit(1);
-      return planFromString(row?.plan);
-    });
-    if (planKey !== "pro") {
-      await step.run("store-pro-required", async () => {
+    try {
+      // Sprint 63n — defense-in-depth: workspace artık pro değilse (downgrade
+      // veya sırada bekleyen eski event) LLM çağrısı ÜRETME. Kuyrukta kalan bir
+      // event bile maliyet doğurmaz; cache'e "pro gerekir" notu yazılır.
+      const planKey = await step.run("check-plan", async () => {
+        const [row] = await db
+          .select({ plan: workspaces.plan })
+          .from(workspaces)
+          .where(eq(workspaces.id, workspaceId))
+          .limit(1);
+        return planFromString(row?.plan);
+      });
+      if (planKey !== "pro") {
+        await step.run("store-pro-required", async () => {
+          await db
+            .update(workspaces)
+            .set({
+              corpusInsightsStatus: "done",
+              corpusInsightsAt: new Date(),
+              corpusInsights: {
+                themes: [],
+                trends: [],
+                quickWins: [],
+                risks: [],
+                recommendation:
+                  "AI içgörüleri Pro plan özelliğidir. Workspace Pro plana geçince yeniden analiz edilebilir.",
+              },
+              updatedAt: new Date(),
+            })
+            .where(eq(workspaces.id, workspaceId));
+        });
+        return { status: "done", corpusSize: 0, planned: "free" };
+      }
+
+      // En çok oy alan fikirleri topla (aynı MAX_CORPUS sınırı).
+      const rows = await step.run("load-corpus", async () => {
+        return db
+          .select({
+            id: posts.id,
+            title: posts.title,
+            description: posts.description,
+            status: posts.status,
+            voteCount: count(votes.id),
+          })
+          .from(posts)
+          .leftJoin(votes, eq(votes.postId, posts.id))
+          .where(eq(posts.workspaceId, workspaceId))
+          .groupBy(posts.id)
+          .orderBy(desc(count(votes.id)), asc(posts.id))
+          .limit(MAX_CORPUS);
+      });
+
+      if (rows.length === 0) {
+        await step.run("store-empty", async () => {
+          await db
+            .update(workspaces)
+            .set({
+              corpusInsightsStatus: "done",
+              corpusInsightsAt: new Date(),
+              corpusInsights: {
+                themes: [],
+                trends: [],
+                quickWins: [],
+                risks: [],
+                recommendation:
+                  "Henüz yeterli geri bildirim yok. İlk fikirler geldikçe içgörü üretilir.",
+              },
+              updatedAt: new Date(),
+            })
+            .where(eq(workspaces.id, workspaceId));
+        });
+        return { status: "done", corpusSize: 0 };
+      }
+
+      // LLM analizi (arka planda devam eder; timeout yok). Şekil bozukluğu
+      // analyzeCorpus içinde graceful fallback'e düşer; yalnız AĞ hatası fırlatır
+      // → Inngest retry (2x) sonrası hala başarısızsa alttaki catch status='error' yapar.
+      const insights = await step.run("analyze-corpus", async () =>
+        analyzeCorpus(
+          rows.map((r) => ({
+            title: r.title,
+            description: r.description,
+            status: r.status,
+            votes: Number(r.voteCount),
+          })),
+        ),
+      );
+
+      await step.run("store-result", async () => {
         await db
           .update(workspaces)
           .set({
             corpusInsightsStatus: "done",
             corpusInsightsAt: new Date(),
-            corpusInsights: {
-              themes: [],
-              trends: [],
-              quickWins: [],
-              risks: [],
-              recommendation:
-                "AI içgörüleri Pro plan özelliğidir. Workspace Pro plana geçince yeniden analiz edilebilir.",
-            },
+            corpusInsights: insights,
             updatedAt: new Date(),
           })
           .where(eq(workspaces.id, workspaceId));
       });
-      return { status: "done", corpusSize: 0, planned: "free" };
-    }
 
-    // En çok oy alan fikirleri topla (aynı MAX_CORPUS sınırı).
-    const rows = await step.run("load-corpus", async () => {
-      return db
-        .select({
-          id: posts.id,
-          title: posts.title,
-          description: posts.description,
-          status: posts.status,
-          voteCount: count(votes.id),
-        })
-        .from(posts)
-        .leftJoin(votes, eq(votes.postId, posts.id))
-        .where(eq(posts.workspaceId, workspaceId))
-        .groupBy(posts.id)
-        .orderBy(desc(count(votes.id)), asc(posts.id))
-        .limit(MAX_CORPUS);
-    });
-
-    if (rows.length === 0) {
-      await step.run("store-empty", async () => {
+      return { status: "done", corpusSize: rows.length };
+    } catch (err) {
+      // Kalıcı hata: status='error' — böylece route pending'de takılmaz ve
+      // kullanıcı tekrar "Yenile" ile retry edebilir. Rethrow: Inngest yine de
+      // hata kaydı tutar ve retry (yukarıda 2x) politikanı uygular.
+      console.error(
+        "corpus-insights failed:",
+        err instanceof Error ? err.message : err,
+      );
+      await step.run("mark-error", async () => {
         await db
           .update(workspaces)
           .set({
-            corpusInsightsStatus: "done",
+            corpusInsightsStatus: "error",
             corpusInsightsAt: new Date(),
-            corpusInsights: {
-              themes: [],
-              trends: [],
-              quickWins: [],
-              risks: [],
-              recommendation:
-                "Henüz yeterli geri bildirim yok. İlk fikirler geldikçe içgörü üretilir.",
-            },
             updatedAt: new Date(),
           })
           .where(eq(workspaces.id, workspaceId));
       });
-      return { status: "done", corpusSize: 0 };
+      throw err;
     }
-
-    // LLM analizi (arka planda devam eder; timeout yok).
-    const insights = await step.run("analyze-corpus", async () =>
-      analyzeCorpus(
-        rows.map((r) => ({
-          title: r.title,
-          description: r.description,
-          status: r.status,
-          votes: Number(r.voteCount),
-        })),
-      ),
-    );
-
-    await step.run("store-result", async () => {
-      await db
-        .update(workspaces)
-        .set({
-          corpusInsightsStatus: "done",
-          corpusInsightsAt: new Date(),
-          corpusInsights: insights,
-          updatedAt: new Date(),
-        })
-        .where(eq(workspaces.id, workspaceId));
-    });
-
-    return { status: "done", corpusSize: rows.length };
   },
 );

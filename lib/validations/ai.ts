@@ -67,7 +67,6 @@ export const corpusInsightsSchema = z.object({
         summary: z.string().trim().min(1).max(300),
       }),
     )
-    .min(1)
     .max(12),
   trends: z
     .array(

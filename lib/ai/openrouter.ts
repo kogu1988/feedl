@@ -79,19 +79,20 @@ async function fetchWithRetry(
   throw lastError;
 }
 
-/**
- * LLM çağrısı yapar, yanıttaki ilk `{` ile son `}` arası JSON'u çıkarır ve
- * verilen Zod şemasıyla doğrular. Serbest modeller JSON'u markdown çiti
- * içine sarabildiği için çıkarım adımı şarttır. 429/5xx'te kısa beklemeli
- * yeniden dener.
- * Parse/validasyon hatası fırlatır → Inngest retry ile fonksiyon tekrar dener.
- */
-export async function chatJson<T>(options: {
+interface ChatJsonOptions {
   system: string;
   user: string;
-  schema: ZodType<T>;
   maxTokens?: number;
-}): Promise<T> {
+}
+
+// LLM çağrısı yapar, yanıttaki ilk `{` ile son `}` arası JSON'u çıkarır ve
+// ham (unsafe) çıktıyı döner. Serbest modeller JSON'u markdown çiti içine
+// sarabildiği için çıkarım adımı şarttır. 429/5xx'te kısa beklemeli yeniden
+// dener; ağ hatası fırlatır (Inngest retry bunu yakar). Şema doğrulaması
+// ÇAĞIRAN tarafındadır — serbest modeller iç içe nesne şemasını eşit takip
+// etmediği için (örn. themes: string[] döndürebilir), şekil normalizasyonunu
+// çağıran yapabilir (bkz. analyzeCorpus).
+async function requestChatJson(options: ChatJsonOptions): Promise<unknown> {
   const response = await fetchWithRetry(`${OPENROUTER_BASE_URL}/chat/completions`, {
     method: "POST",
     headers: {
@@ -128,7 +129,23 @@ export async function chatJson<T>(options: {
     throw new Error("LLM response contains no JSON object");
   }
 
-  const candidate: unknown = JSON.parse(content.slice(start, end + 1));
+  return JSON.parse(content.slice(start, end + 1)) as unknown;
+}
+
+/**
+ * LLM çağrısı yapar, yanıttaki ilk `{` ile son `}` arası JSON'u çıkarır ve
+ * verilen Zod şemasıyla doğrular. Serbest modeller JSON'u markdown çiti
+ * içine sarabildiği için çıkarım adımı şarttır. 429/5xx'te kısa beklemeli
+ * yeniden dener.
+ * Parse/validasyon hatası fırlatır → Inngest retry ile fonksiyon tekrar dener.
+ */
+export async function chatJson<T>(options: {
+  system: string;
+  user: string;
+  schema: ZodType<T>;
+  maxTokens?: number;
+}): Promise<T> {
+  const candidate: unknown = await requestChatJson(options);
 
   const result = options.schema.safeParse(candidate);
   if (!result.success) {
@@ -137,4 +154,14 @@ export async function chatJson<T>(options: {
     );
   }
   return result.data;
+}
+
+// İç içe nesne şeması bekleyen çağrılar (örn. corpus insights) LLM'den ham
+// çıktı alıp normalizasyon yapmak isteyebilir — bu yardımcı ham JSON'u döner.
+export async function chatJsonRaw(options: {
+  system: string;
+  user: string;
+  maxTokens?: number;
+}): Promise<unknown> {
+  return requestChatJson(options);
 }
