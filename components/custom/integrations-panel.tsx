@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Notice } from "@/components/custom/notice";
 import { LinearIntegration } from "@/components/custom/linear-integration";
 
-type Provider = "slack" | "zendesk" | "intercom";
+type Provider = "slack" | "zendesk" | "intercom" | "jira";
 
 interface ProviderMeta {
   provider: Provider;
@@ -24,6 +24,19 @@ interface ProviderMeta {
 // durum + webhook URL gösterir; değilse credential alanlarıyla bağlanır.
 // Linear ayrı bileşenden (mevcut). Slack/Zendesk/Intercom burada.
 const PROVIDERS: ProviderMeta[] = [
+  {
+    provider: "jira",
+    name: "Jira",
+    description:
+      "Jira issue'larını otomatik olarak feedl fikirlerine dönüştürür (webhook otomatik kaydedilir).",
+    apiKeyField: "apiToken",
+    fields: [
+      { key: "baseUrl", label: "Site URL", placeholder: "https://acme.atlassian.net" },
+      { key: "accountEmail", label: "Site E-postası", placeholder: "you@acme.com" },
+      { key: "apiToken", label: "API Token", placeholder: "ATATT…" },
+      { key: "webhookSecret", label: "Webhook Secret", placeholder: "…" },
+    ],
+  },
   {
     provider: "slack",
     name: "Slack",

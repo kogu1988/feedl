@@ -1,6 +1,6 @@
 import "server-only";
 
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { timingSafeEqual } from "node:crypto";
 
 // Sprint 48p — Zendesk connector. Zendesk Trigger → Webhook (target) ile
 // ticket.created → feedl feedback. Doğrulama: benzerlik, Zendesk webhook'u

@@ -295,6 +295,13 @@
       "when": 1788638337504,
       "tag": "0041_workspace_paddle_subscription_status",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1788681121981,
+      "tag": "0042_add_jira_integration_fields",
+      "breakpoints": true
     }
   ]
 }

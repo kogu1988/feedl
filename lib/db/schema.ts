@@ -1061,6 +1061,10 @@ export const workspaceIntegrations = pgTable(
     resourceTypes: text("resource_types").array(),
     // Opsiyonel: belirli bir Linear ekibi.
     linearTeamId: text("linear_team_id"),
+    // Sprint 63g (Jira per-workspace): Jira base URL + site e-postası.
+    // (Linear için apiKey=API key; Jira için apiKey=API token + bu iki alan.)
+    baseUrl: text("base_url"),
+    accountEmail: text("account_email"),
     // connected | error | disconnected
     status: varchar("status", { length: 20 }).notNull().default("connected"),
     createdAt: timestamp("created_at", { withTimezone: true })

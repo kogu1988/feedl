@@ -25,8 +25,9 @@ export interface JiraTicket {
 export function verifyJiraSignature(
   rawBody: string,
   signatureHeader: string,
+  secretOverride?: string | null,
 ): boolean {
-  const secret = process.env.JIRA_WEBHOOK_SECRET;
+  const secret = secretOverride ?? process.env.JIRA_WEBHOOK_SECRET;
   if (!secret) return false;
   const value = (signatureHeader || "").trim();
   // Otomatik webhook (rest/webhooks/1.0 + secret): Jira `X-Hub-Signature:
@@ -109,13 +110,14 @@ export function jiraCreds(): {
 
 // Webhook kayıt URL'si. Production'da her zaman https://feedl.app. Token
 // query'de DEĞİL; Jira `secret` ile imzaladığı için gövde HMAC'i doğrulanır.
-export function jiraWebhookUrl(): string {
+export function jiraWebhookUrl(slug?: string, urlToken?: string): string {
   const base = process.env.NEXT_PUBLIC_APP_URL ?? "https://feedl.app";
-  return `${base}/api/integrations/jira/webhook`;
+  const query = slug && urlToken ? `?ws=${encodeURIComponent(slug)}&t=${encodeURIComponent(urlToken)}` : "";
+  return `${base}/api/integrations/jira/webhook${query}`;
 }
 
-function jiraBasicAuth(): string {
-  const { email, token } = jiraCreds();
+function jiraBasicAuth(creds?: { baseUrl: string; email: string; token: string }): string {
+  const { email, token } = creds ?? jiraCreds();
   return "Basic " + Buffer.from(`${email}:${token}`).toString("base64");
 }
 
@@ -126,10 +128,12 @@ interface JiraWebhookRecord {
 }
 
 // Sitedeki mevcut webhook'ları listeler (idempotency için).
-export async function listJiraWebhooks(): Promise<JiraWebhookRecord[]> {
-  const { baseUrl } = jiraCreds();
+export async function listJiraWebhooks(
+  creds?: { baseUrl: string; email: string; token: string },
+): Promise<JiraWebhookRecord[]> {
+  const { baseUrl } = creds ?? jiraCreds();
   const res = await fetch(`${baseUrl}/rest/webhooks/1.0/webhook`, {
-    headers: { Authorization: jiraBasicAuth() },
+    headers: { Authorization: jiraBasicAuth(creds) },
   });
   if (!res.ok) {
     throw new Error(`Jira webhook listesi alınamadı: ${res.status}`);
@@ -141,9 +145,11 @@ export async function listJiraWebhooks(): Promise<JiraWebhookRecord[]> {
 // varsa yeniden oluşturmaz. Sadece issue_created/issue_updated abone olur.
 export async function registerJiraWebhook(
   token: string,
+  creds?: { baseUrl: string; email: string; token: string },
+  webhookUrl?: string,
 ): Promise<{ registered: boolean; webhookId?: number }> {
-  const { baseUrl } = jiraCreds();
-  const existing = await listJiraWebhooks();
+  const { baseUrl } = creds ?? jiraCreds();
+  const existing = await listJiraWebhooks(creds);
   const found = existing.find((w) =>
     (w.url ?? "").includes("/api/integrations/jira/webhook"),
   );
@@ -154,12 +160,12 @@ export async function registerJiraWebhook(
   const res = await fetch(`${baseUrl}/rest/webhooks/1.0/webhook`, {
     method: "POST",
     headers: {
-      Authorization: jiraBasicAuth(),
+      Authorization: jiraBasicAuth(creds),
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
       name: "feedl",
-      url: jiraWebhookUrl(),
+      url: webhookUrl ?? jiraWebhookUrl(),
       events: JIRA_WEBHOOK_EVENTS,
       filters: { "issue-related-events-section": "" },
       excludeBody: false,

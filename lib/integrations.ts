@@ -62,6 +62,8 @@ export async function saveIntegration(
     urlToken?: string | null;
     webhookId?: string | null;
     resourceTypes?: string[] | null;
+    baseUrl?: string | null;
+    accountEmail?: string | null;
     status?: string;
   },
 ): Promise<{ id: string; urlToken: string }> {
@@ -77,6 +79,8 @@ export async function saveIntegration(
       urlToken,
       webhookId: data.webhookId ?? null,
       resourceTypes: data.resourceTypes ?? null,
+      baseUrl: data.baseUrl ?? null,
+      accountEmail: data.accountEmail ?? null,
       status: data.status ?? "connected",
       updatedAt: new Date(),
     })
@@ -88,6 +92,8 @@ export async function saveIntegration(
         urlToken,
         webhookId: data.webhookId ?? null,
         resourceTypes: data.resourceTypes ?? null,
+        baseUrl: data.baseUrl ?? null,
+        accountEmail: data.accountEmail ?? null,
         status: data.status ?? "connected",
         updatedAt: new Date(),
       },
@@ -156,6 +162,9 @@ export async function resolveIntegrationByUrlToken(
       webhookSecret: workspaceIntegrations.webhookSecret,
       resourceTypes: workspaceIntegrations.resourceTypes,
       urlToken: workspaceIntegrations.urlToken,
+      baseUrl: workspaceIntegrations.baseUrl,
+      accountEmail: workspaceIntegrations.accountEmail,
+      webhookId: workspaceIntegrations.webhookId,
     })
     .from(workspaceIntegrations)
     .innerJoin(workspaces, eq(workspaces.id, workspaceIntegrations.workspaceId))
