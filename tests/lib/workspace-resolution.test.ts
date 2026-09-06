@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 // Bu, çok kiracılı routing'in özüdür: alt alan adı kendi workspace'sine,
 // kök feedl host'lar varsayılana düşer. workspace.ts modülü server-only +
 // next/headers import eder ama bu fonksiyonlar saf (headers'e dokunmaz).
-import { isFeedlRootHost, slugFromHost } from "@/lib/db/workspace";
+import { isFeedlRootHost, slugFromHost, normalizeDomainForMatch } from "@/lib/db/workspace";
 
 describe("isFeedlRootHost", () => {
   it("recognizes feedl.app and www as root", () => {
@@ -33,5 +33,18 @@ describe("slugFromHost", () => {
     // Tek parçalı / boş / 'feedl.app' dışı iki parçalı host → varsayılan.
     expect(slugFromHost("localhost")).toBe("feedl");
     expect(slugFromHost("example.com")).toBe("feedl");
+  });
+});
+
+describe("normalizeDomainForMatch", () => {
+  it("lowercases, strips port and trailing dot", () => {
+    expect(normalizeDomainForMatch("Feedback.ACME.com")).toBe("feedback.acme.com");
+    expect(normalizeDomainForMatch("feedback.acme.com:8443")).toBe("feedback.acme.com");
+    expect(normalizeDomainForMatch("feedback.acme.com.")).toBe("feedback.acme.com");
+  });
+
+  it("preserves www prefix (so both www and bare are matched separately)", () => {
+    expect(normalizeDomainForMatch("www.feedback.acme.com")).toBe("www.feedback.acme.com");
+    expect(normalizeDomainForMatch("feedback.acme.com")).toBe("feedback.acme.com");
   });
 });

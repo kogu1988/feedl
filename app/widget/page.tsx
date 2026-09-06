@@ -9,7 +9,11 @@ import { WidgetPostForm } from "@/components/custom/widget-post-form";
 import { WidgetVoteButton } from "@/components/custom/widget-vote-button";
 import { WidgetTriage } from "@/components/custom/widget-triage";
 import { getDb } from "@/lib/db";
-import { getWorkspaceId, resolveWorkspaceIdFromSlug } from "@/lib/db/workspace";
+import {
+  getWorkspaceId,
+  resolveWorkspaceIdFromSlug,
+  getWorkspaceBrand,
+} from "@/lib/db/workspace";
 import { posts, votes } from "@/lib/db/schema";
 import { buildPostSearch } from "@/lib/post-search";
 import { summarize } from "@/lib/post-format";
@@ -37,12 +41,16 @@ export default async function WidgetPage({
   // salt-okunur iframe de müşteri workspace'ini görsün); yoksa oturum/host.
   const workspaceId =
     (await resolveWorkspaceIdFromSlug(rawWs)) ?? (await getWorkspaceId());
-  // "Tümünü gör" müşterinin PORTALINA gider (varsayılan değilse subdomain).
+  // "Tümünü gör" müşterinin PORTALINA gider. Önce custom domain (varsa),
+  // sonra subdomain (acme.feedl.app/portal), en son default /portal.
+  const brand = await getWorkspaceBrand();
   const appHost = (process.env.NEXT_PUBLIC_APP_URL ?? "https://feedl.app").replace(/^https?:\/\//, "");
   const portalHref =
-    rawWs && rawWs !== "feedl"
-      ? `https://${rawWs}.${appHost}/portal`
-      : "/portal";
+    brand.customDomain
+      ? `https://${brand.customDomain}/portal`
+      : rawWs && rawWs !== "feedl"
+        ? `https://${rawWs}.${appHost}/portal`
+        : "/portal";
   const theme: WidgetTheme = WIDGET_THEMES.includes(
     rawTheme as WidgetTheme,
   )

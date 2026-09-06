@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 
 import { getRole } from "@/lib/auth/admin";
+import { isShowcaseRequest } from "@/lib/db/workspace";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DemoPostCard } from "@/components/custom/demo-post-card";
@@ -51,6 +52,14 @@ export default async function RootPage() {
       );
     }
     redirect(target);
+  }
+
+  // Sprint 63q — custom domain / müşteri subdomain'inde "/" SaaS satış
+  // sayfası değil, MÜŞTERİNİN PORTALI olmalı. feedl kök host'u (feedl.app /
+  // www / APP_URL) vitrin sayfasıdır; diğer host'lar (feedback.acme.com,
+  // acme.feedl.app) gerçek müşteri portalıdır → "/portal"a yönlendir.
+  if (!(await isShowcaseRequest())) {
+    redirect("/portal");
   }
 
   const steps = [

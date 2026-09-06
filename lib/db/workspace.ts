@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, or } from "drizzle-orm";
 import { z } from "zod";
 
 import { getDb } from "./index";
@@ -78,11 +78,48 @@ async function getRequestHost(): Promise<string> {
   }
 }
 
+// Sprint 63q (custom domain) — host'u custom-domain eşleştirmesi için
+// normalleştirir: küçük harf, `:port` ve sonda nokta atılır. `www.` prefix'i
+// KOŞULLU olarak ayrıca ele alınır (aşağıda `resolveWorkspaceByHost`'ta hem
+// bare hem www eşleşmesi denenir), bu yüzden fonksiyon www'yi KIRPMEZ —
+// yalnız port/sonda nokta/normalizasyon yapar. (Sprint 63i: test için export.)
+export function normalizeDomainForMatch(host: string): string {
+  return host
+    .trim()
+    .toLowerCase()
+    .replace(/:\d+$/, "")
+    .replace(/\.$/, "");
+}
+
 // Host'a göre workspace'i çöz; yoksa varsayılan 'feedl'.
 // Dönen: workspace id + slug + name.
+// Sprint 63q — custom domain desteği: host önce `workspaces.custom_domain`
+// ile eşleşir (admin tanımlı, www'li/www'suz her iki yazım için); olmazsa
+// subdomain→slug (acme.feedl.app); en son varsayılan. Böylece
+// `feedback.acme.com` gibi bir custom domain DOĞRU workspace'e düşer
+// (veri + marka + widget hepsi doğru çalışır).
 export async function resolveWorkspaceByHost(
   host: string,
 ): Promise<{ id: string; slug: string; name: string }> {
+  // 1) Custom domain eşleşmesi (admin tanımlı, www'li/www'suz yazımlar).
+  const hostNorm = normalizeDomainForMatch(host);
+  const bareHost = hostNorm.startsWith("www.") ? hostNorm.slice(4) : hostNorm;
+  const [byCustom] = await getDb()
+    .select({ id: workspaces.id, slug: workspaces.slug, name: workspaces.name })
+    .from(workspaces)
+    .where(
+      or(
+        eq(workspaces.customDomain, hostNorm),
+        eq(workspaces.customDomain, bareHost),
+        eq(workspaces.customDomain, `www.${bareHost}`),
+      ),
+    )
+    .limit(1);
+  if (byCustom) {
+    return byCustom;
+  }
+
+  // 2) Subdomain → slug (acme.feedl.app → acme).
   const slug = slugFromHost(host);
   const [row] = await getDb()
     .select({ id: workspaces.id, slug: workspaces.slug, name: workspaces.name })
@@ -92,7 +129,8 @@ export async function resolveWorkspaceByHost(
   if (row) {
     return row;
   }
-  // Bilinmeyen subdomain → varsayılan workspace.
+
+  // 3) Bilinmeyen subdomain → varsayılan workspace.
   const [fallback] = await getDb()
     .select({ id: workspaces.id, slug: workspaces.slug, name: workspaces.name })
     .from(workspaces)
