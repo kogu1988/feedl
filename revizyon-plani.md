@@ -135,10 +135,9 @@ test kapsamı, marka aksanı ve birkaç DRY/operasyonel borç.
 | B7 schema ilkel ayrımı | `191285e` | pgEnum'lar + tsvector → `schema/shared.ts` (drizzle generate: "no schema changes") |
 | F6 erişilebilirlik audit | `7ec904c` | `@axe-core/playwright` + `e2e/a11y.spec.ts` (kritik AA ihlalleri); kod tabanı zaten güçlü |
 | F2 canonical server-side | `450d800` | `middleware` x-feedl-pathname header + `lib/seo` generateCanonical; portal/roadmap/changelog generateMetadata (tam path + workspace custom domain) |
+| B5 embedding HNSW | `9e7bef1` | `vector(2048)`→`halfvec(2048)` + HNSW (`halfvec_cosine_ops`, migration 0048 canlı); sorgular halfvec cast |
 
-### ⏸️ Ertelenenler (onay / özel doğrulama gerektirir)
-| Madde | Neden ertelendi |
-|---|---|
+## 🎉 Revizyon Planı TAMAMLANDI (17/17)
 
 | B5 embedding HNSW | 2048-dim > HNSW 2000 cap; halfvec/type değişikliği + re-index — yüksek risk |
 
