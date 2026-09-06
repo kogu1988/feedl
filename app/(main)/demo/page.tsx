@@ -13,7 +13,10 @@ import { SentimentBadge } from "@/components/custom/sentiment-badge";
 // sunan bir tur sayfası: portal / yol haritası / güncellemeler. Satış
 // landing'inden (/), "Canlı Demo" butonuyla buraya gelinir. Son kullanıcıya
 // değil, ürünü değerlendiren şirket temsilcisine hitap eder.
-export const dynamic = "force-dynamic";
+// Sprint 63x (Stage C): SAF veri yok — auth/DB/oturum kullanmaz. Bu yüzden
+// `force-dynamic` KALDIRILDI → Next build'te statik prerender + CDN edge
+// cache (her istekte DB/auth yok). Güvenlik endişesi yok: oturum/host-bağımlı
+// hiçbir erişim kararı yok.
 
 const surfaces = [
   {
