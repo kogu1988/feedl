@@ -2,17 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { CheckIcon, ChevronDownIcon, Loader2Icon } from "lucide-react";
+import { Loader2Icon } from "lucide-react";
 
 import { typeLabels } from "@/lib/post-format";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 // Sprint 21: fikir türü seçenekleri — etiketler TEK kaynaktan (lib/post-format
 // typeLabels). Sıralı liste tutulur, etiketler typeLabels'ten türetilir.
@@ -25,6 +17,10 @@ export const POST_TYPE_OPTIONS = TYPE_ORDER.map((value) => ({
 
 // Admin için tür seçici: seçim PATCH /api/admin/posts'e gider
 // (postType alanı), sayfa sunucu verisiyle tazelenir.
+// Sprint 63w (F4): menü tabanlı DropdownMenu yerine TEK standart native
+// <select> kabuğu (StatusSelect/BoardSelect ile aynı görünüm). Tek chevron
+// globals.css'teki global select kuralından gelir — çift chevron söz konusu
+// olmaz.
 export function TypeSelect({
   postId,
   type,
@@ -38,6 +34,7 @@ export function TypeSelect({
   const router = useRouter();
 
   const changeType = async (next: string) => {
+    if (next === (current ?? "")) return;
     setError(null);
     const previous = current;
     setCurrent(next);
@@ -65,37 +62,25 @@ export function TypeSelect({
 
   return (
     <span className="inline-flex flex-col items-end gap-1">
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          render={
-            <Button variant="outline" size="sm" disabled={isPending}>
-              {isPending ? (
-                <Loader2Icon className="size-4 animate-spin" />
-              ) : null}
-              {current
-                ? (POST_TYPE_OPTIONS.find((o) => o.value === current)?.label ??
-                  current)
-                : "Tür seç"}
-              <ChevronDownIcon className="size-4 text-muted-foreground" />
-            </Button>
-          }
-        />
-        <DropdownMenuContent align="end">
-          <DropdownMenuRadioGroup
-            value={current ?? ""}
-            onValueChange={(value) => void changeType(value)}
-          >
-            {POST_TYPE_OPTIONS.map((option) => (
-              <DropdownMenuRadioItem key={option.value} value={option.value}>
-                {option.label}
-                {option.value === current ? (
-                  <CheckIcon className="ml-auto size-4" aria-hidden="true" />
-                ) : null}
-              </DropdownMenuRadioItem>
-            ))}
-          </DropdownMenuRadioGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <select
+        value={current ?? ""}
+        disabled={isPending}
+        onChange={(event) => void changeType(event.target.value)}
+        aria-label="Fikir türü"
+        className="h-8 w-[150px] rounded-lg border border-input bg-transparent px-2 text-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50"
+      >
+        <option value="" disabled>
+          Tür seç
+        </option>
+        {POST_TYPE_OPTIONS.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+      {isPending ? (
+        <Loader2Icon className="size-3.5 animate-spin text-muted-foreground" aria-hidden="true" />
+      ) : null}
       {error ? <span className="text-xs text-destructive">{error}</span> : null}
     </span>
   );
