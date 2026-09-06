@@ -116,7 +116,8 @@ export async function POST(req: Request) {
       // "bounced" (kalıcı/hard) veya "spam complaint" ise bildirimi kapat.
       // transient/problem kategorileri (soft bounce) kapatma — kalıcı değil.
       const hard = marksSuppressed(type, bounceType);
-      if (hard) {
+      // B10: changelog anonim abonede userId null olabilir → users yok.
+      if (hard && delivery.userId) {
         await getDb()
           .update(users)
           .set({

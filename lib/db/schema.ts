@@ -667,10 +667,13 @@ export const emailDeliveries = pgTable(
   "email_deliveries",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: text("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    type: text("type").notNull(), // 'shipped' | 'status' | 'comment'
+    // Sprint 63x (B10): userId NULLABLE — changelog anonim aboneleri users
+    // tablosunda yoktur (userId yok, yalnız email). 'changelog' tipi için
+    // userId null, email dolu olur; diğerleri (shipped/status/comment) userId
+    // dolu kalır. FK yine users.id'e (nullable → anonim kayıt FK'yi ihlal etmez).
+    userId: text("user_id").references(() => users.id, { onDelete: "cascade" }),
+    email: text("email"),
+    type: text("type").notNull(), // 'shipped' | 'status' | 'comment' | 'changelog'
     entityId: uuid("entity_id").notNull(),
     sentAt: timestamp("sent_at", { withTimezone: true })
       .notNull()
@@ -688,11 +691,15 @@ export const emailDeliveries = pgTable(
       .defaultNow(),
   },
   (table) => [
+    // Kullanıcı bazlı idempotency (shipped/status/comment).
     unique("email_deliveries_unique").on(
       table.userId,
       table.type,
       table.entityId,
     ),
+    // Anonim changelog aboneleri: userId NULL → PostgreSQL unique NULL'ları
+    // farklı sayar, idempotency bozulur. Bunun için email bazlı kısmi unique.
+    index("email_deliveries_email_idx").on(table.email, table.type, table.entityId),
     index("email_deliveries_provider_id_idx").on(table.providerId),
   ],
 );

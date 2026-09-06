@@ -782,6 +782,38 @@ export const notifyChangelog = inngest.createFunction(
       return sendEmails(messages);
     });
 
+    // Sprint 63x (B10) — changelog abone mail'lerini deliverability'ye bağla.
+    // Anonim aboneler users'ta yok → userId null, email dolu. İdempotency:
+    // (email, type, entityId) önce var mı kontrol et (çifte kayıt önlenir).
+    await step.run("record-changelog-deliveries", async () => {
+      const existing = await getDb()
+        .select({ email: emailDeliveries.email })
+        .from(emailDeliveries)
+        .where(
+          and(
+            eq(emailDeliveries.type, "changelog"),
+            eq(emailDeliveries.entityId, payload.entryId),
+          ),
+        )
+        .limit(1);
+      if (existing.length > 0) return;
+
+      const ids = result.ids ?? [];
+      await getDb()
+        .insert(emailDeliveries)
+        .values(
+          recipients.map((recipient, i) => ({
+            userId: null,
+            email: recipient.email,
+            type: "changelog",
+            entityId: payload.entryId,
+            providerId: ids[i] ?? null,
+            status: "sent",
+          })),
+        )
+        .onConflictDoNothing();
+    });
+
     return {
       provider: result.provider,
       recipients: recipients.length,
