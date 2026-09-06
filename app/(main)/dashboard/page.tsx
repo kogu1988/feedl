@@ -330,7 +330,10 @@ export default async function DashboardPage({
               </Card>
             </div>
           ) : null}
-          <EmailDeliverabilityCard />
+          {/* E-posta Durumu — üstteki Analitik/Autopilot grid'iyle standart boşluk. */}
+          <div className="mt-8">
+            <EmailDeliverabilityCard />
+          </div>
         </>
       ) : null}
 

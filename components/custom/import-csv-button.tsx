@@ -72,8 +72,11 @@ export function ImportCsvButton() {
         ) : (
           <UploadIcon aria-hidden="true" />
         )}
-        Canny&apos;den İçe Aktar
+        Move from Canny
       </Button>
+      <span className="text-xs text-muted-foreground">
+        Canny export&apos;unu yükle — oy, yorum ve yazar feedl&apos;e taşınır.
+      </span>
       <input
         ref={inputRef}
         type="file"
