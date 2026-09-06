@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ThumbsUpIcon } from "lucide-react";
+import { MessageSquareIcon, ThumbsUpIcon } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { CommentCountBadge } from "@/components/custom/comment-count-badge";
@@ -16,7 +16,11 @@ import { cn } from "@/lib/utils";
 // Kullanıcı kararı: kopya kart düzenleri silinir, hepsi bu bileşenden türetilir.
 export interface IdeaCardProps {
   title: string;
-  href: string;
+  // F5: href opsiyonel — verilirse başlık Link, verilmezse mock (demo/landing)
+  // için link'siz <span> (tıklanamaz).
+  href?: string;
+  // Mock/demo yüzeylerinde (landing) ekran okuyucudan gizle (etkileşimsiz görsel).
+  ariaHidden?: boolean;
   // Rozetler: status/type/sentiment/label vb. ReactNode'lar (araları gap-2).
   badges?: React.ReactNode;
   // Sağ üstteki tarih (opsiyonel).
@@ -44,6 +48,7 @@ export interface IdeaCardProps {
 export function IdeaCard({
   title,
   href,
+  ariaHidden,
   badges,
   date,
   description,
@@ -61,6 +66,7 @@ export function IdeaCard({
   const hasStats = Boolean(voteAction || commentCount != null || voteCount != null);
   return (
     <Card
+      aria-hidden={ariaHidden || undefined}
       className={cn("transition-[transform,box-shadow] duration-150 ease-[var(--ease-out-quart)] hover:-translate-y-0.5 hover:shadow-xs dark:hover:ring-foreground/25", className)}
       draggable={draggable}
       onDragStart={onDragStart}
@@ -70,12 +76,16 @@ export function IdeaCard({
           {/* SOL: başlık + rozetler (üst) → etiketler + metin (alt) */}
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <Link
-                href={href}
-                className="text-base font-semibold leading-snug underline-offset-4 transition-colors hover:text-primary hover:underline"
-              >
-                {title}
-              </Link>
+              {href ? (
+                <Link
+                  href={href}
+                  className="text-base font-semibold leading-snug underline-offset-4 transition-colors hover:text-primary hover:underline"
+                >
+                  {title}
+                </Link>
+              ) : (
+                <span className="text-base font-semibold leading-snug">{title}</span>
+              )}
               {badges}
             </div>
             {tags ? <div className="mt-2">{tags}</div> : null}
@@ -100,8 +110,14 @@ export function IdeaCard({
                 <span />
               )}
               <div className="flex items-center gap-3">
+                {/* F5: mock (commentPostId yok) → statik sayı; gerçek → link. */}
                 {commentCount != null && commentPostId ? (
                   <CommentCountBadge postId={commentPostId} count={commentCount} />
+                ) : commentCount != null ? (
+                  <span className="inline-flex items-center gap-1 text-sm font-medium">
+                    <MessageSquareIcon className="size-3.5 text-muted-foreground" aria-hidden="true" />
+                    <span className="font-mono tabular-nums">{commentCount}</span>
+                  </span>
                 ) : null}
                 {voteAction ? voteAction : voteCount != null ? (
                   <span className="inline-flex items-center gap-1 text-sm font-medium">

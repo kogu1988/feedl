@@ -3,7 +3,11 @@ import { RocketIcon, RouteIcon, MegaphoneIcon } from "lucide-react";
 import { SignUpButton } from "@clerk/nextjs";
 
 import { Button } from "@/components/ui/button";
-import { DemoPostCard } from "@/components/custom/demo-post-card";
+import { Badge } from "@/components/ui/badge";
+import { IdeaCard } from "@/components/custom/idea-card";
+import { StatusBadge } from "@/components/custom/status-badge";
+import { TypeBadge } from "@/components/custom/type-badge";
+import { SentimentBadge } from "@/components/custom/sentiment-badge";
 
 // Sprint 50 (Faz 4/cilama) — public /demo. Ürünün çalışan örnek yüzeylerini
 // sunan bir tur sayfası: portal / yol haritası / güncellemeler. Satış
@@ -85,13 +89,24 @@ export default function DemoPage() {
           otomatik dolar.
         </p>
         <div className="mt-6 max-w-2xl" aria-hidden="true">
-          <DemoPostCard
+          {/* F5: mock kart — DemoPostCard yerine tek kaynak IdeaCard. */}
+          <IdeaCard
             title="Karanlık mod desteği"
+            ariaHidden
+            badges={
+              <>
+                <StatusBadge status="shipped" />
+                <TypeBadge type="feature" />
+                <SentimentBadge sentiment="pozitif" />
+              </>
+            }
             date="31 Ağustos 2026"
-            status="shipped"
-            type="feature"
-            sentiment="pozitif"
-            tags={["karanlıkmod", "tema"]}
+            tags={
+              <>
+                <Badge className="border-border bg-muted text-muted-foreground">#karanlıkmod</Badge>
+                <Badge className="border-border bg-muted text-muted-foreground">#tema</Badge>
+              </>
+            }
             description="Gözleri çok yoran açık temaya alternatif olarak karanlık mod istiyoruz. Ayarlardan açılıp kapatılabilse iyi olur."
             voteCount={128}
             commentCount={32}

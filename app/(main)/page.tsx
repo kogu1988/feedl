@@ -22,7 +22,10 @@ import { getRole } from "@/lib/auth/admin";
 import { isShowcaseRequest } from "@/lib/db/workspace";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { DemoPostCard } from "@/components/custom/demo-post-card";
+import { IdeaCard } from "@/components/custom/idea-card";
+import { StatusBadge } from "@/components/custom/status-badge";
+import { TypeBadge } from "@/components/custom/type-badge";
+import { SentimentBadge } from "@/components/custom/sentiment-badge";
 import { PricingManager } from "@/components/custom/pricing-manager";
 
 // Sprint 50 (Faz 4/cilama) — "/" artık SATIŞ landing'idir. Portal / yol
@@ -206,16 +209,28 @@ export default async function RootPage() {
         </div>
 
         <div aria-hidden="true" className="hero-rise" style={{ animationDelay: "180ms" }}>
-          <DemoPostCard
+          {/* F5: mock kart — DemoPostCard yerine tek kaynak IdeaCard (link'siz, aria-hidden). */}
+          <IdeaCard
             title="Karanlık mod desteği"
+            ariaHidden
+            badges={
+              <>
+                <StatusBadge status="shipped" />
+                <TypeBadge type="feature" />
+                <SentimentBadge sentiment="pozitif" />
+              </>
+            }
             date="31 Ağustos 2026"
-            status="shipped"
-            type="feature"
-            sentiment="pozitif"
-            tags={["karanlıkmod", "tema"]}
+            tags={
+              <>
+                <Badge className="border-border bg-muted text-muted-foreground">#karanlıkmod</Badge>
+                <Badge className="border-border bg-muted text-muted-foreground">#tema</Badge>
+              </>
+            }
             description="Gözleri çok yoran açık temaya alternatif olarak karanlık mod istiyoruz. Ayarlardan açılıp kapatılabilse iyi olur."
             voteCount={128}
             commentCount={32}
+            commentPostId="demo"
           />
         </div>
       </section>
