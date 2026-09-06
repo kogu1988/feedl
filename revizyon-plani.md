@@ -132,6 +132,7 @@ test kapsamı, marka aksanı ve birkaç DRY/operasyonel borç.
 | B8 `getWorkspaceId` request cache | `20fcea5` | `React.cache()` (global sızma bug'ı düzeltildi) |
 | B10 changelog email korrelasyonu | `eba34ed` | `email_deliveries` userId nullable + email; notify-changelog kayıt; deliverability kartı changelog'u sayar |
 | B9 Dependabot kalıcı | `59911c3` | `@clerk/ui` → `@clerk/themes` (web-only); react-native/metro/solana zinciri gitti; `npm audit` 0 vuln; shadcn görünümü korundu |
+| B7 schema ilkel ayrımı | `191285e` | pgEnum'lar + tsvector → `schema/shared.ts` (drizzle generate: "no schema changes") |
 
 ### ⏸️ Ertelenenler (onay / özel doğrulama gerektirir)
 | Madde | Neden ertelendi |
@@ -139,7 +140,7 @@ test kapsamı, marka aksanı ve birkaç DRY/operasyonel borç.
 | F2 canonical server-side | Client `<link rel=canonical>` yeterli; `generateMetadata`'de path alınamaz (App Router) — middleware+header çözümü büyük |
 
 | B5 embedding HNSW | 2048-dim > HNSW 2000 cap; halfvec/type değişikliği + re-index — yüksek risk |
-| B7 schema.ts bölme | 1106 satır tek dosya; mekanik ama breaking riski — ayrı refactor |
+
 | F5 component yakınlaştırma | Görsel doğrulama gerektirir; kör birleştirme riskli |
 | F6 erişilebilirlik audit | Kapsamlı manuel/axe denetimi — batch olarak |
 
