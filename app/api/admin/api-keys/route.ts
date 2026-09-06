@@ -9,6 +9,7 @@ import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { apiKeys } from "@/lib/db/schema";
+import { requirePro } from "@/lib/plan";
 
 // Sprint 34 — admin API key yönetimi. Tam anahtar YALNIZCA oluşturma
 // yanıtında bir kez döner; DB'de SHA-256 karması tutulur. Revocation:
@@ -35,6 +36,8 @@ export async function GET() {
         { status: 403 },
       );
     }
+    const proErr = await requirePro();
+    if (proErr) return proErr;
 
     const rows = await getDb()
       .select({
@@ -73,7 +76,8 @@ export async function POST(req: Request) {
         { status: 403 },
       );
     }
-
+    const proErr = await requirePro();
+    if (proErr) return proErr;
     let body: unknown;
     try {
       body = await req.json();

@@ -17,6 +17,7 @@ import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { eq } from "drizzle-orm";
 import { workspaces } from "@/lib/db/schema";
+import { requirePro } from "@/lib/plan";
 
 // Sprint 63g — per-workspace connect/disconnect için ortak handler.
 // Provider'a özel credential alanları `credentialSchema` ile verilir;
@@ -57,6 +58,8 @@ export function createIntegrationConnectHandler(
             { status: 403 },
           );
         }
+        const proErr = await requirePro();
+        if (proErr) return proErr;
         let body: unknown;
         try {
           body = await req.json();

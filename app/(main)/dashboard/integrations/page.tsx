@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import { IntegrationsPanel } from "@/components/custom/integrations-panel";
 import { getAdminUserId, getNonAdminRedirectTarget } from "@/lib/auth/admin";
+import { getPlanLimits } from "@/lib/paddle";
 
 // Canlı veri: her istekte DB'den okunur.
 export const dynamic = "force-dynamic";
@@ -14,6 +15,9 @@ export default async function IntegrationsPage() {
     redirect(await getNonAdminRedirectTarget());
   }
 
+  // Entegrasyonlar Pro plan özelliğidir (Sprint 63o plan matrisi).
+  const isPro = (await getPlanLimits()).key === "pro";
+
   return (
     <main className="container mx-auto max-w-none p-4 sm:p-8">
       <div>
@@ -25,7 +29,7 @@ export default async function IntegrationsPage() {
       </div>
 
       <div className="mt-8">
-        <IntegrationsPanel />
+        <IntegrationsPanel isPro={isPro} />
       </div>
     </main>
   );

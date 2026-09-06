@@ -10,6 +10,7 @@ import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { workspaces } from "@/lib/db/schema";
 import { registerJiraWebhook } from "@/lib/jira";
+import { requirePro } from "@/lib/plan";
 import {
   integrationWebhookUrl,
   saveIntegration,
@@ -58,6 +59,8 @@ export async function POST(req: Request) {
         { status: 403 },
       );
     }
+    const proErr = await requirePro();
+    if (proErr) return proErr;
     let body: unknown;
     try {
       body = await req.json();

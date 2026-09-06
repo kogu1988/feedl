@@ -26,23 +26,22 @@ const env = getPlanEnv();
 const clientToken = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN ?? "";
 
 const freeFeatures = [
-  "1 board",
-  "1 üye",
-  "50 takipçi",
+  "1 board · 1 üye · 50 takipçi",
   "Fikir + oy + yorum",
-  "AI etiketleme & özet",
+  "AI etiketleme & tek post özeti",
   "Yol haritası & changelog",
-  "Temel dahil etme (widget)",
+  "Widget gömülü (kendi sitende)",
+  "\"Powered by feedl\" rozeti",
 ];
 
 const proFeatures = [
-  "Sınırsız board",
-  "10 üye",
-  "Sınırsız takipçi",
+  "Sınırsız board · 10 üye · sınırsız takipçi",
   "Özel alan adı + marka kaldırma",
-  "Özel kategoriler/alanlar",
-  "Gelişmiş planlama & gelir skoru",
+  "Entegrasyonlar (Slack, Zendesk, Intercom, Jira, Linear)",
+  "AI içgörüleri (korpus analizi)",
+  "Private board'lar",
   "API + webhook erişimi",
+  "Gelişmiş planlama & gelir skoru",
   "Toplu aksiyonlar & kayıtlı görünümler",
 ];
 

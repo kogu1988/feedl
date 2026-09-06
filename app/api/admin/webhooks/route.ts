@@ -9,6 +9,7 @@ import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { webhookEndpoints } from "@/lib/db/schema";
+import { requirePro } from "@/lib/plan";
 import { WEBHOOK_EVENTS } from "@/lib/webhooks/dispatch";
 
 // Sprint 34 — admin webhook endpoint yönetimi. Secret sunucuda üretilir ve
@@ -34,6 +35,8 @@ export async function GET() {
         { status: 403 },
       );
     }
+    const proErr = await requirePro();
+    if (proErr) return proErr;
 
     const rows = await getDb()
       .select({
@@ -70,6 +73,8 @@ export async function POST(req: Request) {
         { status: 403 },
       );
     }
+    const proErr = await requirePro();
+    if (proErr) return proErr;
 
     let body: unknown;
     try {

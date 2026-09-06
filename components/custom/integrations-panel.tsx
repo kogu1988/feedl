@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Loader2Icon, UnplugIcon } from "lucide-react";
+import Link from "next/link";
+import { Loader2Icon, UnplugIcon, LockKeyholeIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +11,7 @@ import { Notice } from "@/components/custom/notice";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LinearIntegration } from "@/components/custom/linear-integration";
 import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/custom/empty-state";
 
 type Provider = "slack" | "zendesk" | "intercom" | "jira";
 
@@ -74,7 +76,7 @@ const PROVIDERS: ProviderMeta[] = [
   },
 ];
 
-function ProviderCard({ meta }: { meta: ProviderMeta }) {
+function ProviderCard({ meta, isPro }: { meta: ProviderMeta; isPro: boolean }) {
   const [status, setStatus] = useState<"loading" | "connected" | "disconnected">("loading");
   const [webhookUrl, setWebhookUrl] = useState<string | null>(null);
   const [values, setValues] = useState<Record<string, string>>({});
@@ -189,6 +191,21 @@ function ProviderCard({ meta }: { meta: ProviderMeta }) {
               </Button>
             </div>
           </div>
+        ) : !isPro ? (
+          <div className="grid gap-3">
+            <EmptyState title="Pro plan özelliğidir" className="border-0">
+              Bu entegrasyonu bağlamak için Pro planına geç.
+              <Button
+                className="mt-3"
+                size="sm"
+                variant="outline"
+                render={<Link href="/dashboard/billing" />}
+              >
+                <LockKeyholeIcon className="size-4" />
+                Pro&apos;ya Yükselt
+              </Button>
+            </EmptyState>
+          </div>
         ) : (
           <div className="grid gap-3">
             {meta.fields.map((field) => (
@@ -218,14 +235,23 @@ function ProviderCard({ meta }: { meta: ProviderMeta }) {
   );
 }
 
-// Sprint 63g — setup'taki entegrasyon ızgarası. Linear mevcut kart + üç yeni.
-export function IntegrationsPanel() {
+// Sprint 63o — entegrasyonlar Pro plan özelliğidir. Free workspace'te kartlar
+// kilitlenir (Pro'ya Yükselt CTA) + üstte bilgilendirme bandı.
+export function IntegrationsPanel({ isPro }: { isPro: boolean }) {
   return (
-    <div className="grid gap-6 sm:grid-cols-2">
-      <LinearIntegration />
-      {PROVIDERS.map((meta) => (
-        <ProviderCard key={meta.provider} meta={meta} />
-      ))}
+    <div className="grid gap-6">
+      {!isPro ? (
+        <Notice size="md">
+          Entegrasyonlar (Slack, Zendesk, Intercom, Jira, Linear) Pro plan
+          özelliğidir. Bağlamak için &quot;Pro&apos;ya Yükselt&quot; butonunu kullan.
+        </Notice>
+      ) : null}
+      <div className="grid gap-6 sm:grid-cols-2">
+        <LinearIntegration isPro={isPro} />
+        {PROVIDERS.map((meta) => (
+          <ProviderCard key={meta.provider} meta={meta} isPro={isPro} />
+        ))}
+      </div>
     </div>
   );
 }

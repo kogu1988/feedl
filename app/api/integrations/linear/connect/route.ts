@@ -9,6 +9,7 @@ import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { workspaceIntegrations, workspaces } from "@/lib/db/schema";
 import { linearCreateWebhook, linearDeleteWebhook, linearViewer } from "@/lib/linear-api";
+import { requirePro } from "@/lib/plan";
 
 // Sprint 58 (madde 2) — per-workspace Linear otomasyonu.
 // Workspace admin'i Linear API key girer → biz Linear GraphQL `webhookCreate`
@@ -36,6 +37,8 @@ export async function POST(req: Request) {
         { status: 403 },
       );
     }
+    const proErr = await requirePro();
+    if (proErr) return proErr;
 
     let body: unknown;
     try {
