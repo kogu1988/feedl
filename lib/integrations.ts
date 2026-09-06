@@ -6,6 +6,7 @@ import { and, eq } from "drizzle-orm";
 
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
+import { decryptSecret, encryptSecret } from "@/lib/encrypt";
 import { workspaceIntegrations, workspaces } from "@/lib/db/schema";
 
 // Sprint 63g — per-workspace entegrasyon deseni (Linear/Jira'dan genelleştirildi).
@@ -69,13 +70,15 @@ export async function saveIntegration(
 ): Promise<{ id: string; urlToken: string }> {
   const workspaceId = await getWorkspaceId();
   const urlToken = data.urlToken ?? randomIntegrationToken();
+  // Sprint 63t — dış servis API key / webhook secret SHA üretimi değil,
+  // AES-256-GCM ile şifrelenir (ENCRYPTION_KEY). Kurulu değilse düz saklanır.
   const [created] = await getDb()
     .insert(workspaceIntegrations)
     .values({
       workspaceId,
       provider,
-      apiKey: data.apiKey ?? null,
-      webhookSecret: data.webhookSecret ?? null,
+      apiKey: data.apiKey ? encryptSecret(data.apiKey) : null,
+      webhookSecret: data.webhookSecret ? encryptSecret(data.webhookSecret) : null,
       urlToken,
       webhookId: data.webhookId ?? null,
       resourceTypes: data.resourceTypes ?? null,
@@ -87,8 +90,8 @@ export async function saveIntegration(
     .onConflictDoUpdate({
       target: [workspaceIntegrations.workspaceId, workspaceIntegrations.provider],
       set: {
-        apiKey: data.apiKey ?? null,
-        webhookSecret: data.webhookSecret ?? null,
+        apiKey: data.apiKey ? encryptSecret(data.apiKey) : null,
+        webhookSecret: data.webhookSecret ? encryptSecret(data.webhookSecret) : null,
         urlToken,
         webhookId: data.webhookId ?? null,
         resourceTypes: data.resourceTypes ?? null,
@@ -179,5 +182,11 @@ export async function resolveIntegrationByUrlToken(
   if (!row.urlToken || row.urlToken !== urlToken) {
     return null;
   }
-  return row;
+  // Sprint 63t — şifreli saklanan credential'ları çöz (mevcut düz satırlar
+  // aynen döner; yanlış anahtarda null → webhook güvenli reddeder).
+  return {
+    ...row,
+    apiKey: decryptSecret(row.apiKey),
+    webhookSecret: decryptSecret(row.webhookSecret),
+  };
 }

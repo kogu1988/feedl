@@ -13,6 +13,7 @@ import {
   verifyLinearSignatureWithSecret,
 } from "@/lib/linear";
 import { posts, users, workspaceIntegrations, workspaces } from "@/lib/db/schema";
+import { decryptSecret } from "@/lib/encrypt";
 import { toWidgetUserId } from "@/lib/widget/jwt";
 import { postCreatedEventSchema } from "@/lib/validations/events";
 import { inngest } from "@/inngest/client";
@@ -59,7 +60,9 @@ export async function POST(req: NextRequest) {
           { status: 401 },
         );
       }
-      if (!verifyLinearSignatureWithSecret(rawBody, signature, record.webhookSecret)) {
+      // Sprint 63t — webhookSecret şifreli saklanır; imza doğrulama için çözülür.
+      const webhookSecret = decryptSecret(record.webhookSecret);
+      if (!webhookSecret || !verifyLinearSignatureWithSecret(rawBody, signature, webhookSecret)) {
         return NextResponse.json(
           { success: false, error: "Geçersiz Linear imzası." },
           { status: 401 },

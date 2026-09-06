@@ -1,0 +1,23 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    # Dependabot güvenlik uyarılarının bir kısmı feedl WEB SÜRÜMÜNDE KULLANILMAYAN
+    # derin transitif bağımlılıklardan gelir: @clerk/ui → react-native / metro /
+    # @solana (Clerk'in mobil/native UI desteği). Bunlar Next.js tarafından
+    # tree-shake edilir (app/e koda import edilmez) ve üretim bundle'ında YOKTUR.
+    # Bunları zorla yükseltmek (major) metro/jayson API'sini kırar. Bu yüzden
+    # ignore edilir; web'e etkisi yoktur (DoS bildirimleri dev/tooling'dir).
+    ignore:
+      - dependency-name: "image-size"
+      - dependency-name: "stream-json"
+      - dependency-name: "jayson"
+      - dependency-name: "metro"
+      - dependency-name: "metro-config"
+      - dependency-name: "metro-transform-worker"
+      - dependency-name: "react-native"
+      - dependency-name: "@react-native/*"
+      - dependency-name: "@solana/*"
+      - dependency-name: "@solana-mobile/*"

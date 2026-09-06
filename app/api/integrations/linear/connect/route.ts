@@ -8,6 +8,7 @@ import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { workspaceIntegrations, workspaces } from "@/lib/db/schema";
+import { decryptSecret } from "@/lib/encrypt";
 import { linearCreateWebhook, linearDeleteWebhook, linearViewer } from "@/lib/linear-api";
 import { requirePro } from "@/lib/plan";
 
@@ -210,8 +211,10 @@ export async function DELETE() {
       .limit(1);
 
     let remoteDeleted = false;
-    if (record?.webhookId && record.apiKey) {
-      const rm = await linearDeleteWebhook(record.apiKey, record.webhookId);
+    // Sprint 63t — apiKey şifreli saklanır; uzak silme için çözülür.
+    const apiKey = decryptSecret(record?.apiKey ?? null);
+    if (record?.webhookId && apiKey) {
+      const rm = await linearDeleteWebhook(apiKey, record.webhookId);
       remoteDeleted = rm.ok;
     }
 
