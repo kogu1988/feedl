@@ -121,7 +121,7 @@ export function buildPostSearch(
   // 0.10-0.25 bandında). Fallback aşamasında: en yakın 5 fikir, 0.10
   // gürültü tabanı altındakiler hariç.
   const vectorLiteral = queryEmbedding
-    ? sql`${`[${queryEmbedding.join(",")}]`}::vector`
+    ? sql`${`[${queryEmbedding.join(",")}]`}::halfvec`
     : undefined;
   const vectorCondition = vectorLiteral
     ? sql`(
@@ -166,7 +166,7 @@ export function buildPostSearch(
   // Vektör: yalnızca sorgu embedding'i 2048 boyutla geldiğinde katılır;
   // embedding'siz fikirlerde mesafe null -> coalesce ile 0.
   const vectorScore = queryEmbedding
-    ? sql`(coalesce(1 - (${posts.embeddingVector} <=> ${`[${queryEmbedding.join(",")}]`}::vector), 0) * ${W_VECTOR})`
+    ? sql`(coalesce(1 - (${posts.embeddingVector} <=> ${`[${queryEmbedding.join(",")}]`}::halfvec), 0) * ${W_VECTOR})`
     : sql`0`;
 
   return {

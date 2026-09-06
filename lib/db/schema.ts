@@ -1,6 +1,7 @@
 import {
   boolean,
   date,
+  halfvec,
   index,
   integer,
   jsonb,
@@ -12,7 +13,6 @@ import {
   unique,
   uuid,
   varchar,
-  vector,
   type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
@@ -89,7 +89,9 @@ export const posts = pgTable(
     sentimentLabel: postSentimentEnum("sentiment_label"),
     aiKeywords: text("ai_keywords").array(),
     aiSummary: text("ai_summary"),
-    embeddingVector: vector("embedding_vector", { dimensions: 2048 }),
+    // B5 (Sprint 63y): vector(2048) üzerine HNSW index YAPILAMAZ (pgvector cap
+    // 2000). halfvec(2048) yarım hassasiyet ama indexlenebilir — modern çözüm.
+    embeddingVector: halfvec("embedding_vector", { dimensions: 2048 }),
     duplicateOf: uuid("duplicate_of").references((): AnyPgColumn => posts.id, {
       onDelete: "set null",
     }),
@@ -137,6 +139,12 @@ export const posts = pgTable(
     index("posts_created_at_idx").on(table.createdAt),
     index("posts_workspace_created_idx").on(table.workspaceId, table.createdAt),
     index("posts_search_vector_idx").using("gin", table.searchVector),
+    // B5: halfvec(2048) üzerinde HNSW — pgvector HNSW cap 2000'i aşar ama
+    // halfvec'ta indexlenebilir; embedding benzerlik araması O(n) yerine
+    // approximate index kullanır. (\.using hnsw destekleniyorsa.)
+    // B5: halfvec + HNSW. Drizzle bu opclass'ı desteklemediği için migration'a
+    // elle `halfvec_cosine_ops` eklenir (0048); burada sadece yöntem tanımlanır.
+    index("posts_embedding_hnsw_idx").using("hnsw", table.embeddingVector),
     // Sprint 63w (B2): FK index'leri — Postgres FK'ye otomatik index YAPMAZ.
     index("posts_user_idx").on(table.userId),
     index("posts_board_idx").on(table.boardId),

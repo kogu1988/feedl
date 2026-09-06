@@ -111,10 +111,10 @@ export const aiAutopilot = inngest.createFunction(
         const vectorLiteral = `[${embedding.join(",")}]`;
         const result = await getDb().execute(sql`
           SELECT id, title, description,
-                 1 - (embedding_vector <=> ${vectorLiteral}::vector) AS similarity
+                 1 - (embedding_vector <=> ${vectorLiteral}::halfvec) AS similarity
           FROM posts
           WHERE embedding_vector IS NOT NULL AND id <> ${payload.postId}
-          ORDER BY embedding_vector <=> ${vectorLiteral}::vector
+          ORDER BY embedding_vector <=> ${vectorLiteral}::halfvec
           LIMIT ${DUPLICATE_CANDIDATE_LIMIT}
         `);
 

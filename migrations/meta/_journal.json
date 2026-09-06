@@ -337,6 +337,13 @@
       "when": 1788715572011,
       "tag": "0047_email_deliveries_changelog",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1788718237043,
+      "tag": "0048_embedding_halfvec_hnsw",
+      "breakpoints": true
     }
   ]
 }
