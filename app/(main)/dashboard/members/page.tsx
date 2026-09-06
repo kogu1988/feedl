@@ -1,10 +1,9 @@
 import { redirect } from "next/navigation";
-import { asc, eq } from "drizzle-orm";
+import { asc } from "drizzle-orm";
 
 import { MembersManager } from "@/components/custom/members-manager";
 import { getAdminUserId, getNonAdminRedirectTarget } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
-import { getWorkspaceId } from "@/lib/db/workspace";
 import { listWorkspaceMembers } from "@/lib/db/membership";
 import { users } from "@/lib/db/schema";
 

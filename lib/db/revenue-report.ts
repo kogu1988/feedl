@@ -1,4 +1,4 @@
-import { and, eq, gte, inArray, isNull, lt, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 
 import { getDb } from "./index";
 import { getWorkspaceId } from "./workspace";

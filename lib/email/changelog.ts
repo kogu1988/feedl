@@ -5,9 +5,6 @@
 // ayrı tutar.
 import { escapeHtml, oneWayFooterHtml, oneWayFooterText } from "./html";
 
-const APP_URL =
-  process.env.NEXT_PUBLIC_APP_URL ?? "https://feedl.app";
-
 export interface ChangelogEmailInput {
   title: string;
   // Admin'in yazdığı markdown gövde — mailde markdown render EDİLMEZ,

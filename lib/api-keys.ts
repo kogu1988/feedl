@@ -7,7 +7,6 @@ import { Redis } from "@upstash/redis";
 import { and, eq, isNull } from "drizzle-orm";
 
 import { getDb } from "@/lib/db";
-import { getWorkspaceId } from "@/lib/db/workspace";
 import { apiKeys, type ApiKey } from "@/lib/db/schema";
 
 // Sprint 34 — Public API (P4.2). Anahtar biçimi fk_live_<32 hex>; tam

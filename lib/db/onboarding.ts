@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, count, eq } from "drizzle-orm";
+import { count, eq } from "drizzle-orm";
 
 import { getDb } from "./index";
 import { getWorkspaceId } from "./workspace";

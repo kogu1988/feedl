@@ -69,17 +69,6 @@ function isUniqueViolation(err: unknown): boolean {
   return false;
 }
 
-async function findBoard(id: string) {
-  const [row] = await getDb()
-    .select()
-    .from(boards)
-    .where(
-      and(eq(boards.id, id), eq(boards.workspaceId, await getWorkspaceId())),
-    )
-    .limit(1);
-  return row;
-}
-
 // GET /api/admin/boards — board listesi.
 export async function GET() {
   try {

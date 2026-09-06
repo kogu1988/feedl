@@ -146,6 +146,8 @@ export default async function ChangelogDetailPage({
           <h1 className="mt-2 text-2xl font-bold tracking-tight leading-snug">{entry.title}</h1>
 
           {entry.imageUrl ? (
+            // Harici CDN görseli; boyut bilinmez → next/image yerine <img>.
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={entry.imageUrl}
               alt=""

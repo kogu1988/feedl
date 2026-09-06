@@ -36,7 +36,6 @@ export interface IdeaCardProps {
   // Dış stiller / drag davranışı (roadmap).
   className?: string;
   // İçerik alanı için ekstra alt içerik (content yerine) — changelog.
-  renderBody?: React.ReactNode;
   // Roadmap drag-and-drop desteği.
   draggable?: boolean;
   onDragStart?: React.DragEventHandler<HTMLElement>;
@@ -56,7 +55,6 @@ export function IdeaCard({
   commentPostId,
   content,
   className,
-  renderBody,
   draggable,
   onDragStart,
 }: IdeaCardProps) {

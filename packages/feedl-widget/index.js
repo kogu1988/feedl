@@ -20,7 +20,6 @@
 /** @typedef {import("./index.d.ts").FeedlWidgetOptions} FeedlWidgetOptions */
 /** @typedef {import("./index.d.ts").FeedlWidgetAPI} FeedlWidgetAPI */
 
-var SCRIPT_SRC_ATTR = "src";
 var FEEDL_WIDGET_SRC_ATTR = "data-feedl-url";
 var FEEDL_WIDGET_TOKEN_ATTR = "data-token";
 var FEEDL_WIDGET_BUTTON_ATTR = "data-button-text";

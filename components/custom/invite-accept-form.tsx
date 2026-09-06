@@ -48,7 +48,10 @@ export function InviteAcceptForm() {
   };
 
   useEffect(() => {
+    // token, URL'den (searchParams) gelir ve mount sonrası değişmez; accept
+    // yalnızca ilk yüklemede çağrılır. Deps'i bırakmak bilinçli — tek seferlik.
     if (token) void accept();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

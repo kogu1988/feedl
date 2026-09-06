@@ -139,14 +139,14 @@ export async function importPosts(
       ? (row[canonical.indexOf("tags")] ?? "").trim()
       : "";
 
+    const VALID_TYPES = ["feature", "bug", "usability"] as const;
+    const VALID_STATUSES = ["open", "under-review", "planned", "in-progress", "shipped", "closed"] as const;
     const status =
       statusToEnum[statusRaw] ??
       cannyStatusToEnum[statusRaw] ??
-      (["open", "under-review", "planned", "in-progress", "shipped", "closed"].includes(statusRaw)
+      ((VALID_STATUSES as readonly string[]).includes(statusRaw)
         ? statusRaw
         : "open");
-    const VALID_TYPES = ["feature", "bug", "usability"] as const;
-    const VALID_STATUSES = ["open", "under-review", "planned", "in-progress", "shipped", "closed"] as const;
     const postType = (
       (typeToEnum[typeRaw] as (typeof VALID_TYPES)[number] | undefined) ??
       (VALID_TYPES.includes(typeRaw as (typeof VALID_TYPES)[number]) ? (typeRaw as (typeof VALID_TYPES)[number]) : undefined)

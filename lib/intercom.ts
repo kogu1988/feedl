@@ -108,7 +108,7 @@ function isTicketItem(item: IntercomItem, topic: string | null): boolean {
 
 // `ticket_attributes` içinden ilk dolu title-alamı döner (Intercom custom
 // alan adı `_default_title_`, basit kurulumlarda `title`/`subject` vb.).
-function ticketTitle(item: IntercomItem, topic: string | null): string {
+function ticketTitle(item: IntercomItem): string {
   const attrs = field(item, "ticket_attributes", "ticketAttributes");
   if (typeof attrs === "object" && attrs !== null) {
     const a = attrs as Record<string, unknown>;
@@ -168,7 +168,7 @@ export function intercomItemText(
     }
     const bodyText = (partBodies.join("\n") || attrDescription || attrTitle).trim();
     const body = bodyText.slice(0, 4000);
-    const title = (ticketTitle(item, topic) || attrTitle).slice(0, 140);
+    const title = (ticketTitle(item) || attrTitle).slice(0, 140);
     return { title: title || "Intercom destek talebi", body };
   }
 

@@ -53,7 +53,6 @@ export function NewPostDialog({ boardOptions = [] }: { boardOptions?: BoardOptio
     handleSubmit,
     reset,
     watch,
-    setValue,
     formState: { errors, isSubmitting },
   } = useForm<CreatePostInput>({
     resolver: zodResolver(createPostSchema),

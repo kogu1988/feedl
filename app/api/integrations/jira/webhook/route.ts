@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       );
     }
-    const { eventType, ticket } = parseJiraPayload(payload as Record<string, unknown>);
+    const { ticket } = parseJiraPayload(payload as Record<string, unknown>);
     if (!ticket) {
       return NextResponse.json({ success: true, data: { ignored: true } });
     }

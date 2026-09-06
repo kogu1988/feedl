@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       );
     }
-    const { action, type, data } = parseLinearPayload(payload as Record<string, unknown>);
+    const { type, data } = parseLinearPayload(payload as Record<string, unknown>);
     if (!data) {
       return NextResponse.json({ success: true, data: { ignored: true } });
     }

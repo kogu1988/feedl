@@ -128,6 +128,8 @@ export default async function ChangelogPage() {
               content={
                 <div className="grid gap-4">
                   {entry.imageUrl ? (
+                    // Harici CDN görseli; boyut bilinmez → next/image yerine <img>.
+                    // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={entry.imageUrl}
                       alt=""

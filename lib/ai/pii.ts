@@ -12,8 +12,6 @@ const TC_RE = /\b\d{11}\b/g;
 const CARD_RE = /\b(?:\d[ -]?){12,19}\b/g;
 const IBAN_RE = /\bTR\d{2}[ -]?\d{4}[ -]?\d{4}[ -]?\d{4}[ -]?\d{4}[ -]?\d{4}[ -]?\d{2}\b/g;
 
-const OVERLAP_TAGS = ["[pii:card]", "[pii:iban]", "[pii:phone]"];
-
 function replace(text: string, re: RegExp, tag: string): string {
   return text.replace(re, tag);
 }

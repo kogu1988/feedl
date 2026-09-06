@@ -35,13 +35,6 @@ export interface MemberUserOption {
   label: string;
 }
 
-const roleLabels: Record<string, string> = {
-  owner: "Sahip",
-  admin: "Yönetici",
-  member: "Üye",
-  contributor: "Katkıcı",
-};
-
 const roleOptions = [
   { value: "owner", label: "Sahip" },
   { value: "admin", label: "Yönetici" },

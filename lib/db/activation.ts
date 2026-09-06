@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, desc, eq, inArray, isNotNull } from "drizzle-orm";
+import { and, eq, inArray, isNotNull } from "drizzle-orm";
 
 import { getDb } from "./index";
 import { boards, changelogEntries, posts, votes, workspaces } from "./schema";

@@ -6,10 +6,8 @@ import { z } from "zod";
 
 import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
-import { getWorkspaceId } from "@/lib/db/workspace";
 import { users } from "@/lib/db/schema";
 import {
-  hasWorkspaceAdminAccess,
   listWorkspaceMembers,
   removeWorkspaceMember,
   upsertWorkspaceMember,

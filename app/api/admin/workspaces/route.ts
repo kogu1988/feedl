@@ -6,7 +6,6 @@ import { z } from "zod";
 
 import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
-import { getWorkspaceId } from "@/lib/db/workspace";
 import { boards, workspaces, workspaceMembers } from "@/lib/db/schema";
 
 // Sprint 48g (madde 8) — çoklu workspace. Ana workspace (feedl) admin'i
@@ -53,15 +52,6 @@ function isUniqueViolation(err: unknown): boolean {
     current = (current as { cause?: unknown }).cause;
   }
   return false;
-}
-
-async function findWorkspaceBySlug(slug: string) {
-  const [row] = await getDb()
-    .select({ id: workspaces.id, name: workspaces.name, slug: workspaces.slug })
-    .from(workspaces)
-    .where(eq(workspaces.slug, slug))
-    .limit(1);
-  return row;
 }
 
 // GET /api/admin/workspaces — tüm workspace'ler (ana admin; board/üye sayaçları).

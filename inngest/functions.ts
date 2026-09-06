@@ -27,7 +27,6 @@ import {
   aiSuggestions,
   boards,
   changelogEntries,
-  changelogPostLinks,
   changelogSubscribers,
   comments,
   emailDeliveries,

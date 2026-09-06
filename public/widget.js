@@ -47,7 +47,7 @@
   if (!baseUrl && currentScript && currentScript.src) {
     try {
       baseUrl = new URL(currentScript.src).origin;
-    } catch (e) {
+    } catch {
       baseUrl = "";
     }
   }
@@ -61,7 +61,7 @@
   var feedlOrigin;
   try {
     feedlOrigin = new URL(baseUrl).origin;
-  } catch (e) {
+  } catch {
     return;
   }
 
@@ -114,7 +114,7 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token: nextToken }),
       }).catch(function () {});
-    } catch (e) {
+    } catch {
       /* oturum açılamazsa widget salt-okunur listeyle açılır */
     }
   }

@@ -37,7 +37,7 @@ export function MarkdownContent({
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkBreaks]}
         components={{
-          a: ({ node, ...props }) => {
+          a: ({ ...props }) => {
             const href = props.href ?? "";
             const external = /^https?:\/\//.test(href);
             return (

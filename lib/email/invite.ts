@@ -2,8 +2,6 @@
 // davet linki içerir. Diğer şablonlarla aynı inline-stil görsel dil.
 import { escapeHtml, oneWayFooterHtml, oneWayFooterText } from "./html";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://feedl.app";
-
 export interface InviteEmailInput {
   inviterName: string;
   workspaceName: string;

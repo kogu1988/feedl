@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import { desc, eq } from "drizzle-orm";
 import { z } from "zod";
 
-import { generateApiKey, hashApiKey } from "@/lib/api-keys";
+import { generateApiKey } from "@/lib/api-keys";
 import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
