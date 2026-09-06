@@ -26,3 +26,27 @@ export const PRO_PLAN = {
 export function isPro(plan: string): boolean {
   return plan === "pro";
 }
+
+// Canlı hazırlık: Pro abonelik için Paddle tarafında da trial süresi/bedeli
+// ürün üzerinde tanımlanır (kod değil, Paddle dashboard). Kod, webhook'ta
+// `trialing` durumunu zaten 'pro' sayar; UI'da deneme süresini buradan göster.
+export const PRO_TRIAL_DAYS = 14;
+
+// **feedl_ öneki kuralı (Paddle paylaşımlı hesap — kullanıcı kararı):**
+// Paddle'da başka bir projeye ait veriler olabileceğinden feedl'e ait tüm
+// ürün/fiyat/indirim/webhook adları ve custom_data anahtarları `feedl_`
+// önekiyle oluşturulur. Live fiyat ID'lerinin de bu kurala uyduğu doğrulanır;
+// kod yalnızca env'den okur (aşağıda).
+const assertFeedlPrefix = (id: string) => {
+  // Sadece geliştirme uyarısı: ID'ler Paddle'da üretildiği için koda mantık
+  // bağlamıyoruz, yalnızca isimlendirme disiplinini belgeliyoruz.
+  if (process.env.NODE_ENV === "development" && id && !id.startsWith("feedl_")) {
+    console.warn(`[feedl] Paddle price ID 'feedl_' öneki taşımıyor: ${id}`);
+  }
+};
+
+// Paddle müşteri portalı: Paddle.js v1 portal API'si sunmaz; portal HOSTED bir
+// sayfa. Yönetici `NEXT_PUBLIC_PADDLE_CUSTOMER_PORTAL_URL` ile tam portal
+// linkini set ederse buton açılır (güvenli, canlı geçişte Paddle'dan alınır).
+export const PADDLE_CUSTOMER_PORTAL_URL =
+  process.env.NEXT_PUBLIC_PADDLE_CUSTOMER_PORTAL_URL ?? "";

@@ -4,17 +4,18 @@ import { useEffect, useState } from "react";
 import { initializePaddle, type Paddle } from "@paddle/paddle-js";
 
 import { Button } from "@/components/ui/button";
-import { getPlanEnv, isPro, PRO_PLAN } from "@/components/custom/plan-config";
+import { getPlanEnv, isPro, PADDLE_CUSTOMER_PORTAL_URL, PRO_PLAN } from "@/components/custom/plan-config";
 
 // Sprint 48h/52/60 (Faz 5) — faturalandırma yönetimi. Paddle.js Overlay
 // checkout'u Pro fiyatıyla başlatır; abonelik provisioning webhook'ta yapılır.
-// Sprint 60 (hardening): abonelik durumu gösterilir, ödeme gecikmesi uyarısı
-// ve Paddle müşteri portalını açan "Faturalandırmayı Yönet" butonu eklendi.
+// Sprint 60: abonelik durumu + ödeme gecikmesi uyarısı.
+// Sprint 63j (canlı hazırlık): checkout kapanma/hata UX + müşteri portalı
+// butonu (NEXT_PUBLIC_PADDLE_CUSTOMER_PORTAL_URL setse açılır).
 
 const env = getPlanEnv();
 const clientToken = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN ?? "";
-// Paddle customer portal kimliği yapılandırıldıysa portal butonu çıkar.
-const customerPortalId = process.env.NEXT_PUBLIC_PADDLE_CUSTOMER_PORTAL_ID ?? "";
+// Paddle müşteri portalı: portal URL env'i setse buton açılır (hosted portal).
+const customerPortalUrl = PADDLE_CUSTOMER_PORTAL_URL;
 
 const STATUS_LABELS: Record<string, string> = {
   active: "Aktif",
@@ -43,6 +44,7 @@ export function BillingManager({
 }) {
   const [paddle, setPaddle] = useState<Paddle | undefined>();
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
 
   useEffect(() => {
     if (!clientToken) return;
@@ -51,7 +53,10 @@ export function BillingManager({
       token: clientToken,
       eventCallback: (event) => {
         if (event.name === "checkout.completed") {
+          setInfo("Ödeme tamamlandı, sayfa yenileniyor…");
           window.setTimeout(() => window.location.reload(), 2500);
+        } else if (event.name === "checkout.closed") {
+          setError("Ödeme tamamlanmadı. Tekrar deneyebilirsin.");
         }
       },
     })
@@ -135,16 +140,29 @@ export function BillingManager({
           <p className="text-sm text-muted-foreground">
             Aktif abonelik: {paddleSubscriptionId ?? "—"}.
           </p>
-          {customerPortalId && paddleCustomerId && (
+          {customerPortalUrl ? (
+            <Button
+              variant="outline"
+              size="sm"
+              render={
+                <a href={customerPortalUrl} target="_blank" rel="noopener noreferrer">
+                  Faturalandırmayı Yönet
+                </a>
+              }
+            >
+              Faturalandırmayı Yönet
+            </Button>
+          ) : (
             <p className="text-xs text-muted-foreground">
-              İptal ve faturalandırma yönetimi Paddle müşteri portalından yapılır
-              (portal butonu yakında).
+              İptal ve faturalandırma yönetimi Paddle müşteri portalından
+              yapılır (portal linki yapılandırıldığında görünür).
             </p>
           )}
         </div>
       )}
 
       {error && <p className="text-sm text-destructive">{error}</p>}
+      {info && <p className="text-sm text-emerald-700 dark:text-emerald-300">{info}</p>}
     </div>
   );
 }

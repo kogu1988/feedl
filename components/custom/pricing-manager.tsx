@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import {
   getPlanEnv,
   PRO_PLAN,
+  PRO_TRIAL_DAYS,
 } from "@/components/custom/plan-config";
 
 // Sprint 49/52 (Faz 5) — public /pricing. Free vs Pro karşılaştırma tablosu;
@@ -60,6 +61,7 @@ function FeatureList({ items }: { items: string[] }) {
 export function PricingManager({ workspaceSlug }: { workspaceSlug: string }) {
   const [paddle, setPaddle] = useState<Paddle | undefined>();
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
   // Varsayılan: yıllık seçili.
   const [annual, setAnnual] = useState(true);
 
@@ -70,7 +72,10 @@ export function PricingManager({ workspaceSlug }: { workspaceSlug: string }) {
       token: clientToken,
       eventCallback: (event) => {
         if (event.name === "checkout.completed") {
+          setInfo("Ödeme tamamlandı, sayfa yenileniyor…");
           window.setTimeout(() => window.location.reload(), 2500);
+        } else if (event.name === "checkout.closed") {
+          setError("Ödeme tamamlanmadı. Tekrar deneyebilirsin.");
         }
       },
     })
@@ -162,7 +167,10 @@ export function PricingManager({ workspaceSlug }: { workspaceSlug: string }) {
           <p className="mt-1 text-xs text-muted-foreground">
             {annual
               ? `Yıllık faturalandırmayla ayda ${PRO_PLAN.yearlyMonthlyPrice} (yıllık ${PRO_PLAN.yearlyTotal}).`
-              : `Aylık faturalandırmayla ayda ${PRO_PLAN.monthlyPrice}.`}
+              : `Aylık faturalandırmayla ayda ${PRO_PLAN.monthlyPrice}.`}{" "}
+            {PRO_TRIAL_DAYS > 0
+              ? `${PRO_TRIAL_DAYS} gün ücretsiz deneme.`
+              : ""}
           </p>
 
           <FeatureList items={proFeatures} />
@@ -176,6 +184,7 @@ export function PricingManager({ workspaceSlug }: { workspaceSlug: string }) {
       </div>
 
       {error && <p className="text-center text-sm text-destructive">{error}</p>}
+      {info && <p className="text-center text-sm text-emerald-700 dark:text-emerald-300">{info}</p>}
     </div>
   );
 }
