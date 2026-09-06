@@ -63,13 +63,13 @@ export function DemoPostCard({
           </div>
           <div className="flex shrink-0 flex-col items-end justify-between gap-3">
             <span className="text-xs text-muted-foreground">{date}</span>
-            <div className="flex items-center gap-3">
-              <span className="inline-flex items-center gap-1">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex h-7 items-center gap-1 rounded-md border px-2 text-sm">
                 <MessageSquareIcon className="size-3.5 text-muted-foreground" aria-hidden="true" />
                 <span className="font-mono tabular-nums">{commentCount}</span>
               </span>
-              <span className="inline-flex items-center gap-1 font-medium">
-                <ThumbsUpIcon className="size-4 text-muted-foreground" aria-hidden="true" />
+              <span className="inline-flex h-7 items-center gap-1 rounded-md border px-2 text-sm">
+                <ThumbsUpIcon className="size-3.5 text-muted-foreground" aria-hidden="true" />
                 <span className="font-mono tabular-nums">{voteCount}</span>
               </span>
             </div>
