@@ -1,14 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { RefreshCwIcon } from "lucide-react";
+import { Loader2Icon, RefreshCwIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
-// Sprint 63l — "Yenile" butonu: /api/corpus-insights'a POST atar (Inngest
-// arka planda üretir), sonra sayfayı yeniler. Kullanıcının senkron LLM
-// çağrısıyla karşılaşmasını engeller.
-export function InsightsRefreshButton() {
+// Sprint 63l — "Yenile" butonu: POST /api/corpus-insights (Inngest arka planda)
+// sonra sayfayı yeniler. 63m: kaynak zorlamayı önlemek — `status === "pending"`
+// iken buton DEVRE DIŞI + spinner "AI içgörüleri hazırlanıyor."; ayrıca tıklama
+// sonrası busy (kısa cooldown) ile peşpeşe tıklama engellenir.
+export function InsightsRefreshButton({ status }: { status: "idle" | "pending" | "done" | "error" }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -23,21 +24,38 @@ export function InsightsRefreshButton() {
       const json = await res.json();
       if (!json.success) {
         setError(json.error ?? "Analiz başlatılamadı.");
+        setBusy(false);
         return;
       }
-      window.location.reload();
+      // Başarılı: sayfayı yenile (server pending/done durumunu gösterir).
+      window.setTimeout(() => window.location.reload(), 400);
     } catch {
       setError("Bağlantı hatası.");
-    } finally {
       setBusy(false);
     }
   }
 
+  const pending = status === "pending" || busy;
+
   return (
-    <div className="flex flex-col items-end gap-1">
-      <Button variant="outline" size="sm" disabled={busy} onClick={() => void refresh()}>
-        {busy ? <RefreshCwIcon className="size-4 animate-spin" /> : <RefreshCwIcon className="size-4" />}
-        Yenile
+    <div className="flex w-full items-end justify-end flex-col gap-1">
+      <Button
+        variant={pending ? "outline" : "default"}
+        size="sm"
+        disabled={pending}
+        onClick={() => void refresh()}
+      >
+        {pending ? (
+          <>
+            <Loader2Icon className="size-4 animate-spin" />
+            AI içgörüleri hazırlanıyor…
+          </>
+        ) : (
+          <>
+            <RefreshCwIcon className="size-4" />
+            Yenile
+          </>
+        )}
       </Button>
       {error ? <span className="text-xs text-destructive">{error}</span> : null}
     </div>

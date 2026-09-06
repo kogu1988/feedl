@@ -16,7 +16,6 @@ import {
   PanelLeftOpenIcon,
   PlugIcon,
   PuzzleIcon,
-  SettingsIcon,
   SparklesIcon,
   TrendingUpIcon,
   UsersIcon,
@@ -64,7 +63,6 @@ const navGroups = [
       { href: "/dashboard/widget", label: "Widget", icon: PuzzleIcon, adminOnly: true },
       { href: "/dashboard/integrations", label: "Entegrasyonlar", icon: PlugIcon, adminOnly: true },
       { href: "/dashboard/billing", label: "Faturalama", icon: CreditCardIcon, adminOnly: true },
-      { href: "/dashboard/workspaces", label: "Workspace Ayarları", icon: SettingsIcon, adminOnly: true },
     ],
   },
 ];

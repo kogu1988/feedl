@@ -21,6 +21,17 @@ export async function POST() {
     }
     const workspaceId = await getWorkspaceId();
 
+    // Spring 63m: analiz zaten sürüyorsa tekrar event GÖNDERME (kaynak zorlama
+    // önlenir) — kullanıcı peşpeşe "Yenile"ye bassa da tek analiz sürer.
+    const [row] = await getDb()
+      .select({ status: workspaces.corpusInsightsStatus })
+      .from(workspaces)
+      .where(eq(workspaces.id, workspaceId))
+      .limit(1);
+    if (row?.status === "pending") {
+      return NextResponse.json({ success: true, data: { queued: false, status: "pending" } });
+    }
+
     // İşlem kuyruğa girer; status 'pending' olarak fonksiyon başlarken set edilir.
     await inngest.send({
       name: "corpus-insights.request",

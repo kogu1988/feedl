@@ -7,7 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Notice } from "@/components/custom/notice";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LinearIntegration } from "@/components/custom/linear-integration";
+import { Badge } from "@/components/ui/badge";
 
 type Provider = "slack" | "zendesk" | "intercom" | "jira";
 
@@ -144,72 +146,75 @@ function ProviderCard({ meta }: { meta: ProviderMeta }) {
   }
 
   return (
-    <div className="rounded-lg border p-5">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h3 className="font-semibold">{meta.name}</h3>
-          <p className="mt-1 text-xs text-muted-foreground">{meta.description}</p>
+    <Card>
+      <CardHeader>
+        <div className="flex items-start justify-between gap-3">
+          <div className="grid gap-1">
+            <CardTitle>{meta.name}</CardTitle>
+            <CardDescription>{meta.description}</CardDescription>
+          </div>
+          {status === "connected" ? (
+            <Badge className="border-emerald-600/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">
+              Bağlı
+            </Badge>
+          ) : status === "disconnected" ? (
+            <Badge className="border-border bg-muted text-muted-foreground">
+              Bağlı değil
+            </Badge>
+          ) : null}
         </div>
+      </CardHeader>
+      <CardContent>
         {status === "connected" ? (
-          <span className="inline-flex items-center rounded-full border border-emerald-600/30 bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-400">
-            Bağlı
-          </span>
-        ) : status === "disconnected" ? (
-          <span className="inline-flex items-center rounded-full border border-border bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-            Bağlı değil
-          </span>
-        ) : null}
-      </div>
-
-      {status === "connected" ? (
-        <div className="mt-4 grid gap-3">
-          <div>
-            <p className="text-xs font-medium text-muted-foreground">Webhook URL</p>
-            <code className="mt-1 block break-all rounded-md border bg-muted/40 px-2 py-1.5 text-xs">
-              {webhookUrl ?? "—"}
-            </code>
-          </div>
-          <div>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={busy}
-              onClick={() => void disconnect()}
-            >
-              {busy ? (
-                <Loader2Icon className="size-4 animate-spin" />
-              ) : (
-                <UnplugIcon className="size-4" />
-              )}
-              Bağlantıyı kes
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <div className="mt-4 grid gap-3">
-          {meta.fields.map((field) => (
-            <div key={field.key} className="grid gap-1.5">
-              <Label htmlFor={`${meta.provider}-${field.key}`}>{field.label}</Label>
-              <Input
-                id={`${meta.provider}-${field.key}`}
-                type="password"
-                value={values[field.key] ?? ""}
-                onChange={(e) => setValues((v) => ({ ...v, [field.key]: e.target.value }))}
-                placeholder={field.placeholder}
-                autoComplete="off"
-              />
+          <div className="grid gap-3">
+            <div>
+              <p className="text-xs font-medium text-muted-foreground">Webhook URL</p>
+              <code className="mt-1 block break-all rounded-md border bg-muted/40 px-2 py-1.5 text-xs">
+                {webhookUrl ?? "—"}
+              </code>
             </div>
-          ))}
-          {error ? <Notice>{error}</Notice> : null}
-          <div>
-            <Button size="sm" disabled={busy} onClick={() => void connect()}>
-              {busy ? <Loader2Icon className="size-4 animate-spin" /> : null}
-              Bağlan
-            </Button>
+            <div>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={busy}
+                onClick={() => void disconnect()}
+              >
+                {busy ? (
+                  <Loader2Icon className="size-4 animate-spin" />
+                ) : (
+                  <UnplugIcon className="size-4" />
+                )}
+                Bağlantıyı kes
+              </Button>
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        ) : (
+          <div className="grid gap-3">
+            {meta.fields.map((field) => (
+              <div key={field.key} className="grid gap-1.5">
+                <Label htmlFor={`${meta.provider}-${field.key}`}>{field.label}</Label>
+                <Input
+                  id={`${meta.provider}-${field.key}`}
+                  type="password"
+                  value={values[field.key] ?? ""}
+                  onChange={(e) => setValues((v) => ({ ...v, [field.key]: e.target.value }))}
+                  placeholder={field.placeholder}
+                  autoComplete="off"
+                />
+              </div>
+            ))}
+            {error ? <Notice>{error}</Notice> : null}
+            <div>
+              <Button size="sm" disabled={busy} onClick={() => void connect()}>
+                {busy ? <Loader2Icon className="size-4 animate-spin" /> : null}
+                Bağlan
+              </Button>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

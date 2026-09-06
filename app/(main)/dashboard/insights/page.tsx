@@ -49,7 +49,7 @@ export default async function InsightsPage() {
               hızlı kazanımlar. Analiz arka planda üretilir.
             </p>
           </div>
-          <InsightsRefreshButton />
+          <InsightsRefreshButton status={(row?.corpusInsightsStatus ?? "idle") as "idle" | "pending" | "done" | "error"} />
         </div>
 
         {status === "pending" ? (
