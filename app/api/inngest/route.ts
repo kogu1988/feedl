@@ -5,6 +5,7 @@ import {
   aiAutopilot,
   corpusInsights,
   notifyAdminNewPost,
+  notifyChangelog,
   notifyCommentCreated,
   notifyShipped,
   sendWebhooks,
@@ -21,6 +22,7 @@ export const { GET, POST, PUT } = serve({
     notifyShipped,
     notifyAdminNewPost,
     notifyCommentCreated,
+    notifyChangelog,
     sendWebhooks,
   ],
 });
