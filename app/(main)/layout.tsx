@@ -1,6 +1,6 @@
 import { ClerkProvider } from "@clerk/nextjs";
 import { trTR } from "@clerk/localizations";
-import { shadcn } from "@clerk/ui/themes";
+import { shadcn } from "@clerk/themes";
 
 import { SiteHeader } from "@/components/custom/site-header";
 import { SiteFooter } from "@/components/custom/site-footer";
