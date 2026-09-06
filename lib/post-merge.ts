@@ -1,6 +1,7 @@
 import "server-only";
 
 import { sql } from "drizzle-orm";
+import { z } from "zod";
 
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
@@ -32,6 +33,43 @@ export interface MergeOutcome {
     | "no_op";
   movedVotes?: number;
   movedComments?: number;
+}
+
+// Merge isteği doğrulama şeması (Sprint 63x: route'taki saf mantığı buraya
+// çıkarıldı — test edilebilir). sourceId !== targetId refine'ı çapraz merge
+// kendine birleştirmeyi engeller.
+export const mergeSchema = z
+  .object({
+    sourceId: z.uuid("Geçersiz kaynak fikir kimliği."),
+    targetId: z.uuid("Geçersiz hedef fikir kimliği."),
+  })
+  .refine((data) => data.sourceId !== data.targetId, {
+    error: "Bir fikir kendisiyle birleştirilemez.",
+  });
+
+export const unmergeSchema = z.object({
+  sourceId: z.uuid("Geçersiz fikir kimliği."),
+});
+
+// Başarısız merge reason'ı → HTTP yanıtı eşlemesi (Sprint 63x: saf, test
+// edilebilir). Route bu tabloyu kullanır — hata durumu/status tek kaynak.
+export function mergeFailureResult(
+  reason: MergeOutcome["reason"] | undefined,
+): { error: string; status: number } {
+  const map: Record<string, { error: string; status: number }> = {
+    source_not_found: { error: "Kaynak fikir bulunamadı.", status: 404 },
+    target_not_found: { error: "Hedef fikir bulunamadı.", status: 404 },
+    source_merged: {
+      error: "Kaynak fikir zaten birleştirilmiş.",
+      status: 409,
+    },
+    target_merged: {
+      error: "Hedef fikir başka bir fikre birleştirilmiş; zincir oluşmaz.",
+      status: 400,
+    },
+    no_op: { error: "Fikir zaten birleştirilmiş.", status: 409 },
+  };
+  return map[reason ?? "no_op"] ?? map["no_op"];
 }
 
 // Sprint 20'den taşındı (Sprint 33: Autopilot Inbox approve'u da kullanır).

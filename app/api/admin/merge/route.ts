@@ -2,13 +2,17 @@ import "server-only";
 
 import { NextResponse } from "next/server";
 import { and, eq, sql } from "drizzle-orm";
-import { z } from "zod";
 
 import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { postMerges, posts } from "@/lib/db/schema";
-import { mergePosts } from "@/lib/post-merge";
+import {
+  mergeFailureResult,
+  mergePosts,
+  mergeSchema,
+  unmergeSchema,
+} from "@/lib/post-merge";
 
 // Drizzle execute sonuç şekli sürücüye göre değişebilir (neon-http satır
 // dizisi döndürür); güvenli normalizasyon.
@@ -26,18 +30,8 @@ function toRows<T>(result: unknown): T[] {
   return [];
 }
 
-const mergeSchema = z
-  .object({
-    sourceId: z.uuid("Geçersiz kaynak fikir kimliği."),
-    targetId: z.uuid("Geçersiz hedef fikir kimliği."),
-  })
-  .refine((data) => data.sourceId !== data.targetId, {
-    error: "Bir fikir kendisiyle birleştirilemez.",
-  });
-
-const unmergeSchema = z.object({
-  sourceId: z.uuid("Geçersiz fikir kimliği."),
-});
+const mergeRefined = mergeSchema;
+const unmergeRefined = unmergeSchema;
 
 // POST /api/admin/merge — kaynak fikri hedef fikre birleştir (sadece admin).
 // Oylar ve yorumlar hedefe taşınır (zaten hedefe oy veren kullanıcının
@@ -65,7 +59,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const parsed = mergeSchema.safeParse(body);
+    const parsed = mergeRefined.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
         { success: false, error: "Geçersiz fikir kimlikleri." },
@@ -77,31 +71,7 @@ export async function POST(req: Request) {
     const outcome = await mergePosts(sourceId, targetId);
 
     if (!outcome.ok) {
-      const messages: Record<string, { error: string; status: number }> = {
-        source_not_found: {
-          error: "Kaynak fikir bulunamadı.",
-          status: 404,
-        },
-        target_not_found: {
-          error: "Hedef fikir bulunamadı.",
-          status: 404,
-        },
-        source_merged: {
-          error: "Kaynak fikir zaten birleştirilmiş.",
-          status: 409,
-        },
-        target_merged: {
-          error:
-            "Hedef fikir başka bir fikre birleştirilmiş; zincir oluşmaz.",
-          status: 400,
-        },
-        no_op: {
-          error: "Fikir zaten birleştirilmiş.",
-          status: 409,
-        },
-      };
-      const failure =
-        messages[outcome.reason ?? "no_op"] ?? messages["no_op"];
+      const failure = mergeFailureResult(outcome.reason);
       return NextResponse.json(
         { success: false, error: failure.error },
         { status: failure.status },
@@ -155,7 +125,7 @@ export async function DELETE(req: Request) {
       );
     }
 
-    const parsed = unmergeSchema.safeParse(body);
+    const parsed = unmergeRefined.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
         { success: false, error: "Geçersiz fikir kimliği." },

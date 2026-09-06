@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 
 import { getDb } from "@/lib/db";
 import { workspaces } from "@/lib/db/schema";
-import { PADDLE_ENV, verifyPaddleSignature } from "@/lib/paddle";
+import { PADDLE_ENV, derivePlanFromStatus, verifyPaddleSignature } from "@/lib/paddle";
 
 // Sprint 48h (Faz 5) — Paddle webhook. subscription.activated → plan='pro',
 // subscription.canceled → plan='free'. İmza doğrulanır (PADDLE_WEBHOOK_SECRET
@@ -66,14 +66,7 @@ export async function POST(req: Request) {
     // Sprint 60: `paddleSubscriptionStatus` da saklanır — billing sayfası
     // gerçek durumu (ödeme gecikmesi/iptal) gösterir.
     const subscriptionStatus = (data.status as string | undefined) ?? "";
-    let plan: "pro" | "free" | null = null;
-    if (["trialing", "active"].includes(subscriptionStatus)) {
-      plan = "pro";
-    } else if (
-      ["canceled", "paused", "past_due", "dunned", "expired"].includes(subscriptionStatus)
-    ) {
-      plan = "free";
-    }
+    const plan = derivePlanFromStatus(subscriptionStatus);
 
     if (!plan) {
       // Bilinmeyen/diğer olaylar (örn. subscription.updated, price change)

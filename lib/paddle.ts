@@ -32,6 +32,27 @@ export function planFromString(value: string | null | undefined): PlanKey {
   return value === "pro" ? "pro" : "free";
 }
 
+// Paddle abonelik status'undan plan türet (TEST EDİLEBİLİR saf fonksiyon).
+// Sprint 52/60 kuralı: trialing/active → pro; canceled/paused/past_due/dunned
+// /expired → free; diğer (bilinmeyen) → null (yoksay, durum yine saklanır).
+// Webhook route ve testler bu tek kaynağı kullanır.
+export function derivePlanFromStatus(
+  status: string | null | undefined,
+): "pro" | "free" | null {
+  if (!status) return null;
+  if (status === "trialing" || status === "active") return "pro";
+  if (
+    status === "canceled" ||
+    status === "paused" ||
+    status === "past_due" ||
+    status === "dunned" ||
+    status === "expired"
+  ) {
+    return "free";
+  }
+  return null;
+}
+
 // Workspace'te güncel limitler (plan'a göre; DB'de saklanan limit alanlarını
 // PLANS ile birleştirir). plan free ise PLANS.free, pro ise PLANS.pro.
 import { getWorkspaceId } from "@/lib/db/workspace";
