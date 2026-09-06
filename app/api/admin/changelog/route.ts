@@ -10,6 +10,7 @@ import { getWorkspaceId } from "@/lib/db/workspace";
 import { changelogEntries, changelogPostLinks } from "@/lib/db/schema";
 import { changelogPublishedEventSchema } from "@/lib/validations/events";
 import { inngest } from "@/inngest/client";
+import { revalidateTag } from "next/cache";
 
 // Sprint 25: bağımsız changelog yönetimi (admin). GET: liste (son 50),
 // POST: yeni duyuru (başlık + gövde + opsiyonel label + opsiyonel post
@@ -118,6 +119,9 @@ export async function POST(req: Request) {
         .onConflictDoNothing();
     }
 
+    // Yeni duyuru (draft da olsa) çıkınca public changelog cache'ini tazele.
+    revalidateTag("changelog");
+
     // Sprint 40: duyuru yayınlandı — abonelere e-posta (best-effort;
     // event gönderilemezse duyuru kaydı etkilenmez). Yalnızca published.
     if (!isDraft) {
@@ -178,6 +182,8 @@ export async function DELETE(req: Request) {
     await getDb()
       .delete(changelogEntries)
       .where(eq(changelogEntries.id, parsedId.data));
+
+    revalidateTag("changelog");
 
     return NextResponse.json({ success: true });
   } catch (err) {

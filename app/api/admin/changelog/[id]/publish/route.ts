@@ -10,6 +10,7 @@ import { getWorkspaceId } from "@/lib/db/workspace";
 import { changelogEntries } from "@/lib/db/schema";
 import { changelogPublishedEventSchema } from "@/lib/validations/events";
 import { inngest } from "@/inngest/client";
+import { revalidateTag } from "next/cache";
 
 // Sprint 48n — draft changelog'u yayınla. publishedAt set edilir ve
 // changelog/published event'i (abonelere mail) gönderilir.
@@ -59,6 +60,9 @@ export async function POST(
         and(eq(changelogEntries.id, id), eq(changelogEntries.workspaceId, workspaceId)),
       )
       .returning({ id: changelogEntries.id });
+
+    // Yayınlanınca public changelog cache'ini tazele (unstable_cache tag).
+    revalidateTag("changelog");
 
     const event = changelogPublishedEventSchema.safeParse({
       entryId: id,

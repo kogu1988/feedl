@@ -14,6 +14,7 @@ import { getDb } from "@/lib/db";
 import { PoweredByFeedl } from "@/components/custom/powered-by-feedl";
 import { getWorkspaceId, isShowcaseRequest } from "@/lib/db/workspace";
 import { generateCanonical } from "@/lib/seo";
+import { unstable_cache } from "next/cache";
 import {
   changelogEntries,
   changelogPostLinks,
@@ -46,7 +47,8 @@ export default async function ChangelogPage() {
   let entries: Awaited<ReturnType<typeof loadEntries>> = [];
   let loadError = false;
   try {
-    entries = await loadEntries();
+    const workspaceId = await getWorkspaceId();
+    entries = await loadEntries(workspaceId);
   } catch (err) {
     console.error(
       "Changelog page load failed:",
@@ -175,49 +177,61 @@ export default async function ChangelogPage() {
 // İki aşamalı yükleme: duyurular, sonra hepsinin post linkleri tek sorguda
 // (fan-out yok). Post başlığı için posts join'i yeterli; silinen fikirlerde
 // link cascade ile gider, eksik kayıt oluşmaz.
-async function loadEntries() {
-  const rows = await getDb()
-    .select({
-      id: changelogEntries.id,
-      title: changelogEntries.title,
-      body: changelogEntries.body,
-      imageUrl: changelogEntries.imageUrl,
-      label: changelogEntries.label,
-      publishedAt: changelogEntries.publishedAt,
-    })
-    .from(changelogEntries)
-    .where(and(eq(changelogEntries.workspaceId, await getWorkspaceId()), eq(changelogEntries.status, "published")))
-    .orderBy(desc(changelogEntries.publishedAt))
-    .limit(50);
+// Sprint 63x (public-read cache): workspace'le anahtarlı `unstable_cache` —
+// her istekte DB yerine 60s cache. `changelog` tag'i, yayınlama/duyuru
+// güncellenince `revalidateTag("changelog")` ile anında tazelenir.
+const loadEntries = unstable_cache(
+  async (workspaceId: string) => {
+    const rows = await getDb()
+      .select({
+        id: changelogEntries.id,
+        title: changelogEntries.title,
+        body: changelogEntries.body,
+        imageUrl: changelogEntries.imageUrl,
+        label: changelogEntries.label,
+        publishedAt: changelogEntries.publishedAt,
+      })
+      .from(changelogEntries)
+      .where(
+        and(
+          eq(changelogEntries.workspaceId, workspaceId),
+          eq(changelogEntries.status, "published"),
+        ),
+      )
+      .orderBy(desc(changelogEntries.publishedAt))
+      .limit(50);
 
-  if (rows.length === 0) {
-    return [];
-  }
+    if (rows.length === 0) {
+      return [];
+    }
 
-  const linkRows = await getDb()
-    .select({
-      entryId: changelogPostLinks.entryId,
-      postId: posts.id,
-      postTitle: posts.title,
-    })
-    .from(changelogPostLinks)
-    .innerJoin(posts, eq(posts.id, changelogPostLinks.postId))
-    .where(
-      inArray(
-        changelogPostLinks.entryId,
-        rows.map((row) => row.id),
-      ),
-    );
+    const linkRows = await getDb()
+      .select({
+        entryId: changelogPostLinks.entryId,
+        postId: posts.id,
+        postTitle: posts.title,
+      })
+      .from(changelogPostLinks)
+      .innerJoin(posts, eq(posts.id, changelogPostLinks.postId))
+      .where(
+        inArray(
+          changelogPostLinks.entryId,
+          rows.map((row) => row.id),
+        ),
+      );
 
-  const postsByEntry = new Map<string, { id: string; title: string }[]>();
-  for (const link of linkRows) {
-    const list = postsByEntry.get(link.entryId) ?? [];
-    list.push({ id: link.postId, title: link.postTitle });
-    postsByEntry.set(link.entryId, list);
-  }
+    const postsByEntry = new Map<string, { id: string; title: string }[]>();
+    for (const link of linkRows) {
+      const list = postsByEntry.get(link.entryId) ?? [];
+      list.push({ id: link.postId, title: link.postTitle });
+      postsByEntry.set(link.entryId, list);
+    }
 
-  return rows.map((row) => ({
-    ...row,
-    linkedPosts: postsByEntry.get(row.id) ?? [],
-  }));
-}
+    return rows.map((row) => ({
+      ...row,
+      linkedPosts: postsByEntry.get(row.id) ?? [],
+    }));
+  },
+  ["changelog", "ws"],
+  { revalidate: 60, tags: ["changelog"] },
+);

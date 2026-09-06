@@ -2,6 +2,7 @@ import "server-only";
 
 import { auth } from "@clerk/nextjs/server";
 import { eq } from "drizzle-orm";
+import { cache } from "react";
 
 import { getDb } from "@/lib/db";
 import { users } from "@/lib/db/schema";
@@ -22,7 +23,10 @@ import { getWorkspaceRole } from "@/lib/db/membership";
 
 export type WorkspaceScope = "admin" | "team" | "customer" | null;
 
-export async function getRole(userId: string): Promise<WorkspaceScope> {
+// Request-scoped memo (React.cache): aynı userId için aynı istek içinde
+// getRole yalnız BİR kez DB okur (sayfa + alt bileşen/API aynı rolü sorarsa
+// kopya sorgu önlenir). Kalan sorguları her istekte taze tutar (güvenlik).
+const fetchRole = cache(async (userId: string): Promise<WorkspaceScope> => {
   const membershipRole = await getWorkspaceRole(userId);
   if (membershipRole === "owner" || membershipRole === "admin") {
     return "admin";
@@ -42,6 +46,10 @@ export async function getRole(userId: string): Promise<WorkspaceScope> {
     .limit(1);
   if (row?.role === "admin") return "admin";
   return row?.role === "customer" ? "customer" : null;
+});
+
+export async function getRole(userId: string): Promise<WorkspaceScope> {
+  return fetchRole(userId);
 }
 
 // Kullanıcının Clerk userId'si varsa döner, yoksa null.

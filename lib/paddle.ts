@@ -58,9 +58,12 @@ export function derivePlanFromStatus(
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { getDb } from "@/lib/db";
 import { eq } from "drizzle-orm";
+import { cache } from "react";
 import { workspaces } from "@/lib/db/schema";
 
-export async function getPlanLimits() {
+// Request-scoped memo: aynı istek içinde getPlanLimits bir kez DB okur
+// (plan limitleri sık sorulur; sayfa içinde kopya sorguyu önler).
+const fetchPlanLimits = cache(async () => {
   const [row] = await getDb()
     .select({ plan: workspaces.plan })
     .from(workspaces)
@@ -68,6 +71,10 @@ export async function getPlanLimits() {
     .limit(1);
   const key = planFromString(row?.plan);
   return PLANS[key];
+});
+
+export async function getPlanLimits() {
+  return fetchPlanLimits();
 }
 
 // Bir workspace için kaynak sayısı limit aşımı kontrolü.
