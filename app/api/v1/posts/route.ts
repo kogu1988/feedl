@@ -19,6 +19,7 @@ import {
   votes,
 } from "@/lib/db/schema";
 import { postCreatedEventSchema } from "@/lib/validations/events";
+import { withIdempotency } from "@/lib/idempotency";
 import { upsertApiUser } from "@/lib/users/api-user";
 import { inngest } from "@/inngest/client";
 
@@ -216,75 +217,79 @@ export async function POST(req: NextRequest) {
       // yoksay
     }
 
-    let body: unknown;
-    try {
-      body = await req.json();
-    } catch {
-      return NextResponse.json(
-        { success: false, error: "Geçersiz istek gövdesi." },
-        { status: 400 },
+    // Sprint 63x: idempotent yürütme — aynı Idempotency-Key ile tekrarlanan
+    // istek ilk yanıtı döndürür (duplike fikir + AI autopilot maliyeti yok).
+    return withIdempotency(req, key, async () => {
+      let body: unknown;
+      try {
+        body = await req.json();
+      } catch {
+        return NextResponse.json(
+          { success: false, error: "Geçersiz istek gövdesi." },
+          { status: 400 },
+        );
+      }
+
+      const parsed = createPostSchema.safeParse(body);
+      if (!parsed.success) {
+        return NextResponse.json(
+          { success: false, error: "Başlık 3-140, açıklama 10-2000 karakter olmalı." },
+          { status: 400 },
+        );
+      }
+
+      // Yazar kimliği zorunlu: posts.user_id NOT NULL. Author yoksa 400.
+      if (!parsed.data.author) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Bu işlem için bir yazar e-postası (author.email) gerekli.",
+          },
+          { status: 400 },
+        );
+      }
+
+      const author = await upsertApiUser(
+        parsed.data.author.email,
+        parsed.data.author.name,
       );
-    }
 
-    const parsed = createPostSchema.safeParse(body);
-    if (!parsed.success) {
-      return NextResponse.json(
-        { success: false, error: "Başlık 3-140, açıklama 10-2000 karakter olmalı." },
-        { status: 400 },
-      );
-    }
-
-    // Yazar kimliği zorunlu: posts.user_id NOT NULL. Author yoksa 400.
-    if (!parsed.data.author) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Bu işlem için bir yazar e-postası (author.email) gerekli.",
-        },
-        { status: 400 },
-      );
-    }
-
-    const author = await upsertApiUser(
-      parsed.data.author.email,
-      parsed.data.author.name,
-    );
-
-    const [created] = await getDb()
-      .insert(posts)
-      .values({
-        // Tenant izolasyonu: API anahtarının workspace'i (host değil).
-        workspaceId: key.workspaceId,
-        userId: author.id,
-        title: parsed.data.title,
-        description: parsed.data.description,
-        boardId: await getDefaultBoardId(key.workspaceId),
-        source: "api",
-      })
-      .returning({ id: posts.id, title: posts.title });
-
-    // Auth sonrası Inngest event'ı (best-effort) — AI autopilot + webhook.
-    try {
-      await inngest.send({
-        name: "post/created",
-        data: postCreatedEventSchema.parse({
-          postId: created.id,
-          title: created.title,
-          description: parsed.data.description,
+      const [created] = await getDb()
+        .insert(posts)
+        .values({
+          // Tenant izolasyonu: API anahtarının workspace'i (host değil).
+          workspaceId: key.workspaceId,
           userId: author.id,
-        }),
-      });
-    } catch (eventErr) {
-      console.error(
-        "[api/v1/posts] POST event send failed:",
-        eventErr instanceof Error ? eventErr.message : eventErr,
-      );
-    }
+          title: parsed.data.title,
+          description: parsed.data.description,
+          boardId: await getDefaultBoardId(key.workspaceId),
+          source: "api",
+        })
+        .returning({ id: posts.id, title: posts.title });
 
-    return NextResponse.json(
-      { success: true, data: { id: created.id, title: created.title } },
-      { status: 201 },
-    );
+      // Auth sonrası Inngest event'ı (best-effort) — AI autopilot + webhook.
+      try {
+        await inngest.send({
+          name: "post/created",
+          data: postCreatedEventSchema.parse({
+            postId: created.id,
+            title: created.title,
+            description: parsed.data.description,
+            userId: author.id,
+          }),
+        });
+      } catch (eventErr) {
+        console.error(
+          "[api/v1/posts] POST event send failed:",
+          eventErr instanceof Error ? eventErr.message : eventErr,
+        );
+      }
+
+      return NextResponse.json(
+        { success: true, data: { id: created.id, title: created.title } },
+        { status: 201 },
+      );
+    });
   } catch (err) {
     console.error("[api/v1/posts] POST failed:", err);
     return NextResponse.json(

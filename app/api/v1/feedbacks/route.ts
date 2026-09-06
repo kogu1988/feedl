@@ -11,6 +11,7 @@ import {
 import { getDb } from "@/lib/db";
 import { getDefaultBoardId } from "@/lib/db/board";
 import { apiKeys, posts } from "@/lib/db/schema";
+import { withIdempotency } from "@/lib/idempotency";
 import { postCreatedEventSchema } from "@/lib/validations/events";
 import { upsertApiUser } from "@/lib/users/api-user";
 import { inngest } from "@/inngest/client";
@@ -68,72 +69,77 @@ export async function POST(req: NextRequest) {
       // yoksay
     }
 
-    let body: unknown;
-    try {
-      body = await req.json();
-    } catch {
-      return NextResponse.json(
-        { success: false, error: "Geçersiz istek gövdesi." },
-        { status: 400 },
+    // Sprint 63x: idempotent yürütme — aynı Idempotency-Key ile tekrarlanan
+    // istek, ilk yanıtı döndürür (duplike geri bildirim / autopilot maliyeti
+    // oluşmaz). Auth + rate-limit buradan ÖNCE; gerçek işlem handler içinde.
+    return withIdempotency(req, key, async () => {
+      let body: unknown;
+      try {
+        body = await req.json();
+      } catch {
+        return NextResponse.json(
+          { success: false, error: "Geçersiz istek gövdesi." },
+          { status: 400 },
+        );
+      }
+
+      const parsed = createSchema.safeParse(body);
+      if (!parsed.success) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Kaynak 1-40 karakter, mesaj 10-4000 karakter olmalı.",
+          },
+          { status: 400 },
+        );
+      }
+
+      const author = await upsertApiUser(
+        parsed.data.author.email,
+        parsed.data.author.name,
       );
-    }
 
-    const parsed = createSchema.safeParse(body);
-    if (!parsed.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Kaynak 1-40 karakter, mesaj 10-4000 karakter olmalı.",
-        },
-        { status: 400 },
-      );
-    }
+      // Başlık verilmediyse mesajın ilk satırından (en fazla 140 kırpılır).
+      const autoTitle =
+        parsed.data.title ??
+        parsed.data.message.split("\n").find((l) => l.trim())?.slice(0, 140) ??
+        "Yeni geri bildirim";
 
-    const author = await upsertApiUser(
-      parsed.data.author.email,
-      parsed.data.author.name,
-    );
-
-    // Başlık verilmediyse mesajın ilk satırından (en fazla 140 kırpılır).
-    const autoTitle =
-      parsed.data.title ??
-      parsed.data.message.split("\n").find((l) => l.trim())?.slice(0, 140) ??
-      "Yeni geri bildirim";
-
-    const [created] = await getDb()
-      .insert(posts)
-      .values({
-        // Tenant izolasyonu: API anahtarının workspace'i (host değil).
-        workspaceId: key.workspaceId,
-        userId: author.id,
-        title: autoTitle,
-        description: parsed.data.message,
-        boardId: await getDefaultBoardId(key.workspaceId),
-        source: `inbound:${parsed.data.source}`,
-      })
-      .returning({ id: posts.id, title: posts.title });
-
-    try {
-      await inngest.send({
-        name: "post/created",
-        data: postCreatedEventSchema.parse({
-          postId: created.id,
-          title: created.title,
-          description: parsed.data.message,
+      const [created] = await getDb()
+        .insert(posts)
+        .values({
+          // Tenant izolasyonu: API anahtarının workspace'i (host değil).
+          workspaceId: key.workspaceId,
           userId: author.id,
-        }),
-      });
-    } catch (eventErr) {
-      console.error(
-        "[api/v1/feedbacks] POST event failed:",
-        eventErr instanceof Error ? eventErr.message : eventErr,
-      );
-    }
+          title: autoTitle,
+          description: parsed.data.message,
+          boardId: await getDefaultBoardId(key.workspaceId),
+          source: `inbound:${parsed.data.source}`,
+        })
+        .returning({ id: posts.id, title: posts.title });
 
-    return NextResponse.json(
-      { success: true, data: { id: created.id, title: created.title } },
-      { status: 201 },
-    );
+      try {
+        await inngest.send({
+          name: "post/created",
+          data: postCreatedEventSchema.parse({
+            postId: created.id,
+            title: created.title,
+            description: parsed.data.message,
+            userId: author.id,
+          }),
+        });
+      } catch (eventErr) {
+        console.error(
+          "[api/v1/feedbacks] POST event failed:",
+          eventErr instanceof Error ? eventErr.message : eventErr,
+        );
+      }
+
+      return NextResponse.json(
+        { success: true, data: { id: created.id, title: created.title } },
+        { status: 201 },
+      );
+    });
   } catch (err) {
     console.error("[api/v1/feedbacks] POST failed:", err);
     return NextResponse.json(

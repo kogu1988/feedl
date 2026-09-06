@@ -757,6 +757,40 @@ export const apiKeys = pgTable(
 export type ApiKey = typeof apiKeys.$inferSelect;
 export type NewApiKey = typeof apiKeys.$inferInsert;
 
+// api_idempotency: Sprint 63x — Public API idempotency. Müşteri POST (yeni
+// fikir / geri bildirim) tekrar gönderirse (timeout/retry) duplike kayıt
+// oluşmasın: `(apiKeyId, idempotencyKey)` benzersizdir; aynı anahtarla gelen
+// ikinci istek ilk yanıtı döndürür (`responseStatus` + `responseBody`).
+// `expiresAt` ile eski kayıtlar prune edilir (24s — retry penceresinden geniş).
+export const apiIdempotency = pgTable(
+  "api_idempotency",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    apiKeyId: uuid("api_key_id")
+      .notNull()
+      .references(() => apiKeys.id, { onDelete: "cascade" }),
+    idempotencyKey: text("idempotency_key").notNull(),
+    requestMethod: text("request_method").notNull(),
+    requestPath: text("request_path").notNull(),
+    responseStatus: integer("response_status").notNull(),
+    responseBody: jsonb("response_body").$type<Record<string, unknown>>().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("api_idempotency_key_scope_unique").on(
+      table.apiKeyId,
+      table.idempotencyKey,
+    ),
+    index("api_idempotency_expires_idx").on(table.expiresAt),
+  ],
+);
+
+export type ApiIdempotency = typeof apiIdempotency.$inferSelect;
+export type NewApiIdempotency = typeof apiIdempotency.$inferInsert;
+
 // webhook_endpoints: Sprint 34 — kayıtlı webhook alıcıları. secret alıcı
 // tarafında imza doğrulaması içindir; teslimat Inngest sendWebhooks
 // fonksiyonundan HMAC-SHA256 imzalı POST ile yapılır (retry Inngest'te).

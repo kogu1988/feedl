@@ -11,6 +11,7 @@ import {
 import { getDb } from "@/lib/db";
 import { apiKeys, comments, postFollowers, posts } from "@/lib/db/schema";
 import { commentCreatedEventSchema } from "@/lib/validations/events";
+import { withIdempotency } from "@/lib/idempotency";
 import { upsertApiUser } from "@/lib/users/api-user";
 import { inngest } from "@/inngest/client";
 
@@ -61,88 +62,92 @@ export async function POST(
     }
 
     const { id } = await params;
-    let body: unknown;
-    try {
-      body = await req.json();
-    } catch {
-      return NextResponse.json(
-        { success: false, error: "Geçersiz istek gövdesi." },
-        { status: 400 },
-      );
-    }
+    // Sprint 63x: idempotent yürütme — aynı Idempotency-Key ile tekrar eden
+    // istek duplike yorum + event oluşturmaz.
+    return withIdempotency(req, key, async () => {
+      let body: unknown;
+      try {
+        body = await req.json();
+      } catch {
+        return NextResponse.json(
+          { success: false, error: "Geçersiz istek gövdesi." },
+          { status: 400 },
+        );
+      }
 
-    const parsed = createCommentSchema.safeParse(body);
-    if (!parsed.success) {
-      return NextResponse.json(
-        { success: false, error: "Geçersiz yorum veya kullanıcı bilgisi." },
-        { status: 400 },
-      );
-    }
+      const parsed = createCommentSchema.safeParse(body);
+      if (!parsed.success) {
+        return NextResponse.json(
+          { success: false, error: "Geçersiz yorum veya kullanıcı bilgisi." },
+          { status: 400 },
+        );
+      }
 
-    const [post] = await getDb()
-      .select({ id: posts.id, mergedIntoId: posts.mergedIntoId })
-      .from(posts)
-      .where(
-        and(
-          // Tenant izolasyonu: API anahtarının workspace'i (host değil).
-          eq(posts.workspaceId, key.workspaceId),
-          eq(posts.id, id),
-        ),
-      )
-      .limit(1);
-    if (!post) {
-      return NextResponse.json(
-        { success: false, error: "Fikir bulunamadı." },
-        { status: 404 },
-      );
-    }
-    if (post.mergedIntoId) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Bu fikir başka bir fikirle birleştirildi; yorumunu hedef fikirde yazabilirsin.",
-        },
-        { status: 400 },
-      );
-    }
+      const [post] = await getDb()
+        .select({ id: posts.id, mergedIntoId: posts.mergedIntoId })
+        .from(posts)
+        .where(
+          and(
+            // Tenant izolasyonu: API anahtarının workspace'i (host değil).
+            eq(posts.workspaceId, key.workspaceId),
+            eq(posts.id, id),
+          ),
+        )
+        .limit(1);
+      if (!post) {
+        return NextResponse.json(
+          { success: false, error: "Fikir bulunamadı." },
+          { status: 404 },
+        );
+      }
+      if (post.mergedIntoId) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Bu fikir başka bir fikirle birleştirildi; yorumunu hedef fikirde yazabilirsin.",
+          },
+          { status: 400 },
+        );
+      }
 
-    const user = await upsertApiUser(parsed.data.user.email, parsed.data.user.name);
+      const user = await upsertApiUser(parsed.data.user.email, parsed.data.user.name);
 
-    const [created] = await getDb()
-      .insert(comments)
-      .values({
-        postId: post.id,
-        userId: user.id,
-        body: parsed.data.body,
-        isInternal: false,
-      })
-      .returning({ id: comments.id, createdAt: comments.createdAt });
-
-    await getDb()
-      .insert(postFollowers)
-      .values({ postId: post.id, userId: user.id })
-      .onConflictDoNothing();
-
-    try {
-      await inngest.send({
-        name: "post/comment.created",
-        data: commentCreatedEventSchema.parse({
-          commentId: created.id,
+      const [created] = await getDb()
+        .insert(comments)
+        .values({
           postId: post.id,
-          commenterUserId: user.id,
-        }),
-      });
-    } catch (eventErr) {
-      console.error(
-        "[api/v1/posts/[id]/comments] POST event failed:",
-        eventErr instanceof Error ? eventErr.message : eventErr,
-      );
-    }
+          userId: user.id,
+          body: parsed.data.body,
+          isInternal: false,
+        })
+        .returning({ id: comments.id, createdAt: comments.createdAt });
 
-    return NextResponse.json(
-      { success: true, data: { id: created.id, createdAt: created.createdAt } },
-      { status: 201 },
-    );
+      await getDb()
+        .insert(postFollowers)
+        .values({ postId: post.id, userId: user.id })
+        .onConflictDoNothing();
+
+      try {
+        await inngest.send({
+          name: "post/comment.created",
+          data: commentCreatedEventSchema.parse({
+            commentId: created.id,
+            postId: post.id,
+            commenterUserId: user.id,
+          }),
+        });
+      } catch (eventErr) {
+        console.error(
+          "[api/v1/posts/[id]/comments] POST event failed:",
+          eventErr instanceof Error ? eventErr.message : eventErr,
+        );
+      }
+
+      return NextResponse.json(
+        { success: true, data: { id: created.id, createdAt: created.createdAt } },
+        { status: 201 },
+      );
+    });
   } catch (err) {
     console.error("[api/v1/posts/[id]/comments] POST failed:", err);
     return NextResponse.json(
