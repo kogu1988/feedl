@@ -124,7 +124,7 @@ nav listesi Genel Bakış / Board'lar / Aktivasyon / AI İçgörüleri / Şirket
 Alanlar olur. `layout.tsx` `getDashboardScope()` ile `scope="admin|"team`
 prop'unu `AppSidebar`'a geçirir.
 
-- `app/(main)/layout.tsx`: `ClerkProvider(shadcn)` > `ThemeProvider` >
+- `app/(main)/layout.tsx`: `ClerkProvider(appearance: variables/elements)` > `ThemeProvider` >
   `flex min-h-svh flex-col` (üst bar / flex-1 içerik / alt bar).
 - **Üst bar** (`components/custom/site-header.tsx`): `h-14`,
   `sticky top-0 z-40 bg-background`; container **her sayfada tam genişlik**
@@ -312,7 +312,9 @@ oynar:
   provider `(main)`'de olduğu için gerekmedi.
 - **`/widget` izole:** bare root layout kullanır, temadan etkilenmez —
   widget'a özel CSS'ine dokunma.
-- Clerk ekranları shadcn teması; `html` `.dark` alınca koyulaşır.
+- Clerk ekranları shadcn görünümü (`lib/clerk-theme.ts` — inline
+  `variables`/`elements`, `@clerk/themes` paketi değil); `html` `.dark` alınca
+  koyulaşır.
 
 ## 7. Dokunma Kuralları
 

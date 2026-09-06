@@ -1,6 +1,7 @@
 import { ClerkProvider } from "@clerk/nextjs";
 import { trTR } from "@clerk/localizations";
-import { shadcn } from "@clerk/themes";
+
+import { clerkElements, clerkVariables } from "@/lib/clerk-theme";
 
 import { SiteHeader } from "@/components/custom/site-header";
 import { SiteFooter } from "@/components/custom/site-footer";
@@ -42,7 +43,10 @@ export default async function MainLayout({
   const brand = await getWorkspaceBrand();
   const brandStyle = workspaceBrandStyle(brand.brandColor);
   return (
-    <ClerkProvider localization={trTR} appearance={{ theme: shadcn }}>
+    <ClerkProvider
+      localization={trTR}
+      appearance={{ variables: clerkVariables, elements: clerkElements }}
+    >
       <ThemeProvider
         attribute="class"
         defaultTheme="system"
