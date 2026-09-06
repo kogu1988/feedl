@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 
 import { getDb } from "@/lib/db";
 import { workspaces } from "@/lib/db/schema";
-import { planFromString, PADDLE_ENV, verifyPaddleSignature } from "@/lib/paddle";
+import { PADDLE_ENV, verifyPaddleSignature } from "@/lib/paddle";
 
 // Sprint 48h (Faz 5) — Paddle webhook. subscription.activated → plan='pro',
 // subscription.canceled → plan='free'. İmza doğrulanır (PADDLE_WEBHOOK_SECRET

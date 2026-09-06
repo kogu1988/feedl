@@ -3,7 +3,6 @@ import { eq } from "drizzle-orm";
 
 import { CorpusInsights, type CorpusInsightsView } from "@/components/custom/corpus-insights";
 import { InsightsRefreshButton } from "@/components/custom/insights-refresh-button";
-import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/custom/empty-state";
 import { Notice } from "@/components/custom/notice";
 import { getTeamUserId } from "@/lib/auth/admin";

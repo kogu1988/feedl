@@ -23,14 +23,11 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId, isShowcaseRequest } from "@/lib/db/workspace";
-import { getRole } from "@/lib/auth/admin";
 import { listBoards, resolveBoardBySlug } from "@/lib/db/board";
 import { getPlanLimits } from "@/lib/paddle";
 import { summarize, trDateFormatter } from "@/lib/post-format";
@@ -413,46 +410,49 @@ export default async function PortalPage({
                     key={post.id}
                     className="transition-[transform,box-shadow] duration-150 ease-[var(--ease-out-quart)] hover:-translate-y-0.5 hover:shadow-xs dark:hover:ring-foreground/25"
                   >
-                    <CardHeader>
-                      <CardTitle className="leading-snug">
-                        <Link
-                          href={`/portal/${post.id}`}
-                          className="underline-offset-4 transition-colors hover:text-primary hover:underline"
-                        >
-                          {post.title}
-                        </Link>
-                      </CardTitle>
-                      <CardDescription className="flex flex-wrap items-center gap-2">
-                        {trDateFormatter.format(post.updatedAt)}
-                        <StatusBadge status={post.status} />
-                        {post.postType ? (
-                          <TypeBadge type={post.postType} />
-                        ) : null}
-                        <CommentCountBadge
-                          postId={post.id}
-                          count={post.commentCount}
-                        />
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="grid gap-2">
-                      {post.sentimentLabel ||
-                      (post.aiKeywords && post.aiKeywords.length > 0) ||
-                      (tagsByPost.get(post.id) ?? []).length > 0 ? (
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          {post.sentimentLabel ? (
-                            <SentimentBadge sentiment={post.sentimentLabel} />
-                          ) : null}
+                    <CardContent className="p-5">
+                      <div className="flex justify-between gap-4">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                            <CardTitle className="leading-snug">
+                              <Link
+                                href={`/portal/${post.id}`}
+                                className="underline-offset-4 transition-colors hover:text-primary hover:underline"
+                              >
+                                {post.title}
+                              </Link>
+                            </CardTitle>
+                            <StatusBadge status={post.status} />
+                            {post.postType ? (
+                              <TypeBadge type={post.postType} />
+                            ) : null}
+                            {post.sentimentLabel ? (
+                              <SentimentBadge sentiment={post.sentimentLabel} />
+                            ) : null}
+                          </div>
                           {(tagsByPost.get(post.id) ?? []).length > 0 ? (
-                            <TagChips tags={tagsByPost.get(post.id) ?? []} />
-                          ) : post.aiKeywords &&
-                            post.aiKeywords.length > 0 ? (
-                            <KeywordChips keywords={post.aiKeywords} max={4} />
+                            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                              <TagChips tags={tagsByPost.get(post.id) ?? []} />
+                            </div>
+                          ) : post.aiKeywords && post.aiKeywords.length > 0 ? (
+                            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                              <KeywordChips keywords={post.aiKeywords} max={4} />
+                            </div>
                           ) : null}
+                          <p className="mt-2 whitespace-pre-line text-sm text-muted-foreground">
+                            {summarize(post.description)}
+                          </p>
                         </div>
-                      ) : null}
-                      <p className="whitespace-pre-line text-sm text-muted-foreground">
-                        {summarize(post.description)}
-                      </p>
+                        <div className="flex shrink-0 flex-col items-end justify-between gap-3">
+                          <span className="text-xs text-muted-foreground">
+                            {trDateFormatter.format(post.updatedAt)}
+                          </span>
+                          <CommentCountBadge
+                            postId={post.id}
+                            count={post.commentCount}
+                          />
+                        </div>
+                      </div>
                     </CardContent>
                   </Card>
                 ))}
@@ -467,67 +467,75 @@ export default async function PortalPage({
                     key={post.id}
                     className="transition-[transform,box-shadow] duration-150 ease-[var(--ease-out-quart)] hover:-translate-y-0.5 hover:shadow-xs dark:hover:ring-foreground/25"
                   >
-                    <CardHeader>
-                      <div className="flex items-start justify-between gap-3">
-                        <CardTitle className="leading-snug">
-                          <Link
-                            href={`/portal/${post.id}`}
-                            className="underline-offset-4 transition-colors hover:text-primary hover:underline"
-                          >
-                            {post.title}
-                          </Link>
-                        </CardTitle>
-                        <Show when="signed-in">
-                          <VoteButton
-                            postId={post.id}
-                            initialCount={post.voteCount}
-                            initialVoted={votedIds.has(post.id)}
-                          />
-                        </Show>
-                        <Show when="signed-out">
-                          <ClerkTriggerButton
-                            mode="sign-in"
-                            variant="outline"
-                            size="sm"
-                            className="shrink-0 gap-1.5"
-                            aria-label="Oy vermek için giriş yap"
-                          >
-                            <ThumbsUpIcon className="size-4" aria-hidden="true" />
-                            {post.voteCount}
-                          </ClerkTriggerButton>
-                        </Show>
-                      </div>
-                      <CardDescription className="flex flex-wrap items-center gap-2">
-                        {trDateFormatter.format(post.createdAt)}
-                        <StatusBadge status={post.status} />
-                        {post.postType ? (
-                          <TypeBadge type={post.postType} />
-                        ) : null}
-                        <CommentCountBadge
-                          postId={post.id}
-                          count={post.commentCount}
-                        />
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="grid gap-2">
-                      {post.sentimentLabel ||
-                      (post.aiKeywords && post.aiKeywords.length > 0) ||
-                      (tagsByPost.get(post.id) ?? []).length > 0 ? (
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          {post.sentimentLabel ? (
-                            <SentimentBadge sentiment={post.sentimentLabel} />
-                          ) : null}
+                    <CardContent className="p-5">
+                      <div className="flex justify-between gap-4">
+                        {/* SOL: başlık + rozetler (sol üst), etiketler + metin (sol alt) */}
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                            <CardTitle className="leading-snug">
+                              <Link
+                                href={`/portal/${post.id}`}
+                                className="underline-offset-4 transition-colors hover:text-primary hover:underline"
+                              >
+                                {post.title}
+                              </Link>
+                            </CardTitle>
+                            <StatusBadge status={post.status} />
+                            {post.postType ? (
+                              <TypeBadge type={post.postType} />
+                            ) : null}
+                            {post.sentimentLabel ? (
+                              <SentimentBadge sentiment={post.sentimentLabel} />
+                            ) : null}
+                          </div>
+
                           {(tagsByPost.get(post.id) ?? []).length > 0 ? (
-                            <TagChips tags={tagsByPost.get(post.id) ?? []} />
-                          ) : post.aiKeywords &&
-                            post.aiKeywords.length > 0 ? (
-                            <KeywordChips keywords={post.aiKeywords} max={4} />
+                            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                              <TagChips tags={tagsByPost.get(post.id) ?? []} />
+                            </div>
+                          ) : post.aiKeywords && post.aiKeywords.length > 0 ? (
+                            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                              <KeywordChips keywords={post.aiKeywords} max={4} />
+                            </div>
                           ) : null}
+
+                          <p className="mt-2 whitespace-pre-line text-sm text-muted-foreground">
+                            {summarize(post.description)}
+                          </p>
                         </div>
-                      ) : null}
-                      <p className="whitespace-pre-line text-sm text-muted-foreground">
-                        {summarize(post.description)}
-                      </p>
+
+                        {/* SAĞ: tarih (sağ üst), yorum + beğeni (sağ alt) */}
+                        <div className="flex shrink-0 flex-col items-end justify-between gap-3">
+                          <span className="text-xs text-muted-foreground">
+                            {trDateFormatter.format(post.createdAt)}
+                          </span>
+                          <div className="flex items-center gap-3">
+                            <CommentCountBadge
+                              postId={post.id}
+                              count={post.commentCount}
+                            />
+                            <Show when="signed-in">
+                              <VoteButton
+                                postId={post.id}
+                                initialCount={post.voteCount}
+                                initialVoted={votedIds.has(post.id)}
+                              />
+                            </Show>
+                            <Show when="signed-out">
+                              <ClerkTriggerButton
+                                mode="sign-in"
+                                variant="outline"
+                                size="sm"
+                                className="shrink-0 gap-1.5"
+                                aria-label="Oy vermek için giriş yap"
+                              >
+                                <ThumbsUpIcon className="size-4" aria-hidden="true" />
+                                {post.voteCount}
+                              </ClerkTriggerButton>
+                            </Show>
+                          </div>
+                        </div>
+                      </div>
                     </CardContent>
                   </Card>
                 ))}

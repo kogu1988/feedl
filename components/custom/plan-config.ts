@@ -36,14 +36,9 @@ export const PRO_TRIAL_DAYS = 14;
 // Paddle'da başka bir projeye ait veriler olabileceğinden feedl'e ait tüm
 // ürün/fiyat/indirim/webhook adları ve custom_data anahtarları `feedl_`
 // önekiyle oluşturulur. Live fiyat ID'lerinin de bu kurala uyduğu doğrulanır;
-// kod yalnızca env'den okur (aşağıda).
-const assertFeedlPrefix = (id: string) => {
-  // Sadece geliştirme uyarısı: ID'ler Paddle'da üretildiği için koda mantık
-  // bağlamıyoruz, yalnızca isimlendirme disiplinini belgeliyoruz.
-  if (process.env.NODE_ENV === "development" && id && !id.startsWith("feedl_")) {
-    console.warn(`[feedl] Paddle price ID 'feedl_' öneki taşımıyor: ${id}`);
-  }
-};
+// kod yalnızca env'den okur (yukarıda). Bu bir isimlendirme disiplinidir —
+// koda doğrulama bağlanmaz (Paddle ID'leri Paddle'da üretilir, önek üretilen
+// ada göre manuel verilir).
 
 // Paddle müşteri portalı: Paddle.js v1 portal API'si sunmaz; portal HOSTED bir
 // sayfa. Yönetici `NEXT_PUBLIC_PADDLE_CUSTOMER_PORTAL_URL` ile tam portal
