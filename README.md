@@ -140,6 +140,21 @@ npm test        # Vitest birim testleri
 npm run test:e2e  # Playwright + axe erişilebilirlik + auth akışı (çalışan sunucu gerekir)
 ```
 
+### Test durumu (2026-09-07)
+
+| Katman | Sonuç | Kapsam |
+| :--- | :--- | :--- |
+| **Birim test** (`npm test`) | ✅ 19 dosya · **88 test geçti** | Saf mantık: renk/WCAG, sayfalama, CSV, şifreleme, rate-limit, Paddle imza+plan türetme, oy doğrulama, post-format, post-search, widget-origins, workspace-host çözümleme, AI içgörüleri, OpenRouter modelleri, e-posta teslimatı, api-keys, davet e-postası |
+| **Tenant izolasyonu** | ✅ `resolveWorkspaceByHost` öncelik sırası (custom_domain > subdomain > varsayılan) + hata | `tests/lib/tenant-isolation.test.ts` |
+| **Paddle plan türetme** | ✅ `derivePlanFromStatus` (trialing/active→pro; canceled/past_due/dunned→free; unknown→null) | `tests/lib/paddle-plans.test.ts` |
+| **Merge/unmerge karar mantığı** | ✅ Şema doğrulama (uuid, self-merge) + reason→HTTP eşleme | `tests/lib/post-merge.test.ts` |
+| **E2E smoke** (`test:e2e`) | ⚠️ Sunucu gerekir; deploy/CI'da koşar | Ana yüzeyler + public API yüzeyi (OpenAPI, v1 401 gate) + axe a11y |
+| **E2E auth akışı** | ⚠️ Clerk test env + seed gerekir; yoksa otomatik atlanır | Admin dashboard erişimi + portal fikir oluşturma |
+
+> Gerçek Neon/CI çalıştırması için: `npm run build && npm run start` sonrası
+> `npm run test:e2e`. DB-backed testler Neon test şeması ister (prod DB'ye
+> test koşulmaz).
+
 > **E2E auth akışı (`e2e/auth-flow.spec.ts`):** Clerk test env'leri
 > (`CLERK_SECRET_KEY` + `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`) yoksa akış otomatik
 > atlanır (CI gizli anahtarsız yeşil). Etkinleştirmek için Clerk dev instance
