@@ -115,7 +115,36 @@ test kapsamı, marka aksanı ve birkaç DRY/operasyonel borç.
 
 ---
 
-## 7. Kaynak dosyalar (incelenen)
+## 7. Uygulama durumu (2026-09-06, commit `20fcea5`)
+
+### ✅ Tamamlananlar
+| Madde | Commit | Not |
+|---|---|---|
+| F1 `textOn` DRY + WCAG düzeltme | `34d643b` | `lib/color.ts` tek kaynak; mercan üstü beyaz kontrast bug'ı düzeltildi |
+| F7 `.env.example` env notları | `34d643b` | Yerel `.env.example` (gitignored) güncel |
+| B1 Sentry + `lib/logger` | `34d643b` | `@sentry/nextjs` + config + instrumentation; DSN yoksa no-op |
+| B2 FK index'ler | `34d643b` | migration `0046` (votes.post_id, posts.user_id/board_id, comments.user_id) |
+| B4 AI fallback zinciri | `34d643b` | `chatModels()` env-tabanlı (LLM_MODEL / LLM_FALLBACK_MODEL) |
+| B3 Playwright E2E smoke | `0275ab2` | `playwright.config.ts` + `e2e/smoke.spec.ts` (dışarıda çalışır) |
+| F3 workspace marka aksanı | `fced119` | Layout CSS var override (WCAG text + soft/tint) |
+| F4 `Select` primitive | `fced119` | `components/ui/select.tsx` + 2 ana kullanım |
+| B6 post-search fold tek kaynak | `fced119` | `TR_FOLD_MAP`'ten SQL source/target türetilir + invariant test |
+| B8 `getWorkspaceId` request cache | `20fcea5` | `React.cache()` (global sızma bug'ı düzeltildi) |
+
+### ⏸️ Ertelenenler (onay / özel doğrulama gerektirir)
+| Madde | Neden ertelendi |
+|---|---|
+| F2 canonical server-side | Client `<link rel=canonical>` yeterli; `generateMetadata`'de path alınamaz (App Router) — middleware+header çözümü büyük |
+| B9 Dependabot kalıcı | Vuln'lar non-runtime (web bundle'ında yok); `@clerk/ui` kaldırma görsel doğrulama ister → GitHub Security UI'da "not exploitable" dismiss önerilir |
+| B5 embedding HNSW | 2048-dim > HNSW 2000 cap; halfvec/type değişikliği + re-index — yüksek risk |
+| B7 schema.ts bölme | 1106 satır tek dosya; mekanik ama breaking riski — ayrı refactor |
+| F5 component yakınlaştırma | Görsel doğrulama gerektirir; kör birleştirme riskli |
+| F6 erişilebilirlik audit | Kapsamlı manuel/axe denetimi — batch olarak |
+| B10 changelog email korrelasyonu | Şema + logic; ayrı sprint |
+
+---
+
+## 8. Kaynak dosyalar (incelenen)
 
 - Frontend: `app/globals.css`, `app/(main)/**`, `components/custom/**` (70),
   `components/ui/**` (11), `site-header.tsx`, `site-footer.tsx`, `canonical-link.tsx`.
