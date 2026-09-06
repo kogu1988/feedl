@@ -1,6 +1,8 @@
 import { and, asc, count, desc, eq, inArray, sql } from "drizzle-orm";
 import { NonRetriableError } from "inngest";
 
+import { planFromString } from "@/lib/paddle";
+
 import { analyzeIdea, compareIdeas, normalizeTags } from "@/lib/ai/analysis";
 import { analyzeCorpus } from "@/lib/ai/insights";
 import { embedText } from "@/lib/ai/openrouter";
@@ -795,6 +797,39 @@ export const corpusInsights = inngest.createFunction(
         .set({ corpusInsightsStatus: "pending", updatedAt: new Date() })
         .where(eq(workspaces.id, workspaceId));
     });
+
+    // Sprint 63n — defense-in-depth: workspace artık pro değilse (downgrade
+    // veya sırada bekleyen eski event) LLM çağrısı ÜRETME. Kuyrukta kalan bir
+    // event bile maliyet doğurmaz; cache'e "pro gerekir" notu yazılır.
+    const planKey = await step.run("check-plan", async () => {
+      const [row] = await db
+        .select({ plan: workspaces.plan })
+        .from(workspaces)
+        .where(eq(workspaces.id, workspaceId))
+        .limit(1);
+      return planFromString(row?.plan);
+    });
+    if (planKey !== "pro") {
+      await step.run("store-pro-required", async () => {
+        await db
+          .update(workspaces)
+          .set({
+            corpusInsightsStatus: "done",
+            corpusInsightsAt: new Date(),
+            corpusInsights: {
+              themes: [],
+              trends: [],
+              quickWins: [],
+              risks: [],
+              recommendation:
+                "AI içgörüleri Pro plan özelliğidir. Workspace Pro plana geçince yeniden analiz edilebilir.",
+            },
+            updatedAt: new Date(),
+          })
+          .where(eq(workspaces.id, workspaceId));
+      });
+      return { status: "done", corpusSize: 0, planned: "free" };
+    }
 
     // En çok oy alan fikirleri topla (aynı MAX_CORPUS sınırı).
     const rows = await step.run("load-corpus", async () => {

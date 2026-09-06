@@ -1,11 +1,14 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { eq } from "drizzle-orm";
 
 import { CorpusInsights, type CorpusInsightsView } from "@/components/custom/corpus-insights";
 import { InsightsRefreshButton } from "@/components/custom/insights-refresh-button";
 import { EmptyState } from "@/components/custom/empty-state";
 import { Notice } from "@/components/custom/notice";
+import { Button } from "@/components/ui/button";
 import { getTeamUserId } from "@/lib/auth/admin";
+import { getPlanLimits } from "@/lib/paddle";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { workspaces } from "@/lib/db/schema";
@@ -13,10 +16,9 @@ import { workspaces } from "@/lib/db/schema";
 // Canlı veri — ama LLM çağrısı YOK (arka planda Inngest).
 export const dynamic = "force-dynamic";
 
-// Sprint 63l — corpus AI içgörüleri artık ARKA PLANDA üretilir ve workspace
-// üzerinde cache'lenir (workspaces.corpus_insights). Sayfa cache'i okur;
-// "Yenile" /api/corpus-insights'a POST atar → Inngest üretir ve cache'ler.
-// Böylece yavaş ücretsiz LLM yüzünden sayfa 500/blank olmaz.
+// Sprint 63l — corpus AI içgörüleri arka planda üretilir, cache'lenir.
+// Sprint 63n (kullanıcı): Pro özelliği — free workspace'te "Yenile" butonu yok;
+// yerine Pro'ya yükseltme çağrısı. LLM maliyeti free'de üretilmez.
 export default async function InsightsPage() {
   const teamId = await getTeamUserId();
   if (!teamId) {
@@ -25,15 +27,40 @@ export default async function InsightsPage() {
 
   try {
     const workspaceId = await getWorkspaceId();
+    const planKey = (await getPlanLimits()).key;
     const [row] = await getDb()
       .select({
         corpusInsights: workspaces.corpusInsights,
-        corpusInsightsAt: workspaces.corpusInsightsAt,
         corpusInsightsStatus: workspaces.corpusInsightsStatus,
       })
       .from(workspaces)
       .where(eq(workspaces.id, workspaceId))
       .limit(1);
+
+    const isPro = planKey === "pro";
+
+    // Free workspace → içgörü Pro kilitli. Cache'te eski içgörü varsa da göster.
+    if (!isPro) {
+      return (
+        <main className="container mx-auto max-w-none p-4 sm:p-8">
+          <h1 className="text-2xl font-bold tracking-tight">AI İçgörüleri</h1>
+          <p className="mt-2 text-muted-foreground">
+            Geri bildirim korpusunu analiz eder — temalar, trendler, riskler ve
+            hızlı kazanımlar.
+          </p>
+          <EmptyState size="lg" title="AI İçgörüleri Pro plan özelliğidir" className="mt-8">
+            Korpus analizi (tema/trend/risk) Pro planda sunulur. Yükseltmek için
+            faturalandırmayı aç.
+            <Button
+              className="mt-4"
+              render={<Link href="/dashboard/billing" />}
+            >
+              Pro&apos;ya Yükselt
+            </Button>
+          </EmptyState>
+        </main>
+      );
+    }
 
     const corpusInsights = (row?.corpusInsights ?? null) as CorpusInsightsView | null;
     const status = row?.corpusInsightsStatus ?? "idle";
@@ -59,11 +86,7 @@ export default async function InsightsPage() {
         ) : corpusInsights ? (
           <CorpusInsights data={corpusInsights} />
         ) : (
-          <EmptyState
-            size="lg"
-            title="Henüz AI içgörüsü yok"
-            className="mt-8"
-          >
+          <EmptyState size="lg" title="Henüz AI içgörüsü yok" className="mt-8">
             Portala ilk fikirleri gönder ve &quot;Yenile&quot;ye bas — korpus
             analizi arka planda üretilir.
           </EmptyState>
