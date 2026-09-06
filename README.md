@@ -157,10 +157,15 @@ npm run test:e2e  # Playwright + axe erişilebilirlik + auth akışı (çalışa
 
 > **E2E auth akışı (`e2e/auth-flow.spec.ts`):** Clerk test env'leri
 > (`CLERK_SECRET_KEY` + `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`) yoksa akış otomatik
-> atlanır (CI gizli anahtarsız yeşil). Etkinleştirmek için Clerk dev instance
-> "fakes" özelliği açık olmalı ve admin kullanıcı
-> `node scripts/seed-e2e.mjs <clerkSubId>` ile DB'de seed'lenmeli (yerel
-> script — gitignored).
+> atlanır (CI gizli anahtarsız yeşil). Etkinleştirmek için:
+> 1. Clerk **dev instance**'da **Fakes** (test kullanıcıları) özelliğini aç
+>    (Instance Settings → Dev / Testing).
+> 2. `/api/webhooks/clerk` webhook'u kurulu olsun — fake kullanıcı girişinde
+>    `user.created` DB'ye gerçek `user_...` ID ile kayıt düşürür.
+> 3. Fake kullanıcının e-postasıyla admin yap:
+>    `node scripts/seed-e2e.mjs "test+clerk_test@example.com" feedl`
+>    (yerel script — gitignored; e-postayı gerçek fake e-postasıyla değiştir).
+> 4. `npm run test:e2e` (çalışan sunucu + yerel DB).
 
 > Not: Deploy, `main`'e push ile otomatiktir. Vercel Hobby planında kayan
 > 24 saatte ~100 deploy limiti vardır — commit'leri biriktirip tek push'ta
