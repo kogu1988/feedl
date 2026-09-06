@@ -4,11 +4,12 @@ import { useState } from "react";
 import { ChevronDownIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 
 // Sprint 63k — açılır-kapanır (accordion) kart. Varsayılan KAPALI; kullanıcı
 // isterse açar. Erişilebilir: <button aria-expanded> + <div role="region">.
-// Tasarım kanonu: Card kabuğu + başlık satırı + Chevron; içerik açılınca.
+// Başlık satırı solda (title + opsiyonel açıklama, min-w-0 flex-1 — uzun
+// başlıkta sıkışma/taşma olmasın), sağda chevron; padding Card ile tutarlı.
 export function Disclosure({
   title,
   description,
@@ -32,17 +33,17 @@ export function Disclosure({
         aria-expanded={open}
         aria-controls={`disclosure-${id}`}
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full cursor-pointer items-center justify-between gap-3 rounded-t-lg text-left"
+        className="flex w-full cursor-pointer items-start justify-between gap-3 px-6 py-4 text-left"
       >
-        <CardHeader className="py-4">
-          <CardTitle>{title}</CardTitle>
+        <span className="min-w-0 flex-1 grid gap-1">
+          <span className="text-base font-semibold leading-snug">{title}</span>
           {description ? (
-            <CardDescription className="mt-1">{description}</CardDescription>
+            <span className="text-sm text-muted-foreground">{description}</span>
           ) : null}
-        </CardHeader>
+        </span>
         <ChevronDownIcon
           className={cn(
-            "mr-4 size-4 shrink-0 text-muted-foreground transition-transform duration-200",
+            "mt-0.5 size-4 shrink-0 text-muted-foreground transition-transform duration-200",
             open && "rotate-180",
           )}
           aria-hidden="true"
