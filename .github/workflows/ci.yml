@@ -5,6 +5,12 @@ on:
     branches: [main]
   pull_request:
 
+# Aynı dal için yalnızca EN SON CI çalışması koşar (eskisi iptal edilir) —
+# Sık push'ta kuyruk/limit birikmesini ve gereksiz build maliyetini azaltır.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test-and-build:
     runs-on: ubuntu-latest
