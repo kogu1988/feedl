@@ -202,25 +202,44 @@ prop'unu `AppSidebar`'a geçirir.
 - **Button varyantları:** `default` (mercan/mürekkep) `outline` `secondary`
   `ghost` `destructive` (soft) `link`; boyutlar `default` `xs` `sm` `lg`
   `icon` `icon-xs` `icon-sm` `icon-lg`.
-- **`components/custom/`** — ürün kalıpları. Başlıca: `site-header`,
-  `app-sidebar`, `theme-toggle`, `status-badge`, `sentiment-badge`, `type-badge`,
-  `vote-button`, `comment-card`, `comment-form`, `filter-tabs`,
-  `keyword-chips`, `tag-chips`, `posts-table`, `autopilot-inbox`,
-  `merge-controls`, `roadmap-planner`, `changelog-admin`, `new-post-dialog`,
-  `companies-manager`, `opportunity-link-controls`, `widget-post-form`,
-  `widget-vote-button`, `widget-setup`, `api-keys-manager`,
-  `webhooks-manager`, `saved-view-bar`, `analytics-overview`,
-  `not-found-view`, `page-breadcrumb`, `notice`, `empty-state`,
-  `integrations-panel`.
-- **Entegrasyon kartı ızgarası (2026-09-06):** `integrations-panel.tsx` —
-  settings'te per-workspace connector kartları grid'i (`sm:grid-cols-2`); her
-  kart bağlıysa durum + webhook URL + kes, değilse credential alanları +
-  bağlan. Linear ayrı kart (mevcut).
-- **Boş durum tek kaynak (2026-09-06):** liste/sayfa boş durumları
-  `empty-state.tsx` (EmptyState) bileşeninden geçer — `rounded-lg` kesikli
-  kenarlık, `size="sm"` (p-6) vs `size="lg"` (p-10), opsiyonel
-  `title`/`children`/`action`. (Error sayfası/404 — `not-found-view` —
-  ikon/numara içerdiğinden ayrı kalır.)
+- **`components/custom/`** — ürün kalıpları. YÜZEYE GÖRE tasarım kanonu (2026-09-06
+  güncel, eksiksiz liste — yeni bileşeni buraya eklemezsen kanon dışı kalır):
+
+  **Kabuk / shared**
+  `site-header` · `site-footer` · `app-sidebar` · `theme-provider` · `theme-toggle`
+  · `clerk-trigger-button` · `page-breadcrumb` · `filter-tabs` · `pagination-footer`
+  · `notice` (hata/kutu) · `empty-state` (boş durum) · `not-found-view` · `markdown-content`
+
+  **Portal topluluk**
+  `keyword-chips` · `tag-chips` · `status-badge` · `type-badge` · `sentiment-badge`
+  · `vote-button` · `comment-card` · `comment-form` · `comment-count-badge`
+  · `follow-button` · `new-post-dialog` · `corpus-insights` · `demo-post-card`
+
+  **Admin yönetim**
+  `posts-table` · `status-select` · `type-select` · `board-select`
+  · `board-filter-select` · `saved-view-bar` · `autopilot-inbox` · `merge-controls`
+  · `roadmap-planner` · `roadmap-columns` · `changelog-admin`
+  · `changelog-subscribe-form` (public) · `companies-manager`
+  · `opportunity-link-controls` · `custom-fields-manager` · `custom-values-panel`
+  · `members-manager` · `workspaces-manager` · `workspace-settings`
+  · `boards-manager` · `activation-funnel` · `analytics-overview` · `revenue-report`
+  · `api-keys-manager` · `webhooks-manager` · `widget-origins-manager`
+  · `widget-setup` · `billing-manager` · `pricing-manager` (public)
+  · `integrations-panel` · `linear-integration` · `import-csv-button`
+
+  **Onboarding / auth**
+  `onboarding-wizard` · `onboarding-checklist` · `invite-accept-form`
+
+  **Widget (izole / bare)**
+  `widget-post-form` · `widget-vote-button` · `widget-triage`
+
+  **Saf veri/konfig**
+  `plan-config` (.ts — Paddle plan sabitleri)
+
+- **Eski vs yeni kalıp (2026-09-06 not):** bileşenler paylaşılan tek-kaynakları
+  kullanır — Badge (status/type/sentiment), Notice (hata), EmptyState (boş durum),
+  Button render-Link. Yeni bileşen bu tek-kaynaklardan üretilir; kopya kabuk
+  yazılmaz.
 - **Hata/bilgi kutusu tek kaynak (2026-09-06):** destructive hata bildirimleri
   `notice.tsx` (Notice) bileşeninden geçer — satır içi kompakt `size="sm"`,
   sayfa düzeyi `size="md"`; `rounded-md` (küçük eleman radius). Kopya
