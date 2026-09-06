@@ -5,8 +5,13 @@ import { and, eq } from "drizzle-orm";
 import { getDb } from "./index";
 import { getWorkspaceId } from "./workspace";
 import { getDefaultBoardId } from "./board";
-import { posts, postTags, tags, users } from "./schema";
+import { posts, postTags, tags, users, votes } from "./schema";
 import { statusLabels, typeLabels } from "@/lib/post-format";
+
+// Canny'den gelen oy sayısı: sentetik oy kullanıcıları ile `votes`'a taşınır.
+// `votes.user_id → users.id NOT NULL` + `unique(user_id, post_id)` olduğu için
+// her oyya benzersiz sentetik kimlik gerekir. Cap, veri şişkinliğini önler.
+const MAX_IMPORT_VOTES_PER_POST = 1000;
 
 // Sprint 59 (madde — import): CSV'den feedback importu. Export CSV formatıyla
 // uyumlu; Türkçe başlıklar (Başlık, Açıklama, Durum, Tür, Etiketler) kabul edilir.
@@ -37,6 +42,7 @@ const cannyStatusToEnum: Record<string, string> = {
 };
 
 // Canny CSV başlık takma adları → feedl kanonik alan adı.
+// (İleri import: oy/yazar/yorum sayısı Canny export'undan taşınır.)
 const cannyHeaderAliases: Record<string, string> = {
   name: "title",
   headline: "title",
@@ -46,6 +52,15 @@ const cannyHeaderAliases: Record<string, string> = {
   state: "status",
   category: "tags",
   labels: "tags",
+  votes: "votes",
+  upvotes: "votes",
+  vote_count: "votes",
+  author: "author",
+  author_email: "author",
+  email: "author",
+  comment_count: "commentCount",
+  comments: "commentCount",
+  commentCount: "commentCount",
 };
 
 // CSV/Canny başlık takma adları → normalize kanonik alan adı.
@@ -65,6 +80,18 @@ const headerAliases: Record<string, string> = {
   tags: "tags",
   etiket: "tags",
   tag: "tags",
+  oy: "votes",
+  oy_sayisi: "votes",
+  upvotes: "votes",
+  votes: "votes",
+  vote_count: "votes",
+  yazar: "author",
+  author: "author",
+  author_email: "author",
+  email: "author",
+  yorum_sayisi: "commentCount",
+  comment_count: "commentCount",
+  comments: "commentCount",
   ...cannyHeaderAliases,
 };
 
@@ -103,6 +130,27 @@ export async function importPosts(
       role: "customer",
     })
     .onConflictDoNothing();
+
+  // Yazar (Canny `author`/`email`) varsa onu oluştur; yoksa import_csv.
+  // Deterministik: email'den türetilmiş id (aynı satır tekrar gelirse aynı user).
+  const authorIdx = canonical.indexOf("author");
+  const authorEmail = authorIdx >= 0 ? (rows[0]?.[authorIdx] ?? "").trim() : "";
+  const authorUserIds = new Map<string, string>();
+  if (authorEmail) {
+    const slug = authorEmail.replace(/[^a-z0-9_]/gi, "_").toLowerCase();
+    const authorId = `import_author_${slug.slice(0, 60)}`;
+    await getDb()
+      .insert(users)
+      .values({
+        id: authorId,
+        email: authorEmail,
+        name: authorEmail.split("@")[0] || "Canny Author",
+        role: "customer",
+      })
+      .onConflictDoNothing();
+    // Satır bazlı (her satırın kendi author'u olabilir) — ilk satırdan map.
+    authorUserIds.set(authorEmail.toLowerCase(), authorId);
+  }
 
   // Mevcut başlıkları topla (idempotent dedupe için).
   const existing = await getDb()
@@ -152,21 +200,46 @@ export async function importPosts(
       (VALID_TYPES.includes(typeRaw as (typeof VALID_TYPES)[number]) ? (typeRaw as (typeof VALID_TYPES)[number]) : undefined)
     );
 
+    // Oy sayısı (Canny `Votes`/`upvotes`) — en çok oy metriği doğru çıksın.
+    const votesRaw = canonical.indexOf("votes") >= 0
+      ? parseInt((row[canonical.indexOf("votes")] ?? "").replace(/\D/g, ""), 10)
+      : 0;
+    const voteCount = Number.isFinite(votesRaw)
+      ? Math.min(Math.max(votesRaw, 0), MAX_IMPORT_VOTES_PER_POST)
+      : 0;
+    // Yorum sayısı (body yok → sadece iç not olarak açıklamaya eklenir).
+    const commentCountRaw = canonical.indexOf("commentCount") >= 0
+      ? parseInt((row[canonical.indexOf("commentCount")] ?? "").replace(/\D/g, ""), 10)
+      : 0;
+    const commentCount = Number.isFinite(commentCountRaw)
+      ? Math.max(commentCountRaw, 0)
+      : 0;
+    // Yazar (satır bazlı).
+    const rowAuthor = authorIdx >= 0 ? (row[authorIdx] ?? "").trim() : "";
+    const rowAuthorId = rowAuthor
+      ? (authorUserIds.get(rowAuthor.toLowerCase()) ?? authorUserIds.get(authorEmail.toLowerCase()) ?? importUserId)
+      : importUserId;
+
     try {
       const [created] = await db
         .insert(posts)
         .values({
           workspaceId,
           boardId,
-          userId: importUserId,
+          userId: rowAuthorId,
           title: rawTitle.slice(0, 140),
-          description: description || rawTitle,
+          description: buildDescription(description, rawTitle, commentCount),
           status: status as (typeof VALID_STATUSES)[number],
           postType: postType ?? null,
           source,
         })
         .returning({ id: posts.id });
       existingTitles.add(titleKey);
+
+      // Canny'den gelen oy sayısı → sentetik oy satırları (portal metrik doğru).
+      if (created?.id && voteCount > 0) {
+        await importVotes(created.id, voteCount, db);
+      }
 
       // Etiketler: "#etiket1 #etiket2" veya "etiket1, etiket2" formatı.
       for (const raw of parseTags(tagsRaw)) {
@@ -212,4 +285,49 @@ function parseTags(raw: string): string[] {
     .map((t) => t.replace(/^#+/, ""))
     .filter(Boolean)
     .slice(0, 20);
+}
+
+// Canny'den gelen yorum sayısı: body yok (CSV sadece sayı) → gerçek yorum
+// satırı üretilemez, açıklamanın sonuna aktarım iç notu olarak eklenir.
+function buildDescription(description: string, fallbackTitle: string, commentCount: number): string {
+  const base = description || fallbackTitle || "";
+  if (commentCount > 0) {
+    return `${base}\n\n> *Canny'den ${commentCount} yorum aktarıldı.*`;
+  }
+  return base;
+}
+
+// Canny `Votes` sayısını `votes` tablosuna gerçek satırlar olarak taşır.
+// Her oy için benzersiz sentetik kullanıcı (unique(user_id, post_id) gereği).
+// Batch insert ile satır sayısı optimize edilir.
+async function importVotes(
+  postId: string,
+  count: number,
+  db: ReturnType<typeof getDb>,
+): Promise<void> {
+  const BATCH = 100;
+  for (let start = 0; start < count; start += BATCH) {
+    const end = Math.min(start + BATCH, count);
+    const rows = [];
+    for (let i = start; i < end; i++) {
+      const uid = `import_vote_${postId}_${i}`;
+      rows.push({ userId: uid, postId });
+    }
+    // Kullanıcıları upsert (tek tek insert — kullanıcı sayısı votes kadar).
+    await db
+      .insert(users)
+      .values(
+        rows.map((r) => ({
+          id: r.userId,
+          email: `${r.userId}@feedl.import`,
+          name: "Canny Voter",
+          role: "customer" as const,
+        })),
+      )
+      .onConflictDoNothing();
+    await db
+      .insert(votes)
+      .values(rows)
+      .onConflictDoNothing();
+  }
 }
