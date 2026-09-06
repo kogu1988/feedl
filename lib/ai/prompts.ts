@@ -1,5 +1,6 @@
-// Prompt şablonlarının tek kaynağı docs/prompts.md'dir (§1 ve §2); bu dosya
-// onları koda birebir taşır. Doküman değişirse burası da değişmeli.
+// AI prompt şablonlarının TEK kaynağı — tüm AI akışları buradan beslenir
+// (analyzeIdea, compareIdeas, corpus-insights, classifyWidgetMessage).
+// `docs/prompts.md` artık yok; çift kaynak drift riski ortadan kalktı.
 
 export const ANALYZE_IDEA_SYSTEM_PROMPT = `Sen bir ürün geri bildirim analisti uzmanısın. Görevin, kullanıcıların yazdığı özellik isteklerini analiz etmek.
 Verilen metni oku ve aşağıdaki JSON formatında kesinlikle geçerli bir yanıt döndür.
