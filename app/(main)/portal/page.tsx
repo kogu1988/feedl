@@ -25,6 +25,7 @@ import { getDb } from "@/lib/db";
 import { getWorkspaceId, isShowcaseRequest } from "@/lib/db/workspace";
 import { listBoards, resolveBoardBySlug } from "@/lib/db/board";
 import { PoweredByFeedl } from "@/components/custom/powered-by-feedl";
+import { generateCanonical } from "@/lib/seo";
 import { summarize, trDateFormatter } from "@/lib/post-format";
 import { buildPostSearch, type PostSearch } from "@/lib/post-search";
 import { parsePagination } from "@/lib/pagination";
@@ -32,6 +33,11 @@ import { comments, postTags, posts, tags, votes } from "@/lib/db/schema";
 
 // Canlı liste: her istekte DB'den okunur, build zamanında dondurulmaz.
 export const dynamic = "force-dynamic";
+
+// F2: server-side canonical (tam path + workspace custom domain).
+export async function generateMetadata(): Promise<import("next").Metadata> {
+  return generateCanonical();
+}
 
 // Sprint 48c: portal linki üretici — aktif board slug'ını ve diğer
 // filtreleri (q/sort/tag) korur.

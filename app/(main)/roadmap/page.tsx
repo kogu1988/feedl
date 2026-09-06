@@ -4,6 +4,7 @@ import { PageBreadcrumb } from "@/components/custom/page-breadcrumb";
 import { Notice } from "@/components/custom/notice";
 import { PoweredByFeedl } from "@/components/custom/powered-by-feedl";
 import { RoadmapColumns } from "@/components/custom/roadmap-columns";
+import { generateCanonical } from "@/lib/seo";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId, isShowcaseRequest } from "@/lib/db/workspace";
 import { getAdminUserId, getSessionUserId } from "@/lib/auth/admin";
@@ -17,6 +18,11 @@ import { boards, comments, posts, votes } from "@/lib/db/schema";
 
 // Canlı liste: her istekte DB'den okunur, build zamanında dondurulmaz.
 export const dynamic = "force-dynamic";
+
+// F2: server-side canonical.
+export async function generateMetadata(): Promise<import("next").Metadata> {
+  return generateCanonical();
+}
 
 const columnMeta: Record<string, { title: string; dotClass: string }> = {
   planned: { title: "Planlandı", dotClass: "bg-sky-500" },

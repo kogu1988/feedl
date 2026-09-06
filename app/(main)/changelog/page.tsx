@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { getDb } from "@/lib/db";
 import { PoweredByFeedl } from "@/components/custom/powered-by-feedl";
 import { getWorkspaceId, isShowcaseRequest } from "@/lib/db/workspace";
+import { generateCanonical } from "@/lib/seo";
 import {
   changelogEntries,
   changelogPostLinks,
@@ -25,10 +26,15 @@ import { trDateTimeFormatter } from "@/lib/post-format";
 // (Canny changelog modeli). Herkes okuyabilir; yazma yalnızca admin.
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "Changelog — feedl",
-  description: "Yeni özellikler, iyileştirmeler ve düzeltmeler.",
-};
+// F2: statik metadata + server-side canonical (tam path üreten).
+export async function generateMetadata(): Promise<import("next").Metadata> {
+  const canonical = await generateCanonical();
+  return {
+    title: "Changelog — feedl",
+    description: "Yeni özellikler, iyileştirmeler ve düzeltmeler.",
+    ...canonical,
+  };
+}
 
 const labelStyles: Record<string, string> = {
   yeni: "border-emerald-600/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",

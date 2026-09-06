@@ -100,6 +100,12 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
   if (!isPublicRoute(req)) {
     await auth.protect();
   }
+
+  // F2 (Sprint 63y): server-side canonical için tam path'i `generateMetadata`'e
+  // taşır (App Router'da full path metadata'ya gelmez; header ile geçirilir).
+  const headers = new Headers(req.headers);
+  headers.set("x-feedl-pathname", req.nextUrl.pathname);
+  return NextResponse.next({ request: { headers } });
 });
 
 export const config = {
