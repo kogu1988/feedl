@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { CheckIcon, ChevronDownIcon, Loader2Icon } from "lucide-react";
+import { Loader2Icon } from "lucide-react";
 
 import { statusLabels } from "@/lib/post-format";
 import { Button } from "@/components/ui/button";
@@ -15,13 +15,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 // Durum etiketleri TEK kaynaktan gelir: lib/post-format.ts statusLabels
 // (Sprint 9 "statusLabels dersi" — kopyalama yasak). Burada yalnızca
@@ -46,6 +39,9 @@ export function statusLabel(status: string): string {
 
 // Admin için durum seçici: seçim PATCH /api/admin/posts'e gider,
 // sayfa sunucu verisiyle tazelenir.
+// Spread 63w (F4): Tek standart olan native <select> kabuğuna geçti
+// (BoardSelect ile aynı görünüm) — menü tabanlı DropdownMenu yerine.
+// Değişim yine dialog akışından geçer (opsiyonel açıklama, shipped bildirimi).
 export function StatusSelect({
   postId,
   status,
@@ -55,8 +51,7 @@ export function StatusSelect({
 }) {
   // Optimistik gösterim: seçim anında yeni değere geçer, hata/refresh
   // sonrası sunucudan gelen `status` prop'una döner (Sprint 23 UX düzeltmesi:
-  // dropdown'daki işaret her zaman prop'tan türetilir, stale local state
-  // kalmasın diye RadioGroup value değişiminde remount edilir).
+  // "Stale local state kalmasın": value her zaman prop'tan türetilir).
   const [optimistic, setOptimistic] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -65,6 +60,9 @@ export function StatusSelect({
   const router = useRouter();
 
   const current = optimistic ?? status;
+  // Seçim açıldığında dialog onaylanana kadar yeni değeri göster; iptal
+  // edilirse current'a döner (native select value'sundan beslenir).
+  const display = pendingStatus ?? current;
 
   // Menüden durum seçilince doğrudan PATCH atmak yerine dialog açılır:
   // opsiyonel açıklama girilebilir (Sprint 25a) — shipped bildiriminde
@@ -108,39 +106,27 @@ export function StatusSelect({
 
   return (
     <span className="inline-flex flex-col items-end gap-1">
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          render={
-            <Button variant="outline" size="sm" disabled={isPending}>
-              {isPending ? (
-                <Loader2Icon className="size-4 animate-spin" />
-              ) : null}
-              {statusLabel(current)}
-              <ChevronDownIcon className="size-4 text-muted-foreground" />
-            </Button>
+      <select
+        value={display}
+        disabled={isPending}
+        onChange={(event) => {
+          const next = event.target.value;
+          if (next !== current) {
+            setPendingStatus(next);
           }
-        />
-        <DropdownMenuContent align="end">
-          <DropdownMenuRadioGroup
-            key={current}
-            value={current}
-            onValueChange={(value) => {
-              if (value !== current) {
-                setPendingStatus(value);
-              }
-            }}
-          >
-            {POST_STATUS_OPTIONS.map((option) => (
-              <DropdownMenuRadioItem key={option.value} value={option.value}>
-                {option.label}
-                {option.value === current ? (
-                  <CheckIcon className="ml-auto size-4" aria-hidden="true" />
-                ) : null}
-              </DropdownMenuRadioItem>
-            ))}
-          </DropdownMenuRadioGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
+        }}
+        aria-label="Durum"
+        className="h-8 w-[150px] rounded-lg border border-input bg-transparent px-2 text-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50"
+      >
+        {POST_STATUS_OPTIONS.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+      {isPending ? (
+        <Loader2Icon className="size-3.5 animate-spin text-muted-foreground" aria-hidden="true" />
+      ) : null}
       {error ? <span className="text-xs text-destructive">{error}</span> : null}
 
       <Dialog

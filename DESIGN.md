@@ -64,23 +64,25 @@
   nötr temada (border + muted) gösterilir; amber dekoratif/asimetrik
   kullanılmaz.
 
-### Yapısal slate — admin sidebar yüzeyi (2026-09-05 kararı)
+### Yapısal nötr — admin sidebar yüzeyi (2026-09-05, nötrleştirme 2026-09-06)
 
-Aksan değil **nötr yapı**: yalnız admin sidebar zemininde. Değerler
-Tailwind slate ailesinin oklch karşılıkları; `--sidebar-*` tokenları
-artık bu değerleri taşır (`app/globals.css`).
+Aksan değil **nötr yapı**: yalnız admin sidebar zemininde. İlk karar Tailwind
+slate (lacivertimsi, chroma 0.042) idi; 2026-09-06'da lacivert kaydığını ve
+marka aksanıyla karıştığını fark edip **gerçek nötr grafite** (chroma 0)
+cekildi. `--sidebar-*` tokenları bu değerleri taşır (`app/globals.css`).
 
 | Token | Açık mod | Koyu mod | Kullanım |
 |-------|----------|----------|----------|
-| `--sidebar` | slate-900 `oklch(0.208 0.042 265.755)` | slate-950 `oklch(0.129 0.042 264.695)` | Kabuk zemini |
-| `--sidebar-foreground` | slate-100 `oklch(0.968 0.007 247.896)` | aynı | Metin |
+| `--sidebar` | `oklch(0.216 0 0)` | `oklch(0.145 0 0)` | Kabuk zemini (nötr grafit) |
+| `--sidebar-foreground` | `oklch(0.968 0 0)` | aynı | Metin |
 | `--sidebar-primary` | `var(--brand)` | `var(--brand)` | Aktif nav — mercan, eylem rengi |
 | `--sidebar-primary-foreground` | `#2b0e04` | `#2b0e04` | Mürekkep — kural 2 geçerli |
-| `--sidebar-accent` | slate-800 `oklch(0.279 0.041 260.031)` | aynı | Hover yüzeyi |
+| `--sidebar-accent` | `oklch(0.269 0 0)` | `oklch(0.215 0 0)` | Hover yüzeyi |
 | `--sidebar-border` | `oklch(1 0 0 / 8%)` | `oklch(1 0 0 / 10%)` | Ayırıcılar |
 
-Slate içerik alanına, butonlara, rozetlere sızmaz; sidebar kabuğuyla
-sınırlıdır.
+Nötr içerik alanına, butonlara, rozetlere sızmaz; yalnız sidebar kabuğuyla
+sınırlıdır. Renk tonu (hue) tamamen kaldırıldığı için marka mercanıyla
+çakışmaz.
 
 ## 3. Tipografi
 

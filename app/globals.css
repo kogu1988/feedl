@@ -91,14 +91,15 @@
   --duration-fast: 150ms;
   --duration-base: 200ms;
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
-  /* Yapısal slate (design_report.md Karar 1): admin sidebar yüzeyi —
-     aksan değil nötr yapı. Değerler Tailwind slate oklch karşılıkları. */
-  --sidebar: oklch(0.208 0.042 265.755);
-  --sidebar-foreground: oklch(0.968 0.007 247.896);
+  /* Yapısal nötr yüzey (2026-09-06): admin sidebar zeminı — aksan değil
+     nötr yapı. Lacivert/turkuaza kaymayan gerçek nötr grafit (chroma 0),
+     marka aksanı mercanla karışmaz. */
+  --sidebar: oklch(0.216 0 0);
+  --sidebar-foreground: oklch(0.968 0 0);
   --sidebar-primary: var(--brand);
   --sidebar-primary-foreground: #2b0e04;
-  --sidebar-accent: oklch(0.279 0.041 260.031);
-  --sidebar-accent-foreground: oklch(0.968 0.007 247.896);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.968 0 0);
   --sidebar-border: oklch(1 0 0 / 8%);
   --sidebar-ring: #ff8c66;
 }
@@ -132,12 +133,12 @@
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.129 0.042 264.695);
-  --sidebar-foreground: oklch(0.968 0.007 247.896);
+  --sidebar: oklch(0.145 0 0);
+  --sidebar-foreground: oklch(0.968 0 0);
   --sidebar-primary: var(--brand);
   --sidebar-primary-foreground: #2b0e04;
-  --sidebar-accent: oklch(0.279 0.041 260.031);
-  --sidebar-accent-foreground: oklch(0.968 0.007 247.896);
+  --sidebar-accent: oklch(0.215 0 0);
+  --sidebar-accent-foreground: oklch(0.968 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: #ff8c66;
 }
