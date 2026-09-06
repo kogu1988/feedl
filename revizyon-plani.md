@@ -133,6 +133,7 @@ test kapsamı, marka aksanı ve birkaç DRY/operasyonel borç.
 | B10 changelog email korrelasyonu | `eba34ed` | `email_deliveries` userId nullable + email; notify-changelog kayıt; deliverability kartı changelog'u sayar |
 | B9 Dependabot kalıcı | `59911c3` | `@clerk/ui` → `@clerk/themes` (web-only); react-native/metro/solana zinciri gitti; `npm audit` 0 vuln; shadcn görünümü korundu |
 | B7 schema ilkel ayrımı | `191285e` | pgEnum'lar + tsvector → `schema/shared.ts` (drizzle generate: "no schema changes") |
+| F6 erişilebilirlik audit | `7ec904c` | `@axe-core/playwright` + `e2e/a11y.spec.ts` (kritik AA ihlalleri); kod tabanı zaten güçlü |
 
 ### ⏸️ Ertelenenler (onay / özel doğrulama gerektirir)
 | Madde | Neden ertelendi |
@@ -142,7 +143,7 @@ test kapsamı, marka aksanı ve birkaç DRY/operasyonel borç.
 | B5 embedding HNSW | 2048-dim > HNSW 2000 cap; halfvec/type değişikliği + re-index — yüksek risk |
 
 | F5 component yakınlaştırma | Görsel doğrulama gerektirir; kör birleştirme riskli |
-| F6 erişilebilirlik audit | Kapsamlı manuel/axe denetimi — batch olarak |
+
 
 
 ---
