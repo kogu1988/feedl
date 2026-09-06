@@ -223,9 +223,10 @@ prop'unu `AppSidebar`'a geçirir.
   · `opportunity-link-controls` · `custom-fields-manager` · `custom-values-panel`
   · `members-manager` · `workspaces-manager` · `workspace-settings`
   · `boards-manager` · `activation-funnel` · `analytics-overview` · `revenue-report`
-  · `api-keys-manager` · `webhooks-manager` · `widget-origins-manager`
-  · `widget-setup` · `billing-manager` · `pricing-manager` (public)
-  · `integrations-panel` · `linear-integration` · `import-csv-button`
+  `api-keys-manager` · `webhooks-manager` · `widget-origins-manager`
+  · `widget-setup` · `billing-overview` (yeni 63k) · `billing-manager`
+  · `pricing-manager` (public) · `integrations-panel` · `linear-integration`
+  · `import-csv-button`.
 
   **Onboarding / auth**
   `onboarding-wizard` · `onboarding-checklist` · `invite-accept-form`
@@ -244,9 +245,9 @@ prop'unu `AppSidebar`'a geçirir.
   `notice.tsx` (Notice) bileşeninden geçer — satır içi kompakt `size="sm"`,
   sayfa düzeyi `size="md"`; `rounded-md` (küçük eleman radius). Kopya
   `border-destructive/…` kutuları yazılmaz.
-- **Yerleşim ritmi (2026-09-06):** dikey uzayan sayfaları kır — ilgili kart
-  grupları yan yana: `xl:grid-cols-2` (2x2) veya 4-lü KPI şeridi
-  (`lg:grid-cols-4`). Kart grupları `gap-8`; mobilde tek kolona düşer.
+- **Açılır-kapanır (2026-09-06):** `disclosure.tsx` (Disclosure) — kart
+  başlığı + chevron, varsayılan kapalı; erişilebilir `aria-expanded`/region.
+  Uzun/opsiyonel içerik bölümlerinde kullan.
 - Yeni bileşen: primitive gerekirse `ui/`, ürün kalıbı `custom/`; mümkünse
   mevcut `status-badge` / `type-badge` gibi tek kaynakları yeniden kullan.
 
