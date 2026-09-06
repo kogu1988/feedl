@@ -16,6 +16,7 @@ import { workspaces, boards, workspaceMembers } from "@/lib/db/schema";
 const ACTIVE_WS_COOKIE = "feedl_active_ws";
 
 const slugRegex = /^[a-z0-9][a-z0-9-]{1,62}$/;
+const colorRegex = /^#[0-9a-fA-F]{6}$/;
 
 const createSchema = z.object({
   name: z.string().trim().min(2, "Workspace adı en az 2 karakter olmalı.").max(120),
@@ -24,6 +25,12 @@ const createSchema = z.object({
     .trim()
     .toLowerCase()
     .regex(slugRegex, "Slug yalnızca küçük harf, rakam ve tire içerebilir (2-63).")
+    .optional()
+    .or(z.string().trim().length(0).transform(() => undefined)),
+  brandColor: z
+    .string()
+    .trim()
+    .regex(colorRegex, "Marka rengi #RRGGBB formatında olmalı.")
     .optional()
     .or(z.string().trim().length(0).transform(() => undefined)),
 });
@@ -102,12 +109,16 @@ export async function POST(req: Request) {
       );
     }
 
+    // Marka rengi: onboarding adımından (öniizleme) gelebilir; geçersizse reddet.
+    const brandColor = parsed.data.brandColor ?? null;
+
     try {
       const [created] = await getDb()
         .insert(workspaces)
         .values({
           name: parsed.data.name,
           slug: wsSlug,
+          brandColor,
           // Onboarding her zaman FREE plan ile başlar (Faz 5 kararı). Schema
           // default'ları zaten free (free: 1 board, 1 üye, 50 takipçi); burada
           // açıkça yazmak intent'i ve limit kontrolünün tabanını belgeler.

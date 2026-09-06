@@ -7,16 +7,40 @@ import { Notice } from "@/components/custom/notice";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { textOn } from "@/lib/color";
 
 // Sprint 63 (onboarding wizard) — yeni müşteri için 2 adımlı akış:
 // 1) Workspace oluştur (name → POST /api/onboarding, aktif çerez set edilir)
+//    + CANLI alt alan adı (slug.feedl.app) ve marka rengi önizlemesi.
 // 2) Sonraki adımlar: board, entegrasyon, ekip daveti, widget + "Dashboard'a git".
+
+// Marka rengi seçenekleri (Canny/Intercom tarzı hazır palet + serbest renk).
+const BRAND_COLORS = ["#ff5c35", "#0ea5e9", "#10b981", "#8b5cf6", "#f59e0b", "#e11d48", "#64748b"];
+
+function slugify(input: string): string {
+  return input
+    .toLocaleLowerCase("tr")
+    .replace(/[çÇ]/g, "c")
+    .replace(/[ğĞ]/g, "g")
+    .replace(/[ıİ]/g, "i")
+    .replace(/[öÖ]/g, "o")
+    .replace(/[şŞ]/g, "s")
+    .replace(/[üÜ]/g, "u")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 export function OnboardingWizard() {
   const [step, setStep] = useState<1 | 2>(1);
   const [name, setName] = useState("");
+  const [brandColor, setBrandColor] = useState<string>("#ff5c35");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [slug, setSlug] = useState<string | null>(null);
+
+  // Canlı önizleme: ad yazıldıkça subdomain ve portal linki güncellenir.
+  const previewSlug = slugify(name);
+  const portalUrl = previewSlug ? `${previewSlug}.feedl.app` : null;
 
   async function createWorkspace() {
     setError(null);
@@ -29,7 +53,11 @@ export function OnboardingWizard() {
       const res = await fetch("/api/onboarding", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim() }),
+        body: JSON.stringify({
+          name: name.trim(),
+          slug: previewSlug || undefined,
+          brandColor: brandColor.trim() || undefined,
+        }),
       });
       const json = await res.json();
       if (!json.success) {
@@ -71,6 +99,52 @@ export function OnboardingWizard() {
             <p className="text-xs text-muted-foreground">
               Bu ad portalının üstünde görünür. Subdomain adı otomatik üretilir.
             </p>
+          </div>
+
+          {/* Alt alan adı + marka önizlemesi (canlı) */}
+          <div className="grid gap-3 rounded-lg border bg-muted/30 p-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="font-medium">Portal önizlemesi</span>
+              {portalUrl ? (
+                <span className="font-mono text-xs text-muted-foreground">{portalUrl}</span>
+              ) : (
+                <span className="text-xs text-muted-foreground">Ad girince</span>
+              )}
+            </div>
+
+            {/* Mini portall önizleme: marka rengiyle üst bar + isim */}
+            <div
+              className="flex items-center justify-between rounded-md px-3 py-2 text-sm"
+              style={{ backgroundColor: brandColor, color: textOn(brandColor) }}
+            >
+              <span className="font-semibold">{name.trim() || "Yeni çalışma alanı"}</span>
+              <span className="text-xs opacity-80">feedl</span>
+            </div>
+
+            {/* Marka rengi seçici */}
+            <div className="flex flex-wrap items-center gap-2">
+              {BRAND_COLORS.map((color) => (
+                <button
+                  key={color}
+                  type="button"
+                  aria-label={`Marka rengi ${color}`}
+                  aria-pressed={brandColor === color}
+                  onClick={() => setBrandColor(color)}
+                  className={`size-6 rounded-full border-2 ${brandColor === color ? "border-foreground" : "border-transparent"}`}
+                  style={{ backgroundColor: color }}
+                />
+              ))}
+              <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                Özel:
+                <input
+                  type="color"
+                  value={brandColor}
+                  onChange={(e) => setBrandColor(e.target.value)}
+                  className="h-6 w-8 cursor-pointer rounded border bg-transparent"
+                  aria-label="Marka rengi seç"
+                />
+              </label>
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
