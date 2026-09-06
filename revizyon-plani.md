@@ -131,12 +131,13 @@ test kapsamı, marka aksanı ve birkaç DRY/operasyonel borç.
 | B6 post-search fold tek kaynak | `fced119` | `TR_FOLD_MAP`'ten SQL source/target türetilir + invariant test |
 | B8 `getWorkspaceId` request cache | `20fcea5` | `React.cache()` (global sızma bug'ı düzeltildi) |
 | B10 changelog email korrelasyonu | `eba34ed` | `email_deliveries` userId nullable + email; notify-changelog kayıt; deliverability kartı changelog'u sayar |
+| B9 Dependabot kalıcı | `59911c3` | `@clerk/ui` → `@clerk/themes` (web-only); react-native/metro/solana zinciri gitti; `npm audit` 0 vuln; shadcn görünümü korundu |
 
 ### ⏸️ Ertelenenler (onay / özel doğrulama gerektirir)
 | Madde | Neden ertelendi |
 |---|---|
 | F2 canonical server-side | Client `<link rel=canonical>` yeterli; `generateMetadata`'de path alınamaz (App Router) — middleware+header çözümü büyük |
-| B9 Dependabot kalıcı | Vuln'lar non-runtime (web bundle'ında yok); `@clerk/ui` kaldırma görsel doğrulama ister → GitHub Security UI'da "not exploitable" dismiss önerilir |
+
 | B5 embedding HNSW | 2048-dim > HNSW 2000 cap; halfvec/type değişikliği + re-index — yüksek risk |
 | B7 schema.ts bölme | 1106 satır tek dosya; mekanik ama breaking riski — ayrı refactor |
 | F5 component yakınlaştırma | Görsel doğrulama gerektirir; kör birleştirme riskli |
