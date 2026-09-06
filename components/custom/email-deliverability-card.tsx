@@ -51,45 +51,47 @@ export async function EmailDeliverabilityCard() {
   const riskTone =
     data.bounceRate > 5 ? "text-red-600 dark:text-red-400" : data.bounceRate > 2 ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400";
 
+  // 2026-09-06: Tek kart bir kapsayıcıda "grid md:grid-cols-2" ile
+  // sarılmıştı — tek çocuk ilk kolona düşüp genişlik diğer kartlardan
+  // sapıyordu. Kart kabuğu artık diğer dashboard kartlarıyla aynı:
+  // doğrudan <Card> (tam genişlik, kapsayıcı belirler).
   return (
-    <div className="grid gap-4 md:grid-cols-2">
-      <Card>
-        <CardHeader>
-          <CardTitle>E-posta Durumu</CardTitle>
-          <CardDescription>Son 30 günün teslimat özeti (Resend).</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <dl className="grid grid-cols-2 gap-3 text-sm">
-            <div>
-              <dt className="text-xs text-muted-foreground">Gönderilen</dt>
-              <dd className="mt-1 font-mono text-2xl font-bold tabular-nums">{data.sent}</dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">Teslim</dt>
-              <dd className="mt-1 font-mono text-2xl font-bold tabular-nums text-emerald-600 dark:text-emerald-400">{data.delivered}</dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">Bounce</dt>
-              <dd className="mt-1 font-mono text-2xl font-bold tabular-nums text-red-600 dark:text-red-400">{data.bounced}</dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">Şikâyet</dt>
-              <dd className="mt-1 font-mono text-2xl font-bold tabular-nums text-amber-600 dark:text-amber-400">{data.complained}</dd>
-            </div>
-          </dl>
-          <p className="mt-4 border-t pt-3 text-xs text-muted-foreground">
-            Hatalı oran:{" "}
-            <span className={`font-mono font-semibold ${riskTone}`}>
-              {data.bounceRate.toFixed(1)}%
-            </span>{" "}
-            {data.bounceRate > 5
-              ? "· Gönderen itibarı riski yüksek — adres listesini gözden geçir."
-              : data.bounceRate > 2
-                ? "· İzle — hedef %2'nin altı."
-                : "· Sağlıklı."}
-          </p>
-        </CardContent>
-      </Card>
-    </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>E-posta Durumu</CardTitle>
+        <CardDescription>Son 30 günün teslimat özeti (Resend).</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <dl className="grid grid-cols-2 gap-3 text-sm">
+          <div>
+            <dt className="text-xs text-muted-foreground">Gönderilen</dt>
+            <dd className="mt-1 font-mono text-2xl font-bold tabular-nums">{data.sent}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-muted-foreground">Teslim</dt>
+            <dd className="mt-1 font-mono text-2xl font-bold tabular-nums text-emerald-600 dark:text-emerald-400">{data.delivered}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-muted-foreground">Bounce</dt>
+            <dd className="mt-1 font-mono text-2xl font-bold tabular-nums text-red-600 dark:text-red-400">{data.bounced}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-muted-foreground">Şikâyet</dt>
+            <dd className="mt-1 font-mono text-2xl font-bold tabular-nums text-amber-600 dark:text-amber-400">{data.complained}</dd>
+          </div>
+        </dl>
+        <p className="mt-4 border-t pt-3 text-xs text-muted-foreground">
+          Hatalı oran:{" "}
+          <span className={`font-mono font-semibold ${riskTone}`}>
+            {data.bounceRate.toFixed(1)}%
+          </span>{" "}
+          {data.bounceRate > 5
+            ? "· Gönderen itibarı riski yüksek — adres listesini gözden geçir."
+            : data.bounceRate > 2
+              ? "· İzle — hedef %2'nin altı."
+              : "· Sağlıklı."}
+        </p>
+      </CardContent>
+    </Card>
   );
 }
