@@ -9,18 +9,7 @@ import { Show, UserButton, useAuth } from "@clerk/nextjs";
 import { ClerkTriggerButton } from "@/components/custom/clerk-trigger-button";
 import { ThemeToggle } from "@/components/custom/theme-toggle";
 import { cn } from "@/lib/utils";
-
-// Sprint 48k: marka renginin üzerinde okunur yazı rengi (WCAG kontrast
-// tahmini). Açık renklerde koyu mürekkep, koyu renklerde beyaz.
-function textOn(hex: string): string {
-  const value = hex.replace("#", "");
-  if (value.length !== 6) return "#2b0e04";
-  const r = parseInt(value.slice(0, 2), 16);
-  const g = parseInt(value.slice(2, 4), 16);
-  const b = parseInt(value.slice(4, 6), 16);
-  const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
-  return luminance > 0.55 ? "#2b0e04" : "#ffffff";
-}
+import { textOn } from "@/lib/color";
 
 // Sprint 36: üst bar site kabuğunun parçası — marka işareti ve aktif sayfa
 // durumu eklendi. usePathname client gerektirdiği için layout'tan buraya

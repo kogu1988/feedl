@@ -5,16 +5,7 @@ import { usePathname } from "next/navigation";
 import { ChevronsUpIcon } from "lucide-react";
 import { useAuth } from "@clerk/nextjs";
 
-// Marka karosu üzerinde okunur yazı rengi (WCAG) — header'daki textOn ile aynı.
-function textOn(hex: string): string {
-  const value = hex.replace("#", "");
-  if (value.length !== 6) return "#2b0e04";
-  const r = parseInt(value.slice(0, 2), 16);
-  const g = parseInt(value.slice(2, 4), 16);
-  const b = parseInt(value.slice(4, 6), 16);
-  const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
-  return luminance > 0.55 ? "#2b0e04" : "#ffffff";
-}
+import { textOn } from "@/lib/color";
 
 // Sprint 63+ (IA standardı) + 2026-09-06 revizyonları:
 // footer yalnızca anonim ziyaretçiye gösterilir (Giriş yapmış kullanıcı ürünü

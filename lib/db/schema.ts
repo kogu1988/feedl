@@ -155,6 +155,9 @@ export const posts = pgTable(
     index("posts_created_at_idx").on(table.createdAt),
     index("posts_workspace_created_idx").on(table.workspaceId, table.createdAt),
     index("posts_search_vector_idx").using("gin", table.searchVector),
+    // Sprint 63w (B2): FK index'leri — Postgres FK'ye otomatik index YAPMAZ.
+    index("posts_user_idx").on(table.userId),
+    index("posts_board_idx").on(table.boardId),
     // Sprint 48q: aynı connector kaynağı (sourceRef) bir kez post edilir.
     // sourceRef null olanlar (portal/api) bu unique'e girmez (null hariç).
     uniqueIndex("posts_workspace_source_ref_key").on(
@@ -363,7 +366,12 @@ export const votes = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (table) => [unique("votes_user_post_unique").on(table.userId, table.postId)],
+  (table) => [
+    unique("votes_user_post_unique").on(table.userId, table.postId),
+    // Sprint 63w (B2): post başına oy sayımı (portal/dashboard listesi) en sık
+    // sorgu — (userId, postId) unique'i postId tek başına SORGULAMAZ.
+    index("votes_post_idx").on(table.postId),
+  ],
 );
 
 export type Vote = typeof votes.$inferSelect;
@@ -399,7 +407,11 @@ export const comments = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (table) => [index("comments_post_created_idx").on(table.postId, table.createdAt)],
+  (table) => [
+    index("comments_post_created_idx").on(table.postId, table.createdAt),
+    // Sprint 63w (B2): yorumları kullanıcı bazlı sorgular için FK index.
+    index("comments_user_idx").on(table.userId),
+  ],
 );
 
 export type Comment = typeof comments.$inferSelect;
