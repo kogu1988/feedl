@@ -9,7 +9,7 @@ import { WidgetPostForm } from "@/components/custom/widget-post-form";
 import { WidgetVoteButton } from "@/components/custom/widget-vote-button";
 import { WidgetTriage } from "@/components/custom/widget-triage";
 import { getDb } from "@/lib/db";
-import { getWorkspaceId } from "@/lib/db/workspace";
+import { getWorkspaceId, resolveWorkspaceIdFromSlug } from "@/lib/db/workspace";
 import { posts, votes } from "@/lib/db/schema";
 import { buildPostSearch } from "@/lib/post-search";
 import { summarize } from "@/lib/post-format";
@@ -29,10 +29,20 @@ type WidgetTheme = (typeof WIDGET_THEMES)[number];
 export default async function WidgetPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; theme?: string }>;
+  searchParams: Promise<{ q?: string; theme?: string; ws?: string }>;
 }) {
-  const { q: rawQ, theme: rawTheme } = await searchParams;
+  const { q: rawQ, theme: rawTheme, ws: rawWs } = await searchParams;
   const q = (rawQ ?? "").trim().slice(0, 100);
+  // Sprint 63p: `?ws=<slug>` varsa workspace'i ondan çöz (token olmayan
+  // salt-okunur iframe de müşteri workspace'ini görsün); yoksa oturum/host.
+  const workspaceId =
+    (await resolveWorkspaceIdFromSlug(rawWs)) ?? (await getWorkspaceId());
+  // "Tümünü gör" müşterinin PORTALINA gider (varsayılan değilse subdomain).
+  const appHost = (process.env.NEXT_PUBLIC_APP_URL ?? "https://feedl.app").replace(/^https?:\/\//, "");
+  const portalHref =
+    rawWs && rawWs !== "feedl"
+      ? `https://${rawWs}.${appHost}/portal`
+      : "/portal";
   const theme: WidgetTheme = WIDGET_THEMES.includes(
     rawTheme as WidgetTheme,
   )
@@ -68,7 +78,7 @@ export default async function WidgetPage({
       .leftJoin(votes, eq(votes.postId, posts.id))
       .where(
         and(
-          eq(posts.workspaceId, await getWorkspaceId()),
+          eq(posts.workspaceId, workspaceId),
           isNull(posts.mergedIntoId),
           search.condition,
         ),
@@ -116,7 +126,7 @@ export default async function WidgetPage({
       <div className="flex items-center justify-between gap-2">
         <h1 className="text-base font-bold tracking-tight">Geri Bildirim</h1>
         <Link
-          href="/portal"
+          href={portalHref}
           target="_blank"
           rel="noreferrer"
           className="text-xs font-medium text-muted-foreground underline-offset-2 hover:underline"
@@ -145,7 +155,7 @@ export default async function WidgetPage({
       {session ? (
         <div className="mt-3">
           <WidgetPostForm />
-          <WidgetTriage />
+          <WidgetTriage ws={rawWs} />
         </div>
       ) : (
         <>
@@ -153,7 +163,7 @@ export default async function WidgetPage({
             Fikir gönderebilmek ve oy verebilmek için uygulamanız üzerinden
             giriş yapmanız gerekir. Mevcut fikirleri aşağıdan inceleyebilirsiniz.
           </p>
-          <WidgetTriage />
+          <WidgetTriage ws={rawWs} />
         </>
       )}
 

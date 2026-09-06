@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
+import { eq } from "drizzle-orm";
+
 import { getDb } from "@/lib/db";
-import { getWorkspaceId } from "@/lib/db/workspace";
+import { getWorkspaceId, resolveWorkspaceIdFromSlug } from "@/lib/db/workspace";
 import { classifyWidgetMessage } from "@/lib/ai/analysis";
 import { getDefaultBoardId } from "@/lib/db/board";
-import { widgetTriages, posts } from "@/lib/db/schema";
+import { widgetTriages, posts, workspaces } from "@/lib/db/schema";
+import { planFromString } from "@/lib/paddle";
 import { getWidgetSession } from "@/lib/widget/jwt";
 import { isOriginAllowed } from "@/lib/widget/origins";
 import { requestOrigin } from "@/lib/widget/http";
@@ -28,6 +31,29 @@ export async function POST(req: NextRequest) {
     if (!(await isOriginAllowed(origin))) {
       return NextResponse.json(
         { success: false, error: "Bu site için widget erişimi yok." },
+        { status: 403 },
+      );
+    }
+
+    // Sprint 63p — workspace'i önce `?ws` (iframe URL'sinden), sonra oturum
+    // çerezi (tenant-aware getWorkspaceId) ile çöz. Triage Pro plan özelliği;
+    // gate DOĞRU workspace'in planına göre çalışmalı (anonim/read-only iframe
+    // dahil).
+    const workspaceId =
+      (await resolveWorkspaceIdFromSlug(req.nextUrl.searchParams.get("ws"))) ??
+      (await getWorkspaceId());
+    const [wsRow] = await getDb()
+      .select({ plan: workspaces.plan })
+      .from(workspaces)
+      .where(eq(workspaces.id, workspaceId))
+      .limit(1);
+    if (planFromString(wsRow?.plan) !== "pro") {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Bu özellik Pro plan özelliğidir. Widget'ı kullanan workspace Pro plana geçmeli.",
+        },
         { status: 403 },
       );
     }
@@ -85,7 +111,7 @@ export async function POST(req: NextRequest) {
       const [created] = await getDb()
         .insert(posts)
         .values({
-          workspaceId: await getWorkspaceId(),
+          workspaceId,
           boardId: await getDefaultBoardId(),
           userId,
           title,

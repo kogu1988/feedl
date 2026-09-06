@@ -2,8 +2,10 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 
+import { eq } from "drizzle-orm";
+
 import { getDb } from "@/lib/db";
-import { users } from "@/lib/db/schema";
+import { users, workspaces } from "@/lib/db/schema";
 import {
   SESSION_TTL_SECONDS,
   WIDGET_SESSION_COOKIE,
@@ -53,7 +55,27 @@ export async function OPTIONS(req: NextRequest) {
 
 const sessionSchema = z.object({
   token: z.string().min(1, "Jeton gerekli.").max(4096, "Jeton çok uzun."),
+  // Sprint 63p — widget tenant-aware: müşteri sitesi hangi workspace'e ait?
+  // `data-feedl-workspace="acme"` ile sağlanır (slug). Verilmezse varsayılan.
+  workspace: z
+    .string()
+    .trim()
+    .min(1)
+    .max(120)
+    .optional()
+    .nullable(),
 });
+
+// Workspace slug gerçekten varsa döndürür, yoksa null (varsayılana düşer).
+async function resolveWorkspaceSlug(slug: string | null | undefined): Promise<string | null> {
+  if (!slug) return null;
+  const [row] = await getDb()
+    .select({ slug: workspaces.slug })
+    .from(workspaces)
+    .where(eq(workspaces.slug, slug))
+    .limit(1);
+  return row?.slug ?? null;
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -106,6 +128,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Sprint 63p: workspace slug'ı doğrula (varsa gerçekten bir workspace'e
+    // ait olmalı) — session JWT'ye gömülür, iframe istekleri bunu kullanır.
+    const workspaceSlug = await resolveWorkspaceSlug(parsed.data.workspace);
+
     // posts.userId FK users.id NOT NULL — widget kullanıcısı kayıt edilmeden
     // fikir/oy yazılamaz. Email yoksa sentezlenir; role asla yükseltilmez.
     const userId = toWidgetUserId(identity.sub);
@@ -126,7 +152,7 @@ export async function POST(req: NextRequest) {
         },
       });
 
-    const token = signSessionToken(userId, origin);
+    const token = signSessionToken(userId, origin, workspaceSlug);
     const response = NextResponse.json(
       { success: true, data: { userId, name: identity.name } },
       { headers },

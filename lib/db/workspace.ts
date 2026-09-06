@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { getDb } from "./index";
 import { workspaces } from "./schema";
+import { getWidgetSession } from "../widget/jwt";
 import { cookies } from "next/headers";
 
 // Sprint 63 (onboarding): kullanıcının aktif workspace slug'ı çerezde tutulur
@@ -105,6 +106,26 @@ export async function resolveWorkspaceByHost(
   return fallback;
 }
 
+// Sprint 63p — widget tenant-aware: `?ws=<slug>` param'sından workspace id
+// çözer (yalnız widget/iframe sayfası ve widget API uçları). Slug yoksa veya
+// workspace yoksa null döner — çağıran getWorkspaceId'e (host/çerez) düşer.
+export async function resolveWorkspaceIdFromSlug(
+  slug: string | null | undefined,
+): Promise<string | null> {
+  if (!slug) return null;
+  const [row] = await getDb()
+    .select({ id: workspaces.id })
+    .from(workspaces)
+    .where(eq(workspaces.slug, slug))
+    .limit(1);
+  if (!row) return null;
+  try {
+    return workspaceIdSchema.parse(row.id);
+  } catch {
+    return null;
+  }
+}
+
 // Showcase (vitrin) modu: feedl kök host'undaki (feedl.app / www /
 // NEXT_PUBLIC_APP_URL) portal/roadmap/changelog yüzeyleri ziyaretçiye vitrin
 // olarak sunulur — tanıtım amaçlı, etkileşim kapalı. Müşteri subdomain'leri
@@ -122,6 +143,26 @@ let cached: { host: string; id: string } | null = null;
 
 export async function getWorkspaceId(): Promise<string> {
   const host = await getRequestHost();
+
+  // Sprint 63p — widget tenant-aware: widget oturumu (httpOnly feedl_widget
+  // çerezi) yalnız widget/iframe bağlamında vardır. Oturum, müşterinin
+  // `data-feedl-workspace` slug'ını taşır; host (müşteri sitesi) yerine onu
+  // tercih ederiz. Böylece acme.com widget'ı varsayılan değil, acme
+  // workspace'ine düşer. Admin/portal bağlamında bu çerez yoktur → etki yok.
+  const wsSession = await getWidgetSession();
+  if (wsSession?.workspaceSlug) {
+    const [widgetRow] = await getDb()
+      .select({ id: workspaces.id })
+      .from(workspaces)
+      .where(eq(workspaces.slug, wsSession.workspaceSlug))
+      .limit(1);
+    if (widgetRow) {
+      const id = workspaceIdSchema.parse(widgetRow.id);
+      cached = { host, id };
+      return id;
+    }
+  }
+
   // Aktif workspace çerezi varsa önce onu dene (onboarding sonrası).
   const activeSlug = await readActiveWorkspaceCookie();
   if (activeSlug) {

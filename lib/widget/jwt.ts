@@ -166,6 +166,11 @@ export interface WidgetSession {
   // içinden gelen isteklerde Origin feedl olduğu için gerçek müşteri
   // kaynağı yalnızca buradan bilinir (posts.widgetOrigin bunu kullanır).
   origin: string | null;
+  // Sprint 63p (widget tenant-aware): widget'ın ait olduğu workspace slug'ı.
+  // Müşteri `data-feedl-workspace="acme"` ile sağlar; session JWT'de taşınır;
+  // getWorkspaceId bunu host yerine tercih eder (acme.com widget'ı artık
+  // varsayılan değil, akme workspace'ine düşer).
+  workspaceSlug: string | null;
 }
 
 // feedl'in kendi widget oturum jetonu (httpOnly çerez değeri). origin
@@ -174,6 +179,7 @@ export interface WidgetSession {
 export function signSessionToken(
   widgetUserId: string,
   origin: string | null,
+  workspaceSlug: string | null,
 ): string {
   const now = Math.floor(Date.now() / 1000);
   return signHs256(
@@ -182,6 +188,7 @@ export function signSessionToken(
       aud: SESSION_AUDIENCE,
       sub: widgetUserId,
       ...(origin ? { o: origin.slice(0, 200) } : {}),
+      ...(workspaceSlug ? { ws: workspaceSlug.slice(0, 120) } : {}),
       iat: now,
       exp: now + SESSION_TTL_SECONDS,
     },
@@ -204,10 +211,15 @@ function verifySessionPayload(token: string): WidgetSession | null {
     typeof payload.o === "string" && payload.o.length > 0 && payload.o.length <= 200
       ? payload.o
       : null;
+  // Sprint 63p: workspace slug'ı oturumdan koru (ws claim).
+  const workspaceSlug =
+    typeof payload.ws === "string" && payload.ws.length > 0 && payload.ws.length <= 120
+      ? payload.ws
+      : null;
   // sub zaten feedl widget kullanıcı kimliğidir (session route
   // toWidgetUserId uygulanmış hâlini imzalar) - burada tekrar
   // prefix'lenemez, aksi halde FK eşleşmez (widget_widget_... bug'ı).
-  return { userId: payload.sub, origin };
+  return { userId: payload.sub, origin, workspaceSlug };
 }
 
 // İframe içindeki widget sayfası/API'leri için oturum kimliği.

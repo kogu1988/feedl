@@ -11,12 +11,14 @@ import {
   RouteIcon,
   ShieldCheckIcon,
   SparklesIcon,
+  TrendingUpIcon,
   UsersIcon,
   WorkflowIcon,
 } from "lucide-react";
 
 import { getRole } from "@/lib/auth/admin";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { DemoPostCard } from "@/components/custom/demo-post-card";
 
 // Sprint 50 (Faz 4/cilama) — "/" artık SATIŞ landing'idir. Portal / yol
@@ -75,60 +77,77 @@ export default async function RootPage() {
       description:
         "Her fikir otomatik özetlenir, etiketlenir ve benzer isteklerle eşleştirilir. Kopyalarla uğraşmazsın.",
       icon: SparklesIcon,
+      plan: "free",
     },
     {
       title: "Oylama & Yol Haritası",
       description:
         "Müşteriler oy verir, en çok istenen öne çıkar. Planlanan / geliştirilen / yayınlanan şeffaf bir yol haritası oluştur.",
       icon: RouteIcon,
+      plan: "free",
     },
     {
       title: "Değişiklik Günlüğü",
       description:
         "Yayına aldığında oy verenlere otomatik e-posta gider; güncellemeler herkese açık bir günlüğe düşer.",
       icon: MessageSquareTextIcon,
+      plan: "free",
     },
     {
       title: "Ekip & Rol Yönetimi",
       description:
         "Sahip, admin, katkıcı rolleriyle ekibin doğru kişiyi doğru işe yönlendirir; iç notlar gizli kalır.",
       icon: UsersIcon,
+      plan: "free",
     },
     {
       title: "Entegrasyonlar",
       description:
-        "Slack, Zendesk ve Intercom üzerinden gelen destek konuşmaları otomatik olarak fikre dönüşür.",
+        "Slack, Zendesk, Intercom, Jira ve Linear üzerinden gelen destek konuşmaları otomatik olarak fikre dönüşür.",
       icon: PlugIcon,
+      plan: "pro",
+    },
+    {
+      title: "AI İçgörüleri",
+      description:
+        "Tüm geri bildirim korpusunu analiz eder — temalar, trendler, riskler ve hızlı kazanımlar.",
+      icon: TrendingUpIcon,
+      plan: "pro",
     },
     {
       title: "Public API & Webhook",
       description:
         "Fikirleri oku ve dışa aktar; olaylara webhook ile abone ol, iş akışlarına bağla.",
       icon: BracesIcon,
+      plan: "pro",
     },
     {
       title: "Marka & Alan Adı",
       description:
-        "Kendi logon, rengin ve alan adınla herkese açık bir topluluk portalı kur.",
+        "Kendi logon, rengin ve alan adınla herkese açık bir topluluk portalı kur; feedl rozetini kaldır.",
       icon: PaletteIcon,
+      plan: "pro",
     },
     {
       title: "Gelir Skoru",
       description:
         "Oy, müşteri ve fırsat değerini birleştirerek hangi özelliğin en çok getireceğini önceliklendir.",
       icon: BarChart3Icon,
+      plan: "pro",
     },
     {
       title: "Güvenlik & Gizlilik",
       description:
         "Rol bazlı erişim, anahtar ile doğrulanmış API ve iç notların müşteriye sızmaması.",
       icon: ShieldCheckIcon,
+      plan: "free",
     },
     {
       title: "İş Akışı & Görünümler",
       description:
         "Kayıtlı filtreler, toplu aksiyonlar ve sunucu tarafı sayfalama ile kalabalık panoları yönet.",
       icon: WorkflowIcon,
+      plan: "pro",
     },
   ];
 
@@ -216,8 +235,19 @@ export default async function RootPage() {
               key={feature.title}
               className="rounded-2xl border bg-card p-5"
             >
-              <div className="flex size-9 items-center justify-center rounded-lg border bg-background">
-                <feature.icon className="size-5 text-brand" aria-hidden="true" />
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex size-9 items-center justify-center rounded-lg border bg-background">
+                  <feature.icon className="size-5 text-brand" aria-hidden="true" />
+                </div>
+                <Badge
+                  className={
+                    feature.plan === "pro"
+                      ? "border-brand/40 bg-brand/10 text-brand"
+                      : "border-emerald-600/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+                  }
+                >
+                  {feature.plan === "pro" ? "Pro" : "Free"}
+                </Badge>
               </div>
               <h3 className="mt-4 font-semibold">{feature.title}</h3>
               <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
@@ -226,6 +256,92 @@ export default async function RootPage() {
             </div>
           ))}
         </div>
+      </section>
+
+      <section className="mt-20 sm:mt-24">
+        <div className="mx-auto max-w-2xl text-center">
+          <h2 className="text-2xl font-bold tracking-tight">
+            Hangi plan sana uygun?
+          </h2>
+          <p className="mt-3 text-muted-foreground">
+            Küçük ekipte ücretsiz başla; büyüdükçe Pro&apos;ya geç. Her plan
+            kullanıcı başına değil, ekip başına fiyatlandırılır.
+          </p>
+        </div>
+
+        <div className="mt-10 grid gap-6 lg:grid-cols-2">
+          {/* FREE */}
+          <div className="rounded-2xl border bg-card p-6">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Free</h3>
+              <span className="text-2xl font-bold tracking-tight">$0</span>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">sonsuza dek</p>
+            <ul className="mt-5 grid gap-2 text-sm">
+              {[ "1 board · 1 üye · 50 takipçi",
+                 "Fikir + oy + yorum",
+                 "AI etiketleme & tek post özeti",
+                 "Yol haritası & değişiklik günlüğü",
+                 "Gömülü widget (kendi sitende)",
+                 "\"Powered by feedl\" rozeti" ].map((f) => (
+                <li key={f} className="flex items-start gap-2">
+                  <span className="mt-0.5 text-emerald-600 dark:text-emerald-400">✓</span>
+                  <span className="text-muted-foreground">{f}</span>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-6">
+              <SignUpButton forceRedirectUrl="/onboarding">
+                <Button size="lg" variant="outline" className="w-full">
+                  Ücretsiz Başla
+                </Button>
+              </SignUpButton>
+            </div>
+          </div>
+
+          {/* PRO */}
+          <div className="rounded-2xl border border-brand bg-brand-soft p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <h3 className="text-lg font-semibold">Pro</h3>
+                <Badge className="border-transparent bg-brand text-primary-foreground">Popüler</Badge>
+              </div>
+              <div className="text-right">
+                <span className="text-2xl font-bold tracking-tight">$19</span>
+                <span className="text-sm text-muted-foreground">/ay</span>
+              </div>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Yıllık ödemede ayda $15&apos;e eşdeğer (%20 indirim).
+            </p>
+            <ul className="mt-5 grid gap-2 text-sm">
+              {[ "Sınırsız board · 10 üye · sınırsız takipçi",
+                 "Entegrasyonlar (Slack, Zendesk, Intercom, Jira, Linear)",
+                 "AI içgörüleri (korpus analizi)",
+                 "API + webhook erişimi",
+                 "Özel alan adı + marka kaldırma",
+                 "Private board & gelir skoru" ].map((f) => (
+                <li key={f} className="flex items-start gap-2">
+                  <span className="mt-0.5 text-brand">✓</span>
+                  <span className="text-muted-foreground">{f}</span>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-6">
+              <Button size="lg" className="w-full" render={<Link href="/pricing" />}>
+                Pro&apos;ya Geç
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <p className="mt-6 text-center text-muted-foreground">
+          Karşılaştırma ve tüm detaylar için{" "}
+          <Link href="/pricing" className="font-medium underline-offset-4 hover:underline">
+            fiyatlandırma sayfasına
+          </Link>
+          {" "}göz at.
+        </p>
       </section>
 
       <section className="mt-20 rounded-2xl border bg-brand-soft p-8 text-center sm:mt-24">

@@ -4,13 +4,18 @@
  * Kullanım (müşteri sitesi):
  *   <script
  *     src="https://feedl.app/widget.js"
- *     data-feedl-url="https://feedl.app"
- *     data-token="<1 saatlik HS256 widget JWT — opsiyonel>"
- *     data-button-text="Geri bildirim"
- *     data-accent="#7f1d1d"
- *     data-theme="light"
+ *   data-feedl-url="https://feedl.app"
+ *   data-feedl-workspace="<workspace slug>"
+ *   data-token="<1 saatlik HS256 widget JWT — opsiyonel>"
+ *   data-button-text="Geri bildirim"
+ *   data-accent="#7f1d1d"
+ *   data-theme="light"
  *   ></script>
  *
+ * - data-feedl-workspace: bu widget'ın ait olduğu feedl workspace slug'ı
+ *   (örn. "acme"). ZORUNLU değil; verilmezse varsayılan workspace kullanılır.
+ *   Doğru ayarlanırsa widget'ın tüm verileri (fikir/oy) müşterinin kendi
+ *   workspace'inde toplanır (Sprint 63p tenant-aware).
  * - data-accent: launcher butonunun arka plan rengi (yalnızca hex kabul;
  *   yazı rengi WCAG kontrastına göre otomatik seçilir). Varsayılan #111827.
  * - data-theme: panel ve iframe teması — light | dark | auto (varsayılan
@@ -67,6 +72,10 @@
 
   var token = attr("data-token") || globalCfg.token || null;
   var buttonText = attr("data-button-text") || globalCfg.buttonText || "Geri bildirim";
+  // Sprint 63p: bu widget'ın ait olduğu workspace slug'ı (müşteri sitesinin
+  // verisi bu workspace'te toplanır). Yalnızca `[a-z0-9-]` kabul edilir.
+  var workspaceRaw = (attr("data-feedl-workspace") || globalCfg.workspace || "").trim();
+  var workspace = /^[a-z0-9-]{1,120}$/i.test(workspaceRaw) ? workspaceRaw.toLowerCase() : null;
 
   // Görünüm: data-accent launcher arka plan rengi (yalnızca hex kabul;
   // geçersizse varsayılana düşer), data-theme panel + iframe teması.
@@ -112,7 +121,10 @@
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: nextToken }),
+        body: JSON.stringify({
+          token: nextToken,
+          ...(workspace ? { workspace: workspace } : {}),
+        }),
       }).catch(function () {});
     } catch {
       /* oturum açılamazsa widget salt-okunur listeyle açılır */
@@ -206,8 +218,13 @@
   var iframe = document.createElement("iframe");
   iframe.className = "feedl-widget-iframe";
   iframe.title = buttonText;
-  iframe.src =
-    baseUrl + "/widget" + (themeParam === "light" ? "" : "?theme=" + themeParam);
+  // Sprint 63p: workspace slug'ı iframe URL'sine taşınır — widget sayfası
+  // (app/widget/page.tsx) bunu okuyup getWorkspaceId yerine geçip yeniden
+  // doğrular; ayrıca session çerezi de işin içinde olduğundan çift kaynak.
+  var query = [];
+  if (themeParam !== "light") query.push("theme=" + encodeURIComponent(themeParam));
+  if (workspace) query.push("ws=" + encodeURIComponent(workspace));
+  iframe.src = baseUrl + "/widget" + (query.length ? "?" + query.join("&") : "");
 
   panel.appendChild(closeBtn);
   panel.appendChild(iframe);

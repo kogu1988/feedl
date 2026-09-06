@@ -7,7 +7,11 @@ import { Textarea } from "@/components/ui/textarea";
 
 // Sprint 48l — widget AI triage. Kullanıcı serbest mesaj yazar; AI sınıflar:
 // feedback → fikir oluşturur, support/clarify/unrecognized → yönlendirme.
-export function WidgetTriage() {
+// Sprint 63p — `ws` prop: workspace slug'ı; triage Pro gate'inin DOĞRU
+// workspace üzerinden çalışması için fetch'e `?ws=` eklenir (anonim/read-only
+// iframe'de session çerezi olmayabilir).
+export function WidgetTriage({ ws }: { ws?: string | null }) {
+  const wsParam = ws ? `?ws=${encodeURIComponent(ws)}` : "";
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
@@ -25,7 +29,7 @@ export function WidgetTriage() {
     setError(null);
     setResult(null);
     try {
-      const res = await fetch("/api/widget/triage", {
+      const res = await fetch(`/api/widget/triage${wsParam}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: message.trim() }),
