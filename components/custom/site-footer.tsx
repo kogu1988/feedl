@@ -25,6 +25,8 @@ const companyLinks = [
   { href: "/contact", label: "İletişim" },
   { href: "/privacy", label: "Gizlilik Politikası" },
   { href: "/terms", label: "Kullanım Şartları" },
+  // Sprint 63x — Paddle canlı onayı: refund politikası linki zorunlu.
+  { href: "/refund", label: "İade Politikası" },
 ];
 
 export function SiteFooter({ brand }: { brand: { name: string; brandColor?: string | null; logoUrl?: string | null } }) {
