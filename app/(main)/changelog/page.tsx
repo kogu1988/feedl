@@ -11,6 +11,7 @@ import { PageBreadcrumb } from "@/components/custom/page-breadcrumb";
 import { IdeaCard } from "@/components/custom/idea-card";
 import { cn } from "@/lib/utils";
 import { getDb } from "@/lib/db";
+import { PoweredByFeedl } from "@/components/custom/powered-by-feedl";
 import { getWorkspaceId, isShowcaseRequest } from "@/lib/db/workspace";
 import {
   changelogEntries,
@@ -160,6 +161,7 @@ export default async function ChangelogPage() {
           ))
         )}
       </div>
+      <PoweredByFeedl />
     </main>
   );
 }

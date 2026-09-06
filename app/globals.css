@@ -163,6 +163,21 @@
   [role="button"]:not(:disabled) {
     cursor: pointer;
   }
+  /* TEK STANDART native select/option — tema token'larıyla. Koyu modda
+     tarayıcı popup'ı beyaz-beyaz (okunmaz) kalıyordu; option/select
+     background-color + color + color-scheme ile TÜM açılır listeler theme'e
+     uyar. Bileşen bazlı bg-transparent yalnız kapalı alanı etkiler; popup
+     buradaki option kuralından beslenir (tek kaynak). */
+  select {
+    color-scheme: inherit;
+    background-color: var(--popover);
+    color: var(--popover-foreground);
+  }
+  select option,
+  select optgroup {
+    background-color: var(--popover);
+    color: var(--popover-foreground);
+  }
 }
 
 /* Tek orkestra (DESIGN.md §8): landing hero'nun tek seferlik kademeli

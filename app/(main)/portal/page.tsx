@@ -24,7 +24,7 @@ import { Input } from "@/components/ui/input";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId, isShowcaseRequest } from "@/lib/db/workspace";
 import { listBoards, resolveBoardBySlug } from "@/lib/db/board";
-import { getPlanLimits } from "@/lib/paddle";
+import { PoweredByFeedl } from "@/components/custom/powered-by-feedl";
 import { summarize, trDateFormatter } from "@/lib/post-format";
 import { buildPostSearch, type PostSearch } from "@/lib/post-search";
 import { parsePagination } from "@/lib/pagination";
@@ -122,7 +122,6 @@ export default async function PortalPage({
   let tagsByPost = new Map<string, string[]>();
   let tagOptions: Awaited<ReturnType<typeof loadTagOptions>> = [];
   let loadError = false;
-  let planKey = "free";
 
   try {
     // Sprint 39: önce toplam sayı — sayfa numarası üst sınıra kelepçelenir,
@@ -159,7 +158,6 @@ export default async function PortalPage({
     );
 
     tagOptions = await loadTagOptions();
-    planKey = (await getPlanLimits()).key;
 
     if (rows.length > 0) {
       const tagRows = await getDb()
@@ -515,14 +513,8 @@ export default async function PortalPage({
         />
       ) : null}
 
-      {planKey === "free" ? (
-        <p className="mt-8 text-center text-xs text-muted-foreground">
-          Powered by{" "}
-          <a href="https://feedl.app" className="font-medium underline-offset-4 hover:underline">
-            feedl
-          </a>
-        </p>
-      ) : null}
+      {/* Sprint 63u: tek kaynak PoweredByFeedl (logo + free-only). */}
+      <PoweredByFeedl />
     </main>
   );
 }

@@ -2,6 +2,7 @@ import { and, countDistinct, desc, eq, inArray, isNull, or } from "drizzle-orm";
 
 import { PageBreadcrumb } from "@/components/custom/page-breadcrumb";
 import { Notice } from "@/components/custom/notice";
+import { PoweredByFeedl } from "@/components/custom/powered-by-feedl";
 import { RoadmapColumns } from "@/components/custom/roadmap-columns";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId, isShowcaseRequest } from "@/lib/db/workspace";
@@ -86,6 +87,7 @@ export default async function RoadmapPage() {
       ) : (
         <RoadmapColumns columns={columns} posts={rows} isAdmin={isAdmin} />
       )}
+      <PoweredByFeedl />
     </main>
   );
 }

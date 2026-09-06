@@ -2,7 +2,19 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ChevronsUpIcon } from "lucide-react";
 import { useAuth } from "@clerk/nextjs";
+
+// Marka karosu üzerinde okunur yazı rengi (WCAG) — header'daki textOn ile aynı.
+function textOn(hex: string): string {
+  const value = hex.replace("#", "");
+  if (value.length !== 6) return "#2b0e04";
+  const r = parseInt(value.slice(0, 2), 16);
+  const g = parseInt(value.slice(2, 4), 16);
+  const b = parseInt(value.slice(4, 6), 16);
+  const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+  return luminance > 0.55 ? "#2b0e04" : "#ffffff";
+}
 
 // Sprint 63+ (IA standardı) + 2026-09-06 revizyonları:
 // footer yalnızca anonim ziyaretçiye gösterilir (Giriş yapmış kullanıcı ürünü
@@ -24,7 +36,7 @@ const companyLinks = [
   { href: "/terms", label: "Kullanım Şartları" },
 ];
 
-export function SiteFooter({ brand }: { brand: { name: string } }) {
+export function SiteFooter({ brand }: { brand: { name: string; brandColor?: string | null; logoUrl?: string | null } }) {
   const pathname = usePathname();
   const { isSignedIn } = useAuth();
   // Giriş yapmış kullanıcı ürünü kullanıyor → pazarlama footer'ı yok.
@@ -38,9 +50,27 @@ export function SiteFooter({ brand }: { brand: { name: string } }) {
         {/* Üst satır: marka tanıtımı (sol) + şirket linkleri TEK SIRA (sağ). */}
         <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
           <div className="max-w-xs">
-            <p className="text-sm text-muted-foreground">
-              <span className="font-semibold text-foreground">{brand.name}</span>
-              {" "}— müşteri geri bildirimini ürün kararına dönüştürür.
+            {/* Sprint 63u: footer marka tanıtımında da HEADER'ın logosu kullanılır. */}
+            <div className="flex items-center gap-2">
+              <span
+                className="flex size-6 shrink-0 items-center justify-center rounded-md"
+                style={{
+                  backgroundColor: brand.brandColor ?? "#ff5c35",
+                  color: textOn(brand.brandColor ?? "#ff5c35"),
+                }}
+                aria-hidden="true"
+              >
+                {brand.logoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={brand.logoUrl} alt="" className="size-4 object-contain" />
+                ) : (
+                  <ChevronsUpIcon className="size-3.5" />
+                )}
+              </span>
+              <span className="text-sm font-semibold text-foreground">{brand.name}</span>
+            </div>
+            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+              Müşteri geri bildirimini ürün kararına dönüştürür.
             </p>
             <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
               Topla, analiz et, önceliklendir ve duyur — hepsi tek bir

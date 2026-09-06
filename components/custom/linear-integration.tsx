@@ -50,8 +50,14 @@ export function LinearIntegration({ isPro }: { isPro: boolean }) {
   }, []);
 
   useEffect(() => {
+    // Sprint 63u: Pro değilse durum sorgulanmaz (kilitli kart) — gereksiz GET
+    // isteği önlenir. Pro'ya geçince (yükseltme) tekrar sorgular.
+    if (!isPro) {
+      setLoadingStatus(false);
+      return;
+    }
     void loadStatus();
-  }, [loadStatus]);
+  }, [loadStatus, isPro]);
 
   async function connect() {
     setError(null);

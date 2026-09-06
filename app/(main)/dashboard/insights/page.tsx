@@ -48,16 +48,11 @@ export default async function InsightsPage() {
             Geri bildirim korpusunu analiz eder — temalar, trendler, riskler ve
             hızlı kazanımlar.
           </p>
-          <EmptyState size="lg" title="AI İçgörüleri Pro plan özelliğidir" className="mt-8">
-            Korpus analizi (tema/trend/risk) Pro planda sunulur. Yükseltmek için
-            faturalandırmayı aç.
-            <Button
-              className="mt-4"
-              render={<Link href="/dashboard/billing" />}
-            >
+          <div className="mt-8 flex min-h-[200px] flex-col items-center justify-center gap-2 rounded-2xl border bg-card p-8">
+            <Button render={<Link href="/dashboard/billing" />}>
               Pro&apos;ya Yükselt
             </Button>
-          </EmptyState>
+          </div>
         </main>
       );
     }

@@ -100,8 +100,14 @@ function ProviderCard({ meta, isPro }: { meta: ProviderMeta; isPro: boolean }) {
   }, [meta.provider]);
 
   useEffect(() => {
+    // Sprint 63u: Pro değilse bağlantı durumu sorgulanmaz (zaten kilitli kart) —
+    // gereksiz GET isteği önlenir. isPro olunca (yükseltme sonrası) sorgula.
+    if (!isPro) {
+      setStatus("disconnected");
+      return;
+    }
     void load();
-  }, [load]);
+  }, [load, isPro]);
 
   async function connect() {
     setError(null);
