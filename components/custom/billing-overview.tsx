@@ -9,7 +9,6 @@ import { EmptyState } from "@/components/custom/empty-state";
 import {
   getPlanEnv,
   isPro,
-  PADDLE_CUSTOMER_PORTAL_URL,
   PRO_PLAN,
   PRO_TRIAL_DAYS,
 } from "@/components/custom/plan-config";
@@ -21,7 +20,6 @@ import {
 //       feedl DB'de tutmuyoruz; portal URL setse buton + durum açıklaması)
 const env = getPlanEnv();
 const clientToken = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN ?? "";
-const customerPortalUrl = PADDLE_CUSTOMER_PORTAL_URL;
 
 const STATUS_LABELS: Record<string, string> = {
   active: "Aktif",
@@ -84,6 +82,8 @@ export function BillingOverview({
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [annual, setAnnual] = useState(true);
+  const [portalBusy, setPortalBusy] = useState(false);
+  const [portalError, setPortalError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!clientToken) return;
@@ -124,6 +124,27 @@ export function BillingOverview({
       ],
       customData: { slug: workspaceSlug },
     });
+  }
+
+  // Sprint 63x (canlı hazırlık): statik portal URL yerine server tarafında
+  // zaman sınırlı, aboneliğe bağlı güvenli portal oturumu üret (Paddle
+  // customerPortalSessions). Yalnızca abonelik varsa çalışır.
+  async function openPortal() {
+    setPortalError(null);
+    setPortalBusy(true);
+    try {
+      const res = await fetch("/api/paddle/portal", { method: "GET" });
+      const json = (await res.json()) as { success?: boolean; data?: { url?: string }; error?: string };
+      if (!res.ok || !json.success || !json.data?.url) {
+        setPortalError(json.error ?? "Portal hazırlanamadı.");
+        return;
+      }
+      window.location.href = json.data.url;
+    } catch {
+      setPortalError("Portal hazırlanamadı. Tekrar dene.");
+    } finally {
+      setPortalBusy(false);
+    }
   }
 
   return (
@@ -243,7 +264,7 @@ export function BillingOverview({
         </p>
 
         <div className="mt-4">
-          {customerPortalUrl ? (
+          {paddleSubscriptionId ? (
             <div className="grid gap-3">
               <EmptyState title="Ödemeler Paddle portalında">
                 Geçmiş ödemeleri ve faturaları Paddle müşteri portalından
@@ -252,20 +273,24 @@ export function BillingOverview({
               <Button
                 variant="outline"
                 className="w-full"
-                render={
-                  <a href={customerPortalUrl} target="_blank" rel="noopener noreferrer">
-                    <ExternalLinkIcon className="size-4" aria-hidden="true" />
-                    Faturalandırmayı Yönet
-                  </a>
-                }
+                disabled={portalBusy}
+                onClick={() => void openPortal()}
               >
+                {portalBusy ? (
+                  <span className="size-4 animate-spin rounded-full border-2 border-foreground/30 border-t-foreground" />
+                ) : (
+                  <ExternalLinkIcon className="size-4" aria-hidden="true" />
+                )}
                 Faturalandırmayı Yönet
               </Button>
+              {portalError ? (
+                <p className="text-xs text-destructive">{portalError}</p>
+              ) : null}
             </div>
           ) : (
             <EmptyState title="Henüz ödeme geçmişi yok">
-              Paddle müşteri portalı yapılandırıldığında ödemeler ve faturalar
-              burada görünür.
+              Paddle aboneliği oluşturulduğunda ödemeler ve faturalar burada
+              görünür.
             </EmptyState>
           )}
         </div>
@@ -279,9 +304,22 @@ export function BillingOverview({
               : "Aktif abonelik yok — Free plan üzerindesin."}
           </p>
           {paymentIssue && (
-            <p className="mt-1 text-amber-700 dark:text-amber-300">
-              Ödemeniz gecikmiş görünüyor; ödemeyi tamamlamak için portalı kullan.
-            </p>
+            <div className="mt-2">
+              <p className="mt-1 text-amber-700 dark:text-amber-300">
+                Ödemeniz gecikmiş görünüyor; ödemeyi tamamla.
+              </p>
+              {paddleSubscriptionId ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="mt-2 w-full"
+                  disabled={portalBusy}
+                  onClick={() => void openPortal()}
+                >
+                  {portalBusy ? "Hazırlanıyor…" : "Ödemeyi Güncelle"}
+                </Button>
+              ) : null}
+            </div>
           )}
         </div>
       </div>

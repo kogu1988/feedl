@@ -40,8 +40,8 @@ export const PRO_TRIAL_DAYS = 14;
 // koda doğrulama bağlanmaz (Paddle ID'leri Paddle'da üretilir, önek üretilen
 // ada göre manuel verilir).
 
-// Paddle müşteri portalı: Paddle.js v1 portal API'si sunmaz; portal HOSTED bir
-// sayfa. Yönetici `NEXT_PUBLIC_PADDLE_CUSTOMER_PORTAL_URL` ile tam portal
-// linkini set ederse buton açılır (güvenli, canlı geçişte Paddle'dan alınır).
-export const PADDLE_CUSTOMER_PORTAL_URL =
-  process.env.NEXT_PUBLIC_PADDLE_CUSTOMER_PORTAL_URL ?? "";
+// Paddle müşteri portalı: Paddle Billing, aboneliğe bağlı zaman sınırlı bir
+// portal oturumu üretir (`POST /api/paddle/portal` → `customerPortalSessions`).
+// Statik bir URL env'i (eski `NEXT_PUBLIC_PADDLE_CUSTOMER_PORTAL_URL`) yerine
+// bu dinamik oturum kullanılır — her müşteri için doğru, güvenli yönlendirme.
+// Sabit bir env linki tutmaya gerek yok; portal butonu server'dan URL alır.
