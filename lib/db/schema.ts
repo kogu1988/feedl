@@ -1,12 +1,10 @@
 import {
   boolean,
-  customType,
   date,
   index,
   integer,
   jsonb,
   numeric,
-  pgEnum,
   pgTable,
   text,
   uniqueIndex,
@@ -19,15 +17,22 @@ import {
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
-// Sprint 27: tsvector özel tipi — drizzle pg-core'da yerleşik yok;
-// generated kolon (posts.search_vector) bu tiple tanımlanır.
-const tsvector = customType<{ data: string; driverData: string }>({
-  dataType() {
-    return "tsvector";
-  },
-});
-
-export const userRoleEnum = pgEnum("user_role", ["admin", "customer"]);
+// Sprint 63y (B7): paylaşılan pgEnum'lar + tsvector ayrı modülde (leaf).
+// Buradan import edilir ve re-export edilir — dışa importlar değişmez.
+import {
+  tsvector,
+  userRoleEnum,
+  postStatusEnum,
+  postSentimentEnum,
+  postTypeEnum,
+  boardVisibilityEnum,
+  workspaceMemberRoleEnum,
+  widgetTriageEnum,
+  aiSuggestionTypeEnum,
+  aiSuggestionStatusEnum,
+  customFieldTypeEnum,
+} from "./schema/shared";
+export * from "./schema/shared";
 
 // users: Clerk ile senkronize edilir (app/api/webhooks/clerk/route.ts).
 // id, Clerk user ID'sidir (tek kaynak: Neon users.role).
@@ -55,30 +60,7 @@ export const users = pgTable("users", {
     .defaultNow(),
 });
 
-export const postStatusEnum = pgEnum("post_status", [
-  "open",
-  "under-review",
-  "planned",
-  "in-progress",
-  "shipped",
-  "closed",
-]);
 
-// prompts.md'deki LLM çıktısı; AI fonksiyonları dolana kadar null kalır.
-export const postSentimentEnum = pgEnum("post_sentiment", [
-  "pozitif",
-  "notr",
-  "negatif",
-]);
-
-// Sprint 21: fikir türü (Canny'nin "category" kavramının karşılığı —
-// yapılandırılmış, tek seçim). AI doldurur; admin detay sayfasından
-// değiştirebilir. Serbest form etiketler için tags tablosuna bak.
-export const postTypeEnum = pgEnum("post_type", [
-  "feature",
-  "bug",
-  "usability",
-]);
 
 // posts: Ana fikir tablosu (docs/README.md §3).
 // embedding_vector: nvidia/nemotron-3-embed-1b:free (2048 boyut). HNSW limiti
@@ -225,10 +207,7 @@ export const workspaces = pgTable("workspaces", {
 // boards yalnızca POST'lari kapsar; votes/comments/tags post üzerinden
 // scope'lanır (post_id FK). companies/opportunities/changelog/api_keys
 // workspace-scoped kalır (board'a bağlanmaz).
-export const boardVisibilityEnum = pgEnum("board_visibility", [
-  "public",
-  "private",
-]);
+
 
 export const boards = pgTable("boards", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -258,12 +237,7 @@ export type NewBoard = typeof boards.$inferInsert;
 // (admin/customer) global kalır; bu tablo workspace bağlamında owner /
 // admin / member rolleri taşır. getAdminUserId buradan doğrular (geriye
 // dönük: users.role=admin de kabul edilir, geçişte kırılma olmaz).
-export const workspaceMemberRoleEnum = pgEnum("workspace_member_role", [
-  "owner",
-  "admin",
-  "member",
-  "contributor",
-]);
+
 
 export const workspaceMembers = pgTable("workspace_members", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -314,12 +288,7 @@ export type NewWorkspaceInvite = typeof workspaceInvites.$inferInsert;
 // Sprint 48l (madde 8, P1) — widget AI triage. Widget'ta yazılan mesajlar
 // AI ile sınıflandırılır (feedback/support/clarify/unrecognized); kayıt
 // audit için tutulur.
-export const widgetTriageEnum = pgEnum("widget_triage_type", [
-  "feedback",
-  "support",
-  "clarify",
-  "unrecognized",
-]);
+
 
 export const widgetTriages = pgTable("widget_triages", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -711,17 +680,9 @@ export type NewEmailDelivery = typeof emailDeliveries.$inferInsert;
 // admin onayı bekleyen öneriler. Sprint 5'te duplicate kararı otomatik
 // uygulanıyordu; artık pending öneri olarak inbox'a düşer, admin approve
 // edince Sprint 20 merge CTE'si çalışır. Karar alanları audit izi bırakır.
-export const aiSuggestionTypeEnum = pgEnum("ai_suggestion_type", [
-  "duplicate",
-  // spam önerisi ileride eklenir (analiz raporu P5).
-]);
 
-export const aiSuggestionStatusEnum = pgEnum("ai_suggestion_status", [
-  "pending",
-  "approved",
-  "rejected",
-  "ignored",
-]);
+
+
 
 export const aiSuggestions = pgTable(
   "ai_suggestions",
@@ -1005,12 +966,7 @@ export type NewPostOpportunity = typeof postOpportunities.$inferInsert;
 // Sprint 42 (PM raporu §8.5): Admin'in fikirlere eklediği özel alanlar.
 // Sprint 21 taksonomi kararına dokunmaz: postType = kategori, tags = serbest
 // etiket kalır; custom fields ayrı, admin tanımlı bir katmandır.
-export const customFieldTypeEnum = pgEnum("custom_field_type", [
-  "text",
-  "select",
-  "number",
-  "date",
-]);
+
 
 export const customFields = pgTable(
   "custom_fields",
