@@ -106,6 +106,8 @@ export async function POST(req: Request) {
 
     // Hard bounce / complaint → kullanıcı bildirim tercihlerini kapat
     // (geçersiz adres = gönderilemez; şikâyet = spam riski). Best-effort.
+    // `marksSuppressed` HAM olay türünü alır — `email.failed` geçici olabileceği
+    // için kapama yapmaz; yalnız hard `email.bounced` / `email.complained`.
     if (status === "bounced" || status === "complained") {
       const bounceType =
         status === "bounced" && typeof data.bounce === "object" && data.bounce
@@ -113,7 +115,7 @@ export async function POST(req: Request) {
           : null;
       // "bounced" (kalıcı/hard) veya "spam complaint" ise bildirimi kapat.
       // transient/problem kategorileri (soft bounce) kapatma — kalıcı değil.
-      const hard = marksSuppressed(status, bounceType);
+      const hard = marksSuppressed(type, bounceType);
       if (hard) {
         await getDb()
           .update(users)

@@ -7,7 +7,14 @@ export type EmailDeliveryStatus = "sent" | "delivered" | "bounced" | "complained
 
 export const EMAIL_STATUS_BY_EVENT: Record<string, EmailDeliveryStatus> = {
   "email.sent": "sent",
+  // `received` = alıcı mail sunucusu kabul etti (güçlü teslim sinyali, Resend'in
+  // `delivered`'ından önce gelebilir) — teslim sayılır.
+  "email.received": "delivered",
   "email.delivered": "delivered",
+  // `failed` = gönderilemedi (kalıcı/geçici olabilir) — teslim edilemez say.
+  // Suppression yalnızca `email.bounced`/`email.complained` ile yapılır
+  // (bkz. marksSuppressed) — `failed` geçici olabileceği için kapanmaz.
+  "email.failed": "bounced",
   "email.bounced": "bounced",
   "email.complained": "complained",
 };

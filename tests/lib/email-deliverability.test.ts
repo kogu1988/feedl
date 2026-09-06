@@ -6,7 +6,9 @@ import { deriveEmailStatus, marksSuppressed } from "@/lib/email/deliverability";
 describe("deriveEmailStatus", () => {
   it("maps known Resend event types", () => {
     expect(deriveEmailStatus("email.sent")).toBe("sent");
+    expect(deriveEmailStatus("email.received")).toBe("delivered");
     expect(deriveEmailStatus("email.delivered")).toBe("delivered");
+    expect(deriveEmailStatus("email.failed")).toBe("bounced");
     expect(deriveEmailStatus("email.bounced")).toBe("bounced");
     expect(deriveEmailStatus("email.complained")).toBe("complained");
   });
@@ -28,9 +30,13 @@ describe("marksSuppressed", () => {
     expect(marksSuppressed("email.bounced", null)).toBe(true);
   });
 
-  it("does NOT suppress on transient (soft) bounce", () => {
+  it("does not suppress on transient (soft) bounce", () => {
     expect(marksSuppressed("email.bounced", "transient")).toBe(false);
     expect(marksSuppressed("email.bounced", "complained")).toBe(false);
+  });
+
+  it("does not suppress on email.failed (may be transient)", () => {
+    expect(marksSuppressed("email.failed", null)).toBe(false);
   });
 
   it("does not suppress on deliver/sent", () => {
