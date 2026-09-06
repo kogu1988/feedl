@@ -2,22 +2,37 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
+// Kart yükseklik rolü (DESIGN.md §5 kart roller — 2026-09-06): yüzey kartı
+// (içerik) hover'sız/anlamsız yükselme; etkileşimli kart (kanban, portal fikir)
+// hover'da +shadow-xs +translateY(-2px); yüzen katman (dialog/popover) shadow-lg.
+// Varsayılan: surface — yeni kart bu rolü üstlenir, özellikle etkileşimli
+// olanlar `elevation="interactive"` alır.
+type CardElevation = "surface" | "interactive" | "floating";
+
 function Card({
   className,
   size = "default",
+  elevation = "surface",
   ...props
-}: React.ComponentProps<"div"> & { size?: "default" | "sm" }) {
+}: React.ComponentProps<"div"> & {
+  size?: "default" | "sm";
+  elevation?: CardElevation;
+}) {
   return (
     <div
       data-slot="card"
       data-size={size}
+      data-elevation={elevation}
       className={cn(
         "group/card flex flex-col gap-(--card-spacing) overflow-hidden rounded-xl bg-card py-(--card-spacing) text-sm text-card-foreground ring-1 ring-foreground/10 [--card-spacing:--spacing(4)] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(3)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl",
+        elevation === "interactive" &&
+          "transition-[transform,box-shadow] duration-150 ease-[var(--ease-out-quart)] hover:-translate-y-0.5 hover:shadow-xs dark:hover:ring-foreground/25",
+        elevation === "floating" && "shadow-lg",
         className
       )}
       {...props}
     />
-  )
+  );
 }
 
 function CardHeader({ className, ...props }: React.ComponentProps<"div">) {

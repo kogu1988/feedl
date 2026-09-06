@@ -67,7 +67,8 @@ export function IdeaCard({
   return (
     <Card
       aria-hidden={ariaHidden || undefined}
-      className={cn("transition-[transform,box-shadow] duration-150 ease-[var(--ease-out-quart)] hover:-translate-y-0.5 hover:shadow-xs dark:hover:ring-foreground/25", className)}
+      elevation="interactive"
+      className={className}
       draggable={draggable}
       onDragStart={onDragStart}
     >

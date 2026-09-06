@@ -297,9 +297,9 @@ export function WebhooksManager({ items }: { items: WebhookItem[] }) {
           </Button>
         </div>
         {deadLetters.length === 0 ? (
-          <p className="rounded-lg border border-dashed px-3 py-3 text-xs text-muted-foreground">
+          <EmptyState size="sm">
             Başarısız teslimat yok.
-          </p>
+          </EmptyState>
         ) : (
           <ul className="space-y-2">
             {deadLetters.map((d) => (

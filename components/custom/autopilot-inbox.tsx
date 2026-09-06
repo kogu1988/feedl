@@ -3,9 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CheckIcon, InboxIcon, Trash2Icon, XIcon } from "lucide-react";
+import { CheckIcon, Trash2Icon, XIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/custom/empty-state";
 
 export interface InboxSuggestionItem {
   id: string;
@@ -73,13 +74,10 @@ export function AutopilotInbox({
 
   if (suggestions.length === 0) {
     return (
-      <div className="flex items-center gap-3 rounded-lg border border-dashed p-6">
-        <InboxIcon className="size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
-        <p className="text-sm text-muted-foreground">
-          Bekleyen öneri yok. AI yeni fikirlerde duplicate tespit ettiğinde
-          burada listelenir.
-        </p>
-      </div>
+      <EmptyState>
+        Bekleyen öneri yok. AI yeni fikirlerde duplicate tespit ettiğinde
+        burada listelenir.
+      </EmptyState>
     );
   }
 

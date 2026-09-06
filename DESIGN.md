@@ -289,6 +289,11 @@ oynar:
   zemin farkından** gelir (kart 0.205 vs zemin 0.145).
 - Radius disiplini: kart/buton `lg`, dialog `xl`, rozet/avatar `full`,
   input `md` — her rolde tek değer.
+- **Card elevation prop (2026-09-06):** `elevation="interactive"`
+  (`components/ui/card.tsx`) hover'da `shadow-xs` + `-translate-y-0.5`
+  (150ms, transform/box-shadow) verir; `floating` `shadow-lg`; varsayılan
+  `surface` hover'sız. Etkileşimli kartlar (portal fikir, kanban,
+  roadmap) bunu kullanır — manuel hover class'ı kartlara yazılmaz.
 
 ## 6. Koyu Mod
 
