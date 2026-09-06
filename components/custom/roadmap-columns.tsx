@@ -6,16 +6,8 @@ import Link from "next/link";
 import { Loader2Icon } from "lucide-react";
 
 import { EmptyState } from "@/components/custom/empty-state";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { StatusBadge } from "@/components/custom/status-badge";
-import { CommentCountBadge } from "@/components/custom/comment-count-badge";
-import { cn } from "@/lib/utils";
+import { IdeaCard } from "@/components/custom/idea-card";
 
 // Sprint 53 (Platformlaşma #3) — roadmap drag-and-drop. Sadece ADMIN için
 // aktif: kartları kolonlar arasında sürükleyerek durum değiştirir
@@ -145,46 +137,22 @@ export function RoadmapColumns({
               </EmptyState>
             ) : (
               columnPosts.map((post) => (
-                <Card
+                <IdeaCard
                   key={post.id}
+                  title={post.title}
+                  href={`/portal/${post.id}`}
+                  badges={<StatusBadge status={effectiveStatus(post)} />}
+                  description={post.description}
+                  lineClamp={3}
+                  voteCount={Number(post.voteCount)}
+                  commentPostId={post.id}
+                  commentCount={post.commentCount}
                   draggable={isAdmin}
                   onDragStart={(event) => {
                     event.dataTransfer.effectAllowed = "move";
                     event.dataTransfer.setData("text/plain", post.id);
                   }}
-                  className={cn(
-                    // Sprint 51 (Batch 4): etkileşimli kart hover lift
-                    // (DESIGN.md §5) — translateY + shadow, 150ms; koyu
-                    // modda gölge görünmez, yüksekliği ring aydınlatır.
-                    "transition-[transform,box-shadow] duration-150 ease-[var(--ease-out-quart)]",
-                    "hover:-translate-y-0.5 hover:shadow-xs dark:hover:ring-foreground/25",
-                    isAdmin && "cursor-grab active:cursor-grabbing",
-                  )}
-                >
-                  <CardHeader>
-                    <CardTitle className="text-base leading-snug">
-                      <Link
-                        href={`/portal/${post.id}`}
-                        className="underline-offset-4 transition-colors hover:text-primary hover:underline"
-                      >
-                        {post.title}
-                      </Link>
-                    </CardTitle>
-                    <CardDescription className="flex items-center gap-2">
-                      <StatusBadge status={effectiveStatus(post)} />
-                      <span>{post.voteCount} oy</span>
-                      <CommentCountBadge
-                        postId={post.id}
-                        count={post.commentCount}
-                      />
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="line-clamp-3 text-sm text-muted-foreground">
-                      {post.description}
-                    </p>
-                  </CardContent>
-                </Card>
+                />
               ))
             )}
           </section>

@@ -8,7 +8,8 @@ import { EmptyState } from "@/components/custom/empty-state";
 import { Notice } from "@/components/custom/notice";
 import { MarkdownContent } from "@/components/custom/markdown-content";
 import { PageBreadcrumb } from "@/components/custom/page-breadcrumb";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { IdeaCard } from "@/components/custom/idea-card";
+import { cn } from "@/lib/utils";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId, isShowcaseRequest } from "@/lib/db/workspace";
 import {
@@ -106,60 +107,54 @@ export default async function ChangelogPage() {
           </EmptyState>
         ) : (
           entries.map((entry) => (
-            <Card key={entry.id}>
-              <CardHeader>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-sm text-muted-foreground">
-                    {entry.publishedAt ? trDateTimeFormatter.format(entry.publishedAt) : ""}
+            <IdeaCard
+              key={entry.id}
+              title={entry.title}
+              href={`/changelog/${entry.id}`}
+              date={entry.publishedAt ? trDateTimeFormatter.format(entry.publishedAt) : undefined}
+              badges={
+                entry.label ? (
+                  <span
+                    className={cn(
+                      "inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium",
+                      labelStyles[entry.label] ??
+                        "border-border bg-muted text-muted-foreground",
+                    )}
+                  >
+                    {entry.label}
                   </span>
-                  {entry.label ? (
-                    <span
-                      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${
-                        labelStyles[entry.label] ??
-                        "border-border bg-muted text-muted-foreground"
-                      }`}
-                    >
-                      {entry.label}
-                    </span>
+                ) : null
+              }
+              content={
+                <div className="grid gap-4">
+                  {entry.imageUrl ? (
+                    <img
+                      src={entry.imageUrl}
+                      alt=""
+                      className="max-h-80 w-full rounded-md border object-cover"
+                      loading="lazy"
+                    />
+                  ) : null}
+                  <MarkdownContent content={entry.body} />
+                  {entry.linkedPosts.length > 0 ? (
+                    <div className="grid gap-1.5 rounded-md border bg-muted/40 p-3">
+                      <span className="text-xs font-medium text-muted-foreground">
+                        İlgili fikirler:
+                      </span>
+                      {entry.linkedPosts.map((post) => (
+                        <Link
+                          key={post.id}
+                          href={`/portal/${post.id}`}
+                          className="text-sm underline-offset-4 transition-colors hover:text-primary hover:underline"
+                        >
+                          {post.title}
+                        </Link>
+                      ))}
+                    </div>
                   ) : null}
                 </div>
-                <h2 className="text-lg font-semibold leading-snug">
-                  <Link
-                    href={`/changelog/${entry.id}`}
-                    className="underline-offset-4 transition-colors hover:text-primary hover:underline"
-                  >
-                    {entry.title}
-                  </Link>
-                </h2>
-              </CardHeader>
-              <CardContent className="grid gap-4">
-                {entry.imageUrl ? (
-                  <img
-                    src={entry.imageUrl}
-                    alt=""
-                    className="max-h-80 w-full rounded-md border object-cover"
-                    loading="lazy"
-                  />
-                ) : null}
-                <MarkdownContent content={entry.body} />
-                {entry.linkedPosts.length > 0 ? (
-                  <div className="grid gap-1.5 rounded-md border bg-muted/40 p-3">
-                    <span className="text-xs font-medium text-muted-foreground">
-                      İlgili fikirler:
-                    </span>
-                    {entry.linkedPosts.map((post) => (
-                      <Link
-                        key={post.id}
-                        href={`/portal/${post.id}`}
-                        className="text-sm underline-offset-4 transition-colors hover:text-primary hover:underline"
-                      >
-                        {post.title}
-                      </Link>
-                    ))}
-                  </div>
-                ) : null}
-              </CardContent>
-            </Card>
+              }
+            />
           ))
         )}
       </div>
