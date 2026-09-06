@@ -1,10 +1,13 @@
 # feedl — AI Destekli Müşteri Geri Bildirim Platformu
 
-feedl, ürün ekiplerinin müşteri geri bildirimini toplaması, AI ile analiz etmesi,
+feedl, ürün ekiplerinin müşteri geri bildirimini toplaması, **AI ile analiz etmesi**,
 önceliklendirmesi ve duyurması için tek bir platformdur. Canny'ye ücretsiz bir
 alternatif — herkese açık bir topluluk portalı + gelir odaklı önceliklendirme.
 
 **Canlı:** [https://feedl.app](https://feedl.app)
+
+> **Tek söz kaynağı:** Bu README (ürün + konumlandırma + temel özellikler).
+> UI metinleri (`landing / pricing / demo`) buradaki söz dağarcığından beslenir.
 
 ---
 
@@ -20,6 +23,75 @@ alternatif — herkese açık bir topluluk portalı + gelir odaklı önceliklend
 4. **Duyur:** Yayına aldığında oy verenlere ve takipçilere otomatik e-posta gider;
    herkese açık bir değişiklik günlüğü oluşur.
 
+## Kimin için
+
+- **Hedef müşteri:** KOBİ / erken aşama SaaS ürün sahibi (tek ürün, küçük ekip).
+- **Yarı-yarına:** ~2–20 kişilik ürün + destek ekibi; geri bildirim dağınık
+  (e-posta, destek, Slack, roadmap) birikiyor.
+- **Kullanıcı:** Client'ın (platformu kullanan şirketin) **müşterileri** —
+  public portalda oy veren son kullanıcılar.
+
+## Değer önerisi
+
+> **"Müşteri isteklerini tahminle değil, veriyle önceliklendir."** — Feedl,
+> geri bildirimi otomatik sınıflandırır, duygu analizi yapar, kopyaları yakalar,
+> gelir bağlamını (müşteri + fırsat değeri) birleştirip hangi özelliğin önce
+> geliştirileceğini gösterir; yayınlanınca herkese otomatik duyurur.
+
+## Temel özellikler
+
+1. **Autopilot (AI):** Her fikir otomatik özet + etiket + benzer eşleştirme +
+   duygu analizi. Korpus seviyesi içgörüler (temalar, riskler, hızlı kazanımlar).
+2. **Oylama & Yol Haritası:** Şeffaf durumlar; sürükle-bırak kanban; herkese
+   açık yol haritası.
+3. **Değişiklik Günlüğü:** Draft → yayın akışı; herkese açık güncelleme sayfası.
+4. **Gelir Skoru:** Oy + müşteri sayısı + fırsat değeri (MRR) → revenue-weighted
+   prioritization.
+5. **Ekip & Roller:** Owner / admin / contributor / member — kısmi dashboard
+   erişimi, iç notlar (private).
+6. **Entegrasyonlar:** Slack, Zendesk, Intercom, Linear, Jira, Webhook'lar,
+   Public API (`/api/v1`) + müşteri sitesine gömülen widget.
+7. **Multi-tenant:** Her workspace kendi subdomain'i (`acme.feedl.app`), kendi
+   markası (logo/renk/domain), kendi board'ları.
+8. **Public API + Webhook:** HMAC-SHA256 imzalı olaylar, anahtar erişimi.
+
+## Farklılaşma (neden feedl?)
+
+| | Canny ($79/ay Pro) | FeedLog (self-host) | **feedl** |
+|---|---|---|---|
+| Hosted + hızlı kurulum | ✅ | ❌ (self-host) | ✅ |
+| AI analiz (etiket/özet/duygu) | ✅ | ⚠️ | ✅ |
+| Gelir/opportunity skoru | ✅ | ❌ | ✅ |
+| Public API + Webhook | ✅ | ⚠️ | ✅ |
+| Fiyat | pahalı | ücretsiz+operasyon | **uygun, hosted** |
+
+**Konum:** *"Canny'nin AI + gelir zekası, self-host derdi olmadan, uygun fiyata."*
+
+## Söz dağarcığı (satış / UI)
+
+Bir eylem/hedef tüm akışta **aynı adla** anılır (örn. "Fiyatlandırma",
+"Ücretsiz Başla", "Yol Haritası"). Ton: sade, aktif, insan sesi — eylem fiilleri
+("Kaydet", "Yayınla", "Bağlan"); son kullanıcı yüzeyinde jargonsuz (admin'de
+teknik terim serbest).
+
+| Yüzey | Ana mesaj | CTA |
+|---|---|---|
+| Landing | "Müşteri isteklerini veriyle önceliklendir" | Ücretsiz Başla · Canlı Demo · Fiyatlandırma |
+| Demo | "feedl gerçekte nasıl görünür" | Ücretsiz Başla |
+| Pricing | "Sade, ekip başına fiyatlandırma" | Pro'ya Geç |
+| Portal/Roadmap/Changelog | Topluluk — "İstediğini söyle, oyla" | Fikir Gönder / Oy Ver |
+
+**Kaçın:** "Kurumsal", "enterprise-grade", "AI devrimi" gibi boş terimler;
+Canny'yi kötüleme ("ücretsiz alternatif" olarak konumlandır); son kullanıcı
+yüzeyinde webhook/API jargonu kullanma.
+
+## Fiyatlandırma (bkz. `pricing/page.tsx` · `components/custom/plan-config.ts`)
+
+- **Free:** 1 board · 1 üye · 50 takipçi · "Powered by feedl" rozeti.
+- **Pro:** Sınırsız board · 10 üye · özel domain · marka kaldırma. Aylık/yıllık.
+- Model: **ekip/board başına** sabit ücret (kullanıcı başına değil) + workspace
+  kaynak limitleri. (Paddle sandbox; canlı geçiş yakında.)
+
 ## Teknoloji Stack'i
 
 | Katman | Teknoloji |
@@ -30,7 +102,7 @@ alternatif — herkese açık bir topluluk portalı + gelir odaklı önceliklend
 | DB | Neon PostgreSQL + pgvector (Drizzle ORM) |
 | UI | Tailwind v4 + shadcn/ui + Base UI |
 | Background | Inngest |
-| AI | OpenRouter (`minimax-minimax3:free` LLM, `nemotron-3-embed-1b:free` embedding) |
+| AI | OpenRouter (`minimax/minimax-m3:free` LLM, `nemotron-3-embed-1b:free` embedding) |
 | Email | Resend |
 | Billing | Paddle (sandbox) |
 | Rate-limit | Upstash Redis |
@@ -48,11 +120,12 @@ npm run dev                 # http://localhost:3000
 - Clerk: `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, `CLERK_WEBHOOK_SIGNING_SECRET`
 - Neon: `DATABASE_URL`
 - OpenRouter: `OPENROUTER_API_KEY`
-- Inngest: `INNGEST_EVENT_KEY`, `INNGEST_SIGNING_KEY`
-- Resend: `RESEND_API_KEY` · Test: `ETHEREAL_EMAIL_USER`, `ETHEREAL_EMAIL_PASSWORD`
+- Inngest: `INNGEST_EVENT_KEY`, `INNGEST_SIGNING_KEY`, `INNGEST_API_KEY`
+- Resend: `RESEND_API_KEY`, `RESEND_WEBHOOK_SECRET` · Test: `ETHEREAL_EMAIL_USER`, `ETHEREAL_EMAIL_PASSWORD`
 - Widget: `FEEDL_WIDGET_SECRET`, `FEEDL_WIDGET_ALLOWED_ORIGINS`
 - Paddle: `PADDLE_API_KEY`, `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN`, `PADDLE_WEBHOOK_SECRET`
 - Upstash: `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
+- Sentry: `SENTRY_DSN` (opsiyonel; DSN yoksa no-op)
 - App: `NEXT_PUBLIC_APP_URL`
 
 Gizli değerler yalnız `.env.local`'de — repo'ya yazılmaz.
@@ -62,6 +135,7 @@ Gizli değerler yalnız `.env.local`'de — repo'ya yazılmaz.
 ```bash
 npm run build   # tip + lint (in-session tek doğrulama)
 npm test        # Vitest birim testleri
+npm run test:e2e  # Playwright + axe erişilebilirlik (çalışan sunucu gerekir)
 ```
 
 > Not: Deploy, `main`'e push ile otomatiktir. Vercel Hobby planında kayan
@@ -83,8 +157,9 @@ inngest/           Arka plan fonksiyonları (autopilot, notify, webhooks)
 migrations/        Drizzle migration'ları
 docs/              Planlama (gitignored) + standartlar
 tests/             Vitest birim testleri
+e2e/               Playwright smoke + axe erişilebilirlik
 ```
 
 ## Lisans
 
-Ticari SaaS — özel repo. (Bkz. `docs/plan.md` ve `product.md`.)
+Ticari SaaS — özel repo. (Bkz. `docs/plan.md` · `DESIGN.md` · `docs/standarts.md`.)
