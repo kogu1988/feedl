@@ -137,8 +137,15 @@ Gizli değerler yalnız `.env.local`'de — repo'ya yazılmaz.
 ```bash
 npm run build   # tip + lint (in-session tek doğrulama)
 npm test        # Vitest birim testleri
-npm run test:e2e  # Playwright + axe erişilebilirlik (çalışan sunucu gerekir)
+npm run test:e2e  # Playwright + axe erişilebilirlik + auth akışı (çalışan sunucu gerekir)
 ```
+
+> **E2E auth akışı (`e2e/auth-flow.spec.ts`):** Clerk test env'leri
+> (`CLERK_SECRET_KEY` + `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`) yoksa akış otomatik
+> atlanır (CI gizli anahtarsız yeşil). Etkinleştirmek için Clerk dev instance
+> "fakes" özelliği açık olmalı ve admin kullanıcı
+> `node scripts/seed-e2e.mjs <clerkSubId>` ile DB'de seed'lenmeli (yerel
+> script — gitignored).
 
 > Not: Deploy, `main`'e push ile otomatiktir. Vercel Hobby planında kayan
 > 24 saatte ~100 deploy limiti vardır — commit'leri biriktirip tek push'ta
