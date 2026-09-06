@@ -134,11 +134,11 @@ test kapsamı, marka aksanı ve birkaç DRY/operasyonel borç.
 | B9 Dependabot kalıcı | `59911c3` | `@clerk/ui` → `@clerk/themes` (web-only); react-native/metro/solana zinciri gitti; `npm audit` 0 vuln; shadcn görünümü korundu |
 | B7 schema ilkel ayrımı | `191285e` | pgEnum'lar + tsvector → `schema/shared.ts` (drizzle generate: "no schema changes") |
 | F6 erişilebilirlik audit | `7ec904c` | `@axe-core/playwright` + `e2e/a11y.spec.ts` (kritik AA ihlalleri); kod tabanı zaten güçlü |
+| F2 canonical server-side | `450d800` | `middleware` x-feedl-pathname header + `lib/seo` generateCanonical; portal/roadmap/changelog generateMetadata (tam path + workspace custom domain) |
 
 ### ⏸️ Ertelenenler (onay / özel doğrulama gerektirir)
 | Madde | Neden ertelendi |
 |---|---|
-| F2 canonical server-side | Client `<link rel=canonical>` yeterli; `generateMetadata`'de path alınamaz (App Router) — middleware+header çözümü büyük |
 
 | B5 embedding HNSW | 2048-dim > HNSW 2000 cap; halfvec/type değişikliği + re-index — yüksek risk |
 
