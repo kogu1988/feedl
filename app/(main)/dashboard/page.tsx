@@ -274,7 +274,7 @@ export default async function DashboardPage({
       {section === "" ? (
         <>
           {!loadError ? (
-            <div className="grid gap-8 xl:grid-cols-2">
+            <div className="mt-8 grid gap-8 xl:grid-cols-2">
               <Card>
                 <CardHeader>
                   <CardTitle>Analitik</CardTitle>

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { ActivationFunnel } from "@/components/custom/activation-funnel";
+import { Notice } from "@/components/custom/notice";
 import { getTeamUserId } from "@/lib/auth/admin";
 import { loadActivationFunnel } from "@/lib/db/activation";
 
@@ -28,7 +29,7 @@ export default async function ActivationPage() {
   }
 
   return (
-    <main className="container mx-auto max-w-3xl p-4 sm:p-8">
+    <main className="container mx-auto max-w-none p-4 sm:p-8">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Aktivasyon</h1>
         <p className="mt-2 text-muted-foreground">
@@ -38,9 +39,9 @@ export default async function ActivationPage() {
       </div>
 
       {loadError || !data ? (
-        <p className="mt-6 text-sm text-destructive">
+        <Notice size="md" className="mt-6">
           Aktivasyon verisi yüklenemedi. Lütfen sayfayı yenile.
-        </p>
+        </Notice>
       ) : (
         <ActivationFunnel data={data} />
       )}

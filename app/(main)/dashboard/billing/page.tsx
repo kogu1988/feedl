@@ -1,17 +1,21 @@
 import { redirect } from "next/navigation";
-import { eq } from "drizzle-orm";
+import { count, eq } from "drizzle-orm";
 
-import { BillingManager } from "@/components/custom/billing-manager";
+import { BillingOverview } from "@/components/custom/billing-overview";
 import { getAdminUserId, getNonAdminRedirectTarget } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
-import { workspaces } from "@/lib/db/schema";
+import { boards, workspaceMembers, workspaces } from "@/lib/db/schema";
+import { PLANS, planFromString } from "@/lib/paddle";
 
 // Canlı veri: her istekte DB'den okunur.
 export const dynamic = "force-dynamic";
 
-// Sprint 48h (Faz 5) — abonelik/faturalandırma. Workspace plan bilgisini
-// gösterir; Pro'ya yükseltme Paddle.js checkout ile (billing-manager client).
+// Sprint 48h (Faz 5) + 63k — abonelik/faturalandırma. İki sütun: solda kullanım
+// grafiği + plan kartları, sağda ödeme geçmişi (Paddle portalı üzerinden).
+// Üye sayımı workspace_members, board sayımı boards tablosundan gelir;
+// takipçi (tracked) tahmini: workspace'e oy/posta düşen eşsiz kullanıcı sayısı
+// yerine basitçe mevcut üye sayısı + plan limiti gösterilir (MVP).
 export default async function BillingPage() {
   const adminId = await getAdminUserId();
   if (!adminId) {
@@ -32,8 +36,7 @@ export default async function BillingPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Faturalandırma</h1>
         <p className="mt-2 text-muted-foreground">
-          Planını ve kullanım limitlerini gösterir. Pro&apos;ya geçişle tüm
-          özellikleri aç.
+          Planını, kullanım limitlerini ve ödemeni tek ekranda yönet.
         </p>
       </div>
 
@@ -42,10 +45,9 @@ export default async function BillingPage() {
           Faturalandırma bilgisi yüklenemedi. Lütfen sayfayı yenile.
         </p>
       ) : (
-        <BillingManager
+        <BillingOverview
           plan={data.plan}
           paddleSubscriptionId={data.paddleSubscriptionId}
-          paddleCustomerId={data.paddleCustomerId}
           paddleSubscriptionStatus={data.paddleSubscriptionStatus}
           workspaceSlug={data.slug}
           pricing={{
@@ -53,6 +55,7 @@ export default async function BillingPage() {
               process.env.NEXT_PUBLIC_PADDLE_PRO_MONTHLY_PRICE_ID ?? "",
             yearlyPriceId: process.env.NEXT_PUBLIC_PADDLE_PRO_YEARLY_PRICE_ID ?? "",
           }}
+          usage={data.usage}
         />
       )}
     </main>
@@ -60,6 +63,7 @@ export default async function BillingPage() {
 }
 
 async function loadWorkspace() {
+  const workspaceId = await getWorkspaceId();
   const [row] = await getDb()
     .select({
       plan: workspaces.plan,
@@ -69,8 +73,32 @@ async function loadWorkspace() {
       slug: workspaces.slug,
     })
     .from(workspaces)
-    .where(eq(workspaces.id, await getWorkspaceId()))
+    .where(eq(workspaces.id, workspaceId))
     .limit(1);
   if (!row) throw new Error("Workspace bulunamadı.");
-  return row;
+
+  const [boardRow] = await getDb()
+    .select({ value: count(boards.id) })
+    .from(boards)
+    .where(eq(boards.workspaceId, workspaceId));
+  const [memberRow] = await getDb()
+    .select({ value: count(workspaceMembers.id) })
+    .from(workspaceMembers)
+    .where(eq(workspaceMembers.workspaceId, workspaceId));
+
+  const plan = planFromString(row.plan);
+  const limits = PLANS[plan];
+  return {
+    ...row,
+    usage: {
+      boards: Number(boardRow?.value ?? 0),
+      members: Number(memberRow?.value ?? 0),
+      // Takipçi (tracked): workspace'te oy/posta atan eşsiz kullanıcı sayısı
+      // yerine şimdilik üye sayısı + plan limiti (MVP; ileride ölçülür).
+      tracked: Number(memberRow?.value ?? 0),
+      boardLimit: limits.boardLimit,
+      memberLimit: limits.memberLimit,
+      trackedLimit: limits.trackedUserLimit,
+    },
+  };
 }

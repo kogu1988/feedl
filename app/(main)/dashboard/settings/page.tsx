@@ -1,80 +1,16 @@
 import { redirect } from "next/navigation";
-import { eq } from "drizzle-orm";
 
-import { WorkspaceSettings } from "@/components/custom/workspace-settings";
-import { IntegrationsPanel } from "@/components/custom/integrations-panel";
 import { getAdminUserId, getNonAdminRedirectTarget } from "@/lib/auth/admin";
-import { getDb } from "@/lib/db";
-import { getWorkspaceId } from "@/lib/db/workspace";
-import { workspaces } from "@/lib/db/schema";
 
-// Canlı veri: her istekte DB'den okunur.
 export const dynamic = "force-dynamic";
 
-// Sprint 48a (madde 8) — workspace yönetim paneli. Ad, slug (salt-okunur
-// subdomain önizleme), custom domain, marka rengi ve logo.
+// Sprint 63k (kullanıcı): Workspace Ayarları → /dashboard/workspaces,
+// Entegrasyonlar → /dashboard/integrations. Boşalan bu sayfa eski URL'ler için
+// workspaces'e yönlendirir (ölü 404 olmasın).
 export default async function SettingsPage() {
   const adminId = await getAdminUserId();
   if (!adminId) {
     redirect(await getNonAdminRedirectTarget());
   }
-
-  let initial: Awaited<ReturnType<typeof loadWorkspace>> | null = null;
-  let loadError = false;
-  try {
-    initial = await loadWorkspace();
-  } catch (err) {
-    console.error(
-      "SettingsPage load failed:",
-      err instanceof Error ? err.message : err,
-    );
-    loadError = true;
-  }
-
-  return (
-    <main className="container mx-auto max-w-none p-4 sm:p-8">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Workspace Ayarları</h1>
-        <p className="mt-2 text-muted-foreground">
-          Alan adı ve marka bilgilerini yönet. Subdomain, workspace bazlı
-          portallar için kaynaktır.
-        </p>
-      </div>
-
-      {loadError || !initial ? (
-        <p className="mt-6 text-sm text-destructive">
-          Workspace yüklenemedi. Lütfen sayfayı yenile.
-        </p>
-      ) : (
-        <>
-          <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
-            <WorkspaceSettings initial={initial} />
-            <div className="grid gap-6">
-              <h2 className="text-base font-semibold">Entegrasyonlar</h2>
-              <IntegrationsPanel />
-            </div>
-          </div>
-        </>
-      )}
-    </main>
-  );
-}
-
-async function loadWorkspace() {
-  const [row] = await getDb()
-    .select({
-      id: workspaces.id,
-      name: workspaces.name,
-      slug: workspaces.slug,
-      customDomain: workspaces.customDomain,
-      brandColor: workspaces.brandColor,
-      logoUrl: workspaces.logoUrl,
-    })
-    .from(workspaces)
-    .where(eq(workspaces.id, await getWorkspaceId()))
-    .limit(1);
-  if (!row) {
-    throw new Error("Workspace bulunamadı.");
-  }
-  return row;
+  redirect("/dashboard/workspaces");
 }

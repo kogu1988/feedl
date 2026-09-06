@@ -4,6 +4,7 @@ import { TriangleAlertIcon } from "lucide-react";
 
 import { WidgetOriginsManager, type WidgetOriginItem } from "@/components/custom/widget-origins-manager";
 import { WidgetSetup } from "@/components/custom/widget-setup";
+import { Disclosure } from "@/components/custom/disclosure";
 import {
   Card,
   CardContent,
@@ -83,26 +84,14 @@ export default async function WidgetAdminPage() {
         </CardContent>
       </Card>
 
-      <Card className="mt-8">
-        <CardHeader>
-          <CardTitle>Üretim: jetonu kendi backend&apos;inizde imalayın</CardTitle>
-          <CardDescription>
-            HS256, sıfır bağımlılık — Node.js örneği. sub zorunlu ve en fazla
-            64 karakter (harf, rakam, - ve _); exp zorunlu.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <pre className="overflow-x-auto rounded-lg border bg-muted/40 p-4 text-xs leading-relaxed">
-            <code>{NODE_EXAMPLE}</code>
-          </pre>
-        </CardContent>
-      </Card>
-
-      <Card className="mt-8">
-        <CardHeader>
-          <CardTitle>Ortam değişkenleri ve notlar</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-3 text-sm text-muted-foreground">
+      <Disclosure
+        title="Üretim: jetonu kendi backend&apos;inizde imalayın"
+        description="HS256, sıfır bağımlılık — Node.js örneği. Bu bölüm varsayılan olarak kapalıdır; açmak için tıklayın."
+      >
+        <pre className="overflow-x-auto rounded-lg border bg-muted/40 p-4 text-xs leading-relaxed">
+          <code>{NODE_EXAMPLE}</code>
+        </pre>
+        <div className="mt-4 grid gap-3 text-sm text-muted-foreground">
           <p>
             <code className="rounded bg-muted px-1.5 py-0.5 text-xs">FEEDL_WIDGET_SECRET</code>{" "}
             — müşteri ve feedl&apos;in paylaştığı gizli anahtar (en az 16 karakter,
@@ -119,8 +108,8 @@ export default async function WidgetAdminPage() {
             Safari&apos;de açılmayabilir; widget yine salt-okunur liste olarak
             çalışır.
           </p>
-        </CardContent>
-      </Card>
+        </div>
+      </Disclosure>
     </main>
   );
 }

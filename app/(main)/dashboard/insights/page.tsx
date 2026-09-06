@@ -13,10 +13,34 @@ import { analyzeCorpus } from "@/lib/ai/insights";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-// Sprint 61 (corpus AI içgörüleri) — OpenAI/Claude "asıl moat": feedback
-// korpusunu analiz eder (tek tek değil). En çok oy alan en fazla 60 fikir
-// LLM'e verilir; temas/trend/risk/hızlı kazanım önerisi üretilir.
+// Sprint 61 (corpus AI içgörüleri) — feedback korpusunu analiz eder (tek tek
+// değil). En çok oy alan en fazla 60 fikir LLM'e verilir.
+// Sprint 63k: LLM çağrısı yavaş/flaky olduğunda Vercel'in fonksiyonu dead-line
+// (maxDuration) öldürmesinden kaynaklanan 500'ü önlemek için `analyzeCorpus`
+// bir zaman aşımı yarışıyla (Promise.race) sarmalanır — aşarsa graceful hata
+// kartı gösterilir, fonksiyon asla timeout'ta 500'lemez.
 const MAX_CORPUS = 60;
+const ANALYSIS_TIMEOUT_MS = 25_000;
+
+// Zaman aşımı (payload Vercel'in fonksiyon timeout'undan önce döner).
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(
+      () => reject(new Error("AI içgörü analizi zaman aşımına uğradı.")),
+      ms,
+    );
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        clearTimeout(timer);
+        reject(err);
+      },
+    );
+  });
+}
 
 export default async function InsightsPage() {
   const teamId = await getTeamUserId();
@@ -47,13 +71,16 @@ export default async function InsightsPage() {
     corpusSize = rows.length;
 
     if (rows.length > 0) {
-      insights = await analyzeCorpus(
-        rows.map((r) => ({
-          title: r.title,
-          description: r.description,
-          status: r.status,
-          votes: Number(r.voteCount),
-        })),
+      insights = await withTimeout(
+        analyzeCorpus(
+          rows.map((r) => ({
+            title: r.title,
+            description: r.description,
+            status: r.status,
+            votes: Number(r.voteCount),
+          })),
+        ),
+        ANALYSIS_TIMEOUT_MS,
       );
     }
   } catch (err) {
