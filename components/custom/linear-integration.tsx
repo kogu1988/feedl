@@ -2,10 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Loader2Icon, LockKeyholeIcon } from "lucide-react";
+import { Loader2Icon } from "lucide-react";
 
 import { Notice } from "@/components/custom/notice";
-import { EmptyState } from "@/components/custom/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -155,19 +154,13 @@ export function LinearIntegration({ isPro }: { isPro: boolean }) {
             </div>
           </div>
         ) : !isPro ? (
-          <div className="grid gap-3">
-            <EmptyState title="Pro plan özelliğidir" className="border-0">
-              Linear&apos;ı bağlamak için Pro planına geç.
-              <Button
-                className="mt-3"
-                size="sm"
-                variant="outline"
-                render={<Link href="/dashboard/billing" />}
-              >
-                <LockKeyholeIcon className="size-4" />
-                Pro&apos;ya Yükselt
-              </Button>
-            </EmptyState>
+          <div className="flex min-h-[120px] flex-col items-center justify-center gap-2">
+            <Button
+              size="lg"
+              render={<Link href="/dashboard/billing" />}
+            >
+              Pro&apos;ya Yükselt
+            </Button>
           </div>
         ) : (
           <div className="grid gap-3">

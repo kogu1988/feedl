@@ -5,6 +5,7 @@ import { shadcn } from "@clerk/ui/themes";
 import { SiteHeader } from "@/components/custom/site-header";
 import { SiteFooter } from "@/components/custom/site-footer";
 import { ThemeProvider } from "@/components/custom/theme-provider";
+import { CanonicalLink } from "@/components/custom/canonical-link";
 import { getWorkspaceBrand } from "@/lib/db/workspace";
 
 // Sprint 32: site üst barı ClerkProvider ile birlikte (main) route group'una
@@ -30,6 +31,7 @@ export default async function MainLayout({
         enableSystem
         disableTransitionOnChange
       >
+      <CanonicalLink customDomain={brand.customDomain} />
       <div className="flex min-h-svh flex-col">
         <SiteHeader brand={brand} />
         <div className="flex-1">{children}</div>

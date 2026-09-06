@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronsUpIcon } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ChevronsUpIcon, MenuIcon, XIcon } from "lucide-react";
 import { Show, UserButton, useAuth } from "@clerk/nextjs";
 
 import { ClerkTriggerButton } from "@/components/custom/clerk-trigger-button";
@@ -95,6 +96,7 @@ function isActive(pathname: string, href: string) {
 export function SiteHeader({ brand }: { brand?: { name: string; brandColor: string | null; logoUrl: string | null } }) {
   const pathname = usePathname();
   const { isSignedIn } = useAuth();
+  const [mobileOpen, setMobileOpen] = useState(false);
   // Tam genişlik kararı (2026-09-05): üst bar tüm sayfalarda ekranın
   // tamamını kullanır — public/admin container ayrımı kalktı.
   const workspaceName = brand?.name ?? "feedl";
@@ -103,12 +105,16 @@ export function SiteHeader({ brand }: { brand?: { name: string; brandColor: stri
   // Auth yüzeyinde giriş/kayıt butonları gösterilmez (kendi sayfasına giden
   // ölü link + P1 tekrar). Aksi halde anonimde gösterilir.
   const showAuthTriggers = !isSignedIn && !isAuthSurface(pathname);
+  const navItems = navItemsFor(pathname, isSignedIn === true);
+
+  // Mobil menüde gezinme başlayınca (route değişiminde) menüyü kapat.
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
 
   return (
     <header className="sticky top-0 z-40 border-b bg-background">
-      <div
-        className="container mx-auto flex h-14 max-w-none items-center justify-between gap-3 px-4"
-      >
+      <div className="container mx-auto flex h-14 max-w-none items-center justify-between gap-3 px-4">
         <div className="flex min-w-0 items-center gap-4 sm:gap-6">
           <Link
             href="/"
@@ -128,11 +134,12 @@ export function SiteHeader({ brand }: { brand?: { name: string; brandColor: stri
             </span>
             <span className="text-base">{workspaceName}</span>
           </Link>
+          {/* Masaüstü nav (md+); mobilde hamburger içinde. */}
           <nav
-            className="flex min-w-0 items-center gap-0.5 text-sm sm:gap-1"
+            className="hidden min-w-0 items-center gap-0.5 text-sm sm:gap-1 md:flex"
             aria-label="Site menüsü"
           >
-            {navItemsFor(pathname, isSignedIn === true).map((item) => (
+            {navItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
@@ -151,27 +158,93 @@ export function SiteHeader({ brand }: { brand?: { name: string; brandColor: stri
         </div>
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
           <ThemeToggle />
-          <Show when="signed-out">
-            {showAuthTriggers ? (
-              <>
-                <ClerkTriggerButton
-                  mode="sign-in"
-                  variant="ghost"
-                  size="sm"
-                >
-                  Giriş yap
-                </ClerkTriggerButton>
-                <ClerkTriggerButton mode="sign-up" size="sm">
-                  Kayıt ol
-                </ClerkTriggerButton>
-              </>
-            ) : null}
-          </Show>
-          <Show when="signed-in">
-            <UserButton />
-          </Show>
+          {/* Giriş/kayıt + UserButton yalnız masaüstünde (md+). */}
+          <div className="hidden items-center gap-2 md:flex">
+            <Show when="signed-out">
+              {showAuthTriggers ? (
+                <>
+                  <ClerkTriggerButton
+                    mode="sign-in"
+                    variant="ghost"
+                    size="sm"
+                  >
+                    Giriş yap
+                  </ClerkTriggerButton>
+                  <ClerkTriggerButton mode="sign-up" size="sm">
+                    Kayıt ol
+                  </ClerkTriggerButton>
+                </>
+              ) : null}
+            </Show>
+            <Show when="signed-in">
+              <UserButton />
+            </Show>
+          </div>
+          {/* Mobilde hamburger (md-). Auth yüzeyinde nav zaten boşsa gizle. */}
+          {navItems.length > 0 || showAuthTriggers ? (
+            <button
+              type="button"
+              onClick={() => setMobileOpen((open) => !open)}
+              className="inline-flex size-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground md:hidden"
+              aria-label={mobileOpen ? "Menüyü kapat" : "Menüyü aç"}
+              aria-expanded={mobileOpen}
+            >
+              {mobileOpen ? (
+                <XIcon className="size-5" aria-hidden="true" />
+              ) : (
+                <MenuIcon className="size-5" aria-hidden="true" />
+              )}
+            </button>
+          ) : null}
         </div>
       </div>
+
+      {/* Mobil menü paneli */}
+      {mobileOpen ? (
+        <div className="border-t bg-background px-4 py-3 md:hidden">
+          <nav className="grid gap-1" aria-label="Mobil site menüsü">
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                aria-current={isActive(pathname, item.href) ? "page" : undefined}
+                onClick={() => setMobileOpen(false)}
+                className={cn(
+                  "rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-foreground",
+                  isActive(pathname, item.href)
+                    ? "bg-muted text-foreground"
+                    : "text-muted-foreground",
+                )}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+          {showAuthTriggers ? (
+            <div className="mt-3 grid gap-2 border-t pt-3">
+              <ClerkTriggerButton mode="sign-in" variant="outline" className="w-full">
+                Giriş yap
+              </ClerkTriggerButton>
+              <ClerkTriggerButton mode="sign-up" className="w-full">
+                Kayıt ol
+              </ClerkTriggerButton>
+            </div>
+          ) : null}
+          {isSignedIn ? (
+            <div className="mt-3 border-t pt-3">
+              <UserButton
+                showName
+                appearance={{
+                  elements: {
+                    rootBox: "justify-start",
+                    avatarBox: "size-8",
+                  },
+                }}
+              />
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </header>
   );
 }

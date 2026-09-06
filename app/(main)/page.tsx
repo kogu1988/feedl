@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import {
   BarChart3Icon,
   BracesIcon,
+  InboxIcon,
+  MegaphoneIcon,
   MessageSquareTextIcon,
   PaletteIcon,
   PlugIcon,
@@ -21,6 +23,7 @@ import { isShowcaseRequest } from "@/lib/db/workspace";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DemoPostCard } from "@/components/custom/demo-post-card";
+import { PricingManager } from "@/components/custom/pricing-manager";
 
 // Sprint 50 (Faz 4/cilama) — "/" artık SATIŞ landing'idir. Portal / yol
 // haritası / güncellemeler nav'dan çıkarıldı; ürün örnekleri /demo'ya taşındı.
@@ -67,19 +70,26 @@ export default async function RootPage() {
       title: "Topla",
       description:
         "Müşterilerin istekleri tek bir panoya düşer; oylar en çok istenen özelliği üste taşır.",
+      icon: InboxIcon,
+      accent: "bg-brand-soft text-brand",
     },
     {
       title: "Anla",
       description:
         "Autopilot her fikri özetler, etiketler ve benzer istekleri işaretler; tahminle değil veriyle karar verirsin.",
+      icon: SparklesIcon,
+      accent: "bg-brand-soft text-brand",
     },
     {
       title: "Duyur",
       description:
         "Yayına aldığında oy veren herkese e-posta gider; şeffaf yol haritası ve değişiklik günlüğü güncel kalır.",
+      icon: MegaphoneIcon,
+      accent: "bg-brand-soft text-brand",
     },
   ];
 
+  // Sprint 63r: Free özellikler önce, Pro özellikler sonra (net hiyerarşi).
   const features = [
     {
       title: "AI Autopilot",
@@ -107,6 +117,13 @@ export default async function RootPage() {
       description:
         "Sahip, admin, katkıcı rolleriyle ekibin doğru kişiyi doğru işe yönlendirir; iç notlar gizli kalır.",
       icon: UsersIcon,
+      plan: "free",
+    },
+    {
+      title: "Güvenlik & Gizlilik",
+      description:
+        "Rol bazlı erişim, anahtar ile doğrulanmış API ve iç notların müşteriye sızmaması.",
+      icon: ShieldCheckIcon,
       plan: "free",
     },
     {
@@ -143,13 +160,6 @@ export default async function RootPage() {
         "Oy, müşteri ve fırsat değerini birleştirerek hangi özelliğin en çok getireceğini önceliklendir.",
       icon: BarChart3Icon,
       plan: "pro",
-    },
-    {
-      title: "Güvenlik & Gizlilik",
-      description:
-        "Rol bazlı erişim, anahtar ile doğrulanmış API ve iç notların müşteriye sızmaması.",
-      icon: ShieldCheckIcon,
-      plan: "free",
     },
     {
       title: "İş Akışı & Görünümler",
@@ -211,14 +221,27 @@ export default async function RootPage() {
       </section>
 
       <section className="mt-20 sm:mt-24">
-        <h2 className="text-2xl font-bold tracking-tight">Nasıl çalışır</h2>
-        <ol className="mt-6 grid gap-8 sm:grid-cols-3 sm:gap-6">
+        <div className="max-w-2xl">
+          <h2 className="text-2xl font-bold tracking-tight">Nasıl çalışır</h2>
+          <p className="mt-3 text-muted-foreground">
+            Üç adımda müşteri sesini ürüne dönüştürürsün.
+          </p>
+        </div>
+        <ol className="mt-8 grid gap-6 sm:grid-cols-3">
           {steps.map((step, index) => (
-            <li key={step.title} className="sm:pr-6">
-              <span className="flex size-6 items-center justify-center rounded-full border font-mono text-xs text-muted-foreground">
+            <li
+              key={step.title}
+              className="relative flex flex-col rounded-2xl border bg-card p-6"
+            >
+              <span className="absolute right-5 top-5 flex size-8 items-center justify-center rounded-lg border bg-muted/40 font-mono text-sm tabular-nums text-muted-foreground">
                 {index + 1}
               </span>
-              <p className="mt-3 font-medium">{step.title}</p>
+              <span
+                className={`flex size-11 items-center justify-center rounded-xl ${step.accent}`}
+              >
+                <step.icon className="size-5" aria-hidden="true" />
+              </span>
+              <p className="mt-4 text-lg font-semibold">{step.title}</p>
               <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
                 {step.description}
               </p>
@@ -278,70 +301,11 @@ export default async function RootPage() {
           </p>
         </div>
 
-        <div className="mt-10 grid gap-6 lg:grid-cols-2">
-          {/* FREE */}
-          <div className="rounded-2xl border bg-card p-6">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Free</h3>
-              <span className="text-2xl font-bold tracking-tight">$0</span>
-            </div>
-            <p className="mt-1 text-xs text-muted-foreground">sonsuza dek</p>
-            <ul className="mt-5 grid gap-2 text-sm">
-              {[ "1 board · 1 üye · 50 takipçi",
-                 "Fikir + oy + yorum",
-                 "AI etiketleme & tek post özeti",
-                 "Yol haritası & değişiklik günlüğü",
-                 "Gömülü widget (kendi sitende)",
-                 "\"Powered by feedl\" rozeti" ].map((f) => (
-                <li key={f} className="flex items-start gap-2">
-                  <span className="mt-0.5 text-emerald-600 dark:text-emerald-400">✓</span>
-                  <span className="text-muted-foreground">{f}</span>
-                </li>
-              ))}
-            </ul>
-            <div className="mt-6">
-              <SignUpButton forceRedirectUrl="/onboarding">
-                <Button size="lg" variant="outline" className="w-full">
-                  Ücretsiz Başla
-                </Button>
-              </SignUpButton>
-            </div>
-          </div>
-
-          {/* PRO */}
-          <div className="rounded-2xl border border-brand bg-brand-soft p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <h3 className="text-lg font-semibold">Pro</h3>
-                <Badge className="border-transparent bg-brand text-primary-foreground">Popüler</Badge>
-              </div>
-              <div className="text-right">
-                <span className="text-2xl font-bold tracking-tight">$19</span>
-                <span className="text-sm text-muted-foreground">/ay</span>
-              </div>
-            </div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Yıllık ödemede ayda $15&apos;e eşdeğer (%20 indirim).
-            </p>
-            <ul className="mt-5 grid gap-2 text-sm">
-              {[ "Sınırsız board · 10 üye · sınırsız takipçi",
-                 "Entegrasyonlar (Slack, Zendesk, Intercom, Jira, Linear)",
-                 "AI içgörüleri (korpus analizi)",
-                 "API + webhook erişimi",
-                 "Özel alan adı + marka kaldırma",
-                 "Private board & gelir skoru" ].map((f) => (
-                <li key={f} className="flex items-start gap-2">
-                  <span className="mt-0.5 text-brand">✓</span>
-                  <span className="text-muted-foreground">{f}</span>
-                </li>
-              ))}
-            </ul>
-            <div className="mt-6">
-              <Button size="lg" className="w-full" render={<Link href="/pricing" />}>
-                Pro&apos;ya Geç
-              </Button>
-            </div>
-          </div>
+        {/* Sprint 63r: tüm plan kartları TEK STANDART — /pricing ile aynı
+            PricingManager (Free kartı + Pro kartı, Pro'da aylık/yıllık switch
+            varsayılan yıllık). Landing feedl kök workspace'ini temsil eder. */}
+        <div className="mt-10">
+          <PricingManager workspaceSlug="feedl" />
         </div>
 
         <p className="mt-6 text-center text-muted-foreground">
