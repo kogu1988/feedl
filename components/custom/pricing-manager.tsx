@@ -7,6 +7,7 @@ import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   getPlanEnv,
   PRO_PLAN,
@@ -131,9 +132,9 @@ export function PricingManager({ workspaceSlug }: { workspaceSlug: string }) {
         <div className="flex h-full flex-col rounded-2xl border border-primary bg-primary/5 p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold">Pro</h2>
-            <span className="rounded-full bg-primary px-2.5 py-0.5 text-xs font-medium text-primary-foreground">
+            <Badge className="border-transparent bg-primary text-primary-foreground">
               Popüler
-            </span>
+            </Badge>
           </div>
 
           {/* Aylık/Yıllık switch — sadece Pro kartında */}

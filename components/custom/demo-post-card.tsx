@@ -1,24 +1,16 @@
 import { MessageSquareIcon, ThumbsUpIcon } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/custom/status-badge";
 import { TypeBadge } from "@/components/custom/type-badge";
 import { SentimentBadge } from "@/components/custom/sentiment-badge";
 import { cn } from "@/lib/utils";
 
-// Sprint 50 (cilama) — portal fikir kartının GÖRSEL birebir karşılığı, ama
-// etkileşimsiz (tıklanamaz). Landing + /demo örnekleri için tekil kaynak:
-// aynı Badge/Button stilleri → proje geneli tutarlılık. Oy/etiket/yorum
-// elemanları portaldaki VoteButton/CommentCountBadge/TagChips ile AYNI görünür
-// (ThumbsUp, MessageSquare iconları, outline Button, rozetler) fakat
-// tıklanamaz/bağlantısız.
+// Sprint 50 (cilama) + 63m — portal fikir kartının GÖRSEL birebir karşılığı
+// (IdeaCard köşe düzeni: başlık+rozetler sol üst, tarih sağ üst, etiketler+metin
+// sol, oy+yorum sağ alt), ama etkileşimsiz (tıklanamaz / aria-hidden). Landing +
+// /demo için tek kaynak — gerçek IdeaCard ile aynı görünüm.
 export type DemoPostStatus = "open" | "under-review" | "planned" | "in-progress" | "shipped" | "closed";
 export type DemoPostType = "feature" | "bug" | "usability";
 
@@ -47,46 +39,42 @@ export function DemoPostCard({
 }) {
   return (
     <Card className={cn(className)}>
-      <CardHeader>
-        <div className="flex items-start justify-between gap-3">
-          <CardTitle className="leading-snug">{title}</CardTitle>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            tabIndex={-1}
-            aria-hidden="true"
-            className="pointer-events-none shrink-0 gap-1.5"
-          >
-            <ThumbsUpIcon className="size-4" aria-hidden="true" />
-            <span className="font-mono tabular-nums">{voteCount}</span>
-          </Button>
+      <CardContent className="p-4">
+        <div className="flex justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-base font-semibold leading-snug">{title}</span>
+              <StatusBadge status={status} />
+              <TypeBadge type={type} />
+              <SentimentBadge sentiment={sentiment} />
+            </div>
+            {tags.length > 0 ? (
+              <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                {tags.map((tag) => (
+                  <Badge key={tag} className="border-border bg-muted text-muted-foreground">
+                    #{tag}
+                  </Badge>
+                ))}
+              </div>
+            ) : null}
+            <p className="mt-2 whitespace-pre-line text-sm text-muted-foreground">
+              {description}
+            </p>
+          </div>
+          <div className="flex shrink-0 flex-col items-end justify-between gap-3">
+            <span className="text-xs text-muted-foreground">{date}</span>
+            <div className="flex items-center gap-3">
+              <span className="inline-flex items-center gap-1">
+                <MessageSquareIcon className="size-3.5 text-muted-foreground" aria-hidden="true" />
+                <span className="font-mono tabular-nums">{commentCount}</span>
+              </span>
+              <span className="inline-flex items-center gap-1 font-medium">
+                <ThumbsUpIcon className="size-4 text-muted-foreground" aria-hidden="true" />
+                <span className="font-mono tabular-nums">{voteCount}</span>
+              </span>
+            </div>
+          </div>
         </div>
-        <CardDescription className="flex flex-wrap items-center gap-2">
-          {date}
-          <StatusBadge status={status} />
-          <TypeBadge type={type} />
-          <span className="inline-flex items-center gap-1">
-            <MessageSquareIcon className="size-3.5" aria-hidden="true" />
-            <span className="font-mono tabular-nums">{commentCount}</span> yorum
-          </span>
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="grid gap-2">
-        <div className="flex flex-wrap items-center gap-1.5">
-          <SentimentBadge sentiment={sentiment} />
-          {tags.map((tag) => (
-            <span
-              key={tag}
-              className="inline-flex items-center rounded-full border bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"
-            >
-              #{tag}
-            </span>
-          ))}
-        </div>
-        <p className="whitespace-pre-line text-sm text-muted-foreground">
-          {description}
-        </p>
       </CardContent>
     </Card>
   );
