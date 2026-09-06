@@ -8,6 +8,7 @@ import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { workspaces } from "@/lib/db/schema";
+import { planFromString } from "@/lib/paddle";
 
 // Sprint 48a (madde 8) — workspace ayarları. Tek workspace döneminde
 // ad/marka/custom domain yönetimi; slug subdomain'in kaynağı olarak
@@ -116,6 +117,23 @@ export async function PATCH(req: Request) {
     }
 
     const workspaceId = await getWorkspaceId();
+
+    // Sprint 63x — custom domain PRO özelliği. Free workspace custom domain
+    // ayarlayamaz (yalnızca boşaltabilir/kaldırabilir). Plan, workspaces.plan
+    // sütunundan türetilir (tek gerçek: lib/paddle planFromString).
+    if (parsed.data.customDomain !== undefined && parsed.data.customDomain !== null) {
+      const [row] = await getDb()
+        .select({ plan: workspaces.plan })
+        .from(workspaces)
+        .where(eq(workspaces.id, workspaceId))
+        .limit(1);
+      if (planFromString(row?.plan) !== "pro") {
+        return NextResponse.json(
+          { success: false, error: "Custom domain yalnızca Pro planda. Pro'ya yükselt." },
+          { status: 403 },
+        );
+      }
+    }
 
     // En az bir alan güncellenmeli (slug asla değiştirilmez).
     const set: Record<string, unknown> = {};

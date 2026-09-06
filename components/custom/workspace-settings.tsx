@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2Icon } from "lucide-react";
+import { Loader2Icon, LockIcon } from "lucide-react";
 
 import { Notice } from "@/components/custom/notice";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,8 @@ import { Label } from "@/components/ui/label";
 
 // Sprint 48a (madde 8) — workspace ayarları formu. Slug salt-okunur
 // (subdomain kaynağı); custom domain, marka rengi ve logo düzenlenebilir.
+// Sprint 63x — custom domain PRO özelliği: Free'de alan kilitlenir ve
+// "Pro'ya Yükselt" CTA gösterilir (API de kontrol eder — çift güvenlik).
 
 export interface WorkspaceSettingsView {
   id: string;
@@ -22,8 +24,10 @@ export interface WorkspaceSettingsView {
 
 export function WorkspaceSettings({
   initial,
+  isPro = false,
 }: {
   initial: WorkspaceSettingsView;
+  isPro?: boolean;
 }) {
   const [name, setName] = useState(initial.name);
   const [customDomain, setCustomDomain] = useState(initial.customDomain ?? "");
@@ -51,6 +55,8 @@ export function WorkspaceSettings({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: name.trim(),
+          // Free'de custom domain kilitli — she şemaya gönderilmez (API de kontro
+          // eder). Boş/default kalır.
           customDomain: customDomain.trim() || null,
           brandColor: brandColor.trim() ? brandColor.trim() : null,
           logoUrl: logoUrl.trim() || null,
@@ -105,18 +111,56 @@ export function WorkspaceSettings({
       </div>
 
       <div className="grid gap-1.5">
-        <Label htmlFor="ws-domain">Custom domain (opsiyonel)</Label>
-        <Input
-          id="ws-domain"
-          value={customDomain}
-          onChange={(e) => setCustomDomain(e.target.value)}
-          placeholder="Örn: feedback.acme.com"
-          maxLength={200}
-        />
-        <p className="text-xs text-muted-foreground">
-          Kendi alan adın (http:// veya https:// olmadan yalnızca host).
-          Doğrulama bir sonraki adımda.
-        </p>
+        <Label htmlFor="ws-domain" className="flex items-center gap-1.5">
+          Custom domain
+          {!isPro && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-brand/40 bg-brand/10 px-2 py-0.5 text-xs text-brand">
+              <LockIcon className="size-3" aria-hidden="true" />
+              Pro
+            </span>
+          )}
+        </Label>
+        {isPro ? (
+          <Input
+            id="ws-domain"
+            value={customDomain}
+            onChange={(e) => setCustomDomain(e.target.value)}
+            placeholder="Örn: feedback.acme.com"
+            maxLength={200}
+          />
+        ) : (
+          <div className="flex flex-wrap items-center gap-2">
+            <Input
+              id="ws-domain"
+              value={customDomain}
+              readOnly
+              placeholder="Örn: feedback.acme.com"
+              disabled
+              className="max-w-[320px] bg-muted"
+            />
+            <Button
+              size="sm"
+              render={
+                <a href="/dashboard/billing">
+                  Pro&apos;ya Yükselt
+                </a>
+              }
+            >
+              Pro&apos;ya Yükselt
+            </Button>
+          </div>
+        )}
+        {isPro ? (
+          <p className="text-xs text-muted-foreground">
+            Kendi alan adın (http:// veya https:// olmadan yalnızca host).
+            Doğrulama bir sonraki adımda.
+          </p>
+        ) : (
+          <p className="text-xs text-muted-foreground">
+            Custom domain yalnızca Pro planda. Pro&apos;ya geçerek kendi
+            markalı alan adını kullan.
+          </p>
+        )}
       </div>
 
       <div className="grid gap-1.5">

@@ -8,6 +8,7 @@ import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { asc, count } from "drizzle-orm";
 import { boards, workspaces, type Workspace } from "@/lib/db/schema";
+import { planFromString } from "@/lib/paddle";
 
 // Canlı veri: her istekte DB'den okunur.
 export const dynamic = "force-dynamic";
@@ -63,7 +64,10 @@ export default async function WorkspacesPage() {
 
       {workspaceInfo ? (
         <div className="mt-8">
-          <WorkspaceSettings initial={workspaceInfo} />
+          <WorkspaceSettings
+            initial={workspaceInfo}
+            isPro={planFromString(workspaceInfo.plan) === "pro"}
+          />
         </div>
       ) : wsLoadError ? (
         <p className="mt-6 text-sm text-destructive">
