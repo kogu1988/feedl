@@ -36,3 +36,24 @@ export function textOn(hex: string): string {
 export function isLightColor(hex: string): boolean {
   return textOn(hex) === "#2b0e04";
 }
+
+// Hex (6 haneli, # ile veya olmadan) → [r,g,b] 0-255. Geçersizse null.
+export function hexToRgb(hex: string): [number, number, number] | null {
+  const value = hex.replace("#", "");
+  if (value.length !== 6) return null;
+  const r = parseInt(value.slice(0, 2), 16);
+  const g = parseInt(value.slice(2, 4), 16);
+  const b = parseInt(value.slice(4, 6), 16);
+  if ([r, g, b].some(Number.isNaN)) return null;
+  return [r, g, b];
+}
+
+// Overlay renk: marka renginin şeffaf (soft/tint) varyantını döner.
+// `alpha` 0-1. Geçersiz marka renginde null. (F3: --brand-soft / --brand-tint.)
+export function brandOverlay(hex: string, alpha: number): string | null {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return null;
+  const [r, g, b] = rgb;
+  const a = Math.round(alpha * 255);
+  return `rgba(${r} ${g} ${b} / ${a})`;
+}

@@ -1,6 +1,19 @@
 import { describe, expect, it } from "vitest";
 
-import { buildPostSearch, foldTr } from "@/lib/post-search";
+import { buildPostSearch, foldTr, TR_FOLD_SOURCE, TR_FOLD_TARGET } from "@/lib/post-search";
+
+describe("fold single-source invariant", () => {
+  it("derives translate source/target of equal length", () => {
+    expect(TR_FOLD_SOURCE.length).toBe(TR_FOLD_TARGET.length);
+    expect(TR_FOLD_SOURCE.length).toBeGreaterThan(0);
+  });
+
+  it("exposes every Turkish/ascii-I special char once", () => {
+    const expected = "çğıöşüİIÇĞÖŞÜ";
+    expect([...TR_FOLD_SOURCE].sort()).toEqual([...expected].sort());
+    expect([...TR_FOLD_SOURCE].length).toBe(new Set([...TR_FOLD_SOURCE]).size);
+  });
+});
 
 describe("foldTr", () => {
   it("folds Turkish diacritics and I/İ case-insensitively", () => {

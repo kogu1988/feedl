@@ -7,9 +7,9 @@ import { posts } from "@/lib/db/schema";
 // foldTr birebir aynı eşlemeyi uygulamak zorunda; biri değişirse diğeri de
 // değişmeli. İ/I doğrudan 'i'ye çevrilir: lower() davranışı yerel ayara
 // göre değişebildiğinden lower hiçbir zaman I/İ görmesin.
-const TR_FOLD_SOURCE = "çğıöşüİIÇĞÖŞÜ";
-const TR_FOLD_TARGET = "cgiosuiicgiosu";
-
+// Sprint 63w (B6) — TEK KAYNAK: fold eşlemesi TR_FOLD_MAP'ten türetilir.
+// SQL translate(source,target) + JS foldTr aynı map'ten beslenir — biri
+// değişirse öbürü OTOMATİK senkron kalır (eski ikiz sabitler kaldırıldı).
 const TR_FOLD_MAP: Record<string, string> = {
   ç: "c",
   ğ: "g",
@@ -25,6 +25,13 @@ const TR_FOLD_MAP: Record<string, string> = {
   Ş: "s",
   Ü: "u",
 };
+
+// translate(..., from, to) için konumsal çiftler — map'in ekleme sırası.
+// (Test için export.)
+export const TR_FOLD_SOURCE = Object.keys(TR_FOLD_MAP).join("");
+export const TR_FOLD_TARGET = Object.keys(TR_FOLD_MAP)
+  .map((key) => TR_FOLD_MAP[key])
+  .join("");
 
 export function foldTr(text: string): string {
   return text

@@ -7,6 +7,7 @@ import { CopyIcon, KeyRoundIcon, Loader2Icon, TrashIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/custom/empty-state";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 
 export interface ApiKeyItem {
   id: string;
@@ -102,7 +103,7 @@ export function ApiKeysManager({ items }: { items: ApiKeyItem[] }) {
           className="max-w-xs"
           maxLength={100}
         />
-        <select
+        <Select
           value={scopes.includes("write") ? "read-write" : "read"}
           onChange={(e) =>
             setScopes(
@@ -110,11 +111,11 @@ export function ApiKeysManager({ items }: { items: ApiKeyItem[] }) {
             )
           }
           aria-label="Kapsam"
-          className="h-9 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm"
+          className="w-auto md:text-sm"
         >
           <option value="read">Salt okunur</option>
           <option value="read-write">Okuma + yazma</option>
-        </select>
+        </Select>
         <Button onClick={create} disabled={creating || isPending}>
           {creating ? (
             <Loader2Icon className="size-4 animate-spin" aria-hidden="true" />
