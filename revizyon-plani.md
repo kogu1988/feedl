@@ -130,6 +130,7 @@ test kapsamı, marka aksanı ve birkaç DRY/operasyonel borç.
 | F4 `Select` primitive | `fced119` | `components/ui/select.tsx` + 2 ana kullanım |
 | B6 post-search fold tek kaynak | `fced119` | `TR_FOLD_MAP`'ten SQL source/target türetilir + invariant test |
 | B8 `getWorkspaceId` request cache | `20fcea5` | `React.cache()` (global sızma bug'ı düzeltildi) |
+| B10 changelog email korrelasyonu | `eba34ed` | `email_deliveries` userId nullable + email; notify-changelog kayıt; deliverability kartı changelog'u sayar |
 
 ### ⏸️ Ertelenenler (onay / özel doğrulama gerektirir)
 | Madde | Neden ertelendi |
@@ -140,7 +141,7 @@ test kapsamı, marka aksanı ve birkaç DRY/operasyonel borç.
 | B7 schema.ts bölme | 1106 satır tek dosya; mekanik ama breaking riski — ayrı refactor |
 | F5 component yakınlaştırma | Görsel doğrulama gerektirir; kör birleştirme riskli |
 | F6 erişilebilirlik audit | Kapsamlı manuel/axe denetimi — batch olarak |
-| B10 changelog email korrelasyonu | Şema + logic; ayrı sprint |
+
 
 ---
 
