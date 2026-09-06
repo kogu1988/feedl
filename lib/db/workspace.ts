@@ -34,7 +34,8 @@ const workspaceIdSchema = z.uuid();
 
 // `feedl.app` kök/alt alan adları ve NEXT_PUBLIC_APP_URL — bunların dışında
 // kalan subdomain'ler workspace slug'ı olarak değerlendirilir.
-function isFeedlRootHost(host: string): boolean {
+// (Sprint 63i: test için export edildi — host→workspace izolasyonu.)
+export function isFeedlRootHost(host: string): boolean {
   const appHost = (process.env.NEXT_PUBLIC_APP_URL ?? "")
     .replace(/^https?:\/\//, "")
     .split(":")[0]
@@ -47,8 +48,8 @@ function isFeedlRootHost(host: string): boolean {
 }
 
 // Host'tan workspace slug'ı çöz. Feedl kök hostlar → 'feedl'; değilse
-// host'un ilk parçası (subdomain).
-function slugFromHost(host: string): string {
+// host'un ilk parçası (subdomain). (Sprint 63i: test için export edildi.)
+export function slugFromHost(host: string): string {
   const normalized = host.replace(/[:\s]/g, "").toLowerCase();
   if (isFeedlRootHost(normalized)) {
     return DEFAULT_WORKSPACE_SLUG;
