@@ -35,6 +35,27 @@ export function analyzeIdea(
 // çevirir. Kural: trim + Türkçe lowercase + kenar noktalama temizliği +
 // boşluk sıkıştırma; 2-30 karakter bandı dışındakiler ve nihai tekrarlar
 // atılır; en fazla 5 etiket.
+// Etiket olarak işe yaramayan dolgu/fiil/gramer kelimeleri (0.63m). LLM
+// istediğini almasa da bunlar etikete dönüşmez — "olur", "iyi", "isterim" gibi
+// fiil/dilek ekleri ve bağlaçlar çıkarılır ("koyu mod özelliği iyi olur" → only
+// anlamlı içerik etiketleri kalır, "olur" gibi filler edilmez).
+const FILLER_TAGS = new Set([
+  "olur", "olabilir", "olsun", "iyi", "güzel", "daha", "isterim", "istiyorum",
+  "isteriz", "saglasin", "saglama", "sağlasın", "sağlama", "ekle", "eklen",
+  "yapilsin", "yapılsın", "yapabilir", "yapmak", "kullanmak", "kullanılabilir",
+  "görebilmek", "görebilme", "abone", "destek", "mod", "özellik", "mode",
+  "instead", "works", "gerek", "gerekli", "süre", "süresi", "bilgi", "bilgilendirme",
+  "olmaz", "olmasın", "var", "yok", "şey", "değil", "değilse",
+]);
+
+function isFiller(name: string): boolean {
+  if (FILLER_TAGS.has(name)) return true;
+  // Tek heceli fiil/dilek kalıbı: "-sa", "-sın", "-yor" gibi eklerle istek
+  // cümlesi oluşturan tek kelime — bunlar etiket değildir.
+  if (name.length <= 3 && /^[a-z]+$/.test(name)) return true;
+  return false;
+}
+
 export function normalizeTags(keywords: string[]): string[] {
   const seen = new Set<string>();
   for (const raw of keywords) {
@@ -44,6 +65,9 @@ export function normalizeTags(keywords: string[]): string[] {
       .replace(/^[\p{P}\p{S}]+|[\p{P}\p{S}]+$/gu, "")
       .replace(/\s+/g, " ");
     if (name.length < 2 || name.length > 30) {
+      continue;
+    }
+    if (isFiller(name)) {
       continue;
     }
     seen.add(name);
