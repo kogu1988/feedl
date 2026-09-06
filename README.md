@@ -102,8 +102,8 @@ yüzeyinde webhook/API jargonu kullanma.
 | DB | Neon PostgreSQL + pgvector (Drizzle ORM) |
 | UI | Tailwind v4 + shadcn/ui + Base UI |
 | Background | Inngest |
-| AI | OpenRouter (`minimax/minimax-m3:free` LLM, `nemotron-3-embed-1b:free` embedding) |
-| Email | Resend |
+| AI | OpenRouter (`minimax/minimax-m3:free` LLM + fallback, `nemotron-3-embed-1b:free` embedding) |
+| Email | Resend (deliverability webhook) |
 | Billing | Paddle (sandbox) |
 | Rate-limit | Upstash Redis |
 
@@ -126,6 +126,8 @@ npm run dev                 # http://localhost:3000
 - Paddle: `PADDLE_API_KEY`, `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN`, `PADDLE_WEBHOOK_SECRET`
 - Upstash: `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
 - Sentry: `SENTRY_DSN` (opsiyonel; DSN yoksa no-op)
+- Şifreleme: `ENCRYPTION_KEY` (entegrasyon secret AES-256-GCM; prod'da zorunlu)
+- AI: `LLM_MODEL`, `LLM_FALLBACK_MODEL` (ücretsiz flaky olursa ücretli fallback)
 - App: `NEXT_PUBLIC_APP_URL`
 
 Gizli değerler yalnız `.env.local`'de — repo'ya yazılmaz.

@@ -199,6 +199,9 @@ prop'unu `AppSidebar`'a geçirir.
   kopyalamaz. Yeni rozet bu primitive'ten üretilir (kopya `span` kabuğu yazılmaz).
 - **`components/ui/`** — Base UI (`@base-ui/react`) primitive'leri + cva
   varyantları. `Button` Base UI `render` prop destekler (Link vs. için).
+  Primitive'ler: `badge` · `button` · `card` · `checkbox` · `dialog`
+  · `dropdown-menu` · `input` · `label` · `select` (F4 — tek native select
+  standardı) · `table` · `textarea` · `toast`.
 - **Button varyantları:** `default` (mercan/mürekkep) `outline` `secondary`
   `ghost` `destructive` (soft) `link`; boyutlar `default` `xs` `sm` `lg`
   `icon` `icon-xs` `icon-sm` `icon-lg`.
@@ -206,14 +209,17 @@ prop'unu `AppSidebar`'a geçirir.
   güncel, eksiksiz liste — yeni bileşeni buraya eklemezsen kanon dışı kalır):
 
   **Kabuk / shared**
-  `site-header` · `site-footer` · `app-sidebar` · `theme-provider` · `theme-toggle`
-  · `clerk-trigger-button` · `page-breadcrumb` · `filter-tabs` · `pagination-footer`
-  · `notice` (hata/kutu) · `empty-state` (boş durum) · `not-found-view` · `markdown-content`
+  `site-header` (mobil hamburger) · `site-footer` (logo + şirket linkleri)
+  · `app-sidebar` · `theme-provider` · `theme-toggle` · `clerk-trigger-button`
+  · `page-breadcrumb` · `filter-tabs` · `pagination-footer`
+  · `notice` (hata/kutu) · `empty-state` (boş durum) · `not-found-view`
+  · `markdown-content` · `canonical-link` (client legacy; server-side yeğlendi)
 
   **Portal topluluk**
   `keyword-chips` · `tag-chips` · `status-badge` · `type-badge` · `sentiment-badge`
   · `vote-button` · `comment-card` · `comment-form` · `comment-count-badge`
-  · `follow-button` · `new-post-dialog` · `corpus-insights` · `demo-post-card`
+  · `follow-button` · `new-post-dialog` · `corpus-insights` · `idea-card`
+  · `powered-by-feedl` (free-only rozet) · `email-deliverability-card` (dashboard)
 
   **Admin yönetim**
   `posts-table` · `status-select` · `type-select` · `board-select`
@@ -241,6 +247,17 @@ prop'unu `AppSidebar`'a geçirir.
   kullanır — Badge (status/type/sentiment), Notice (hata), EmptyState (boş durum),
   Button render-Link. Yeni bileşen bu tek-kaynaklardan üretilir; kopya kabuk
   yazılmaz.
+- **Tek fikir kartı (F5, 2026-09-06):** `idea-card.tsx` — portal/roadmap/changelog
+  + landing/demo mock kartlarının TEK kaynağı. `href` verilirse Link, verilmezse
+  mock `span`; `ariaHidden` flag; `commentCount` + `commentPostId` yoksa statik
+  sayı (CommentCountBadge yerine). `demo-post-card` **silindi** (F5).
+- **Workspace marka aksanı (F3, 2026-09-06):** workspace `brandColor` varsa
+  `(main)/layout.tsx` `<style>` ile `--brand/--primary/--primary-foreground
+  (WCAG textOn)/--brand-soft/--brand-tint` override eder — portal oy/buton/odak
+  workspace markasına renklenir; varsayılan mercan korunur.
+- **Canonical (F2, 2026-09-06):** server-side — `middleware` `x-feedl-pathname`
+  header + `lib/seo.ts` `generateCanonical` (\(generateMetadata\)): tam path +
+  workspace custom domain; query varyantları (sort/tag) tek canonical'a düşer.
 - **Hata/bilgi kutusu tek kaynak (2026-09-06):** destructive hata bildirimleri
   `notice.tsx` (Notice) bileşeninden geçer — satır içi kompakt `size="sm"`,
   sayfa düzeyi `size="md"`; `rounded-md` (küçük eleman radius). Kopya
