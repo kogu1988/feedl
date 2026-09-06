@@ -232,7 +232,8 @@ prop'unu `AppSidebar`'a geçirir.
   · `members-manager` · `workspaces-manager` · `workspace-settings`
   · `boards-manager` · `activation-funnel` · `analytics-overview` · `revenue-report`
   `api-keys-manager` · `webhooks-manager` · `widget-origins-manager`
-  · `widget-setup` · `billing-overview` (yeni 63l) · `pricing-manager` (public)
+  · `widget-setup` · `billing-overview` (yeni 63l) · `plan-change-card` (yeni 63x)
+  · `pricing-manager` (public)
   · `integrations-panel` · `linear-integration` · `import-csv-button`
   · `insights-refresh-button` (yeni 63l).
 

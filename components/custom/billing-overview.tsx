@@ -6,6 +6,7 @@ import { Check, CreditCardIcon, ExternalLinkIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/custom/empty-state";
+import { PlanChangeCard } from "@/components/custom/plan-change-card";
 import {
   getPlanEnv,
   isPro,
@@ -139,7 +140,7 @@ export function BillingOverview({
         setPortalError(json.error ?? "Portal hazırlanamadı.");
         return;
       }
-      window.location.href = json.data.url;
+      window.open(json.data.url, "_blank", "noopener,noreferrer");
     } catch {
       setPortalError("Portal hazırlanamadı. Tekrar dene.");
     } finally {
@@ -241,6 +242,9 @@ export function BillingOverview({
               <Button className="w-full" onClick={openCheckout}>
                 Pro&apos;ya Geç
               </Button>
+              <p className="mt-2 text-center text-xs text-muted-foreground">
+                Ödeme sayfadan ayrılmadan güvenli overlay ile tamamlanır.
+              </p>
             </div>
           ) : (
             <p className="mt-4 text-xs text-muted-foreground">
@@ -248,6 +252,14 @@ export function BillingOverview({
             </p>
           )}
         </div>
+
+        {/* In-app plan değişikliği: yalnız Pro + aktif abonelik */}
+        <PlanChangeCard
+          isPro={pro}
+          subscriptionId={paddleSubscriptionId}
+          monthlyPriceId={pricing.monthlyPriceId}
+          yearlyPriceId={pricing.yearlyPriceId}
+        />
 
         {error && <p className="text-sm text-destructive">{error}</p>}
         {info && <p className="text-sm text-emerald-700 dark:text-emerald-300">{info}</p>}
@@ -268,7 +280,7 @@ export function BillingOverview({
             <div className="grid gap-3">
               <EmptyState title="Ödemeler Paddle portalında">
                 Geçmiş ödemeleri ve faturaları Paddle müşteri portalından
-                görüntüleyebilirsin.
+                görüntüleyebilirsin — portal yeni sekmede açılır.
               </EmptyState>
               <Button
                 variant="outline"
