@@ -384,20 +384,30 @@ export const notifyShipped = inngest.createFunction(
           subject: message.subject,
           html: message.html,
           text: message.text,
+          // Sprint 63v: List-Unsubscribe — Gmail/Outlook spam filtresi için.
+          headers: {
+            "List-Unsubscribe": `<${unsubscribeUrl}>`,
+            "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+          },
         };
       });
       return sendEmails(messages);
     });
 
     // 3) Gönderim kaydı (idempotency) — best-effort, hata akışı bozmaz.
+    // Sprint 63v: providerId (Resend message id) + status 'sent' kaydedilir;
+    // deliverability webhook'u provider_id ile eşleşip durumu günceller.
     await step.run("record-deliveries", async () => {
+      const ids = result.ids ?? [];
       await getDb()
         .insert(emailDeliveries)
         .values(
-          recipients.recipients.map((recipient) => ({
+          recipients.recipients.map((recipient, i) => ({
             userId: recipient.userId,
             type: deliveryType,
             entityId: payload.postId,
+            providerId: ids[i] ?? null,
+            status: "sent",
           })),
         )
         .onConflictDoNothing();
@@ -591,20 +601,28 @@ export const notifyCommentCreated = inngest.createFunction(
           subject: message.subject,
           html: message.html,
           text: message.text,
+          // Sprint 63v: List-Unsubscribe (deliverability).
+          headers: {
+            "List-Unsubscribe": `<${appUrl}/api/unsubscribe?token=${recipient.token}&type=comment>`,
+            "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+          },
         };
       });
       return sendEmails(messages);
     });
 
-    // Gönderim kaydı (idempotency) — best-effort.
+    // Gönderim kaydı (idempotency) — best-effort. Sprint 63v: providerId + status.
     await step.run("record-deliveries", async () => {
+      const ids = result.ids ?? [];
       await getDb()
         .insert(emailDeliveries)
         .values(
-          context.recipients.map((recipient) => ({
+          context.recipients.map((recipient, i) => ({
             userId: recipient.userId,
             type: "comment",
             entityId: payload.commentId,
+            providerId: ids[i] ?? null,
+            status: "sent",
           })),
         )
         .onConflictDoNothing();

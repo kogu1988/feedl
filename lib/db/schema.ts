@@ -663,6 +663,17 @@ export const emailDeliveries = pgTable(
     sentAt: timestamp("sent_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    // Sprint 63v (deliverability): Resend message id + teslimat durumu.
+    // Resend webhook'u (email.delivered/bounced/complained) bu id ile eşleşir.
+    providerId: text("provider_id"),
+    status: varchar("status", { length: 20 }).notNull().default("sent"), // sent|delivered|bounced|complained
+    error: text("error"),
+    deliveredAt: timestamp("delivered_at", { withTimezone: true }),
+    bouncedAt: timestamp("bounced_at", { withTimezone: true }),
+    complainedAt: timestamp("complained_at", { withTimezone: true }),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (table) => [
     unique("email_deliveries_unique").on(
@@ -670,6 +681,7 @@ export const emailDeliveries = pgTable(
       table.type,
       table.entityId,
     ),
+    index("email_deliveries_provider_id_idx").on(table.providerId),
   ],
 );
 

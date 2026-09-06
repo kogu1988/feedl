@@ -9,6 +9,7 @@ import { AnalyticsOverview } from "@/components/custom/analytics-overview";
 import { AutopilotInbox } from "@/components/custom/autopilot-inbox";
 import { ApiKeysManager } from "@/components/custom/api-keys-manager";
 import { ChangelogAdmin } from "@/components/custom/changelog-admin";
+import { EmailDeliverabilityCard } from "@/components/custom/email-deliverability-card";
 import { WebhooksManager } from "@/components/custom/webhooks-manager";
 import { PostsTable } from "@/components/custom/posts-table";
 import { RoadmapPlanner } from "@/components/custom/roadmap-planner";
@@ -329,6 +330,7 @@ export default async function DashboardPage({
               </Card>
             </div>
           ) : null}
+          <EmailDeliverabilityCard />
         </>
       ) : null}
 
