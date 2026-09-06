@@ -1,7 +1,8 @@
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, sql } from "drizzle-orm";
 import { NonRetriableError } from "inngest";
 
 import { analyzeIdea, compareIdeas, normalizeTags } from "@/lib/ai/analysis";
+import { analyzeCorpus } from "@/lib/ai/insights";
 import { embedText } from "@/lib/ai/openrouter";
 import { sendEmails } from "@/lib/email/send";
 import { renderAdminNewPostEmail } from "@/lib/email/admin-new-post";
@@ -35,6 +36,8 @@ import {
   posts,
   tags,
   users,
+  votes,
+  workspaces,
 } from "@/lib/db/schema";
 import {
   changelogPublishedEventSchema,
@@ -53,6 +56,7 @@ import { inngest } from "./client";
 // canlı veriyle revize edildi (2026-09-01): gerçek yakın-kopya çift 0.547,
 // alakasız-generic çiftler 0.489'a kadar çıkabiliyor → 0.60 kaçırdı, 0.45
 // iki bandı ayırır. Post başına en fazla 1 LLM karşılaştırması olduğu için
+const MAX_CORPUS = 60;
 // düşük eşiğin maliyeti sınırlı; yanlış adayları LLM eler.
 const DUPLICATE_SIMILARITY_THRESHOLD = 0.45;
 const DUPLICATE_CANDIDATE_LIMIT = 5;
@@ -766,5 +770,97 @@ export const notifyChangelog = inngest.createFunction(
       failed: result.failed,
       previewUrls: result.previewUrls,
     };
+  },
+);
+
+// Sprint 63l — corpus AI içgörüleri ARKA PLANDA. Sayfa (dashboard/insights)
+// LLM çağrısını ENGellemez; bu fonksiyon `corpus-insights.request` event'i ile
+// tetiklenir, en çok oy alan N fikri korpus olarak LLM'e verir ve sonucu
+// workspace.corpus_insights alanına yazar (cache). Sayfa bu cache'i okur —
+// yavaş/geciken ücretsiz LLM yüzünden 500/blank olmaz.
+export const corpusInsights = inngest.createFunction(
+  {
+    id: "corpus-insights",
+    retries: 2,
+    triggers: { event: "corpus-insights.request" },
+    concurrency: 1,
+  },
+  async ({ event, step }) => {
+    const workspaceId = (event.data as { workspaceId: string }).workspaceId;
+    const db = getDb();
+
+    // İşlem başladı: status='pending'.
+    await step.run("mark-pending", async () => {
+      await db
+        .update(workspaces)
+        .set({ corpusInsightsStatus: "pending", updatedAt: new Date() })
+        .where(eq(workspaces.id, workspaceId));
+    });
+
+    // En çok oy alan fikirleri topla (aynı MAX_CORPUS sınırı).
+    const rows = await step.run("load-corpus", async () => {
+      return db
+        .select({
+          id: posts.id,
+          title: posts.title,
+          description: posts.description,
+          status: posts.status,
+          voteCount: count(votes.id),
+        })
+        .from(posts)
+        .leftJoin(votes, eq(votes.postId, posts.id))
+        .where(eq(posts.workspaceId, workspaceId))
+        .groupBy(posts.id)
+        .orderBy(desc(count(votes.id)), asc(posts.id))
+        .limit(MAX_CORPUS);
+    });
+
+    if (rows.length === 0) {
+      await step.run("store-empty", async () => {
+        await db
+          .update(workspaces)
+          .set({
+            corpusInsightsStatus: "done",
+            corpusInsightsAt: new Date(),
+            corpusInsights: {
+              themes: [],
+              trends: [],
+              quickWins: [],
+              risks: [],
+              recommendation:
+                "Henüz yeterli geri bildirim yok. İlk fikirler geldikçe içgörü üretilir.",
+            },
+            updatedAt: new Date(),
+          })
+          .where(eq(workspaces.id, workspaceId));
+      });
+      return { status: "done", corpusSize: 0 };
+    }
+
+    // LLM analizi (arka planda devam eder; timeout yok).
+    const insights = await step.run("analyze-corpus", async () =>
+      analyzeCorpus(
+        rows.map((r) => ({
+          title: r.title,
+          description: r.description,
+          status: r.status,
+          votes: Number(r.voteCount),
+        })),
+      ),
+    );
+
+    await step.run("store-result", async () => {
+      await db
+        .update(workspaces)
+        .set({
+          corpusInsightsStatus: "done",
+          corpusInsightsAt: new Date(),
+          corpusInsights: insights,
+          updatedAt: new Date(),
+        })
+        .where(eq(workspaces.id, workspaceId));
+    });
+
+    return { status: "done", corpusSize: rows.length };
   },
 );

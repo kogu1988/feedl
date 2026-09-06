@@ -3,6 +3,7 @@ import { serve } from "inngest/next";
 import { inngest } from "@/inngest/client";
 import {
   aiAutopilot,
+  corpusInsights,
   notifyAdminNewPost,
   notifyCommentCreated,
   notifyShipped,
@@ -16,6 +17,7 @@ export const { GET, POST, PUT } = serve({
   client: inngest,
   functions: [
     aiAutopilot,
+    corpusInsights,
     notifyShipped,
     notifyAdminNewPost,
     notifyCommentCreated,

@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { count, eq } from "drizzle-orm";
+import { count, eq, sql } from "drizzle-orm";
 
 import { BillingOverview } from "@/components/custom/billing-overview";
 import { getAdminUserId, getNonAdminRedirectTarget } from "@/lib/auth/admin";
@@ -85,6 +85,22 @@ async function loadWorkspace() {
     .select({ value: count(workspaceMembers.id) })
     .from(workspaceMembers)
     .where(eq(workspaceMembers.workspaceId, workspaceId));
+  // Gerçek tracked-user: workspace'te fikir POST eden veya OY veren eşsiz
+  // kullanıcı sayısı (Canny'nin "tracked user" modeli — workspace_members
+  // değil, gerçek katılımcı). İki küme birleştirilip eşsiz userId sayılır.
+  const trackedRes = await getDb().execute(sql`
+    SELECT count(DISTINCT u.user_id) AS value FROM (
+      SELECT user_id FROM posts WHERE workspace_id = ${workspaceId}
+      UNION
+      SELECT v.user_id FROM votes v
+      JOIN posts p ON p.id = v.post_id
+      WHERE p.workspace_id = ${workspaceId}
+    ) u
+  `);
+  const trackedRows = Array.isArray(trackedRes)
+    ? trackedRes
+    : (trackedRes?.rows ?? []);
+  const trackedRow = trackedRows[0] as { value: number } | undefined;
 
   const plan = planFromString(row.plan);
   const limits = PLANS[plan];
@@ -93,9 +109,7 @@ async function loadWorkspace() {
     usage: {
       boards: Number(boardRow?.value ?? 0),
       members: Number(memberRow?.value ?? 0),
-      // Takipçi (tracked): workspace'te oy/posta atan eşsiz kullanıcı sayısı
-      // yerine şimdilik üye sayısı + plan limiti (MVP; ileride ölçülür).
-      tracked: Number(memberRow?.value ?? 0),
+      tracked: Number(trackedRow?.value ?? 0),
       boardLimit: limits.boardLimit,
       memberLimit: limits.memberLimit,
       trackedLimit: limits.trackedUserLimit,

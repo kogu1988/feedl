@@ -203,6 +203,13 @@ export const workspaces = pgTable("workspaces", {
   onboardingDismissedAt: timestamp("onboarding_dismissed_at", {
     withTimezone: true,
   }),
+  // Sprint 63l (corpus insights arka plana): AI içgörü önbelleği. Sayfa
+  // LLM çağrısını engellemez; Inngest arka planda üretir ve buraya yazılır.
+  corpusInsights: jsonb("corpus_insights"),
+  corpusInsightsAt: timestamp("corpus_insights_at", { withTimezone: true }),
+  corpusInsightsStatus: varchar("corpus_insights_status", { length: 20 })
+    .notNull()
+    .default("idle"), // idle | pending | done | error
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
