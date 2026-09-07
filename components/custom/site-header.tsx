@@ -159,7 +159,12 @@ export function SiteHeader({ brand }: { brand?: { name: string; brandColor: stri
                   >
                     Giriş yap
                   </ClerkTriggerButton>
-                  <ClerkTriggerButton mode="sign-up" size="sm">
+                  <ClerkTriggerButton
+                    mode="sign-up"
+                    size="sm"
+                    forceRedirectUrl="/onboarding"
+                    fallbackRedirectUrl="/onboarding"
+                  >
                     Kayıt ol
                   </ClerkTriggerButton>
                 </>
@@ -214,7 +219,12 @@ export function SiteHeader({ brand }: { brand?: { name: string; brandColor: stri
               <ClerkTriggerButton mode="sign-in" variant="outline" className="w-full">
                 Giriş yap
               </ClerkTriggerButton>
-              <ClerkTriggerButton mode="sign-up" className="w-full">
+              <ClerkTriggerButton
+                mode="sign-up"
+                className="w-full"
+                forceRedirectUrl="/onboarding"
+                fallbackRedirectUrl="/onboarding"
+              >
                 Kayıt ol
               </ClerkTriggerButton>
             </div>
