@@ -18,6 +18,19 @@ export interface VoteLimitResult {
   message?: string;
 }
 
+// Saf karar (test edilebilir): yeni bir oy veren limiti aşıyorsa reddet;
+// zaten oy vermiş (returning) bir kişi tekrar oy atarsa sayı artmaz → izin.
+// limit `Number.MAX_SAFE_INTEGER` ise (Pro) sınırsız — her zaman izin.
+export function shouldAllowVote(
+  currentVoters: number,
+  hasExistingVote: boolean,
+  limit: number,
+): boolean {
+  if (limit === Number.MAX_SAFE_INTEGER) return true;
+  if (hasExistingVote) return true;
+  return currentVoters < limit;
+}
+
 // Verilen kullanıcı bu workspace'te ZATEN bir oy kullandıysa (returning voter)
 // sayı artmaz → izin ver. Yeni bir oy veren ise distinct sayı limiti aşıyorsa
 // reddet. workspaceId verilmezse getWorkspaceId() (host/session) kullanılır.
@@ -48,9 +61,7 @@ export async function enforceVoteLimit(
     .where(and(eq(votes.userId, userId), eq(posts.workspaceId, wsId)))
     .limit(1);
 
-  if (existing) return { ok: true, limit };
-
-  if (current >= limit) {
+  if (!shouldAllowVote(current, Boolean(existing), limit)) {
     return {
       ok: false,
       limit,
