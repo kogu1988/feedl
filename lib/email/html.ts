@@ -12,12 +12,12 @@ const MUTED = "#71717a";
 const BORDER = "#e4e4e7";
 const BG = "#f4f4f5";
 
-// Feedl marka başlığı — turuncu logo (PNG) + SİYAH "feedl" adı, tıklanınca
-// siteye gider. E-posta istemcileri SVG desteklemez; şeffaf PNG + metin.
-const BRAND_DARK = "#18181b";
+// Feedl marka başlığı — tek PNG (turuncu logo + Manrope "feedl" adı), siteye
+// tıklanınca gider. E-posta istemcileri dış font (web font) yüklemediği için
+// adı fontuyla birlikte raster PNG olarak koyuyoruz — her istemcide AYNI görünür.
 export function brandLogoHtml(): string {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://feedl.app";
-  return `<a href="${appUrl}" style="text-decoration:none;display:inline-flex;align-items:center;gap:10px;"><img src="${appUrl}/logo_brand_orange.png" width="32" height="32" alt="feedl" style="display:block;width:32px;height:32px;object-fit:contain;" /><span style="font-size:20px;font-weight:800;color:${BRAND_DARK};letter-spacing:-0.02em;">feedl</span></a>`;
+  return `<a href="${appUrl}" style="text-decoration:none;display:inline-block;"><img src="${appUrl}/logo_wordmark.png" width="210" height="55" alt="feedl" style="display:block;width:210px;height:55px;" /></a>`;
 }
 
 // Ortak e-posta kabuğu: başlık (marka logo), gövde (`childHtml`), footer
