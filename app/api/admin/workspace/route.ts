@@ -38,6 +38,12 @@ const updateSchema = z.object({
     .max(500)
     .nullable()
     .optional(),
+  // Sprint 63z: widget gönderim modu + anonim oyu (her plan için; widget
+  // kurulumunda admin seçer).
+  widgetSubmissionMode: z
+    .enum(["anonymous", "email", "signup"])
+    .optional(),
+  widgetAnonymousVoting: z.boolean().optional(),
   // Sprint 59 (onboarding): dashboard checklist'ini kullanıcı "Şimdilik gizle"
   // derse null'a çekilecek; tamamlanınca otomatik gizlenir (kolon set edilmez).
   dismissOnboarding: z.literal(true).optional(),
@@ -62,6 +68,8 @@ export async function GET() {
         customDomain: workspaces.customDomain,
         brandColor: workspaces.brandColor,
         logoUrl: workspaces.logoUrl,
+        widgetSubmissionMode: workspaces.widgetSubmissionMode,
+        widgetAnonymousVoting: workspaces.widgetAnonymousVoting,
       })
       .from(workspaces)
       .where(eq(workspaces.id, await getWorkspaceId()))
@@ -143,6 +151,10 @@ export async function PATCH(req: Request) {
     if (parsed.data.brandColor !== undefined)
       set.brandColor = parsed.data.brandColor;
     if (parsed.data.logoUrl !== undefined) set.logoUrl = parsed.data.logoUrl;
+    if (parsed.data.widgetSubmissionMode !== undefined)
+      set.widgetSubmissionMode = parsed.data.widgetSubmissionMode;
+    if (parsed.data.widgetAnonymousVoting !== undefined)
+      set.widgetAnonymousVoting = parsed.data.widgetAnonymousVoting;
     // Onboarding gizleme: dismissOnboarding=true → timestamp set, yalnızca gizleme.
     if (parsed.data.dismissOnboarding === true) {
       set.onboardingDismissedAt = new Date();
@@ -167,6 +179,8 @@ export async function PATCH(req: Request) {
         customDomain: workspaces.customDomain,
         brandColor: workspaces.brandColor,
         logoUrl: workspaces.logoUrl,
+        widgetSubmissionMode: workspaces.widgetSubmissionMode,
+        widgetAnonymousVoting: workspaces.widgetAnonymousVoting,
       });
 
     if (!updated) {

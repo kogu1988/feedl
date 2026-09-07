@@ -351,6 +351,13 @@
       "when": 1788728172778,
       "tag": "0049_optimal_mephistopheles",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1788758578326,
+      "tag": "0050_widget-submission-mode",
+      "breakpoints": true
     }
   ]
 }

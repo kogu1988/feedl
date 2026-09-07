@@ -203,6 +203,16 @@ export const workspaces = pgTable("workspaces", {
   corpusInsightsStatus: varchar("corpus_insights_status", { length: 20 })
     .notNull()
     .default("idle"), // idle | pending | done | error
+  // Widget fikir gönderim modu (Sprint 63z): anonymous (üye olmadan, IP bazlı
+  // fikir+oy), email (sadece email → fikir, kayıt yok), signup (Clerk kayıt
+  // zorunlu — mevcut davranış). Varsayılan signup → eski/mevcut davranış korunur.
+  widgetSubmissionMode: varchar("widget_submission_mode", { length: 20 })
+    .notNull()
+    .default("signup"),
+  // Anonim modda oy da açık mı? (default false → yalnızca fikir; true → 1 IP 1 oy)
+  widgetAnonymousVoting: boolean("widget_anonymous_voting")
+    .notNull()
+    .default(false),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { and, count, eq } from "drizzle-orm";
 
 import { getDb } from "@/lib/db";
-import { getWorkspaceId } from "@/lib/db/workspace";
+import { getWorkspaceId, resolveWorkspaceIdFromSlug } from "@/lib/db/workspace";
 import { postFollowers, posts, votes } from "@/lib/db/schema";
 import {
   voteCreatedEventSchema,
@@ -13,7 +13,12 @@ import { getWidgetSession } from "@/lib/widget/jwt";
 import { isOriginAllowed } from "@/lib/widget/origins";
 import { requestOrigin } from "@/lib/widget/http";
 import { inngest } from "@/inngest/client";
-import { enforceRateLimit } from "@/lib/rate-limit";
+import { enforceRateLimit, clientIpFrom } from "@/lib/rate-limit";
+import {
+  anonymousWidgetUserId,
+  ensureWidgetUser,
+  getWidgetSubmissionSettings,
+} from "@/lib/widget/submission";
 
 async function countVotes(postId: string): Promise<number> {
   const [row] = await getDb()
@@ -27,10 +32,41 @@ async function countVotes(postId: string): Promise<number> {
 // kalan kurallar portal /api/votes ile aynıdır (unique(user_id, post_id)
 // idempotency + birleşmiş fikre oy reddi + otomatik takipçi).
 
+// Sprint 63z: kimliği oturumdan veya (anonim modda) IP'ten çözer. Tekrarlanan
+// kod — POST ve DELETE ortak kullanır.
+async function resolveVoteIdentity(req: NextRequest): Promise<{
+  userId: string | null;
+  workspaceId: string;
+} | null> {
+  const session = await getWidgetSession();
+  const origin = session?.origin ?? requestOrigin(req);
+  if (!(await isOriginAllowed(origin))) return null;
+
+  const workspaceId =
+    (await resolveWorkspaceIdFromSlug(req.nextUrl.searchParams.get("ws"))) ??
+    (await getWorkspaceId());
+  const { mode, anonymousVoting } = await getWidgetSubmissionSettings(workspaceId);
+
+  let userId = session?.userId ?? null;
+  if (!userId && mode === "anonymous" && anonymousVoting) {
+    const ip = clientIpFrom(req);
+    userId = anonymousWidgetUserId(ip);
+    await ensureWidgetUser({ userId });
+  }
+  return { userId, workspaceId };
+}
+
 export async function POST(req: NextRequest) {
   try {
-    const session = await getWidgetSession();
-    if (!session) {
+    const identity = await resolveVoteIdentity(req);
+    if (!identity) {
+      return NextResponse.json(
+        { success: false, error: "Bu site için widget erişimi yok." },
+        { status: 403 },
+      );
+    }
+    const { userId, workspaceId } = identity;
+    if (!userId) {
       return NextResponse.json(
         {
           success: false,
@@ -40,16 +76,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const origin = session.origin ?? requestOrigin(req);
-    if (!(await isOriginAllowed(origin))) {
-      return NextResponse.json(
-        { success: false, error: "Bu site için widget erişimi yok." },
-        { status: 403 },
-      );
-    }
-
-    // Sprint 60: widget oy — session kullanıcısı bazlı.
-    const rl = await enforceRateLimit("widget:votes", session.userId, { limit: 60 });
+    // Sprint 60: widget oy — session kullanıcısı bazlı (anonimde IP kimliği).
+    const rl = await enforceRateLimit("widget:votes", userId, { limit: 60 });
     if (!rl.allowed) return rl.response!;
 
     let body: unknown;
@@ -76,7 +104,7 @@ export async function POST(req: NextRequest) {
       .from(posts)
       .where(
         and(
-          eq(posts.workspaceId, await getWorkspaceId()),
+          eq(posts.workspaceId, workspaceId),
           eq(posts.id, parsed.data.postId),
         ),
       )
@@ -99,13 +127,13 @@ export async function POST(req: NextRequest) {
 
     await getDb()
       .insert(postFollowers)
-      .values({ postId: parsed.data.postId, userId: session.userId })
+      .values({ postId: parsed.data.postId, userId })
       .onConflictDoNothing();
 
     // Sprint 43: widget oyları da webhook matrix'ine dahildir.
     const [inserted] = await getDb()
       .insert(votes)
-      .values({ userId: session.userId, postId: parsed.data.postId })
+      .values({ userId, postId: parsed.data.postId })
       .onConflictDoNothing()
       .returning({ id: votes.id });
 
@@ -115,7 +143,7 @@ export async function POST(req: NextRequest) {
           name: "vote/created",
           data: voteCreatedEventSchema.parse({
             postId: parsed.data.postId,
-            userId: session.userId,
+            userId,
           }),
         });
       } catch (eventErr) {
@@ -146,16 +174,23 @@ export async function POST(req: NextRequest) {
 // DELETE /api/widget/votes?postId=... — oyu geri al.
 export async function DELETE(req: NextRequest) {
   try {
-    const session = await getWidgetSession();
-    if (!session) {
+    const identity = await resolveVoteIdentity(req);
+    if (!identity) {
+      return NextResponse.json(
+        { success: false, error: "Bu site için widget erişimi yok." },
+        { status: 403 },
+      );
+    }
+    const { userId } = identity;
+    if (!userId) {
       return NextResponse.json(
         { success: false, error: "Bu işlem için oturum gerekir." },
         { status: 401 },
       );
     }
 
-    // Sprint 60: widget oy geri alma — session kullanıcısı bazlı.
-    const rl = await enforceRateLimit("widget:votes", session.userId, { limit: 60 });
+    // Sprint 60: widget oy geri alma — session kullanıcısı (anonimde IP) bazlı.
+    const rl = await enforceRateLimit("widget:votes", userId, { limit: 60 });
     if (!rl.allowed) return rl.response!;
 
     const rawPostId = new URL(req.url).searchParams.get("postId") ?? "";
@@ -171,7 +206,7 @@ export async function DELETE(req: NextRequest) {
       .delete(votes)
       .where(
         and(
-          eq(votes.userId, session.userId),
+          eq(votes.userId, userId),
           eq(votes.postId, parsedPostId.data),
         ),
       )
@@ -184,7 +219,7 @@ export async function DELETE(req: NextRequest) {
           name: "vote/deleted",
           data: voteDeletedEventSchema.parse({
             postId: parsedPostId.data,
-            userId: session.userId,
+            userId,
           }),
         });
       } catch (eventErr) {

@@ -10,7 +10,13 @@ import { Textarea } from "@/components/ui/textarea";
 // Sprint 63p — `ws` prop: workspace slug'ı; triage Pro gate'inin DOĞRU
 // workspace üzerinden çalışması için fetch'e `?ws=` eklenir (anonim/read-only
 // iframe'de session çerezi olmayabilir).
-export function WidgetTriage({ ws }: { ws?: string | null }) {
+export function WidgetTriage({
+  ws,
+  isPro = false,
+}: {
+  ws?: string | null;
+  isPro?: boolean;
+}) {
   const wsParam = ws ? `?ws=${encodeURIComponent(ws)}` : "";
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
@@ -54,6 +60,11 @@ export function WidgetTriage({ ws }: { ws?: string | null }) {
         <Button variant="ghost" size="sm" onClick={() => setOpen(true)}>
           <SparklesIcon className="size-3.5" aria-hidden="true" />
           Farklı bir konu mu?
+          {!isPro ? (
+            <span className="ml-1 rounded-full border border-brand/40 bg-brand/10 px-1.5 py-0.5 text-[10px] font-semibold text-brand">
+              Pro
+            </span>
+          ) : null}
         </Button>
       </div>
     );

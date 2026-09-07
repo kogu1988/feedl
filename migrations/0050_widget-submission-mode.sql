@@ -1,0 +1,2 @@
+ALTER TABLE "workspaces" ADD COLUMN "widget_submission_mode" varchar(20) DEFAULT 'signup' NOT NULL;--> statement-breakpoint
+ALTER TABLE "workspaces" ADD COLUMN "widget_anonymous_voting" boolean DEFAULT false NOT NULL;

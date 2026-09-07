@@ -20,6 +20,8 @@ export interface WorkspaceSettingsView {
   customDomain: string | null;
   brandColor: string | null;
   logoUrl: string | null;
+  widgetSubmissionMode: "anonymous" | "email" | "signup" | null;
+  widgetAnonymousVoting: boolean | null;
 }
 
 export function WorkspaceSettings({
@@ -33,6 +35,12 @@ export function WorkspaceSettings({
   const [customDomain, setCustomDomain] = useState(initial.customDomain ?? "");
   const [brandColor, setBrandColor] = useState(initial.brandColor ?? "#ff5c35");
   const [logoUrl, setLogoUrl] = useState(initial.logoUrl ?? "");
+  const [submissionMode, setSubmissionMode] = useState<
+    "anonymous" | "email" | "signup"
+  >(initial.widgetSubmissionMode ?? "signup");
+  const [anonymousVoting, setAnonymousVoting] = useState(
+    initial.widgetAnonymousVoting ?? false,
+  );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -60,6 +68,8 @@ export function WorkspaceSettings({
           customDomain: customDomain.trim() || null,
           brandColor: brandColor.trim() ? brandColor.trim() : null,
           logoUrl: logoUrl.trim() || null,
+          widgetSubmissionMode: submissionMode,
+          widgetAnonymousVoting: anonymousVoting,
         }),
       });
       const json = await res.json();
@@ -197,6 +207,49 @@ export function WorkspaceSettings({
         />
         <p className="text-xs text-muted-foreground">
           Portal başlığında görüntülenecek marka logosu (tam URL).
+        </p>
+      </div>
+
+      <div className="grid gap-1.5">
+        <Label htmlFor="ws-submission-mode">Widget fikir gönderimi</Label>
+        <p className="text-xs text-muted-foreground">
+          Müşteri sitene gömülen widget&apos;ta ziyaretçilerin nasıl fikir
+          göndereceğini seç.
+        </p>
+        <select
+          id="ws-submission-mode"
+          value={submissionMode}
+          onChange={(e) =>
+            setSubmissionMode(
+              e.target.value as "anonymous" | "email" | "signup",
+            )
+          }
+          className="h-9 w-full max-w-[320px] rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+        >
+          <option value="anonymous">Anonim — üye olmadan fikir + oy</option>
+          <option value="email">E-posta — sadece mail adresinle</option>
+          <option value="signup">Kayıt zorunlu — üye olarak</option>
+        </select>
+        <p className="text-xs text-muted-foreground">
+          Anonim: herkes üye olmadan fikir verebilir ve oy atabilir (IP başına).
+          E-posta: sadece mail adresi istenir; kayıt yok. Kayıt: kurum içi
+          toplama için uygundur.
+        </p>
+      </div>
+
+      <div className="grid gap-1.5">
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={anonymousVoting}
+            onChange={(e) => setAnonymousVoting(e.target.checked)}
+            className="size-4 rounded border-input"
+          />
+          Anonim modda oy vermeye izin ver
+        </label>
+        <p className="text-xs text-muted-foreground">
+          Kapalıysa anonim ziyaretçiler yalnız fikir gönderebilir; oy için
+          kayıt/email gerekir.
         </p>
       </div>
 

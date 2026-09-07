@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { and, count, desc, eq, isNull, sql } from "drizzle-orm";
 
 import { getDb } from "@/lib/db";
-import { getWorkspaceId } from "@/lib/db/workspace";
+import { getWorkspaceId, resolveWorkspaceIdFromSlug } from "@/lib/db/workspace";
 import { getDefaultBoardId } from "@/lib/db/board";
 import { postFollowers, posts, votes } from "@/lib/db/schema";
 import { createPostSchema } from "@/lib/validations/post";
@@ -12,6 +12,11 @@ import { getWidgetSession } from "@/lib/widget/jwt";
 import { isOriginAllowed } from "@/lib/widget/origins";
 import { requestOrigin } from "@/lib/widget/http";
 import { enforceRateLimit, clientIpFrom } from "@/lib/rate-limit";
+import {
+  anonymousWidgetUserId,
+  ensureWidgetUser,
+  getWidgetSubmissionSettings,
+} from "@/lib/widget/submission";
 
 // Widget fikir listesi (plan.md Sprint 32): iframe içindeki kompakt arayüz
 // portal ile aynı arama altyapısını (lib/post-search) kullanır. Birleşmiş
@@ -87,11 +92,38 @@ export async function GET(req: Request) {
   }
 }
 
-// POST — widget oturumu zorunlu (çerezden çözülür; Clerk kullanılmaz).
+// POST — fikir oluşturma. Moda göre kimlik: signup/email → oturum (email
+// oturumu email'den kurulur); anonymous → oturum GEREKMEZ, IP tabanlı kararlı
+// widget kimliği kullanılır (1 IP aynı kimlik). Workspace, iframe `?ws=<slug>`
+// üzerinden (anonim/read-only) önce çözülür.
 export async function POST(req: NextRequest) {
   try {
     const session = await getWidgetSession();
-    if (!session) {
+    const origin = session?.origin ?? requestOrigin(req);
+    if (!(await isOriginAllowed(origin))) {
+      return NextResponse.json(
+        { success: false, error: "Bu site için widget erişimi yok." },
+        { status: 403 },
+      );
+    }
+
+    // Workspace: ?ws (slug) önce; yoksa oturum/host. Anonim iframe'de oturum
+    // çerezi olmayabilir → `?ws` belirleyicidir.
+    const workspaceId =
+      (await resolveWorkspaceIdFromSlug(req.nextUrl.searchParams.get("ws"))) ??
+      (await getWorkspaceId());
+    const { mode } = await getWidgetSubmissionSettings(workspaceId);
+
+    // Anonim mod: oturum zorunlu DEĞİL → IP tabanlı widget kimliği.
+    // Email/signup mod: oturum zorunlu (email oturumu email'den kurulur).
+    let userId = session?.userId ?? null;
+    if (mode === "anonymous") {
+      if (!userId) {
+        const ip = clientIpFrom(req);
+        userId = anonymousWidgetUserId(ip);
+        await ensureWidgetUser({ userId });
+      }
+    } else if (!userId) {
       return NextResponse.json(
         {
           success: false,
@@ -101,17 +133,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const origin = session.origin ?? requestOrigin(req);
-    if (!(await isOriginAllowed(origin))) {
-      return NextResponse.json(
-        { success: false, error: "Bu site için widget erişimi yok." },
-        { status: 403 },
-      );
-    }
-
     // Sprint 60: widget fikir oluşturma — AI autopilot maliyet amplifikasyonunu
     // kesmek için session kullanıcısı + IP frekans limiti.
-    const rl = await enforceRateLimit("widget:posts", session.userId, {
+    const rl = await enforceRateLimit("widget:posts", userId, {
       limit: 8,
       windowSec: 60,
     });
@@ -142,8 +166,8 @@ export async function POST(req: NextRequest) {
     const [created] = await getDb()
       .insert(posts)
       .values({
-        workspaceId: await getWorkspaceId(),
-        userId: session.userId,
+        workspaceId,
+        userId,
         title: parsed.data.title,
         description: parsed.data.description,
         boardId: await getDefaultBoardId(),
@@ -160,7 +184,7 @@ export async function POST(req: NextRequest) {
     try {
       await getDb()
         .insert(postFollowers)
-        .values({ postId: created.id, userId: session.userId })
+        .values({ postId: created.id, userId })
         .onConflictDoNothing();
     } catch (followErr) {
       console.error(
@@ -178,7 +202,7 @@ export async function POST(req: NextRequest) {
           postId: created.id,
           title: created.title,
           description: parsed.data.description,
-          userId: session.userId,
+          userId,
         },
       });
     } catch (eventErr) {

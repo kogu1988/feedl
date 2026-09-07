@@ -65,7 +65,16 @@ export default async function WorkspacesPage() {
       {workspaceInfo ? (
         <div className="mt-8">
           <WorkspaceSettings
-            initial={workspaceInfo}
+            initial={{
+              ...workspaceInfo,
+              // Şema varchar → union normalize (geçersizse signup varsayılanı).
+              widgetSubmissionMode:
+                workspaceInfo.widgetSubmissionMode === "anonymous" ||
+                workspaceInfo.widgetSubmissionMode === "email" ||
+                workspaceInfo.widgetSubmissionMode === "signup"
+                  ? workspaceInfo.widgetSubmissionMode
+                  : "signup",
+            }}
             isPro={planFromString(workspaceInfo.plan) === "pro"}
           />
         </div>

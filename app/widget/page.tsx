@@ -14,7 +14,9 @@ import {
   resolveWorkspaceIdFromSlug,
   getWorkspaceBrand,
 } from "@/lib/db/workspace";
-import { posts, votes } from "@/lib/db/schema";
+import { getWidgetSubmissionSettings } from "@/lib/widget/submission";
+import { planFromString } from "@/lib/paddle";
+import { posts, votes, workspaces } from "@/lib/db/schema";
 import { buildPostSearch } from "@/lib/post-search";
 import { summarize } from "@/lib/post-format";
 import { getWidgetSession } from "@/lib/widget/jwt";
@@ -60,6 +62,24 @@ export default async function WidgetPage({
 
   const session = await getWidgetSession();
   const sessionUserId = session?.userId ?? "";
+
+  // Sprint 63z: workspace'e göre gönderim modu + anonim oy bayrağını çöz
+  // (client bileşenlere geçir; anonim modda oturum gerekmez).
+  const { mode, anonymousVoting } = await getWidgetSubmissionSettings(workspaceId);
+  const canVote = Boolean(session) || (mode === "anonymous" && anonymousVoting);
+
+  // Triage Pro özelliği: free'de "Pro" rozetiyle gösterilir (anlaşılsın).
+  let isPro = false;
+  try {
+    const [wsRow] = await getDb()
+      .select({ plan: workspaces.plan })
+      .from(workspaces)
+      .where(eq(workspaces.id, workspaceId))
+      .limit(1);
+    isPro = planFromString(wsRow?.plan) === "pro";
+  } catch {
+    isPro = false;
+  }
 
   type WidgetRow = {
     id: string;
@@ -162,16 +182,18 @@ export default async function WidgetPage({
 
       {session ? (
         <div className="mt-3">
-          <WidgetPostForm />
-          <WidgetTriage ws={rawWs} />
+          <WidgetPostForm submissionMode={mode} ws={rawWs} authenticated={true} />
+          <WidgetTriage ws={rawWs} isPro={isPro} />
         </div>
       ) : (
         <>
           <p className="mt-3 rounded-lg border border-dashed bg-muted/30 p-3 text-xs text-muted-foreground">
-            Fikir gönderebilmek ve oy verebilmek için uygulamanız üzerinden
-            giriş yapmanız gerekir. Mevcut fikirleri aşağıdan inceleyebilirsiniz.
+            {mode === "anonymous"
+              ? "Üye olmadan fikir gönderebilir ve oy verebilirsiniz."
+              : "Fikir gönderebilmek ve oy verebilmek için uygulamanız üzerinden giriş yapmanız gerekir. Mevcut fikirleri aşağıdan inceleyebilirsiniz."}
           </p>
-          <WidgetTriage ws={rawWs} />
+          <WidgetPostForm submissionMode={mode} ws={rawWs} authenticated={false} />
+          <WidgetTriage ws={rawWs} isPro={isPro} />
         </>
       )}
 
@@ -202,7 +224,8 @@ export default async function WidgetPage({
               postId={row.id}
               initialCount={row.voteCount}
               initialVoted={row.voted > 0}
-              authenticated={Boolean(session)}
+              authenticated={canVote}
+              ws={rawWs}
             />
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium leading-snug">{row.title}</p>

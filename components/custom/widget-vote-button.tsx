@@ -19,15 +19,19 @@ export function WidgetVoteButton({
   initialCount,
   initialVoted,
   authenticated,
+  ws,
 }: {
   postId: string;
   initialCount: number;
   initialVoted: boolean;
   authenticated: boolean;
+  ws?: string | null;
 }) {
   const [voteCount, setVoteCount] = useState(initialCount);
   const [voted, setVoted] = useState(initialVoted);
   const [pending, setPending] = useState(false);
+
+  const wsParam = ws ? `?ws=${encodeURIComponent(ws)}` : "";
 
   if (!authenticated) {
     return (
@@ -50,8 +54,8 @@ export function WidgetVoteButton({
 
     try {
       const url = voted
-        ? `/api/widget/votes?postId=${encodeURIComponent(postId)}`
-        : "/api/widget/votes";
+        ? `/api/widget/votes?postId=${encodeURIComponent(postId)}${wsParam}`
+        : `/api/widget/votes${wsParam}`;
       const res = await fetch(url, {
         method: voted ? "DELETE" : "POST",
         headers: { "Content-Type": "application/json" },
