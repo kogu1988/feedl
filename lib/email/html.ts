@@ -12,11 +12,12 @@ const MUTED = "#71717a";
 const BORDER = "#e4e4e7";
 const BG = "#f4f4f5";
 
-// Feedl marka başlığı — turuncu logo (PNG) + "feedl" adı yan yana. E-posta
-// istemcileri SVG desteklemez; şeffaf PNG + metin her istemcide görünür.
+// Feedl marka başlığı — turuncu logo (PNG) + SİYAH "feedl" adı, tıklanınca
+// siteye gider. E-posta istemcileri SVG desteklemez; şeffaf PNG + metin.
+const BRAND_DARK = "#18181b";
 export function brandLogoHtml(): string {
-  const logoUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://feedl.app";
-  return `<span style="display:inline-flex;align-items:center;gap:10px;"><img src="${logoUrl}/logo_brand_orange.png" width="32" height="32" alt="" style="display:block;width:32px;height:32px;object-fit:contain;" /><span style="font-size:20px;font-weight:800;color:${BRAND_COLOR};letter-spacing:-0.02em;">feedl</span></span>`;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://feedl.app";
+  return `<a href="${appUrl}" style="text-decoration:none;display:inline-flex;align-items:center;gap:10px;"><img src="${appUrl}/logo_brand_orange.png" width="32" height="32" alt="feedl" style="display:block;width:32px;height:32px;object-fit:contain;" /><span style="font-size:20px;font-weight:800;color:${BRAND_DARK};letter-spacing:-0.02em;">feedl</span></a>`;
 }
 
 // Ortak e-posta kabuğu: başlık (marka logo), gövde (`childHtml`), footer
@@ -54,10 +55,11 @@ export function escapeHtml(value: string): string {
     .replaceAll("'", "&#39;");
 }
 
-// HTML footer bloğu: tek yönlü bildirim + destek adresi. Var olan her
-// şablonun footer <td> içine eklenir.
+// HTML footer bloğu: tek yönlü bildirim + site linki + kurumsal destek adresi.
+// Var olan her şablonun footer <td> içine eklenir.
 export function oneWayFooterHtml(): string {
-  return `<span style="white-space:nowrap;">Lütfen bu e-postayı yanıtlamayınız — bu e-postaya yanıt vermek bize ulaşmaz. Geri bildirim için <a href="https://feedl.app/portal" style="color:#71717a;">feedl&#39;e yazın</a> ya da <a href="mailto:${SUPPORT_EMAIL}" style="color:#71717a;">${SUPPORT_EMAIL}</a> adresine e-posta gönderin.</span>`;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://feedl.app";
+  return `<span style="white-space:nowrap;">Lütfen bu e-postayı yanıtlamayınız — bu e-postaya yanıt vermek bize ulaşmaz. Soruların için <a href="${appUrl}" style="color:#71717a;">feedl.app</a> adresini ziyaret et ya da <a href="mailto:${SUPPORT_EMAIL}" style="color:#71717a;">${SUPPORT_EMAIL}</a> adresine yaz.</span>`;
 }
 
 export function oneWayFooterText(): string {
