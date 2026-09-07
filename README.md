@@ -126,6 +126,7 @@ npm run dev                 # http://localhost:3000
 - Paddle: `PADDLE_API_KEY`, `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN`, `PADDLE_WEBHOOK_SECRET`
 - Upstash: `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
 - Sentry: `SENTRY_DSN` (opsiyonel; DSN yoksa no-op)
+- Analytics: `NEXT_PUBLIC_GA_ID` (opsiyonel; GA4 measurement ID ör. `G-XXXX`; setliyse gtag yüklenir, değilse no-op — Vercel Analytics zaten var)
 - Şifreleme: `ENCRYPTION_KEY` (entegrasyon secret AES-256-GCM; prod'da zorunlu)
 - AI: `LLM_MODEL`, `LLM_FALLBACK_MODEL` (ücretsiz flaky olursa ücretli fallback)
 - App: `NEXT_PUBLIC_APP_URL`

@@ -27,6 +27,38 @@ import { StatusBadge } from "@/components/custom/status-badge";
 import { TypeBadge } from "@/components/custom/type-badge";
 import { SentimentBadge } from "@/components/custom/sentiment-badge";
 import { PricingManager } from "@/components/custom/pricing-manager";
+import { generateCanonical } from "@/lib/seo";
+
+// Landing SEO — root layout'un title template'i + metadataBase'ine dayanır;
+// burada landing'e özel description, OG/Twitter ve JSON-LD (SoftwareApplication)
+// tanımlanır. Canonical (F2) korunur. Girişli kullanıcı `/` yerine yönlendiği
+// için bu metadata yalnız anonim vitrin ziyaretçisinde render edilir.
+export async function generateMetadata(): Promise<import("next").Metadata> {
+  const canonical = await generateCanonical();
+  const description =
+    "Müşteri isteklerini topla, AI ile analiz et, gelir skoruyla önceliklendir ve yayınlanınca herkese duyur. Canny'ye ücretsiz, hosted alternatif.";
+  return {
+    description,
+    openGraph: {
+      title: "feedl — AI Destekli Müşteri Geri Bildirim Platformu",
+      description,
+      url: process.env.NEXT_PUBLIC_APP_URL ?? "https://feedl.app",
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: "feedl — AI Destekli Müşteri Geri Bildirim Platformu",
+      description,
+    },
+    ...canonical,
+  };
+}
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#ff5c35",
+};
 
 // Sprint 50 (Faz 4/cilama) — "/" artık SATIŞ landing'idir. Portal / yol
 // haritası / güncellemeler nav'dan çıkarıldı; ürün örnekleri /demo'ya taşındı.
@@ -175,6 +207,36 @@ export default async function RootPage() {
 
   return (
     <main className="container mx-auto max-w-6xl px-4 pb-16 pt-12 sm:pt-20">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@graph": [
+              {
+                "@type": "SoftwareApplication",
+                name: "feedl",
+                applicationCategory: "BusinessApplication",
+                operatingSystem: "Web",
+                description:
+                  "Müşteri geri bildirimini toplama, AI ile analiz etme, önceliklendirme ve duyurma platformu.",
+                url: process.env.NEXT_PUBLIC_APP_URL ?? "https://feedl.app",
+                offers: {
+                  "@type": "Offer",
+                  price: "0",
+                  priceCurrency: "USD",
+                },
+              },
+              {
+                "@type": "Organization",
+                name: "feedl",
+                url: process.env.NEXT_PUBLIC_APP_URL ?? "https://feedl.app",
+                email: "hi@feedl.app",
+              },
+            ],
+          }),
+        }}
+      />
       <section className="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-14">
         <div>
           <h1 className="hero-rise max-w-xl text-4xl font-bold sm:text-5xl lg:text-6xl">

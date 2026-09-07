@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { GoogleAnalytics } from "@/components/custom/google-analytics";
 import { Manrope, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -15,9 +16,32 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "feedl - AI Destekli Müşteri Geri Bildirim Platformu",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "https://feedl.app"),
+  title: {
+    default: "feedl — AI Destekli Müşteri Geri Bildirim Platformu",
+    template: "%s · feedl",
+  },
   description:
-    "Özellik isteklerini toplayın, AI ile analiz edin ve yol haritanızı yönetin.",
+    "Müşteri isteklerini topla, AI ile analiz et, gelir skoruyla önceliklendir ve yayınlanınca herkese duyur. Canny'ye ücretsiz, hosted alternatif.",
+  openGraph: {
+    type: "website",
+    locale: "tr_TR",
+    url: process.env.NEXT_PUBLIC_APP_URL ?? "https://feedl.app",
+    siteName: "feedl",
+    title: "feedl — AI Destekli Müşteri Geri Bildirim Platformu",
+    description:
+      "Müşteri isteklerini veriyle önceliklendir: otomatik sınıflandırma, duygu analizi ve gelir bağlamı tek platformda.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "feedl — AI Destekli Müşteri Geri Bildirim Platformu",
+    description:
+      "Müşteri isteklerini veriyle önceliklendir: otomatik sınıflandırma, duygu analizi ve gelir bağlamı tek platformda.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 // Sprint 32: root layout artık yalnızca kabuk (html/body + fontlar). Site
@@ -34,6 +58,7 @@ export default function RootLayout({
         {children}
         <Analytics />
         <SpeedInsights />
+        <GoogleAnalytics />
       </body>
     </html>
   );
