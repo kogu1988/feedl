@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /onboarding
+Disallow: /invites
+Disallow: /sign-in
+Disallow: /sign-up
+Disallow: /widget
+Disallow: /api/
+
+Sitemap: https://feedl.app/sitemap.xml
