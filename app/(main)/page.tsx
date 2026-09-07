@@ -346,6 +346,20 @@ export default async function RootPage() {
           </SignUpButton>
         </div>
       </section>
+
+      {/* Sprint 63y — dogfood: feedl widget'ı kendi landing'ine embed.
+          feedl.app self-origin (her zaman izinli), feedl workspace'ine
+          (seed slug) hedeflenir — canlıda widget JWT + iframe + oylama
+          akışını gerçekten test etmek için. Satış landing'inde
+          salt-okunur listeyi değil, tam etkileşimi açar (jetonsuz). */}
+      <script
+        src="https://feedl.app/widget.js"
+        data-feedl-url="https://feedl.app"
+        data-feedl-workspace="feedl"
+        data-button-text="Geri bildirim"
+        data-theme="auto"
+        async
+      />
     </main>
   );
 }
