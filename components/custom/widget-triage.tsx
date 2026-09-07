@@ -58,8 +58,14 @@ export function WidgetTriage({
   }
 
   if (!open) {
-    // Free: sohbet kapalı — standart Pro yükseltme çağrısı (rozet + CTA).
-    return <ProFeatureLock compact />;
+    // Free: sohbet kapalı — neyin yükseltileceğini belirten standart Pro çağrısı.
+    return (
+      <ProFeatureLock
+        compact
+        title="AI destekli yanıt"
+        description="Mesajını yaz; AI sınıflandırıp özellik isteğine çevirsin."
+      />
+    );
   }
 
   return (

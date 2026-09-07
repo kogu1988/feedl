@@ -33,8 +33,9 @@ export function ProBadge({
 }
 
 // Kilitli bir Pro özelliği için standart görünüm: üstte rozet, kısa açıklama ve
-// "Pro'ya Yükselt" butonu. `compact` ise yalnız rozet + buton (yer kazanır) —
-// widget/sohbet gibi küçük alanlar için.
+// "Pro'ya Yükselt" butonu. `compact` ise yer kazanır (widget/sohbet için) ama
+// YİNE DE neyin yükseltileceğini söyleyen kısa bir açıklama gösterir — kullanıcı
+// yükseltmenin neye karşılık geldiğini bilmeden tıklamaz.
 export function ProFeatureLock({
   title = "Bu özellik Pro",
   description,
@@ -60,11 +61,18 @@ export function ProFeatureLock({
         ) : null}
         <ProBadge />
       </div>
-      {!compact && title ? (
-        <p className="mt-1.5 text-sm font-medium">{title}</p>
+      {title ? (
+        <p
+          className={cn(
+            "font-medium",
+            compact ? "mt-1 text-xs" : "mt-1.5 text-sm",
+          )}
+        >
+          {title}
+        </p>
       ) : null}
-      {!compact && description ? (
-        <p className="mt-1 text-xs text-muted-foreground">{description}</p>
+      {description ? (
+        <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
       ) : null}
       <div className={cn("flex", compact ? "mt-1.5" : "mt-3")}>
         <Button
