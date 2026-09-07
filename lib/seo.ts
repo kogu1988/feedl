@@ -5,6 +5,13 @@ import type { Metadata } from "next";
 
 import { getWorkspaceBrand } from "@/lib/db/workspace";
 
+// OG / Twitter paylaşım görseli (1200×630). `NEXT_PUBLIC_OG_IMAGE` env ile
+// özelleştirilir; yoksa `public/og.png`. metadataBase ile birleşip tam URL
+// üretir (next metadata, relative path'i metadataBase'e göre çözer).
+export function ogImage(): string {
+  return process.env.NEXT_PUBLIC_OG_IMAGE ?? "/og.png";
+}
+
 // Sprint 63y (F2) — server-side canonical (tam path). App Router'da `generateMetadata`
 // yalnız {params, searchParams} alır; tam path'i `x-feedl-pathname` (middleware
 // ekler) + `x-forwarded-host` (host) ile kurarız. Workspace custom domain'i varsa

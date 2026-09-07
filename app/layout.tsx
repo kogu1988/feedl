@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { GoogleAnalytics } from "@/components/custom/google-analytics";
+import { ogImage } from "@/lib/seo";
 import { Manrope, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -31,12 +32,18 @@ export const metadata: Metadata = {
     title: "feedl — AI Destekli Müşteri Geri Bildirim Platformu",
     description:
       "Müşteri isteklerini veriyle önceliklendir: otomatik sınıflandırma, duygu analizi ve gelir bağlamı tek platformda.",
+    images: [ogImage()],
   },
   twitter: {
     card: "summary_large_image",
     title: "feedl — AI Destekli Müşteri Geri Bildirim Platformu",
     description:
       "Müşteri isteklerini veriyle önceliklendir: otomatik sınıflandırma, duygu analizi ve gelir bağlamı tek platformda.",
+    images: [ogImage()],
+  },
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
   },
   robots: {
     index: true,

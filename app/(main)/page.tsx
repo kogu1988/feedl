@@ -27,7 +27,7 @@ import { StatusBadge } from "@/components/custom/status-badge";
 import { TypeBadge } from "@/components/custom/type-badge";
 import { SentimentBadge } from "@/components/custom/sentiment-badge";
 import { PricingManager } from "@/components/custom/pricing-manager";
-import { generateCanonical } from "@/lib/seo";
+import { generateCanonical, ogImage } from "@/lib/seo";
 
 // Landing SEO — root layout'un title template'i + metadataBase'ine dayanır;
 // burada landing'e özel description, OG/Twitter ve JSON-LD (SoftwareApplication)
@@ -44,11 +44,13 @@ export async function generateMetadata(): Promise<import("next").Metadata> {
       description,
       url: process.env.NEXT_PUBLIC_APP_URL ?? "https://feedl.app",
       type: "website",
+      images: [ogImage()],
     },
     twitter: {
       card: "summary_large_image",
       title: "feedl — AI Destekli Müşteri Geri Bildirim Platformu",
       description,
+      images: [ogImage()],
     },
     ...canonical,
   };
