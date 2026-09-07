@@ -20,6 +20,7 @@ import { planFromString } from "@/lib/paddle";
 import { posts, votes, workspaces } from "@/lib/db/schema";
 import { buildPostSearch } from "@/lib/post-search";
 import { summarize } from "@/lib/post-format";
+import { cn } from "@/lib/utils";
 import { getWidgetSession } from "@/lib/widget/jwt";
 
 // Widget sayfası (plan.md Sprint 32): müşteri sitelerine gömülen iframe'in
@@ -36,10 +37,15 @@ type WidgetTheme = (typeof WIDGET_THEMES)[number];
 export default async function WidgetPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; theme?: string; ws?: string }>;
+  searchParams: Promise<{ q?: string; theme?: string; ws?: string; page?: string; sort?: string }>;
 }) {
-  const { q: rawQ, theme: rawTheme, ws: rawWs } = await searchParams;
+  const { q: rawQ, theme: rawTheme, ws: rawWs, page: rawPage, sort: rawSort } = await searchParams;
   const q = (rawQ ?? "").trim().slice(0, 100);
+  // Sprint 63z: sayfalama (5'er) + sıralama (en yeni / en çok oy).
+  const page = Math.max(1, Number.parseInt(rawPage ?? "1", 10) || 1);
+  const PAGE_SIZE = 5;
+  const sort = rawSort === "new" ? "new" : "votes"; // varsayılan: en çok oy
+  const offset = (page - 1) * PAGE_SIZE;
   // Sprint 63p: `?ws=<slug>` varsa workspace'i ondan çöz (token olmayan
   // salt-okunur iframe de müşteri workspace'ini görsün); yoksa oturum/host.
   const workspaceId =
@@ -91,7 +97,28 @@ export default async function WidgetPage({
     voted: number;
   };
   let rows: WidgetRow[] = [];
+  let total = 0;
   let loadError = false;
+
+  // Toplam fikir sayısı (sayfalama). Arama koşuluyla birebir aynı.
+  try {
+    const [countRow] = await getDb()
+      .select({ value: count() })
+      .from(posts)
+      .where(
+        and(
+          eq(posts.workspaceId, workspaceId),
+          isNull(posts.mergedIntoId),
+          search.condition,
+        ),
+      );
+    total = Number(countRow?.value ?? 0);
+  } catch (err) {
+    console.error(
+      "Widget page count failed:",
+      err instanceof Error ? err.message : err,
+    );
+  }
 
   try {
     const result = await getDb()
@@ -114,14 +141,16 @@ export default async function WidgetPage({
       )
       .groupBy(posts.id)
       .orderBy(
-        // Arama varken alaka önce gelir; aksi halde portal varsayılanı
-        // gibi en çok oylanan üstte (plan.md Sprint 12).
+        // Sprint 63z: sort=new → en yeni; sort=votes (varsayılan) → en çok oy.
+        // Arama varken alaka her zaman önce gelir.
         ...(search.tokens.length > 0
-          ? [desc(search.score), desc(sql`count(${votes.id})`)]
-          : [desc(sql`count(${votes.id})`)]),
-        desc(posts.createdAt),
+          ? [desc(search.score)]
+          : sort === "new"
+            ? [desc(posts.createdAt), desc(sql`count(${votes.id})`)]
+            : [desc(sql`count(${votes.id})`), desc(posts.createdAt)]),
       )
-      .limit(50);
+      .limit(PAGE_SIZE)
+      .offset(offset);
     rows = result.map((row) => ({
       id: row.id,
       title: row.title,
@@ -136,6 +165,18 @@ export default async function WidgetPage({
       err instanceof Error ? err.message : err,
     );
     loadError = true;
+  }
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  // Sayfa URL'si: tema + ws + sort + (q varsa) korunur; page değişir.
+  function pageHref(nextPage: number): string {
+    const params = new URLSearchParams();
+    if (theme !== "light") params.set("theme", theme);
+    if (rawWs) params.set("ws", rawWs);
+    params.set("sort", sort);
+    if (q) params.set("q", q);
+    params.set("page", String(nextPage));
+    return `/widget?${params.toString()}`;
   }
 
   return (
@@ -164,10 +205,13 @@ export default async function WidgetPage({
         </Link>
       </div>
 
+      {/* Sprint 63z: arama formu — tema/ws/sort korunur. */}
       <form action="/widget" method="get" className="mt-3 flex gap-2">
         {theme !== "light" ? (
           <input type="hidden" name="theme" value={theme} />
         ) : null}
+        {rawWs ? <input type="hidden" name="ws" value={rawWs} /> : null}
+        <input type="hidden" name="sort" value={sort} />
         <Input
           type="search"
           name="q"
@@ -180,23 +224,46 @@ export default async function WidgetPage({
           Ara
         </Button>
       </form>
-
-      {session ? (
-        <div className="mt-3">
-          <WidgetPostForm submissionMode={mode} ws={rawWs} authenticated={true} />
-          <WidgetTriage ws={rawWs} isPro={isPro} />
+      <div className="mt-3 flex items-center gap-2 text-xs">
+        <span className="font-medium text-muted-foreground">Sırala:</span>
+        <div className="inline-flex rounded-md border border-input">
+          <Link
+            href={pageHref(1).replace(/sort=[^&]*/, "sort=votes")}
+            className={cn(
+              "rounded-l-md px-2.5 py-1 transition-colors",
+              sort === "votes"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:bg-muted",
+            )}
+          >
+            En çok oy
+          </Link>
+          <Link
+            href={pageHref(1).replace(/sort=[^&]*/, "sort=new")}
+            className={cn(
+              "rounded-r-md px-2.5 py-1 transition-colors",
+              sort === "new"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:bg-muted",
+            )}
+          >
+            En yeni
+          </Link>
         </div>
-      ) : (
-        <>
-          <Notice tone="info" size="md" className="mt-3">
+      </div>
+
+      {/* Sprint 63z: gönderim alanı — anonim bilgi kutusu + form + triage. */}
+      <div className="mt-4 grid gap-2">
+        {!session ? (
+          <Notice tone="info" size="md">
             {mode === "anonymous"
               ? "Üye olmadan fikir gönderebilir ve oy verebilirsiniz."
               : "Fikir gönderebilmek ve oy verebilmek için uygulamanız üzerinden giriş yapmanız gerekir. Mevcut fikirleri aşağıdan inceleyebilirsiniz."}
           </Notice>
-          <WidgetPostForm submissionMode={mode} ws={rawWs} authenticated={false} />
-          <WidgetTriage ws={rawWs} isPro={isPro} />
-        </>
-      )}
+        ) : null}
+        <WidgetPostForm submissionMode={mode} ws={rawWs} authenticated={Boolean(session)} />
+        <WidgetTriage ws={rawWs} isPro={isPro} />
+      </div>
 
       {loadError ? (
         <p className="mt-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
@@ -204,10 +271,10 @@ export default async function WidgetPage({
         </p>
       ) : q ? (
         <p className="mt-4 text-xs text-muted-foreground">
-          &quot;{q}&quot; için {rows.length} sonuç
+          &quot;{q}&quot; için {total} sonuç
           {" · "}
           <Link
-            href={theme === "light" ? "/widget" : `/widget?theme=${theme}`}
+            href={pageHref(1).replace(/sort=[^&]*/, "sort=votes").replace(/page=\d+/, "page=1")}
             className="underline underline-offset-2 hover:text-foreground"
           >
             aramayı temizle
@@ -229,7 +296,15 @@ export default async function WidgetPage({
               ws={rawWs}
             />
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium leading-snug">{row.title}</p>
+              {/* Sprint 63z: tıklayınca fikrin portal detayına gider. */}
+              <Link
+                href={`${portalHref}/${row.id}`}
+                target="_blank"
+                rel="noreferrer"
+                className="text-sm font-medium leading-snug underline-offset-2 hover:text-primary hover:underline"
+              >
+                {row.title}
+              </Link>
               <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
                 {summarize(row.description, 120)}
               </p>
@@ -240,6 +315,35 @@ export default async function WidgetPage({
           </li>
         ))}
       </ul>
+
+      {/* Sprint 63z: sayfalama (5'er). */}
+      {totalPages > 1 ? (
+        <nav className="mt-3 flex items-center justify-between gap-2 text-xs" aria-label="Sayfalama">
+          {page > 1 ? (
+            <Link
+              href={pageHref(page - 1)}
+              className="inline-flex rounded-md border border-input px-2.5 py-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              &larr; Önceki
+            </Link>
+          ) : (
+            <span />
+          )}
+          <span className="text-muted-foreground">
+            {page} / {totalPages}
+          </span>
+          {page < totalPages ? (
+            <Link
+              href={pageHref(page + 1)}
+              className="inline-flex rounded-md border border-input px-2.5 py-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              Sonraki &rarr;
+            </Link>
+          ) : (
+            <span />
+          )}
+        </nav>
+      ) : null}
 
       {!loadError && rows.length === 0 ? (
         <EmptyState>
