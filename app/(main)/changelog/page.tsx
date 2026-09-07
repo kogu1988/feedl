@@ -120,7 +120,7 @@ export default async function ChangelogPage() {
               key={entry.id}
               title={entry.title}
               href={`/changelog/${entry.id}`}
-              date={entry.publishedAt ? trDateTimeFormatter.format(entry.publishedAt) : undefined}
+              date={entry.dateLabel}
               badges={
                 entry.label ? (
                   <span
@@ -229,6 +229,13 @@ const loadEntries = unstable_cache(
 
     return rows.map((row) => ({
       ...row,
+      // publishedAt bir Date; `unstable_cache` JSON ile string'e çevirir ve
+      // Intl.DateTimeFormat.format(string) `RangeError: Invalid time value`
+      // fırlatır (Sprint 63x regresyonu). Bu yüzden tarihi cache İÇİNDE
+      // string'e çevirip render'a hazır etiket veriyoruz.
+      dateLabel: row.publishedAt
+        ? trDateTimeFormatter.format(row.publishedAt)
+        : undefined,
       linkedPosts: postsByEntry.get(row.id) ?? [],
     }));
   },
