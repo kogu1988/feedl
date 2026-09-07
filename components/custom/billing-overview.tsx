@@ -116,6 +116,7 @@ export function BillingOverview({
       setError("Paddle hazır değil, tekrar dene.");
       return;
     }
+    setInfo("Ödeme kutusu yükleniyor…");
     paddle.Checkout.open({
       items: [
         {
@@ -124,6 +125,12 @@ export function BillingOverview({
         },
       ],
       customData: { slug: workspaceSlug },
+      settings: {
+        displayMode: "inline",
+        frameTarget: "feedl-checkout-billing",
+        frameInitialHeight: 560,
+        frameStyle: "width:100%;border:none;",
+      },
     });
   }
 
@@ -242,8 +249,10 @@ export function BillingOverview({
               <Button className="w-full" onClick={openCheckout}>
                 Pro&apos;ya Geç
               </Button>
+              {/* Sprint 64: inline checkout hedefi — sayfa içi gömülü iframe. */}
+              <div id="feedl-checkout-billing" className="mt-4 min-h-[120px]" />
               <p className="mt-2 text-center text-xs text-muted-foreground">
-                Ödeme sayfadan ayrılmadan güvenli overlay ile tamamlanır.
+                Ödeme sayfadan ayrılmadan güvenli olarak tamamlanır.
               </p>
             </div>
           ) : (

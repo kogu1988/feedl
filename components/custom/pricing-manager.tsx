@@ -89,6 +89,9 @@ export function PricingManager({ workspaceSlug }: { workspaceSlug: string }) {
       setError("Paddle hazır değil, tekrar dene.");
       return;
     }
+    // Sprint 64: INLINE checkout — sayfa içi gömülü (overlay değil).
+    // Checkout, Pro kartındaki #feedl-checkout iframe alanında açılır.
+    setInfo("Ödeme kutusu yükleniyor…");
     paddle.Checkout.open({
       items: [
         {
@@ -97,6 +100,12 @@ export function PricingManager({ workspaceSlug }: { workspaceSlug: string }) {
         },
       ],
       customData: { slug: workspaceSlug },
+      settings: {
+        displayMode: "inline",
+        frameTarget: "feedl-checkout",
+        frameInitialHeight: 560,
+        frameStyle: "width:100%;border:none;",
+      },
     });
   }
 
@@ -179,6 +188,8 @@ export function PricingManager({ workspaceSlug }: { workspaceSlug: string }) {
             <Button size="lg" className="w-full" onClick={openProCheckout}>
               Pro&apos;ya Geç
             </Button>
+            {/* Sprint 64: inline checkout hedefi — sayfa içi gömülü iframe. */}
+            <div id="feedl-checkout" className="mt-4 min-h-[120px]" />
           </div>
         </div>
       </div>
