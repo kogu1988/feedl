@@ -42,10 +42,7 @@ export const metadata: Metadata = {
     images: [ogImage()],
   },
   icons: {
-    icon: [
-      { url: "/favicon.ico", sizes: "256x256", type: "image/x-icon" },
-      { url: "/icon.svg", sizes: "any", type: "image/svg+xml" },
-    ],
+    icon: [{ url: "/icon.svg", sizes: "any", type: "image/svg+xml" }],
     apple: "/apple-touch-icon.png",
   },
   robots: {
