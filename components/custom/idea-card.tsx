@@ -73,9 +73,17 @@ export function IdeaCard({
       onDragStart={onDragStart}
     >
       <CardContent className="p-4">
-        <div className="flex justify-between gap-4">
-          {/* SOL: başlık + rozetler (üst) → etiketler + metin (alt) */}
-          <div className="min-w-0 flex-1">
+        {/* Kart standardı (DESIGN.md §5, Sprint 64): 4 köşe kullanılır. Grid:
+            [oy] | [içerik: başlık+rozet → etiket → metin / content] | [sağ meta: tarih→stats].
+            voteAction sol dikey, yorum + oy sayısı sağ alt — alt alta dizme yok. */}
+        <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3">
+          {/* SOL: oy butonu (dikey ortalanmış) */}
+          {voteAction ? (
+            <div className="flex shrink-0 flex-col items-center pt-0.5">{voteAction}</div>
+          ) : null}
+
+          {/* ORTA: başlık + rozetler (üst) → etiketler → metin/content */}
+          <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               {href ? (
                 <Link
@@ -100,9 +108,10 @@ export function IdeaCard({
                 {description}
               </p>
             ) : null}
+            {content ? <div className="mt-3">{content}</div> : null}
           </div>
 
-          {/* SAĞ: tarih (üst) → oy/yorum (alt) */}
+          {/* SAĞ: tarih (üst) + stats (alt) */}
           {(date || hasStats) && (
             <div className="flex shrink-0 flex-col items-end justify-between gap-2">
               {date ? (
@@ -111,7 +120,6 @@ export function IdeaCard({
                 <span />
               )}
               <div className="flex items-center gap-3">
-                {/* F5: mock (commentPostId yok) → statik sayı; gerçek → link. */}
                 {commentCount != null && commentPostId ? (
                   <CommentCountBadge postId={commentPostId} count={commentCount} />
                 ) : commentCount != null ? (
@@ -120,7 +128,7 @@ export function IdeaCard({
                     <span className="font-mono tabular-nums">{commentCount}</span>
                   </span>
                 ) : null}
-                {voteAction ? voteAction : voteCount != null ? (
+                {voteCount != null ? (
                   <span className="inline-flex items-center gap-1 text-sm font-medium">
                     <ThumbsUpIcon className="size-4 text-muted-foreground" aria-hidden="true" />
                     <span className="font-mono tabular-nums">{voteCount}</span>
@@ -130,7 +138,6 @@ export function IdeaCard({
             </div>
           )}
         </div>
-        {content ? <div className="mt-3">{content}</div> : null}
       </CardContent>
     </Card>
   );
