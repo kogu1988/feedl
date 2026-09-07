@@ -1,15 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { SendIcon, SparklesIcon } from "lucide-react";
+import { SendIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { ProFeatureLock } from "@/components/custom/pro";
 
 // Sprint 48l — widget AI triage. Kullanıcı serbest mesaj yazar; AI sınıflar:
 // feedback → fikir oluşturur, support/clarify/unrecognized → yönlendirme.
-// Sprint 63p — `ws` prop: workspace slug'ı; triage Pro gate'inin DOĞRU
-// workspace üzerinden çalışması için fetch'e `?ws=` eklenir (anonim/read-only
-// iframe'de session çerezi olmayabilir).
+// Sprint 64 — davranış netleşti: Pro ise AI sohbet OTOMATİK AÇIK gelir;
+// free ise sohbet açılmaz, yalnız standart Pro yükseltme çağrısı (ProBadge +
+// "Pro'ya Yükselt") gösterilir — tıklamayla açılan gizemli kutu yok.
 export function WidgetTriage({
   ws,
   isPro = false,
@@ -18,7 +19,9 @@ export function WidgetTriage({
   isPro?: boolean;
 }) {
   const wsParam = ws ? `?ws=${encodeURIComponent(ws)}` : "";
-  const [open, setOpen] = useState(false);
+  // Pro ise sohbet otomatik aktif (kullanıcı tıklamak zorunda değil); state
+  // gerekmez — prop'tan türetilir (free her zaman kapalı).
+  const open = isPro;
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<{
@@ -55,19 +58,8 @@ export function WidgetTriage({
   }
 
   if (!open) {
-    return (
-      <div className="mt-4 text-center">
-        <Button variant="ghost" size="sm" onClick={() => setOpen(true)}>
-          <SparklesIcon className="size-3.5" aria-hidden="true" />
-          Farklı bir konu mu?
-          {!isPro ? (
-            <span className="ml-1 rounded-full border border-brand/40 bg-brand/10 px-1.5 py-0.5 text-[10px] font-semibold text-brand">
-              Pro
-            </span>
-          ) : null}
-        </Button>
-      </div>
-    );
+    // Free: sohbet kapalı — standart Pro yükseltme çağrısı (rozet + CTA).
+    return <ProFeatureLock compact />;
   }
 
   return (

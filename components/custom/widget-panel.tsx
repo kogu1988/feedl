@@ -163,13 +163,17 @@ export function WidgetPanel({
         </form>
       ) : null}
 
-      {/* Fikir gönder (+ pro triage) — açılır. */}
+      {/* Fikir gönder formu — açılır (triage ayrı, her zaman görünür). */}
       {formOpen ? (
-        <div className="mt-2 grid gap-2">
+        <div className="mt-2">
           <WidgetPostForm submissionMode={submissionMode} ws={ws} authenticated={authenticated} />
-          <WidgetTriage ws={ws} isPro={isPro} />
         </div>
       ) : null}
+
+      {/* AI sohbet (Pro) / yükseltme çağrısı (free) — her zaman görünür. */}
+      <div className="mt-2">
+        <WidgetTriage ws={ws} isPro={isPro} />
+      </div>
 
       {/* Sıralama + sonuç sayısı — kompakt satır. */}
       <div className="mt-3 flex items-center justify-between gap-2 text-xs text-muted-foreground">

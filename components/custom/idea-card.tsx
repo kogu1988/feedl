@@ -89,7 +89,7 @@ export function IdeaCard({
               )}
               {badges}
             </div>
-            {tags ? <div className="mt-2">{tags}</div> : null}
+            {tags ? <div className="mt-2 flex flex-wrap gap-1.5">{tags}</div> : null}
             {description ? (
               <p
                 className={cn(

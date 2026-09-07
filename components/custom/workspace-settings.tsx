@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2Icon, LockIcon } from "lucide-react";
+import { Loader2Icon } from "lucide-react";
 
 import { Notice } from "@/components/custom/notice";
+import { ProBadge } from "@/components/custom/pro";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -124,10 +125,7 @@ export function WorkspaceSettings({
         <Label htmlFor="ws-domain" className="flex items-center gap-1.5">
           Custom domain
           {!isPro && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-brand/40 bg-brand/10 px-2 py-0.5 text-xs text-brand">
-              <LockIcon className="size-3" aria-hidden="true" />
-              Pro
-            </span>
+            <ProBadge lock />
           )}
         </Label>
         {isPro ? (
