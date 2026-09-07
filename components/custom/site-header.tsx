@@ -3,13 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ChevronsUpIcon, MenuIcon, XIcon } from "lucide-react";
+import { MenuIcon, XIcon } from "lucide-react";
 import { Show, UserButton, useAuth } from "@clerk/nextjs";
 
 import { ClerkTriggerButton } from "@/components/custom/clerk-trigger-button";
 import { ThemeToggle } from "@/components/custom/theme-toggle";
 import { cn } from "@/lib/utils";
-import { textOn } from "@/lib/color";
 
 // Sprint 36: üst bar site kabuğunun parçası — marka işareti ve aktif sayfa
 // durumu eklendi. usePathname client gerektirdiği için layout'tan buraya
@@ -89,7 +88,6 @@ export function SiteHeader({ brand }: { brand?: { name: string; brandColor: stri
   // Tam genişlik kararı (2026-09-05): üst bar tüm sayfalarda ekranın
   // tamamını kullanır — public/admin container ayrımı kalktı.
   const workspaceName = brand?.name ?? "feedl";
-  const brandColor = brand?.brandColor ?? "#ff5c35";
   const logoUrl = brand?.logoUrl ?? null;
   // Auth yüzeyinde giriş/kayıt butonları gösterilmez (kendi sayfasına giden
   // ölü link + P1 tekrar). Aksi halde anonimde gösterilir.
@@ -109,18 +107,16 @@ export function SiteHeader({ brand }: { brand?: { name: string; brandColor: stri
             href="/"
             className="flex shrink-0 items-center gap-1.5 font-bold tracking-tight"
           >
-            <span
-              className="flex size-6 items-center justify-center rounded-md"
-              style={{ backgroundColor: brandColor, color: textOn(brandColor) }}
+            {/* Sprint 63z: workspace logoUrl yoksa varsayılan turuncu marka logosu.
+                Karonun içindeki ChevronsUpIcon yerine gerçek logo gösterilir; koyu
+                ve açık modda görünür. logoUrl varsa onu kullan. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={logoUrl ?? "/logo_brand_orange.svg"}
+              alt=""
+              className="size-6 shrink-0 object-contain"
               aria-hidden="true"
-            >
-              {logoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={logoUrl} alt="" className="size-4 object-contain" />
-              ) : (
-                <ChevronsUpIcon className="size-3.5" />
-              )}
-            </span>
+            />
             <span className="text-base">{workspaceName}</span>
           </Link>
           {/* Masaüstü nav (md+); mobilde hamburger içinde. */}

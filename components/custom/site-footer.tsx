@@ -2,10 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronsUpIcon } from "lucide-react";
 import { useAuth } from "@clerk/nextjs";
-
-import { textOn } from "@/lib/color";
 
 // Sprint 63+ (IA standardı) + 2026-09-06 revizyonları:
 // footer yalnızca anonim ziyaretçiye gösterilir (Giriş yapmış kullanıcı ürünü
@@ -43,23 +40,15 @@ export function SiteFooter({ brand }: { brand: { name: string; brandColor?: stri
         {/* Üst satır: marka tanıtımı (sol) + şirket linkleri TEK SIRA (sağ). */}
         <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
           <div className="max-w-xs">
-            {/* Sprint 63u: footer marka tanıtımında da HEADER'ın logosu kullanılır. */}
+            {/* Sprint 63z: workspace logoUrl yoksa varsayılan turuncu marka logosu. */}
             <div className="flex items-center gap-2">
-              <span
-                className="flex size-6 shrink-0 items-center justify-center rounded-md"
-                style={{
-                  backgroundColor: brand.brandColor ?? "#ff5c35",
-                  color: textOn(brand.brandColor ?? "#ff5c35"),
-                }}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={brand.logoUrl ?? "/logo_brand_orange.svg"}
+                alt=""
+                className="size-6 shrink-0 object-contain"
                 aria-hidden="true"
-              >
-                {brand.logoUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={brand.logoUrl} alt="" className="size-4 object-contain" />
-                ) : (
-                  <ChevronsUpIcon className="size-3.5" />
-                )}
-              </span>
+              />
               <span className="text-sm font-semibold text-foreground">{brand.name}</span>
             </div>
             <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
