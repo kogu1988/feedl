@@ -8,7 +8,7 @@ import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { workspaceIntegrations, workspaces } from "@/lib/db/schema";
-import { decryptSecret } from "@/lib/encrypt";
+import { decryptSecret, encryptSecret } from "@/lib/encrypt";
 import { linearCreateWebhook, linearDeleteWebhook, linearViewer } from "@/lib/linear-api";
 import { requirePro } from "@/lib/plan";
 
@@ -108,8 +108,8 @@ export async function POST(req: Request) {
         workspaceId,
         provider: "linear",
         webhookId: created.webhook.id,
-        apiKey,
-        webhookSecret: created.webhook.secret ?? null,
+        apiKey: encryptSecret(apiKey),
+        webhookSecret: created.webhook.secret ? encryptSecret(created.webhook.secret) : null,
         urlToken,
         resourceTypes: LINEAR_RESOURCE_TYPES,
         linearTeamId: teamId,
@@ -120,8 +120,8 @@ export async function POST(req: Request) {
         target: [workspaceIntegrations.workspaceId, workspaceIntegrations.provider],
         set: {
           webhookId: created.webhook.id,
-          apiKey,
-          webhookSecret: created.webhook.secret ?? null,
+          apiKey: encryptSecret(apiKey),
+          webhookSecret: created.webhook.secret ? encryptSecret(created.webhook.secret) : null,
           urlToken,
           resourceTypes: LINEAR_RESOURCE_TYPES,
           linearTeamId: teamId,
