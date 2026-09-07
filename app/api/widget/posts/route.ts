@@ -24,18 +24,37 @@ import {
 
 export async function GET(req: Request) {
   try {
-    const q = new URL(req.url).searchParams.get("q")?.trim() ?? "";
+    const url = new URL(req.url);
+    const q = url.searchParams.get("q")?.trim() ?? "";
     if (q.length > 100) {
       return NextResponse.json(
         { success: false, error: "Arama terimi çok uzun." },
         { status: 400 },
       );
     }
+    // Sprint 64: client-side live sayfalama + sıralama (widget).
+    const page = Math.max(1, Number.parseInt(url.searchParams.get("page") ?? "1", 10) || 1);
+    const limit = Math.min(20, Math.max(1, Number.parseInt(url.searchParams.get("limit") ?? "5", 10) || 5));
+    const sort = url.searchParams.get("sort") === "new" ? "new" : "votes";
+    const offset = (page - 1) * limit;
 
     const search = buildPostSearch(q);
     const session = await getWidgetSession();
     // Oturum yoksa eşleşen oy olmaz: filter koşulu hiçbir satırı seçmez.
     const sessionUserId = session?.userId ?? "";
+
+    // Toplam (sayfalama için) — arama koşuluyla birebir aynı.
+    const [countRow] = await getDb()
+      .select({ value: count() })
+      .from(posts)
+      .where(
+        and(
+          eq(posts.workspaceId, await getWorkspaceId()),
+          isNull(posts.mergedIntoId),
+          search.condition,
+        ),
+      );
+    const total = Number(countRow?.value ?? 0);
 
     const rows = await getDb()
       .select({
@@ -58,17 +77,24 @@ export async function GET(req: Request) {
       )
       .groupBy(posts.id)
       .orderBy(
+        // Sprint 64: sort=new → en yeni; votes (varsayılan) → en çok oy.
+        // Arama varken alaka her zaman önce gelir.
         ...(search.tokens.length > 0
           ? [desc(search.score), desc(sql`count(${votes.id})`)]
-          : [desc(sql`count(${votes.id})`)]),
-        desc(posts.createdAt),
+          : sort === "new"
+            ? [desc(posts.createdAt), desc(sql`count(${votes.id})`)]
+            : [desc(sql`count(${votes.id})`), desc(posts.createdAt)]),
       )
-      .limit(50);
+      .limit(limit)
+      .offset(offset);
 
     return NextResponse.json({
       success: true,
       data: {
         authenticated: Boolean(session),
+        total,
+        page,
+        totalPages: Math.max(1, Math.ceil(total / limit)),
         posts: rows.map((row) => ({
           id: row.id,
           title: row.title,
