@@ -46,6 +46,10 @@ const isPublicRoute = createRouteMatcher([
   "/terms",
   "/contact",
 
+  // Sprint 64: SEO dosyaları — search crawler'lar public erişmeli, auth gerekmez.
+  "/robots.txt",
+  "/sitemap.xml",
+
   "/widget",
   "/api/posts(.*)",
 
