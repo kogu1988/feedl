@@ -6,6 +6,7 @@ import { z } from "zod";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { postFollowers, posts, votes } from "@/lib/db/schema";
+import { enforceVoteLimit } from "@/lib/db/vote-limit";
 import {
   voteCreatedEventSchema,
   voteDeletedEventSchema,
@@ -81,6 +82,17 @@ export async function POST(req: Request) {
           error: "Bu fikir başka bir fikirle birleştirildi; oyunu hedef fikirde kullanabilirsin.",
         },
         { status: 400 },
+      );
+    }
+
+    // Sprint 64: free plan oy limiti — workspace'te en fazla 50 benzersiz oy
+    // veren (anonim dahil). Yeni bir oy veren sayıyı artırır; zaten oy vermiş
+    // biri başka fikre oy atarsa tekrar sayılmaz.
+    const voteLimit = await enforceVoteLimit(userId);
+    if (!voteLimit.ok) {
+      return NextResponse.json(
+        { success: false, error: voteLimit.message },
+        { status: 403 },
       );
     }
 

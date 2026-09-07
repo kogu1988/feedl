@@ -14,6 +14,7 @@ import { isOriginAllowed } from "@/lib/widget/origins";
 import { requestOrigin } from "@/lib/widget/http";
 import { inngest } from "@/inngest/client";
 import { enforceRateLimit, clientIpFrom } from "@/lib/rate-limit";
+import { enforceVoteLimit } from "@/lib/db/vote-limit";
 import {
   anonymousWidgetUserId,
   ensureWidgetUser,
@@ -122,6 +123,16 @@ export async function POST(req: NextRequest) {
           error: "Bu fikir başka bir fikirle birleştirildi; oyunu hedef fikirde kullanabilirsin.",
         },
         { status: 400 },
+      );
+    }
+
+    // Sprint 64: free plan oy limiti — workspace'te en fazla 50 benzersiz oy
+    // veren (anonim dahil); aynı kimlik tekrar oy atarsa sayı artmaz.
+    const voteLimit = await enforceVoteLimit(userId, workspaceId);
+    if (!voteLimit.ok) {
+      return NextResponse.json(
+        { success: false, error: voteLimit.message },
+        { status: 403 },
       );
     }
 

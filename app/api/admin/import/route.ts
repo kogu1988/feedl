@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { getAdminUserId } from "@/lib/auth/admin";
+import { getPlanLimits } from "@/lib/paddle";
 import { parseCsv } from "@/lib/csv";
 import { importPosts } from "@/lib/db/import";
 
@@ -19,6 +20,15 @@ export async function POST(req: Request) {
     if (!adminId) {
       return NextResponse.json(
         { success: false, error: "Bu işlem için admin yetkisi gerekir." },
+        { status: 403 },
+      );
+    }
+
+    // Sprint 64: CSV/Canny içe aktarma PRO özelliği (kullanıcı onayı). Free
+    // workspace içe aktaramaz; Pro'ya yükselterek kullanır.
+    if ((await getPlanLimits()).key !== "pro") {
+      return NextResponse.json(
+        { success: false, error: "CSV içe aktarma Pro özelliğidir. Pro'ya geçerek kullan." },
         { status: 403 },
       );
     }

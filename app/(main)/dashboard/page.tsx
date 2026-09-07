@@ -53,6 +53,7 @@ import {
 } from "@/lib/db/schema";
 import { statusLabels, trDateTimeFormatter } from "@/lib/post-format";
 import { parsePagination } from "@/lib/pagination";
+import { getPlanLimits } from "@/lib/paddle";
 
 // Canlı veri: her istekte DB'den okunur.
 export const dynamic = "force-dynamic";
@@ -93,6 +94,10 @@ export default async function DashboardPage({
   if (!teamId) {
     redirect("/portal");
   }
+
+  // Sprint 64: CSV içe/dışa aktarma PRO özelliği. Free'de butonlar gizlenir
+  // (API de kontrol eder — çift güvenlik); kartta "Pro" rozeti gösterilir.
+  const isPro = (await getPlanLimits()).key === "pro";
 
   // plan.md Sprint 12: durum filtresi ?status= ile gelir; geçersiz değer
   // "Tümü"ne düşer. İstatistikler her zaman TÜM fikirlerden hesaplanır,
@@ -231,11 +236,20 @@ export default async function DashboardPage({
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
-          <ImportCsvButton />
-          <Button render={<a href="/api/admin/export" download />}>
-            <DownloadIcon aria-hidden="true" />
-            CSV İndir
-          </Button>
+          {isPro ? (
+            <>
+              <ImportCsvButton />
+              <Button render={<a href="/api/admin/export" download />}>
+                <DownloadIcon aria-hidden="true" />
+                CSV İndir
+              </Button>
+            </>
+          ) : (
+            <Button render={<a href="/dashboard/billing" />}>
+              <DownloadIcon aria-hidden="true" />
+              CSV İndir · Pro
+            </Button>
+          )}
         </div>
       </div>
 

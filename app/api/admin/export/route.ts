@@ -6,6 +6,7 @@ import { and, count, desc, eq, inArray } from "drizzle-orm";
 import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
+import { getPlanLimits } from "@/lib/paddle";
 import { loadCustomerCounts } from "@/lib/db/customer-counts";
 import {
   computeRevenueScore,
@@ -22,6 +23,15 @@ export async function GET() {
     if (!adminId) {
       return NextResponse.json(
         { success: false, error: "Bu işlem için admin yetkisi gerekir." },
+        { status: 403 },
+      );
+    }
+
+    // Sprint 64: CSV dışa aktarma PRO özelliği (kullanıcı onayı). Free workspace
+    // fikirleri indiremez; Pro'ya yükselterek kullanır.
+    if ((await getPlanLimits()).key !== "pro") {
+      return NextResponse.json(
+        { success: false, error: "CSV dışa aktarma Pro özelliğidir. Pro'ya geçerek kullan." },
         { status: 403 },
       );
     }
