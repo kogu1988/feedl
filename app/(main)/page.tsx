@@ -4,6 +4,7 @@ import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import {
   BarChart3Icon,
+  BotIcon,
   BracesIcon,
   InboxIcon,
   MegaphoneIcon,
@@ -14,6 +15,7 @@ import {
   ShieldCheckIcon,
   SparklesIcon,
   TrendingUpIcon,
+  UploadIcon,
   UsersIcon,
   WorkflowIcon,
 } from "lucide-react";
@@ -175,6 +177,20 @@ export default async function RootPage() {
       description:
         "Tüm geri bildirim korpusunu analiz eder — temalar, trendler, riskler ve hızlı kazanımlar.",
       icon: TrendingUpIcon,
+      plan: "pro",
+    },
+    {
+      title: "AI Destekli Yanıt (Triage)",
+      description:
+        "Müşteri widget'ında serbest mesajı AI sınıflandırır; desteği ayrıştırır, geri bildirimi fikre çevirir.",
+      icon: BotIcon,
+      plan: "pro",
+    },
+    {
+      title: "CSV İçe / Dışa Aktarma",
+      description:
+        "Canny'den veya CSV'den fikirleri taşı; panelini tek tıkla dışa aktar.",
+      icon: UploadIcon,
       plan: "pro",
     },
     {

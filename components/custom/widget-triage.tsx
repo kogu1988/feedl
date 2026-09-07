@@ -4,13 +4,12 @@ import { useState } from "react";
 import { SendIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ProFeatureLock } from "@/components/custom/pro";
 
 // Sprint 48l — widget AI triage. Kullanıcı serbest mesaj yazar; AI sınıflar:
 // feedback → fikir oluşturur, support/clarify/unrecognized → yönlendirme.
-// Sprint 64 — davranış netleşti: Pro ise AI sohbet OTOMATİK AÇIK gelir;
-// free ise sohbet açılmaz, yalnız standart Pro yükseltme çağrısı (ProBadge +
-// "Pro'ya Yükselt") gösterilir — tıklamayla açılan gizemli kutu yok.
+// Sprint 64 — davranış: PRO ise AI sohbet OTOMATİK AÇIK gelir; FREE ise widget
+// MÜŞTERİDE hiç görünmez (yükseltme çağrısı müşteriye gösterilmez — o bilgi
+// dashboard/admin tarafına aittir; Pro'ya yükseltme CTA'ları admin tarafında var).
 export function WidgetTriage({
   ws,
   isPro = false,
@@ -19,8 +18,7 @@ export function WidgetTriage({
   isPro?: boolean;
 }) {
   const wsParam = ws ? `?ws=${encodeURIComponent(ws)}` : "";
-  // Pro ise sohbet otomatik aktif (kullanıcı tıklamak zorunda değil); state
-  // gerekmez — prop'tan türetilir (free her zaman kapalı).
+  // Pro ise sohbet otomatik aktif; state gerekmez — prop'tan türetilir.
   const open = isPro;
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
@@ -58,14 +56,8 @@ export function WidgetTriage({
   }
 
   if (!open) {
-    // Free: sohbet kapalı — neyin yükseltileceğini belirten standart Pro çağrısı.
-    return (
-      <ProFeatureLock
-        compact
-        title="AI destekli yanıt"
-        description="Mesajını yaz; AI sınıflandırıp özellik isteğine çevirsin."
-      />
-    );
+    // Free: MÜŞTERİ widget'ında hiç görünmez (yükseltme çağrısı değil).
+    return null;
   }
 
   return (
