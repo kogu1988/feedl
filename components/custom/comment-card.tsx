@@ -105,18 +105,21 @@ export function CommentCard({
       }
     >
       <CardHeader>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="font-medium text-foreground">
-            {comment.authorName ?? "Üye"}
-          </span>
-          <span className="text-sm text-muted-foreground">
-            {trDateTimeFormatter.format(comment.createdAt)}
-          </span>
-          {comment.editedAt ? (
-            <span className="text-xs text-muted-foreground">(düzenlendi)</span>
-          ) : null}
+        {/* Kart standardı: yazar + tarih solda, İç not rozeti sağda — satır köşeleri kullanılır. */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-medium text-foreground">
+              {comment.authorName ?? "Üye"}
+            </span>
+            <span className="text-sm text-muted-foreground">
+              {trDateTimeFormatter.format(comment.createdAt)}
+            </span>
+            {comment.editedAt ? (
+              <span className="text-xs text-muted-foreground">(düzenlendi)</span>
+            ) : null}
+          </div>
           {comment.isInternal ? (
-            <span className="inline-flex items-center gap-1 rounded-full border border-amber-600/30 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-amber-600/30 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">
               İç not
             </span>
           ) : null}

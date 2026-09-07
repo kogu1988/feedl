@@ -145,12 +145,15 @@ npm run test:e2e  # Playwright + axe erişilebilirlik + auth akışı (çalışa
 
 | Katman | Sonuç | Kapsam |
 | :--- | :--- | :--- |
-| **Birim test** (`npm test`) | ✅ 19 dosya · **88 test geçti** | Saf mantık: renk/WCAG, sayfalama, CSV, şifreleme, rate-limit, Paddle imza+plan türetme, oy doğrulama, post-format, post-search, widget-origins, workspace-host çözümleme, AI içgörüleri, OpenRouter modelleri, e-posta teslimatı, api-keys, davet e-postası |
-| **Tenant izolasyonu** | ✅ `resolveWorkspaceByHost` öncelik sırası (custom_domain > subdomain > varsayılan) + hata | `tests/lib/tenant-isolation.test.ts` |
+| **Birim test** (`npm test`) | ✅ 21 dosya · **98 test geçti** | Saf mantık: renk/WCAG, sayfalama, CSV, şifreleme, rate-limit, Paddle imza+plan türetme, oy doğrulama, post-format, post-search, widget-origins, workspace-host çözümleme, AI içgörüleri, OpenRouter modelleri, e-posta teslimatı, api-keys, davet e-postası, widget gönderim modu, free-plan oy limiti |
+| **Tenant izolasyonu** | ✅ `resolveWorkspaceByHost` öncelik (custom_domain > subdomain > varsayılan) + hata | `tests/lib/tenant-isolation.test.ts` |
 | **Paddle plan türetme** | ✅ `derivePlanFromStatus` (trialing/active→pro; canceled/past_due/dunned→free; unknown→null) | `tests/lib/paddle-plans.test.ts` |
 | **Merge/unmerge karar mantığı** | ✅ Şema doğrulama (uuid, self-merge) + reason→HTTP eşleme | `tests/lib/post-merge.test.ts` |
+| **Entegrasyon secret şifreleme** | ✅ `saveIntegration` + Linear connect `encryptSecret` (AES-256-GCM); okuma `decryptSecret` (düz eski satırlar backward-compat) | `tests/lib/encrypt.test.ts` |
 | **E2E smoke** (`test:e2e`) | ⚠️ Sunucu gerekir; deploy/CI'da koşar | Ana yüzeyler + public API yüzeyi (OpenAPI, v1 401 gate) + axe a11y |
 | **E2E auth akışı** | ⚠️ Clerk test env + seed gerekir; yoksa otomatik atlanır | Admin dashboard erişimi + portal fikir oluşturma |
+
+> **Doğrulananlar (2026-09-07):** · `workspace_integrations` secret'ları `encryptSecret` ile şifreli (Linear/Jira/Slack/Zendesk/Intercom) ✓ · Public API **idempotency** (`withIdempotency`, `Idempotency-Key`) + **OpenAPI** (`/api/v1/openapi`) ✓ · `robots.txt`/`sitemap.xml` App Router route handler (`app/robots.txt/route.ts`) ✓. Mimari: kimlik Clerk, tenant/iş verisi Neon (Clerk Organization senkronu bilinçli YAPILMADI — karar 2026-09-07).
 
 > Gerçek Neon/CI çalıştırması için: `npm run build && npm run start` sonrası
 > `npm run test:e2e`. DB-backed testler Neon test şeması ister (prod DB'ye
