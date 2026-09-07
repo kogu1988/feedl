@@ -9,7 +9,9 @@ import { SignUp } from "@clerk/nextjs";
 // Clerk kartı trTR olduğundan sayfa-altı "Giriş yap" tekrarı YOK (audit P1).
 export default function SignUpPage() {
   return (
-    <main className="container mx-auto flex flex-col items-center justify-center px-4 py-16">
+    <main className="container mx-auto flex flex-col items-center justify-center gap-6 px-4 py-16">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/logo_brand_orange.svg" alt="feedl" className="size-12 shrink-0 object-contain" />
       <SignUp signInUrl="/sign-in" fallbackRedirectUrl="/onboarding" />
     </main>
   );

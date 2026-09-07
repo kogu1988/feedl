@@ -241,6 +241,13 @@ export default async function RootPage() {
       />
       <section className="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-14">
         <div>
+          {/* Sprint 63z: hero marka kimliği — başlığın üstünde turuncu logo. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo_brand_orange.svg"
+            alt="feedl"
+            className="hero-rise mb-5 h-14 w-14 shrink-0 object-contain"
+          />
           <h1 className="hero-rise max-w-xl text-4xl font-bold sm:text-5xl lg:text-6xl">
             Müşteri isteklerini tahminle değil, veriyle önceliklendir.
           </h1>
