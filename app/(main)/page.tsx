@@ -301,7 +301,6 @@ export default async function RootPage() {
             description="Gözleri çok yoran açık temaya alternatif olarak karanlık mod istiyoruz. Ayarlardan açılıp kapatılabilse iyi olur."
             voteCount={128}
             commentCount={32}
-            commentPostId="demo"
           />
         </div>
       </section>

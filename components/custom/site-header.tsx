@@ -43,10 +43,7 @@ const PRODUCT_NAV = [
   { href: "/roadmap", label: "Yol Haritası" },
   { href: "/changelog", label: "Güncellemeler" },
 ];
-const SALES_NAV = [
-  { href: "/demo", label: "Demo" },
-  { href: "/pricing", label: "Fiyatlandırma" },
-];
+const SALES_NAV = [{ href: "/demo", label: "Demo" }];
 
 function navItemsFor(pathname: string, isSignedIn: boolean) {
   // Giriş yapmış kullanıcı: ürünü kullanıyor — her yüzeyde tam ürün nav'ı.
