@@ -113,7 +113,7 @@ export function PricingManager({ workspaceSlug }: { workspaceSlug: string }) {
 
   return (
     <div className="space-y-8">
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid items-stretch gap-6 md:grid-cols-2">
         {/* FREE kartı */}
         <div className="flex h-full flex-col rounded-2xl border bg-card p-6">
           <div className="flex items-center justify-between">
@@ -184,12 +184,13 @@ export function PricingManager({ workspaceSlug }: { workspaceSlug: string }) {
 
           <FeatureList items={proFeatures} />
 
+          {/* Sprint 64: inline checkout hedefi — butondan ÖNCE (buton en dipte eşit hizada). */}
+          <div id="feedl-checkout" className="mt-4 min-h-[120px]" />
+
           <div className="mt-auto pt-6">
             <Button size="lg" className="w-full" onClick={openProCheckout}>
               Pro&apos;ya Geç
             </Button>
-            {/* Sprint 64: inline checkout hedefi — sayfa içi gömülü iframe. */}
-            <div id="feedl-checkout" className="mt-4 min-h-[120px]" />
           </div>
         </div>
       </div>
