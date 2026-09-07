@@ -3,6 +3,7 @@ import { and, count, desc, eq, isNull, sql } from "drizzle-orm";
 
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/custom/empty-state";
+import { Notice } from "@/components/custom/notice";
 import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/custom/status-badge";
 import { WidgetPostForm } from "@/components/custom/widget-post-form";
@@ -187,11 +188,11 @@ export default async function WidgetPage({
         </div>
       ) : (
         <>
-          <p className="mt-3 rounded-lg border border-dashed bg-muted/30 p-3 text-xs text-muted-foreground">
+          <Notice tone="info" size="md" className="mt-3">
             {mode === "anonymous"
               ? "Üye olmadan fikir gönderebilir ve oy verebilirsiniz."
               : "Fikir gönderebilmek ve oy verebilmek için uygulamanız üzerinden giriş yapmanız gerekir. Mevcut fikirleri aşağıdan inceleyebilirsiniz."}
-          </p>
+          </Notice>
           <WidgetPostForm submissionMode={mode} ws={rawWs} authenticated={false} />
           <WidgetTriage ws={rawWs} isPro={isPro} />
         </>
