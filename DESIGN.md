@@ -290,13 +290,13 @@ oynar:
   zemin farkından** gelir (kart 0.205 vs zemin 0.145).
 - Radius disiplini: kart/buton `lg`, dialog `xl`, rozet/avatar `full`,
   input `md` — her rolde tek değer.
-- **Kart iç düzeni (Sprint 64, 2026-09-07):** kartın 4 köşesi/alanı kullanılır,
-  elemanlar alt alta dizilmez. Grid: `[oy] | [içerik: başlık+rozet → etiket → metin/content] | [sağ meta: tarih→stats]`.
-  - Sol kolon: `voteAction` (oy butonu) — dikey ortalanmış, dar.
-  - Orta kolon: başlık + rozetler üst satır, etiketler + açıklama (ve `content`) alt.
-  - Sağ kolon: tarih üst, yorum + oy sayıları (stats) alt — hizalı sağ.
+- **Kart iç düzeni (Sprint 64, 2026-09-07):** kartın iki bölgesi kullanılır; elemanlar
+  alt alta dizilmez. Grid: `[minmax(0,1fr) | auto]`.
+  - SOL (min-w-0): başlık + rozetler üst satır → etiketler → metin (`content` dahil) — dikey.
+  - SAĞ (shrink-0): yorum + oy (üst, sağa hizalı) → tarih (alt).
   - Tek kaynak: `components/custom/idea-card.tsx` (portal/roadmap/changelog/landing/demo
-    aynı kart). `voteAction` ile `voteCount` BİRARADA geçilmez (buton sol, sayaç sağ).
+    aynı kart). Oy butonu (`voteAction`) ve yorum sayısı sağda; dar ekranda taşma olmaz
+    (içerik min-w-0, sağ sütun sabit).
 - **Card elevation prop (2026-09-06):** `elevation="interactive"`
   (`components/ui/card.tsx`) hover'da `shadow-xs` + `-translate-y-0.5`
   (150ms, transform/box-shadow) verir; `floating` `shadow-lg`; varsayılan
