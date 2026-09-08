@@ -158,6 +158,25 @@ export async function verifyPaddleWebhook(
   }
 }
 
+// Webhook event'lerinin çoğu (subscription.*) sadece `customer_id` taşır; e-posta
+// `customer.created/updated` event'inde gelir. Eksikse Paddle API'den (`GET
+// /customers/{id}`) çeker ve email'i doldurur. Webhook yolu için kullanılır.
+export async function fetchCustomerEmail(customerId: string): Promise<string | null> {
+  const apiKey = process.env.PADDLE_API_KEY;
+  if (!apiKey || !customerId) return null;
+  try {
+    const res = await fetch(`https://api.paddle.com/customers/${customerId}`, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    const j = (await res.json()) as { data?: { email?: string } };
+    return j.data?.email ?? null;
+  } catch {
+    return null;
+  }
+}
+
 // Webhook event verisi (kullanıcının custom_data ile workspace'i eşleştirir).
 export const paddleSubscriptionSchema = z.object({
   id: z.string().min(1),

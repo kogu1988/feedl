@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 
 import { getDb } from "@/lib/db";
 import { workspaces } from "@/lib/db/schema";
-import { PADDLE_ENV, derivePlanFromStatus, verifyPaddleWebhook } from "@/lib/paddle";
+import { PADDLE_ENV, derivePlanFromStatus, verifyPaddleWebhook, fetchCustomerEmail } from "@/lib/paddle";
 import {
   grantedAccess,
   upsertCustomer,
@@ -66,7 +66,7 @@ export async function POST(req: Request) {
       (data.customer_id as string | undefined) ??
       (customer.id as string | undefined) ??
       "";
-    const email =
+    let email =
       (data.email as string | undefined) ??
       (customer.email as string | undefined) ??
       "";
@@ -89,6 +89,11 @@ export async function POST(req: Request) {
       : null;
 
     const workspaceId = slug ? await resolveWorkspaceBySlug(slug) : null;
+
+    // subscription.* event'leri email taşımaz; eksikse Paddle API'den doldur.
+    if (!email && customerId && eventType.startsWith("subscription.")) {
+      email = (await fetchCustomerEmail(customerId)) ?? "";
+    }
 
     // 1) Customer event — customer kaydı upsert.
     if (eventType.startsWith("customer.") && customerId) {
