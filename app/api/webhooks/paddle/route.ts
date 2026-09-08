@@ -37,6 +37,9 @@ export async function POST(req: Request) {
     const isLive = PADDLE_ENV !== "sandbox";
     const secret = process.env.PADDLE_WEBHOOK_SECRET;
 
+    // Geçici tanılama (secret DEĞİL; yalnız başlık/varlık/olay bilgisi).
+    console.log("[paddle-webhook] live", isLive, "sigHeader", !!signature, "secretSet", !!secret);
+
     // Üretimde imza zorunlu; sandbox'ta secret yoksa geliştirme kolaylığı.
     if (isLive && !secret) {
       return NextResponse.json(
@@ -46,6 +49,7 @@ export async function POST(req: Request) {
     }
     // İmza doğrulama — SDK (başarısızsa 2xx DÖNMEZ; Paddle retry yapar).
     const verified = await verifyPaddleWebhook(raw, signature);
+    console.log("[paddle-webhook] verified", !!verified, verified?.eventType ?? "");
     if (!verified) {
       return NextResponse.json(
         { success: false, error: "Geçersiz imza." },
