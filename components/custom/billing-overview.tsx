@@ -48,6 +48,7 @@ export interface BillingOverviewProps {
   workspaceSlug: string;
   pricing: { monthlyPriceId: string; yearlyPriceId: string };
   usage: UsageProps;
+  paddleCustomerId?: string | null;
 }
 
 function UsageBar({ label, used, limit }: { label: string; used: number; limit: number }) {
@@ -78,6 +79,7 @@ export function BillingOverview({
   workspaceSlug,
   pricing,
   usage,
+  paddleCustomerId,
 }: BillingOverviewProps) {
   const [paddle, setPaddle] = useState<Paddle | undefined>();
   const [error, setError] = useState<string | null>(null);
@@ -91,6 +93,8 @@ export function BillingOverview({
     initializePaddle({
       environment: env === "sandbox" ? "sandbox" : undefined,
       token: clientToken,
+      // Sprint 64 (Paddle Retain): giriş yapmış kullanıcının Paddle customer ID'si.
+      ...(paddleCustomerId ? { pwCustomer: { id: paddleCustomerId } } : {}),
       eventCallback: (event) => {
         if (event.name === "checkout.completed") {
           setInfo("Ödeme tamamlandı, sayfa yenileniyor…");

@@ -56,6 +56,7 @@ export default async function BillingPage() {
             yearlyPriceId: process.env.NEXT_PUBLIC_PADDLE_PRO_YEARLY_PRICE_ID ?? "",
           }}
           usage={data.usage}
+          paddleCustomerId={data.paddleCustomerId}
         />
       )}
     </main>

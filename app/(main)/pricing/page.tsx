@@ -12,14 +12,18 @@ export const dynamic = "force-dynamic";
 
 export default async function PricingPage() {
   let slug = "feedl";
+  let paddleCustomerId: string | null = null;
   try {
     const workspaceId = await getWorkspaceId();
     const [row] = await getDb()
-      .select({ slug: workspaces.slug })
+      .select({ slug: workspaces.slug, paddleCustomerId: workspaces.paddleCustomerId })
       .from(workspaces)
       .where(eq(workspaces.id, workspaceId))
       .limit(1);
     if (row?.slug) slug = row.slug;
+    // Sprint 64 (Paddle Retain): giriş yapmış Pro workspace owner'ının müşteri
+    // ID'si — anonim/ücretsizde null olur.
+    paddleCustomerId = row?.paddleCustomerId ?? null;
   } catch (err) {
     console.error("PricingPage workspace slug fallback:", err instanceof Error ? err.message : err);
   }
@@ -37,7 +41,7 @@ export default async function PricingPage() {
       </div>
 
       <div className="mt-10">
-        <PricingManager workspaceSlug={slug} />
+        <PricingManager workspaceSlug={slug} paddleCustomerId={paddleCustomerId} />
       </div>
 
       <p className="mt-10 text-xs text-muted-foreground">

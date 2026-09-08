@@ -58,7 +58,13 @@ function FeatureList({ items }: { items: string[] }) {
   );
 }
 
-export function PricingManager({ workspaceSlug }: { workspaceSlug: string }) {
+export function PricingManager({
+  workspaceSlug,
+  paddleCustomerId,
+}: {
+  workspaceSlug: string;
+  paddleCustomerId?: string | null;
+}) {
   const [paddle, setPaddle] = useState<Paddle | undefined>();
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
@@ -72,6 +78,9 @@ export function PricingManager({ workspaceSlug }: { workspaceSlug: string }) {
     initializePaddle({
       environment: env === "sandbox" ? "sandbox" : undefined,
       token: clientToken,
+      // Sprint 64 (Paddle Retain): giriş yapmış kullanıcının Paddle customer
+      // ID'sini ilet — antialtı/inceleme desteği için. Anonimde yoksa undefined.
+      ...(paddleCustomerId ? { pwCustomer: { id: paddleCustomerId } } : {}),
       eventCallback: (event) => {
         if (event.name === "checkout.completed") {
           setInfo("Ödeme tamamlandı, sayfa yenileniyor…");
