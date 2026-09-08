@@ -123,6 +123,32 @@ export function verifyPaddleSignature(payload: string, signatureHeader: string):
   }
 }
 
+// Paddle SDK `webhooks.unmarshal` — resmi imza doğrulama (Paddle Notification
+// Signature, v2/v3). Raw body verilir; JSON.parse ÖNCEDEN YAPILMAZ. Doğrulanmış
+// event döner (event_type + data), imza geçersizse null. `PADDLE_WEBHOOK_SECRET`
+// notification SIGNING SECRET'tir (API key değil).
+import type { Paddle as PaddleClient } from "@paddle/paddle-node-sdk";
+
+export async function verifyPaddleWebhook(
+  rawBody: string,
+  signature: string,
+): Promise<{ eventType: string; data: Record<string, unknown> } | null> {
+  const paddle = getPaddle();
+  const secret = process.env.PADDLE_WEBHOOK_SECRET;
+  if (!paddle || !secret) return null;
+  try {
+    const evt = await paddle.webhooks.unmarshal(rawBody, secret, signature);
+    if (!evt) return null;
+    const rawEvt = evt as unknown as Record<string, unknown>;
+    return {
+      eventType: (rawEvt.event_type as string | undefined) ?? (rawEvt.type as string | undefined) ?? "",
+      data: (rawEvt.data as Record<string, unknown> | undefined) ?? {},
+    };
+  } catch {
+    return null;
+  }
+}
+
 // Webhook event verisi (kullanıcının custom_data ile workspace'i eşleştirir).
 export const paddleSubscriptionSchema = z.object({
   id: z.string().min(1),

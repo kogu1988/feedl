@@ -221,7 +221,47 @@ export const workspaces = pgTable("workspaces", {
     .defaultNow(),
 });
 
-// Sprint 48b (madde 8): board modeli — feedback koleksiyonları. Canny'de
+// Sprint 64 (Paddle fulfillment) — Paddle customer/subscription aynalama.
+// Paddle canlı webhook'ları (customer.created/updated, subscription.*,
+// transaction.completed) buradan kayıt edilir; mevcut `workspaces` plan alanı
+// ile birlikte çalışır (workspace_id, custom_data.slug → workspace bağlantısı).
+export const customers = pgTable("customers", {
+  // Paddle customer ID (`ctm_...`) — kaynak kimliği.
+  customerId: varchar("customer_id", { length: 60 }).primaryKey(),
+  workspaceId: uuid("workspace_id").references(() => workspaces.id, {
+    onDelete: "cascade",
+  }),
+  email: text("email").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const subscriptions = pgTable("subscriptions", {
+  // Paddle subscription ID (`sub_...`) — kaynak kimliği.
+  subscriptionId: varchar("subscription_id", { length: 60 }).primaryKey(),
+  customerId: varchar("customer_id", { length: 60 })
+    .notNull()
+    .references(() => customers.customerId, { onDelete: "cascade" }),
+  workspaceId: uuid("workspace_id").references(() => workspaces.id, {
+    onDelete: "cascade",
+  }),
+  status: varchar("status", { length: 30 }).notNull(),
+  priceId: varchar("price_id", { length: 60 }).notNull(),
+  productId: varchar("product_id", { length: 60 }).notNull(),
+  // Paddle scheduled change (iptal/pause) — erişim yalnız fiili status'a göre.
+  scheduledChangeAction: varchar("scheduled_change_action", { length: 30 }),
+  scheduledChangeAt: timestamp("scheduled_change_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
 // boards yalnızca POST'lari kapsar; votes/comments/tags post üzerinden
 // scope'lanır (post_id FK). companies/opportunities/changelog/api_keys
 // workspace-scoped kalır (board'a bağlanmaz).

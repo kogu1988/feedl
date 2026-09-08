@@ -358,6 +358,13 @@
       "when": 1788758578326,
       "tag": "0050_widget-submission-mode",
       "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "7",
+      "when": 1788904608104,
+      "tag": "0051_paddle-fulfillment",
+      "breakpoints": true
     }
   ]
 }
