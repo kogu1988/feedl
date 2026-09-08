@@ -44,6 +44,7 @@ const isPublicRoute = createRouteMatcher([
   // Sprint 50: yasal/şirket sayfaları (footer) — public, Clerk gerekmez.
   "/privacy",
   "/terms",
+  "/refund",
   "/contact",
 
   // Sprint 64: SEO dosyaları — search crawler'lar public erişmeli, auth gerekmez.
