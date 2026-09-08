@@ -64,6 +64,8 @@ export function PricingManager({ workspaceSlug }: { workspaceSlug: string }) {
   const [info, setInfo] = useState<string | null>(null);
   // Varsayılan: yıllık seçili.
   const [annual, setAnnual] = useState(true);
+  // Sprint 64: checkout öncesi Terms/Refund kabulü (Paddle gereksinimi).
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   useEffect(() => {
     if (!clientToken) return;
@@ -85,6 +87,10 @@ export function PricingManager({ workspaceSlug }: { workspaceSlug: string }) {
 
   function openProCheckout() {
     setError(null);
+    if (!acceptedTerms) {
+      setError("Devam etmeden önce Kullanım Şartları ve İade Politikası&apos;nı kabul etmelisin.");
+      return;
+    }
     if (!paddle) {
       setError("Paddle hazır değil, tekrar dene.");
       return;
@@ -183,6 +189,23 @@ export function PricingManager({ workspaceSlug }: { workspaceSlug: string }) {
           </p>
 
           <FeatureList items={proFeatures} />
+
+          {/* Sprint 64: checkout öncesi şartlar kabulü — Paddle gereksinimi. */}
+          <label className="mt-4 flex items-start gap-2 text-xs text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={acceptedTerms}
+              onChange={(event) => setAcceptedTerms(event.target.checked)}
+              className="mt-0.5 size-4 shrink-0 rounded border-input"
+              aria-label="Kullanım Şartları ve İade Politikası&apos;nı kabul ediyorum"
+            />
+            <span>
+              <Link href="/terms" className="underline underline-offset-2 text-foreground hover:text-primary">Kullanım Şartları</Link>{" "}
+              ve{" "}
+              <Link href="/refund" className="underline underline-offset-2 text-foreground hover:text-primary">İade Politikası</Link>
+              &apos;nı okudum ve kabul ediyorum.
+            </span>
+          </label>
 
           {/* Sprint 64: inline checkout hedefi — butondan ÖNCE (buton en dipte eşit hizada). */}
           <div id="feedl-checkout" className="mt-4 min-h-[120px]" />
