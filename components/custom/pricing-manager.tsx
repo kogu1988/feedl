@@ -98,11 +98,9 @@ export function PricingManager({
       setError("Paddle hazır değil, tekrar dene.");
       return;
     }
-    // Sprint 64: INLINE checkout — sayfa içi gömülü (overlay değil).
-    // Checkout, Pro kartındaki #feedl-checkout alanında açılır. Paddle inline
-    // `frameTarget` DOM ELEMENT referansı bekler (string id değil) — `appendChild`
-    // bunun üzerine çağrılır; string verilince "Cannot read 'appendChild'" olur.
-    const frame = document.getElementById("feedl-checkout");
+    // Sprint 64: Paddle v1.6.5 INLINE stabil değil (frameTarget string →
+    // "appendChild" undefined, element → JSON circular). Güvenilir yol: OVERLAY
+    // (Paddle default) — kullanıcı gerçek ödemeyi burada test edebilir.
     setInfo("Ödeme kutusu yükleniyor…");
     paddle.Checkout.open({
       items: [
@@ -112,12 +110,6 @@ export function PricingManager({
         },
       ],
       customData: { slug: workspaceSlug },
-      settings: {
-        displayMode: "inline",
-        frameTarget: frame as unknown as string,
-        frameInitialHeight: 560,
-        frameStyle: "width:100%;border:none;",
-      },
     });
   }
 

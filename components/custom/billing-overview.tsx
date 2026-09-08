@@ -121,7 +121,6 @@ export function BillingOverview({
       return;
     }
     setInfo("Ödeme kutusu yükleniyor…");
-    const frame = document.getElementById("feedl-checkout-billing");
     paddle.Checkout.open({
       items: [
         {
@@ -130,12 +129,6 @@ export function BillingOverview({
         },
       ],
       customData: { slug: workspaceSlug },
-      settings: {
-        displayMode: "inline",
-        frameTarget: frame as unknown as string,
-        frameInitialHeight: 560,
-        frameStyle: "width:100%;border:none;",
-      },
     });
   }
 
