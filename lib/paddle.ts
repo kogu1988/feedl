@@ -99,9 +99,10 @@ export async function enforceLimit(
   };
 }
 
-// Paddle webhook imza doğrulama. Hüküm: Paddle bir `P-paddle-signature`
-// header'ı gönderir; payload'ın HMAC-SHA256'sı secret ile doğrulanır.
-// (Form detayı Paddle SDK'sından alınır; webhook secret `.env`'de.)
+// Paddle webhook imza doğrulama. Paddle bir `Paddle-Signature` header'ı gönderir
+// (format: ts=<epoch>;h1=<hex>); payload'ın HMAC-SHA256'sı secret ile doğrulanır.
+// Resmi doğrulama SDK `paddle.webhooks.unmarshal` ile yapılır; alt kısımdaki
+// manuel v1 HMAC (verifyPaddleSignature) yedek/yedek olarak korunur.
 import { createHmac, timingSafeEqual } from "node:crypto";
 
 export function verifyPaddleSignature(payload: string, signatureHeader: string): boolean {

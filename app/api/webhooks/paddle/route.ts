@@ -30,7 +30,9 @@ async function resolveWorkspaceBySlug(slug: string): Promise<string | null> {
 
 export async function POST(req: Request) {
   try {
-    const signature = req.headers.get("p-paddle-signature") ?? "";
+    // Paddle's webhook signature header is `Paddle-Signature` (NOT `p-paddle-
+    // signature`). Header names are case-insensitive but the name must match.
+    const signature = req.headers.get("paddle-signature") ?? "";
     const raw = await req.text();
     const isLive = PADDLE_ENV !== "sandbox";
     const secret = process.env.PADDLE_WEBHOOK_SECRET;
