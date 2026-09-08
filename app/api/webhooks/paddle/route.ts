@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 
 import { getDb } from "@/lib/db";
 import { workspaces } from "@/lib/db/schema";
-import { PADDLE_ENV, derivePlanFromStatus, verifyPaddleWebhook, isValidPaddleSignature } from "@/lib/paddle";
+import { PADDLE_ENV, derivePlanFromStatus, verifyPaddleWebhook } from "@/lib/paddle";
 import {
   grantedAccess,
   upsertCustomer,
@@ -37,9 +37,6 @@ export async function POST(req: Request) {
     const isLive = PADDLE_ENV !== "sandbox";
     const secret = process.env.PADDLE_WEBHOOK_SECRET;
 
-    // Geçici tanılama (secret DEĞİL; yalnız başlık/varlık/olay bilgisi).
-    console.log("[paddle-webhook] live", isLive, "sigHeader", !!signature, "secretSet", !!secret);
-
     // Üretimde imza zorunlu; sandbox'ta secret yoksa geliştirme kolaylığı.
     if (isLive && !secret) {
       return NextResponse.json(
@@ -47,19 +44,10 @@ export async function POST(req: Request) {
         { status: 400 },
       );
     }
-    // İmza doğrulama — SDK (başarısızsa 2xx DÖNMEZ; Paddle retry yapar).
-    const sigOk = await isValidPaddleSignature(raw, signature);
+    // İmza doğrulama — SDK `isSignatureValid` (HMAC) + lenient parse.
+    // Başarısızsa 2xx DÖNMEZ; Paddle retry yapar. Secret loglanmaz.
     const verified = await verifyPaddleWebhook(raw, signature);
-    if (sigOk && !verified) {
-      // İmza geçerli fakat parse başarısız — hangi event olduğunu logla.
-      try {
-        const j = JSON.parse(raw) as { event_type?: string; data?: { id?: string } };
-        console.log("[paddle-webhook] parseFail eventType", j.event_type ?? "", "id", j.data?.id ?? "");
-      } catch {
-        console.log("[paddle-webhook] parseFail rawNotJson");
-      }
-    }
-    console.log("[paddle-webhook] sigOk", sigOk, "verified", !!verified, verified?.eventType ?? "");
+    console.log("[paddle-webhook] verified", !!verified, "event", verified?.eventType ?? "");
     if (!verified) {
       return NextResponse.json(
         { success: false, error: "Geçersiz imza." },

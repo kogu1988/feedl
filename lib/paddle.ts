@@ -124,13 +124,13 @@ export function verifyPaddleSignature(payload: string, signatureHeader: string):
   }
 }
 
-// Paddle SDK `webhooks.unmarshal` — resmi imza doğrulama (Paddle Notification
-// Signature, v2/v3). Raw body verilir; JSON.parse ÖNCEDEN YAPILMAZ. Doğrulanmış
-// event döner (event_type + data), imza geçersizse null.
-
-// Yalnızca imza doğruluğunu (parse ETMEDEN) test eder — secret eşleşmesini
-// bildirmek/tanılama için. `unmarshal` parse hatalarını da yutabildiğinden,
-// imza sorununu şema sorunundan ayırmak için kullanılır.
+// Paddle webhook imza doğrulama. Paddle (v1) `Paddle-Signature` header'ı gönderir
+// (ts=<epoch>;h1=<hex>), payload'ın HMAC-SHA256'sı notification SIGNING SECRET
+// ile doğrulanır (5sn tolerans). Burada imzayı resmi SDK `isSignatureValid` ile
+// doğrular (yalnızca HMAC), ardından raw body'yi kendimiz JSON.parse edip lenient
+// alan çıkarırız. SDK `unmarshal` (imza + katı event constructor) gerçek Paddle
+// payload'larını bazen `.map` şema hatasıyla reddedebildiğinden, event şemasını
+// handler toleranslı alır — imza doğrulama tek gerçek güven sınırıdır.
 export async function isValidPaddleSignature(rawBody: string, signature: string): Promise<boolean> {
   const paddle = getPaddle();
   const secret = process.env.PADDLE_WEBHOOK_SECRET;
@@ -140,24 +140,18 @@ export async function isValidPaddleSignature(rawBody: string, signature: string)
   } catch {
     return false;
   }
-} `PADDLE_WEBHOOK_SECRET`
-// notification SIGNING SECRET'tir (API key değil).
-import type { Paddle as PaddleClient } from "@paddle/paddle-node-sdk";
+}
 
 export async function verifyPaddleWebhook(
   rawBody: string,
   signature: string,
 ): Promise<{ eventType: string; data: Record<string, unknown> } | null> {
-  const paddle = getPaddle();
-  const secret = process.env.PADDLE_WEBHOOK_SECRET;
-  if (!paddle || !secret) return null;
+  if (!(await isValidPaddleSignature(rawBody, signature))) return null;
   try {
-    const evt = await paddle.webhooks.unmarshal(rawBody, secret, signature);
-    if (!evt) return null;
-    const rawEvt = evt as unknown as Record<string, unknown>;
+    const parsed = JSON.parse(rawBody) as Record<string, unknown>;
     return {
-      eventType: (rawEvt.event_type as string | undefined) ?? (rawEvt.type as string | undefined) ?? "",
-      data: (rawEvt.data as Record<string, unknown> | undefined) ?? {},
+      eventType: (parsed.event_type as string | undefined) ?? (parsed.type as string | undefined) ?? "",
+      data: (parsed.data as Record<string, unknown> | undefined) ?? {},
     };
   } catch {
     return null;
