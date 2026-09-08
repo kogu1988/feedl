@@ -50,6 +50,15 @@ export async function POST(req: Request) {
     // İmza doğrulama — SDK (başarısızsa 2xx DÖNMEZ; Paddle retry yapar).
     const sigOk = await isValidPaddleSignature(raw, signature);
     const verified = await verifyPaddleWebhook(raw, signature);
+    if (sigOk && !verified) {
+      // İmza geçerli fakat parse başarısız — hangi event olduğunu logla.
+      try {
+        const j = JSON.parse(raw) as { event_type?: string; data?: { id?: string } };
+        console.log("[paddle-webhook] parseFail eventType", j.event_type ?? "", "id", j.data?.id ?? "");
+      } catch {
+        console.log("[paddle-webhook] parseFail rawNotJson");
+      }
+    }
     console.log("[paddle-webhook] sigOk", sigOk, "verified", !!verified, verified?.eventType ?? "");
     if (!verified) {
       return NextResponse.json(
