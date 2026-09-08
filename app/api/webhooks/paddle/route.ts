@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 
 import { getDb } from "@/lib/db";
 import { workspaces } from "@/lib/db/schema";
-import { PADDLE_ENV, derivePlanFromStatus, verifyPaddleWebhook } from "@/lib/paddle";
+import { PADDLE_ENV, derivePlanFromStatus, verifyPaddleWebhook, isValidPaddleSignature } from "@/lib/paddle";
 import {
   grantedAccess,
   upsertCustomer,
@@ -48,8 +48,9 @@ export async function POST(req: Request) {
       );
     }
     // İmza doğrulama — SDK (başarısızsa 2xx DÖNMEZ; Paddle retry yapar).
+    const sigOk = await isValidPaddleSignature(raw, signature);
     const verified = await verifyPaddleWebhook(raw, signature);
-    console.log("[paddle-webhook] verified", !!verified, verified?.eventType ?? "");
+    console.log("[paddle-webhook] sigOk", sigOk, "verified", !!verified, verified?.eventType ?? "");
     if (!verified) {
       return NextResponse.json(
         { success: false, error: "Geçersiz imza." },

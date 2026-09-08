@@ -126,7 +126,21 @@ export function verifyPaddleSignature(payload: string, signatureHeader: string):
 
 // Paddle SDK `webhooks.unmarshal` — resmi imza doğrulama (Paddle Notification
 // Signature, v2/v3). Raw body verilir; JSON.parse ÖNCEDEN YAPILMAZ. Doğrulanmış
-// event döner (event_type + data), imza geçersizse null. `PADDLE_WEBHOOK_SECRET`
+// event döner (event_type + data), imza geçersizse null.
+
+// Yalnızca imza doğruluğunu (parse ETMEDEN) test eder — secret eşleşmesini
+// bildirmek/tanılama için. `unmarshal` parse hatalarını da yutabildiğinden,
+// imza sorununu şema sorunundan ayırmak için kullanılır.
+export async function isValidPaddleSignature(rawBody: string, signature: string): Promise<boolean> {
+  const paddle = getPaddle();
+  const secret = process.env.PADDLE_WEBHOOK_SECRET;
+  if (!paddle || !secret) return false;
+  try {
+    return await paddle.webhooks.isSignatureValid(rawBody, secret, signature);
+  } catch {
+    return false;
+  }
+} `PADDLE_WEBHOOK_SECRET`
 // notification SIGNING SECRET'tir (API key değil).
 import type { Paddle as PaddleClient } from "@paddle/paddle-node-sdk";
 
