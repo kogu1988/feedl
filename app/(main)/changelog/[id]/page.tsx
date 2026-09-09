@@ -66,19 +66,20 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { id } = await params;
   if (!z.uuid().safeParse(id).success) {
-    return { title: "Duyuru — feedl" };
+    return { title: "Duyuru" };
   }
   try {
     const entry = await loadEntry(id);
     if (!entry) {
-      return { title: "Duyuru bulunamadı — feedl" };
+      return { title: "Duyuru bulunamadı" };
     }
     return {
-      title: `${entry.title} — feedl`,
+      // Root template "%s · feedl" 'feedl'i bir kez ekler — başlık bare kalır.
+      title: entry.title,
       description: entry.body.slice(0, 160),
     };
   } catch {
-    return { title: "Duyuru — feedl" };
+    return { title: "Duyuru" };
   }
 }
 

@@ -2,10 +2,19 @@
 // Footer + legal sayfalar (Gizlilik/Şartlar/İade) /contact'a link veriyor.
 // Basit, mailto tabanlı içerik — form/CRM ileride eklenebilir. Erişilebilirlik:
 // mailto linki gerçek bir <a href="mailto:"> ve görünür label taşır.
-export const metadata = {
-  title: "İletişim · feedl",
-  description: "feedl hakkında soruların, geri bildirimin veya satış görüşmesi taleplerin için bize yaz.",
-};
+import { generateCanonical } from "@/lib/seo";
+
+// İletişim: benzersiz title + canonical (root template "%s · feedl" 'feedl'i
+// bir kez ekler; statik const yalnızca title dönüyordu → canonical yoktu).
+export async function generateMetadata(): Promise<import("next").Metadata> {
+  const canonical = await generateCanonical();
+  return {
+    title: "İletişim",
+    description:
+      "feedl hakkında soruların, geri bildirimin veya satış görüşmesi taleplerin için bize yaz.",
+    ...canonical,
+  };
+}
 
 export default function ContactPage() {
   return (

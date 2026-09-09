@@ -8,6 +8,18 @@ import { IdeaCard } from "@/components/custom/idea-card";
 import { StatusBadge } from "@/components/custom/status-badge";
 import { TypeBadge } from "@/components/custom/type-badge";
 import { SentimentBadge } from "@/components/custom/sentiment-badge";
+import { generateCanonical } from "@/lib/seo";
+
+// SEO: benzersiz title + canonical (root template "%s · feedl" ayağı ekler).
+export async function generateMetadata(): Promise<import("next").Metadata> {
+  const canonical = await generateCanonical();
+  return {
+    title: "Canlı Demo",
+    description:
+      "Feedl'i canlı gör: geri bildirim portalı, yol haritası ve değişiklik günlüğü tek turda. Burada veri/auth gerekmez.",
+    ...canonical,
+  };
+}
 
 // Sprint 50 (Faz 4/cilama) — public /demo. Ürünün çalışan örnek yüzeylerini
 // sunan bir tur sayfası: portal / yol haritası / güncellemeler. Satış

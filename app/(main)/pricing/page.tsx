@@ -4,11 +4,23 @@ import { PricingManager } from "@/components/custom/pricing-manager";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { workspaces } from "@/lib/db/schema";
+import { generateCanonical } from "@/lib/seo";
 
 // Public /pricing — plan karşılaştırma + Paddle checkout (sandbox/live).
 // Slug Paddle webhook'unda workspace'i eşleştirmek için customData'ya geçilir.
 // Çalışma alanı bulunamazsa seed slug'a geri düşülür (tek-workspace MVP).
 export const dynamic = "force-dynamic";
+
+// SEO: benzersiz title + canonical (root template "%s · feedl" ayağı ekler).
+export async function generateMetadata(): Promise<import("next").Metadata> {
+  const canonical = await generateCanonical();
+  return {
+    title: "Fiyatlandırma",
+    description:
+      "Feedl'i sınırsız board, entegrasyonlar ve AI içgörüleriyle kullan. Ekip başı fiyatlandırma — ücretsiz başla, Pro'ya yükselt.",
+    ...canonical,
+  };
+}
 
 export default async function PricingPage() {
   let slug = "feedl";

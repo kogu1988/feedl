@@ -31,7 +31,7 @@ export const dynamic = "force-dynamic";
 export async function generateMetadata(): Promise<import("next").Metadata> {
   const canonical = await generateCanonical();
   return {
-    title: "Changelog — feedl",
+    title: "Changelog",
     description: "Yeni özellikler, iyileştirmeler ve düzeltmeler.",
     ...canonical,
   };

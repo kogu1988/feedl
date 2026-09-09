@@ -19,9 +19,16 @@ import { boards, comments, posts, votes } from "@/lib/db/schema";
 // Canlı liste: her istekte DB'den okunur, build zamanında dondurulmaz.
 export const dynamic = "force-dynamic";
 
-// F2: server-side canonical.
+// F2: server-side canonical + benzersiz title/description (root template
+// "%s · feedl" 'feedl'i bir kez ekler).
 export async function generateMetadata(): Promise<import("next").Metadata> {
-  return generateCanonical();
+  const canonical = await generateCanonical();
+  return {
+    title: "Yol Haritası",
+    description:
+      "Feedl yol haritası: planlanan, geliştirilen ve yayınlanan özellikleri şeffaf biçimde takip et. Ne zaman ne geleceğini gör.",
+    ...canonical,
+  };
 }
 
 const columnMeta: Record<string, { title: string; dotClass: string }> = {

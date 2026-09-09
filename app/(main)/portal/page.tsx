@@ -34,9 +34,16 @@ import { comments, postTags, posts, tags, votes } from "@/lib/db/schema";
 // Canlı liste: her istekte DB'den okunur, build zamanında dondurulmaz.
 export const dynamic = "force-dynamic";
 
-// F2: server-side canonical (tam path + workspace custom domain).
+// F2: server-side canonical (tam path + workspace custom domain) + benzersiz
+// title/description (root template "%s · feedl" 'feedl'i bir kez ekler).
 export async function generateMetadata(): Promise<import("next").Metadata> {
-  return generateCanonical();
+  const canonical = await generateCanonical();
+  return {
+    title: "Geri Bildirim Portalı",
+    description:
+      "Feedl portalı: müşteri isteklerini oyla, yorumla ve takip et. Ekibin hangi özelliğin önce geleceğine birlikte karar versin.",
+    ...canonical,
+  };
 }
 
 // Sprint 48c: portal linki üretici — aktif board slug'ını ve diğer
