@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { derivePlanFromStatus, PLANS, planFromString } from "@/lib/paddle";
 
 describe("planFromString", () => {
-  it("mapbı 'pro' to pro", () => {
+  it("maps 'pro' to pro", () => {
     expect(planFromString("pro")).toBe("pro");
   });
 

@@ -146,7 +146,7 @@ npm run test:e2e  # Playwright + axe erişilebilirlik + auth akışı (çalışa
 
 | Katman | Sonuç | Kapsam |
 | :--- | :--- | :--- |
-| **Birim test** (`npm test`) | ✅ 24 dosya · **111 test geçti** | Saf mantık: renk/WCAG, sayfalama, CSV, şifreleme, rate-limit, Paddle imza+plan türetme, oy doğrulama, post-format, post-search, widget-origins, workspace-host çözümleme, AI içgörüleri, OpenRouter modelleri, e-posta teslimatı, api-keys, davet e-postası, widget gönderim modu, free-plan oy limiti |
+| **Birim test** (`npm test`) | ✅ 26 dosya · **120 test geçti** | Saf mantık: renk/WCAG, sayfalama, CSV, şifreleme, rate-limit, Paddle imza+plan türetme, oy doğrulama, post-format, post-search, widget-origins, workspace-host çözümleme, AI içgörüleri, OpenRouter modelleri, e-posta teslimatı, api-keys, davet e-postası, widget gönderim modu, free-plan oy limiti |
 | **Tenant izolasyonu** | ✅ `resolveWorkspaceByHost` öncelik (custom_domain > subdomain > varsayılan) + hata | `tests/lib/tenant-isolation.test.ts` |
 | **Paddle plan türetme** | ✅ `derivePlanFromStatus` (trialing/active→pro; canceled/past_due/dunned→free; unknown→null) | `tests/lib/paddle-plans.test.ts` |
 | **Merge/unmerge karar mantığı** | ✅ Şema doğrulama (uuid, self-merge) + reason→HTTP eşleme | `tests/lib/post-merge.test.ts` |
