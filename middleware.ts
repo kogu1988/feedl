@@ -61,6 +61,12 @@ const isPublicRoute = createRouteMatcher([
   "/api/widget(.*)",
   "/api/webhooks(.*)",
 
+  // Sprint 64 / P0-1: Paddle uçları (status/portal/subscription) auth'u KENDİ
+  // handler'ında yapar (getAdminUserId → 401). Middleware'de `protect` etmek
+  // auth'suz istekleri redirect/404'e çevirip bu uçları kırıyordu; diğer API
+  // namespace'leriyle (v1/widget/webhooks) tutarlı hale getirildi.
+  "/api/paddle(.*)",
+
   // Sprint 48o: Slack/Zendesk/Intercom entegrasyon webhook'ları — Slack
   // kendi imzasıyla çağırır (lib/slack), Clerk oturumu gerekmez.
   "/api/integrations(.*)",
