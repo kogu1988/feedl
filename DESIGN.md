@@ -361,3 +361,100 @@ dekoratif süreleri etkisizleştirir. FilterTabs optimistic davranışı
 ("eyleme cevap" örneği) korunur.
 7. Her UI değişikliği küçük batch + ayrı commit; kullanıcıya isim vermeden
    uygula, deploy sonrası kısa test listesi sun.
+
+## 9. Handoff Spec (dev implementasyon için kanonik referans)
+
+> Bu bölüm §1–8'in özet uygulamasıdır: dev, yeni bir ekran/kart yazarken
+> yalnızca buraya bakar. Tüm değerler `app/globals.css` gerçek token'larından;
+> değer yerine token adı kullanılır (`text-sm` ≠ `14px`). Kod eşleşmezse
+> kod gerçek kaynaktır (§0).
+
+### 9.1 Token referansı
+
+| Token | Açık | Koyu | Kullanım |
+|-------|------|------|----------|
+| `--background` | `oklch(1 0 0)` | `oklch(0.145 0 0)` | Sayfa zemini |
+| `--foreground` | `oklch(0.145 0 0)` | `oklch(0.985 0 0)` | Birincil metin |
+| `--card` | `oklch(1 0 0)` | `oklch(0.205 0 0)` | Kart/popover zemini |
+| `--muted` / `--muted-foreground` | `0.97` / `0.556` | `0.269` / `0.708` | İkincil metin, rozet, nötr zemin |
+| `--border` / `--input` | `oklch(0.922 0 0)` | `1 0 0 / 10%` / `15%` | Ayırıcılar, input kenarı |
+| `--brand` | `#ff5c35` | `#ff5c35` | Tek aksan (buton/oy/odak) |
+| `--brand-strong` | `#c7360f` | `#ff8c66` | Aksan üzeri metin/hover |
+| `--primary-foreground` | `#2b0e04` | `#2b0e04` | Beyaz değil koyu mürekkep (AA 5.9:1) |
+| `--ring` | `#ff8c66` | `#ff8c66` | Odak halkası |
+| `--destructive` | `oklch(0.577 0.245 27.325)` | `oklch(0.704 0.191 22.216)` | Hata / yıkıcı |
+| `--sidebar*` | nötr grafit (L216/145…) | aynı aile | Yalnız admin sidebar |
+
+**Radius ölçeği** (`--radius` `0.625rem`):
+`sm 0.375` · `md 0.5` · `lg 0.625` (kart/buton) · `xl 0.875` (dialog) ·
+`2xl 1.125` (marketing) · `3xl 1.375` · `4xl 1.625`.
+
+**Boşluk:** Tailwind v4 varsayılan ölçeği (4px taban): `gap-1 4px` ·
+`gap-2 8px` · `gap-3 12px` · `gap-4 16px` · `p-4/p-5/p-6` … Sayfa ritmi
+`space-y-6/8`.
+
+**Tipografi (kullan, eşdeğer px yazma):**
+h1 sayfa `text-2xl bold tracking-tight` · bölüm h2 `text-base semibold` ·
+gövde `text-sm` · meta `text-xs text-muted-foreground` · KPI `font-mono text-3xl
+tabular-nums` · landing hero `text-4xl sm:text-5xl lg:text-6xl`.
+
+### 9.2 Breakpoints (Tailwind varsayılanı)
+
+| Ad | Değer | Davranış |
+|----|-------|----------|
+| `sm` | 640px | Landing hero tek kolon → 2 kolon; çoklu kartlar 2 sütun |
+| `md` | 768px | Üst bar nav görünür (hamburger kapanır); 2×2 KPI/tablet |
+| `lg` | 1024px | Portal fikir detayı 2 kolon; pricing kartları yan yana |
+| `xl` | 1280px | Geniş dashboard veri yoğunluğu; `max-w-6xl` public kolon |
+| `2xl` | 1536px | (nadir) |
+
+Public yüzeyler: `container mx-auto max-w-6xl`; admin: `max-w-none` sola
+yaslı; uzun metin: `max-w-prose`/`max-w-3xl`. Mobilde her şey tek kolon;
+birincil aksiyon tam genişlik.
+
+### 9.3 Bileşen state'leri
+
+| Bileşen | Variant | State'ler | Not |
+|---------|---------|-----------|-----|
+| `Button` | default/outline/secondary/ghost/destructive/link | default · hover (`bg-accent`/brand-strong) · active · disabled (`opacity`, `pointer-events`) · loading (spinner yerine disabled + metin) | `render` prop ile Link; `size` sm/lg/icon |
+| `Card` | surface/interactive/floating | surface: gölgesiz · interactive: hover `shadow-xs` + `-translate-y-0.5` 150ms · floating: `shadow-lg` | `elevation` prop |
+| `Badge` | pill | default · ton class'ı (Status/Type/Sentiment) | `ui/badge.tsx` tek kabuk |
+| `Notice` | sm/md | error · info | Kopya hata kutusu YAZILMAZ |
+| `EmptyState` | sm/lg | boş durum | Kesik kenarlık + title/children/action |
+| `IdeaCard` | interactive | hover (translateY) · focus (odak halkası) · mock (`aria-hidden`) | İki bölge grid |
+
+**Yükleme:** veri bölgelerinde spinner (köşeli değil `Loader2 animate-spin`)
+veya EmptyState; **hata:** `Notice tone=error`; **boş:** `EmptyState`;
+**yoksayılır/okunmamış:** yalnızca anlamsal renkler.
+
+### 9.4 Edge case'ler
+
+- **Uzun metin:** başlık `min-w-0` + `leading-snug`; açıklama `line-clamp`;
+  sağ kolon `shrink-0` (IdeaCard iki bölge grid taşmayı engeller).
+- **Uzun Türkçe/çok dilli:** `font-sans` Manrope latin-ext (Türkçe destek);
+  başlık satır sonu `whitespace-pre-line`; `truncate` breadcrumb'da.
+- **Boş liste:** `EmptyState` (kesik kenarlık, başlık + açıklama + CTA).
+- **Hata / geçersiz imza / api hata:** `Notice tone=error` (row `sm`, sayfa `md`).
+- **Eksik veri (null sayı, yok kayıt):** `—`/`null` göster; asla `NaN`.
+- **Yavaş bağlantı:** veri yoğun sayfalarda `dynamic`/skeleton yerine
+  RSC loading; uzun listeler sayfalama (PaginationFooter) — tek seferde
+  sunucuya 5'li/25'li gelir.
+- **Uzun fiyat/ID:** `paddleSubscriptionId` vb. `text-xs text-muted-foreground`
+  `break-all`/`truncate`; KPI değerleri `font-mono tabular-nums`.
+
+### 9.5 Erişilebilirlik kontrol listesi
+
+- **Kontrast:** `--primary-foreground #2b0e04` (ink-on-coral 5.9:1 ✓);
+  beyaz-on-mercan YASAK. Doğrulama: `tests/lib/color-contrast.test.ts`
+  (`contrastRatio` ≥ 4.5).
+- **Odak:** `--ring #ff8c66` global `outline-ring/50`; tüm etkileşimli
+  elemanlarda görünür odak.
+- **Dokunma hedefi ≥ 40px:** `Button size` ailesi + oy/ikon `size-*`;
+  mobilde tam genişlik aksiyon.
+- **ARIA/rol:** nav `aria-label`/`aria-current`; dialog `aria-expanded`;
+  mock kart `aria-hidden`; durumlar `role=status`/`role=alert`;
+  ikonlar `aria-hidden`.
+- **Klavye:** native `select`/`button`/`Link`; dialogu `Escape`/overlay;
+  disclosure `aria-expanded` + bölge.
+- **Hareket azaltma:** `prefers-reduced-motion` globals.css bloğu tüm
+  dekoratif süreleri sıfırlar (§8).
