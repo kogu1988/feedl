@@ -57,3 +57,13 @@ export function brandOverlay(hex: string, alpha: number): string | null {
   const a = Math.round(alpha * 255);
   return `rgba(${r} ${g} ${b} / ${a})`;
 }
+
+// WCAG 2.x kontrast oranı (1–21). `relativeLuminance` ile iki hex renk
+// arasındaki oranı döner — erişilebilirlik testlerinde ve marka kararlarında
+// (ör. ink-on-coral ≥ 4.5:1) kullanılır. Geçersiz hex → 1 (başarısız).
+export function contrastRatio(foreground: string, background: string): number {
+  const l1 = relativeLuminance(foreground);
+  const l2 = relativeLuminance(background);
+  const [hi, lo] = l1 > l2 ? [l1, l2] : [l2, l1];
+  return (hi + 0.05) / (lo + 0.05);
+}

@@ -66,6 +66,46 @@ function isAuthSurface(pathname: string) {
   return AUTH_APP_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }
 
+// Tek nav render kaynağı — masaüstü nave ve mobil panel aynı öğeleri farklı
+// yoğunlukla basar. `variant="desktop"` (h-14 içi yatay) / `variant="mobile"`
+// (dikey, tam genişlik). `onNavigate` mobilde menüyü kapatır.
+function NavLinks({
+  items,
+  variant,
+  pathname,
+  onNavigate,
+}: {
+  items: { href: string; label: string }[];
+  variant: "desktop" | "mobile";
+  pathname: string;
+  onNavigate?: () => void;
+}) {
+  const isDesktop = variant === "desktop";
+  return (
+    <>
+      {items.map((item) => (
+        <Link
+          key={item.href}
+          href={item.href}
+          aria-current={isActive(pathname, item.href) ? "page" : undefined}
+          onClick={onNavigate}
+          className={cn(
+            "rounded-md font-medium transition-colors hover:bg-accent hover:text-foreground",
+            isDesktop
+              ? "px-2 py-1 text-sm whitespace-nowrap sm:px-2.5"
+              : "px-3 py-2 text-sm",
+            isActive(pathname, item.href)
+              ? "bg-muted text-foreground"
+              : "text-muted-foreground",
+          )}
+        >
+          {item.label}
+        </Link>
+      ))}
+    </>
+  );
+}
+
 function isActive(pathname: string, href: string) {
   if (href === "/portal") {
     // /portal ve alt sayfaları ([id], oyladiklarim) Portal'ı aktif eder;
@@ -121,21 +161,7 @@ export function SiteHeader({ brand }: { brand?: { name: string; brandColor: stri
             className="hidden min-w-0 items-center gap-0.5 text-sm sm:gap-1 md:flex"
             aria-label="Site menüsü"
           >
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-current={isActive(pathname, item.href) ? "page" : undefined}
-                className={cn(
-                  "rounded-md px-2 py-1 font-medium whitespace-nowrap transition-colors hover:bg-accent hover:text-foreground sm:px-2.5",
-                  isActive(pathname, item.href)
-                    ? "bg-muted text-foreground"
-                    : "text-muted-foreground",
-                )}
-              >
-                {item.label}
-              </Link>
-            ))}
+            <NavLinks items={navItems} variant="desktop" pathname={pathname} />
           </nav>
         </div>
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
@@ -190,22 +216,12 @@ export function SiteHeader({ brand }: { brand?: { name: string; brandColor: stri
       {mobileOpen ? (
         <div className="border-t bg-background px-4 py-3 md:hidden">
           <nav className="grid gap-1" aria-label="Mobil site menüsü">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-current={isActive(pathname, item.href) ? "page" : undefined}
-                onClick={() => setMobileOpen(false)}
-                className={cn(
-                  "rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-foreground",
-                  isActive(pathname, item.href)
-                    ? "bg-muted text-foreground"
-                    : "text-muted-foreground",
-                )}
-              >
-                {item.label}
-              </Link>
-            ))}
+            <NavLinks
+              items={navItems}
+              variant="mobile"
+              pathname={pathname}
+              onNavigate={() => setMobileOpen(false)}
+            />
           </nav>
           {showAuthTriggers ? (
             <div className="mt-3 grid gap-2 border-t pt-3">
