@@ -26,6 +26,13 @@ const companyLinks = [
   { href: "/refund", label: "İade Politikası" },
 ];
 
+// SEO iç linkler — anonim ziyaretçiye gösterilir (footer yalnız anonimde
+// render edilir). Orphan SEO sayfalarına ulaşım + iç bağlantı (crawl için).
+const resourceLinks = [
+  { href: "/canny-alternative", label: "Canny Alternatifi" },
+  { href: "/how-to-collect-feedback", label: "Geri Bildirim Rehberi" },
+];
+
 export function SiteFooter({ brand }: { brand: { name: string; brandColor?: string | null; logoUrl?: string | null } }) {
   const pathname = usePathname();
   const { isSignedIn } = useAuth();
@@ -59,21 +66,38 @@ export function SiteFooter({ brand }: { brand: { name: string; brandColor?: stri
               herkese açık topluluk portalında.
             </p>
           </div>
-          <ul
-            className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm md:pt-1"
-            aria-label="Şirket linkleri"
-          >
-            {companyLinks.map((link) => (
-              <li key={link.href}>
-                <Link
-                  href={link.href}
-                  className="text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  {link.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
+          <div className="flex flex-wrap items-start gap-x-10 gap-y-4 text-sm md:pt-1">
+            <ul
+              className="flex flex-wrap items-center gap-x-6 gap-y-2"
+              aria-label="Şirket linkleri"
+            >
+              {companyLinks.map((link) => (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    className="text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <ul
+              className="flex flex-wrap items-center gap-x-6 gap-y-2"
+              aria-label="Kaynaklar"
+            >
+              {resourceLinks.map((link) => (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    className="text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
 
         {/* Telif — normal footer içinde, ortalanmış. */}
