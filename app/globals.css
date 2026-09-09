@@ -72,7 +72,10 @@
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
+  /* A11y (design-critique): 0.556 açık zeminde 3.2:1 idi — küçük metin AA
+     (4.5:1) başarısız. 0.45 (≈ #6b6b6b) tüm zeminlerde ≥4.5:1 (bg 5.3, muted
+     4.9, brand-soft 4.5) ve hâlâ muted ton (foreground #18181b'den ayrık). */
+  --muted-foreground: oklch(0.45 0 0);
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);

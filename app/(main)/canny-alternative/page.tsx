@@ -108,15 +108,13 @@ export default function CannyAlternativePage() {
       {/* Hero */}
       <section className="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-14">
         <div>
-          <Badge className="border-border bg-muted text-muted-foreground">
-            Canny&apos;ye ücretsiz, hosted alternatif
-          </Badge>
-          <h1 className="mt-4 max-w-xl text-3xl font-bold tracking-tight sm:text-4xl">
+          <h1 className="max-w-xl text-3xl font-bold tracking-tight sm:text-4xl">
             Canny yerine: müşteri isteklerini AI ile, veriyle önceliklendir.
           </h1>
           <p className="mt-4 max-w-xl text-lg text-muted-foreground">
-            Feedl, Canny&apos;nin toplama ve oylama akışını AI sınıflandırma,
-            duygu analizi ve gelir skoruyla birleştirir. Kurulum yok, ücretsiz başla.
+            Canny&apos;ye ücretsiz, hosted bir alternatif — toplama ve oylama
+            akışını AI sınıflandırma, duygu analizi ve gelir skoruyla birleştirir.
+            Kurulum yok, ücretsiz başla.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <Button size="lg" render={<Link href="/sign-up" />}>Ücretsiz Başla</Button>
@@ -169,7 +167,6 @@ export default function CannyAlternativePage() {
         <div className="mt-6 grid gap-6 md:grid-cols-2">
           <div className="flex h-full flex-col rounded-2xl border bg-card p-6">
             <p className="text-lg font-semibold">Free</p>
-            <p className="mt-2 text-4xl font-bold tracking-tight">$0</p>
             <p className="mt-1 text-sm text-muted-foreground">şimdilik ücretsiz — küçük ekipler için</p>
             <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
               <li>1 board · 1 üye · 50 takipçi</li>
@@ -180,7 +177,6 @@ export default function CannyAlternativePage() {
           </div>
           <div className="flex h-full flex-col rounded-2xl border border-primary bg-primary/5 p-6">
             <p className="text-lg font-semibold">Pro</p>
-            <p className="mt-2 text-4xl font-bold tracking-tight">$19<span className="text-sm font-normal text-muted-foreground">/ay</span></p>
             <p className="mt-1 text-sm text-muted-foreground">sınırsız board, entegrasyonlar, AI içgörüleri</p>
             <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
               <li>Entegrasyonlar (Slack, Zendesk, Linear, Jira)</li>
@@ -190,9 +186,9 @@ export default function CannyAlternativePage() {
             </ul>
           </div>
         </div>
-        <div className="mt-8">
-          <Button render={<Link href="/pricing" />}>Fiyatlandırmayı Ver</Button>
-        </div>
+        <p className="mt-6 max-w-2xl text-sm text-muted-foreground">
+          Güncel fiyatları <Link href="/pricing" className="underline underline-offset-2 hover:text-primary">fiyatlandırma sayfasında</Link> görebilirsin.
+        </p>
       </section>
 
       {/* SSS (FAQPage schema'nın kaynağı) */}

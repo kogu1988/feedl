@@ -31,4 +31,17 @@ describe("brand color contrast (WCAG AA)", () => {
   it("dark ink on white passes (default text on light background)", () => {
     expect(contrastRatio("#1f2937", "#ffffff")).toBeGreaterThanOrEqual(4.5);
   });
+
+  // Design-critique fix: muted-foreground (oklch 0.45 ≈ #6b6b6b) küçük metin için
+  // AA (≥4.5:1) — hem açık zemin hem brand-soft/muted zeminlerde. 0.556 yalnız
+  // 3.2:1 veriyordu (başarısız); bu, token'ı geri koyulaştırma regresyonunu yakalar.
+  it("muted-foreground passes AA on background and brand-soft (small text)", () => {
+    expect(contrastRatio("#6b6b6b", "#ffffff")).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio("#6b6b6b", "#ffe8df")).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio("#6b6b6b", "#f4f4f5")).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("old muted-foreground (0.556) would fail — guards against reverting", () => {
+    expect(contrastRatio("#8f8f8f", "#ffffff")).toBeLessThan(4.5);
+  });
 });
