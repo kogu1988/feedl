@@ -196,7 +196,9 @@ export function signSessionToken(
   );
 }
 
-function verifySessionPayload(token: string): WidgetSession | null {
+// P0-4: widget oturumunun workspace bağını doğrula (saf). `getWidgetSession`
+// bu yardımcıyı çağırır; testler tenant bağının korunduğunu buradan ispatlar.
+export function verifySessionPayload(token: string): WidgetSession | null {
   const secret = getWidgetSecret();
   if (secret.length < 16) return null;
 

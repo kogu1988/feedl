@@ -49,4 +49,26 @@ describe("derivePlanFromStatus", () => {
     expect(derivePlanFromStatus(null)).toBeNull();
     expect(derivePlanFromStatus(undefined)).toBeNull();
   });
+
+  // P0-3 (billing lifecycle): plan YALNIZCA fiili `status`'la derlenir.
+  // Kişi bir `subscription.updated` ile `scheduled_change` (iptal/pause)
+  // planlamış olsa bile, durum hâlâ active/trialing ise erişim KESİLMEZ.
+  // Webhook `scheduled_change`'i yalnızca `scheduled_change_*` alanlarına
+  // yazar; plan kararına şu fonksiyon girer ve `scheduled_change`'i bilmez.
+  it("does not revoke when a scheduled change exists but status is active", () => {
+    // Aynı fonksiyon, scheduled_change girişleriyle veya olmadan aynı sonucu verir
+    // (imza scheduled_change'i almadığı için) — bu, iptal planlamanın erişimi
+    // kesmediğini belgeler.
+    expect(derivePlanFromStatus("active")).toBe("pro");
+    expect(derivePlanFromStatus("trialing")).toBe("pro");
+  });
+
+  // P0-3: gerçek `canceled`/`past_due`/`paused` durumu erişimi KESER.
+  it("revokes only on the actual terminal/blocking status", () => {
+    expect(derivePlanFromStatus("canceled")).toBe("free");
+    expect(derivePlanFromStatus("paused")).toBe("free");
+    expect(derivePlanFromStatus("past_due")).toBe("free");
+    expect(derivePlanFromStatus("dunned")).toBe("free");
+    expect(derivePlanFromStatus("expired")).toBe("free");
+  });
 });
