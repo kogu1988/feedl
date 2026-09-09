@@ -1,8 +1,9 @@
 # feedl — AI Destekli Müşteri Geri Bildirim Platformu
 
 feedl, ürün ekiplerinin müşteri geri bildirimini toplaması, **AI ile analiz etmesi**,
-önceliklendirmesi ve duyurması için tek bir platformdur. Canny'ye ücretsiz bir
-alternatif — herkese açık bir topluluk portalı + gelir odaklı önceliklendirme.
+önceliklendirmesi ve duyurması için tek bir platformdur. Canny'nin ücretsiz
+planına bir alternatif — herkese açık bir topluluk portalı + gelir odaklı
+önceliklendirme.
 
 **Canlı:** [https://feedl.app](https://feedl.app)
 
@@ -90,7 +91,7 @@ yüzeyinde webhook/API jargonu kullanma.
 - **Free:** 1 board · 1 üye · 50 takipçi · "Powered by feedl" rozeti.
 - **Pro:** Sınırsız board · 10 üye · özel domain · marka kaldırma. Aylık/yıllık.
 - Model: **ekip/board başına** sabit ücret (kullanıcı başına değil) + workspace
-  kaynak limitleri. (Paddle sandbox; canlı geçiş yakında.)
+  kaynak limitleri. (Paddle **live** — aylık $19 / yıllık; ücretsiz plan gerçek.)
 
 ## Teknoloji Stack'i
 
@@ -104,7 +105,7 @@ yüzeyinde webhook/API jargonu kullanma.
 | Background | Inngest |
 | AI | OpenRouter (`minimax/minimax-m3:free` LLM + fallback, `nemotron-3-embed-1b:free` embedding) |
 | Email | Resend (deliverability webhook) |
-| Billing | Paddle (sandbox) |
+| Billing | Paddle (live) |
 | Rate-limit | Upstash Redis |
 
 ## Kurulum
@@ -145,7 +146,7 @@ npm run test:e2e  # Playwright + axe erişilebilirlik + auth akışı (çalışa
 
 | Katman | Sonuç | Kapsam |
 | :--- | :--- | :--- |
-| **Birim test** (`npm test`) | ✅ 21 dosya · **98 test geçti** | Saf mantık: renk/WCAG, sayfalama, CSV, şifreleme, rate-limit, Paddle imza+plan türetme, oy doğrulama, post-format, post-search, widget-origins, workspace-host çözümleme, AI içgörüleri, OpenRouter modelleri, e-posta teslimatı, api-keys, davet e-postası, widget gönderim modu, free-plan oy limiti |
+| **Birim test** (`npm test`) | ✅ 24 dosya · **111 test geçti** | Saf mantık: renk/WCAG, sayfalama, CSV, şifreleme, rate-limit, Paddle imza+plan türetme, oy doğrulama, post-format, post-search, widget-origins, workspace-host çözümleme, AI içgörüleri, OpenRouter modelleri, e-posta teslimatı, api-keys, davet e-postası, widget gönderim modu, free-plan oy limiti |
 | **Tenant izolasyonu** | ✅ `resolveWorkspaceByHost` öncelik (custom_domain > subdomain > varsayılan) + hata | `tests/lib/tenant-isolation.test.ts` |
 | **Paddle plan türetme** | ✅ `derivePlanFromStatus` (trialing/active→pro; canceled/past_due/dunned→free; unknown→null) | `tests/lib/paddle-plans.test.ts` |
 | **Merge/unmerge karar mantığı** | ✅ Şema doğrulama (uuid, self-merge) + reason→HTTP eşleme | `tests/lib/post-merge.test.ts` |
@@ -192,6 +193,92 @@ docs/              Planlama (gitignored) + standartlar
 tests/             Vitest birim testleri
 e2e/               Playwright smoke + axe erişilebilirlik
 ```
+
+## Sistem Tasarımı (mimari — `system-design` çıkarımı)
+
+### Yüksek seviye
+
+```
+     Public UI (landing/demo/pricing)    Dashboard (sidebar)    Widget (iframe)
+                 └──────────────┬───────────────┘
+                          Next.js 15 App Router (RSC + API)
+         ┌─────────────────────┼──────────────────────┐
+      Clerk                Neon PostgreSQL          Paddle
+      (kimlik)          + pgvector (Drizzle)        (billing)
+         │                     │                       │
+         │             ┌───────┴───────┐               │
+         │             │ Workspace     │               │
+         │             │ · boards/posts· votes/comments·│
+         │             │ · customers  · subscriptions· │
+         │             └───────────────┘               │
+         └─────────────────┼──────────────────────────┘
+                        Inngest workers
+                     ┌──────┼───────┐
+                OpenRouter       Resend
+             (LLM+embedding)     (email)
+         Upstash Redis (rate-limit) · Vercel (hosting) · Sentry (errors)
+```
+
+### Veri akışı
+- **Fikir:** `POST /api/posts` (auth, workspace-scoped, idempotent) → Neon
+  (posts + embedding) → Inngest `autopilot` (etiket/özet/duygu/benzerlik +
+  embedding → pgvector) → `corpus-insights` arka planda → yayında Resend e-posta.
+- **Oy/yorum:** `vote*`/`comments` uçları (rate-limit + IP/anonim kimlik) → Neon.
+- **Entegrasyon:** Slack/Zendesk/Linear/Jira webhook → `resolveIntegrationByUrlToken`
+  → `workspace_integrations` (secret AES-256-GCM) → `sourceRef` unique ile
+  idempotent post.
+- **Billing:** Paddle webhook → `verifyPaddleWebhook` (SDK `isSignatureValid` +
+  lenient parse) → `customers`/`subscriptions` upsert + `workspaces.plan` senkron
+  (workspace_id eşleşmesi; slug fallback).
+
+### API yüzeyleri
+| Uç | Kimlik | Not |
+|---|---|---|
+| `/api/posts` | Clerk (GET public, POST auth) | workspace-scoped |
+| `/api/admin/*` | Clerk + rol | owner/admin/contributor/member kademesi |
+| `/api/v1/*` | Bearer API key (`fk_live_`) | `Idempotency-Key`, rate-limit
+| `/api/webhooks/{paddle,clerk,slack,...}` | HMAC/imza | at-least-once, idempotent |
+| Workspace çözümü | host / subdomain / custom-domain / widget-session | `getWorkspaceId` |
+
+### Depolama & ölçek/güvenilirlik
+- **Neon (serverless HTTP)** + pgvector (2000-dim cap). Dynamic sayfalar
+  DB-backed; marketing sayfaları edge-cache (statik prerender).
+- **Idempotency + idempotent upsert** (Paddle sub/customer, API key, sourceRef,
+  api_idempotency) — retry/tekrar eşlerinde duplike yok.
+- **Vercel Hobby** — kayan ~100 deploy/24s limit; commit biriktirip tek push.
+- **İzleme:** Sentry (DSN), Vercel Analytics; henüz özel alert/kaynak-uyarı yok.
+
+### Takas analizi & yeniden bakılacaklar
+| Karar | Takas | Yeniden bak |
+|---|---|---|
+| Next.js monolit (API + UI bir arada) | hız/tek repo vs modüler ölçek | AI/worker ağırlaşınca servise böl |
+| Clerk kimlik, Neon iş/tenant verisi | basit, tek kaynak | Clerk Organizasyon senkronu (bilinçli DEĞİL — 2026-09-07) |
+| Ücretsiz OpenRouter model | maliyet 0 vs kalite/flakiness | `LLM_FALLBACK_MODEL`; ücretli modele geçiş |
+| Paddle merchant-of-record | vergi basitliği vs marj | canlıya geçildi (live) — tax/fiyat kontrol |
+| `@paddle/paddle-js` v1.6.5 | overlay zorunlu (inline frameTarget bozuk) | v2 upgrade |
+
+## Teknik Borç (`tech-debt` çıkarımı)
+
+Öncelik = (Etki + Risk) × (6 − Efor). **Efor ters**: 1 = kolay/az → yüksek öncelik.
+
+| # | Başlık | Tür | Etki | Risk | Efor | Öncelik |
+|---|--------|-----|:---:|:---:|:---:|:---:|
+| 1 | `/api/paddle/*` 404 — route sadece middleware auth'una takılıyordu (DÜZELTİLDİ: public matcher + handler auth) | Mimari | 5 | 5 | 1 | 20 |
+| 2 | Başlık/description her sayfada aynı default'a düşüyordu (DÜZELTİLDİ: benzersiz title+canonical) | İçerik/SEO | 4 | 4 | 1 | 16 |
+| 3 | Billing association `slug`→`workspace_id` (DÜZELTİLDİ: checkout custom_data workspace_id, webhook UUID-first) | Mimari | 4 | 4 | 2 | 16 |
+| 4 | Billing activation `setTimeout(reload)` yarışı (DÜZELTİLDİ: `/api/paddle/status` poll) | Kod | 4 | 3 | 2 | 14 |
+| 5 | Önceden yapılmış çoğaltılmış checkout/nav/rozet (tek kaynaklar oluşturuldu) | Kod | 3 | 3 | 1 | 12 |
+| 6 | `@paddle/paddle-js` v1.6.5 inline frameTarget bozuk → overlay | Bağımlılık | 3 | 3 | 3 | 10 |
+| 7 | Sentry `onRequestError`/global-error uyarısı + Clerk `createRouteMatcher` deprecated | Bağımlılık | 2 | 3 | 2 | 10 |
+| 8 | Test: DB-backed/E2E sunucu + seed gerektiriyor; CI push'ta build ama e2e env'siz | Test | 3 | 2 | 3 | 10 |
+| 9 | README/mimari belgelerdeki eskimiş satırlar (Paddle sandbox, 98 test, Canny karşılaştırması) | Dokümantasyon | 2 | 2 | 1 | 8 |
+| 10 | Entegrasyon webhook'ları `?ws=&t=` URL token'a bağlı; token yoksa 403 (Intercom webhook için doğrulanmamış kanal) | Mimari | 2 | 3 | 3 | 8 |
+| 11 | Özel `getWorkspaceId` (host/cookie/widget) — tenant izolasyonu tek testle sunucu kanıtı eksik | Mimari | 2 | 3 | 4 | 6 |
+
+### Fazlı (feature ile paralel) iyileştirme planı
+- **Faz 1 (bu hafta, küçük):** README/mimari doğruluğu (#9), orta ve düşük borçların kapatılması — kod/içerik düzeltmeleri zaten commit'li. `tsc`/`vitest` (111) yeşil.
+- **Faz 2 (bu çeyrek):** `@paddle/paddle-js` v2 upgrade (#6), Sentry/Clerk deprecation temizliği (#7), e2e için CI env + test seed (#8).
+- **Faz 3 (sonra):** Servise bölme / ölçek (#1 takas), custom-domain + ikinci tenant'la gerçek çok kiracılı kanıt (#11).
 
 ## Lisans
 
