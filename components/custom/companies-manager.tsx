@@ -903,7 +903,7 @@ export function CompaniesManager({
                           </p>
                           <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
                             <span
-                              className={`rounded-full px-1.5 py-0.5 text-[11px] font-medium ${
+                              className={`rounded-full px-1.5 py-0.5 text-xs font-medium ${
                                 stageBadgeClasses[opportunity.stage] ??
                                 stageBadgeClasses.open
                               }`}

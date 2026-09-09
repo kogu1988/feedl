@@ -10,11 +10,11 @@ const ROOT_STYLES =
   "text-sm leading-relaxed [&>*:first-child]:mt-0 [&>*:last-child]:mb-0" +
   " [&_a]:font-medium [&_a]:text-primary [&_a]:underline [&_a]:underline-offset-4" +
   " [&_blockquote]:border-l-2 [&_blockquote]:border-border [&_blockquote]:pl-3 [&_blockquote]:text-muted-foreground" +
-  " [&_code]:rounded-md [&_code]:bg-muted [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-[0.85em]" +
+  " [&_code]:rounded-md [&_code]:bg-muted [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-xs" +
   " [&_pre]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded-md [&_pre]:bg-muted [&_pre]:p-3" +
   " [&_pre_code]:bg-transparent [&_pre_code]:p-0" +
   " [&_h1]:mt-3 [&_h1]:text-base [&_h1]:font-bold" +
-  " [&_h2]:mt-3 [&_h2]:text-[15px] [&_h2]:font-bold" +
+  " [&_h2]:mt-3 [&_h2]:text-base [&_h2]:font-bold" +
   " [&_h3]:mt-3 [&_h3]:text-sm [&_h3]:font-semibold" +
   " [&_h4]:mt-3 [&_h4]:text-sm [&_h4]:font-semibold" +
   " [&_hr]:border-border" +

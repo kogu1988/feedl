@@ -441,6 +441,19 @@ veya EmptyState; **hata:** `Notice tone=error`; **boş:** `EmptyState`;
   sunucuya 5'li/25'li gelir.
 - **Uzun fiyat/ID:** `paddleSubscriptionId` vb. `text-xs text-muted-foreground`
   `break-all`/`truncate`; KPI değerleri `font-mono tabular-nums`.
+- **Kasıtlı sabit ölçümler (bilinçli, token-dışı; `[..]` yasak değil):**
+  - Tablo sütun genişlikleri `w-[40px]/[60px]/[80px]/[140px]…` (posts/roadmap
+    tabloları — yoğun veri hizalaması; `w-[40px]` checkbox, `w-[170px]` durum).
+  - Boş durum yükseklikleri `min-h-[120px]/[200px]`, tam sayfa `min-h-[60vh]`
+    (EmptyState/CTA kutuları — içerik yokken dengeli görünüm).
+  - Sidebar: `h-[calc(100svh-3.5rem)]` (üst barın altı), kapalı `w-14`, açık
+    `w-60`, mobil `max-w-[85vw]`, çekmece `w-64`.
+  - Seçim kontrolleri `w-[130px]/[150px]/[240px]` (rol/board/filtre) +
+    `max-w-[240px]/[280px]/[320px]` (sıkışık alanlarda `truncate` ile).
+  Bu sabitler ölçü değil **yapı amacı** taşır (kolon/boşluk/sidebar); yeni bir
+  sabit eklerken aynı amacı belgeli kullan. (Tipografi ölçüleri ise her zaman
+  `text-sm/xs/base` ölçeğinden — yukarıdaki fixed `text-[..]` fontlar §9.1
+  ölçeğine çekildi.)
 
 ### 9.5 Erişilebilirlik kontrol listesi
 

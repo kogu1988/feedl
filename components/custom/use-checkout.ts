@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { initializePaddle, type Paddle } from "@paddle/paddle-js";
 
 import { getPlanEnv } from "@/components/custom/plan-config";
-import { pollProActivation } from "@/components/custom/billing-activation";
 
 // PricingManager ve BillingOverview'daki Paddle checkout akışını TEK yerde toplar.
 // Amaç: "Ödeme kutusu yükleniyor…", "Ödeme tamamlanmadı…" gibi amatör metinleri
@@ -119,4 +118,76 @@ export function useCheckout(opts: UseCheckoutOptions) {
   const clearStatus = useCallback(() => setStatus({ tone: "idle", message: "" }), []);
 
   return { paddle, status, openCheckout, clearStatus };
+}
+
+// ─── Billing activation polling (tek dosya: use-checkout) ────────────────
+// P0-1: ödeme tamamlandıktan sonra webhook'un DB'ye ulaşıp workspace'i Pro
+// yapmasını beklemek yerine `/api/paddle/status` poll edilir. `pollProActivation`
+// checkout.completed akışında, `pollPlanChange` in-app aylık↔yıllık geçişinde
+// kullanılır (plan değişmez, subscription'ın price_id'si değişimi yansıtır).
+const POLL_INTERVAL_MS = 1500;
+const MAX_ATTEMPTS = 14; // ~21s — webhook genelde saniyeler içinde düşer.
+
+export interface ActivationPollResult {
+  activated: boolean;
+  timeout: boolean;
+  plan: string;
+  status: string | null;
+}
+
+export interface PlanChangePollResult {
+  changed: boolean;
+  timeout: boolean;
+  plan: string;
+}
+
+interface StatusSnapshot {
+  pro: boolean;
+  plan: string;
+  status: string | null;
+  priceId: string | null;
+}
+
+async function readStatus(): Promise<StatusSnapshot | null> {
+  try {
+    const res = await fetch("/api/paddle/status", { method: "GET", cache: "no-store" });
+    if (!res.ok) return null;
+    const json = (await res.json()) as {
+      success?: boolean;
+      data?: { plan?: string; priceId?: string | null; paddleSubscriptionStatus?: string | null };
+    };
+    const data = json.data;
+    if (!json.success || !data) return null;
+    return {
+      pro: data.plan === "pro",
+      plan: data.plan ?? "free",
+      status: data.paddleSubscriptionStatus ?? null,
+      priceId: data.priceId ?? null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function pollProActivation(): Promise<ActivationPollResult> {
+  for (let i = 0; i < MAX_ATTEMPTS; i++) {
+    const s = await readStatus();
+    if (s?.pro) {
+      return { activated: true, timeout: false, plan: s.plan, status: s.status };
+    }
+    await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
+  }
+  return { activated: false, timeout: true, plan: "free", status: null };
+}
+
+export async function pollPlanChange(targetPriceId: string): Promise<PlanChangePollResult> {
+  if (!targetPriceId) return { changed: true, timeout: false, plan: "pro" };
+  for (let i = 0; i < MAX_ATTEMPTS; i++) {
+    const s = await readStatus();
+    if (s && s.priceId === targetPriceId) {
+      return { changed: true, timeout: false, plan: s.plan };
+    }
+    await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
+  }
+  return { changed: false, timeout: true, plan: "pro" };
 }

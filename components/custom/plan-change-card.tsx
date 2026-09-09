@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { PRO_PLAN } from "@/components/custom/plan-config";
-import { pollPlanChange } from "@/components/custom/billing-activation";
+import { pollPlanChange } from "@/components/custom/use-checkout";
 
 // Sprint 63x — in-app plan değişikliği (Pro ↔ faturalama dönemi). Mevcut Pro
 // abonesi aylık↔yıllık geçişi Paddle sayfasına gitmeden yapar: önce önizleme
