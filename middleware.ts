@@ -39,6 +39,8 @@ const isPublicRoute = createRouteMatcher([
 
   // SEO: Canny-alternatif karşılaştırma sayfası (public, ticari niyet).
   "/canny-alternative",
+  // SEO: HowTo kurulum rehberi (public, bilgilendirme).
+  "/how-to-collect-feedback",
 
   // Sprint 50: public demo/ürün turu sayfası (satış landing'inin "Canlı
   // Demo" butonu buraya gider; Clerk oturumu gerekmez).
