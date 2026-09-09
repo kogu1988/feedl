@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
-import { workspaces } from "@/lib/db/schema";
+import { subscriptions, workspaces } from "@/lib/db/schema";
 
 // P0-1: Billing activation — checkout.completed sonrası kart, webhook DB'ye
 // ulaşıp workspace'i Pro yapmadan sayfayı yenilemek yerine bu uçtan AKTİF
@@ -37,10 +37,18 @@ export async function GET() {
         { status: 404 },
       );
     }
+    // P0-1: in-app plan değişikliğinde (aylık↔yıllık) plan `pro` kalır; değişimi
+    // doğrulamak için güncel subscription price_id gerekir (webhook'tan gelir).
+    const [subRow] = await getDb()
+      .select({ priceId: subscriptions.priceId })
+      .from(subscriptions)
+      .where(eq(subscriptions.workspaceId, workspaceId))
+      .limit(1);
     return NextResponse.json({
       success: true,
       data: {
         plan: row.plan,
+        priceId: subRow?.priceId ?? null,
         paddleSubscriptionId: row.paddleSubscriptionId,
         paddleSubscriptionStatus: row.paddleSubscriptionStatus,
       },

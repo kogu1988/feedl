@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { PRO_PLAN } from "@/components/custom/plan-config";
+import { pollPlanChange } from "@/components/custom/billing-activation";
 
 // Sprint 63x — in-app plan değişikliği (Pro ↔ faturalama dönemi). Mevcut Pro
 // abonesi aylık↔yıllık geçişi Paddle sayfasına gitmeden yapar: önce önizleme
@@ -94,8 +95,18 @@ export function PlanChangeCard({
         setError(json.error ?? "Plan değiştirilemedi.");
         return;
       }
-      setInfo("Plan değişikliği uygulandı, sayfa yenileniyor…");
-      window.setTimeout(() => window.location.reload(), 2500);
+      // P0-1: webhook'un subscription'ı hedef price'a çekmesini BEKLE,
+      // kör 2.5s reload yerine — kullanıcı yanlış/eskimiş period görmez.
+      setInfo("Değişiklik Paddle'da uygulandı, doğrulanıyor…");
+      const r = await pollPlanChange(targetPriceId);
+      if (r.changed) {
+        setInfo("Plan güncellendi! Sayfa yenileniyor…");
+        window.setTimeout(() => window.location.reload(), 1200);
+      } else if (r.timeout) {
+        setInfo("Değişiklik kaydedildi. Faturalama dönemi birazdan güncellenir — sayfayı yenileyebilirsin.");
+      } else {
+        setInfo("Değişiklik kaydedildi; durum doğrulanamadı. Sayfayı yenile.");
+      }
     } catch {
       setError("Plan değiştirilemedi.");
     } finally {
