@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 
 import { getRole } from "@/lib/auth/admin";
-import { isShowcaseRequest } from "@/lib/db/workspace";
+import { getWorkspaceId, isShowcaseRequest } from "@/lib/db/workspace";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { IdeaCard } from "@/components/custom/idea-card";
@@ -103,6 +103,11 @@ export default async function RootPage() {
   if (!(await isShowcaseRequest())) {
     redirect("/portal");
   }
+
+  // P0-2: workspace'i immutable UUID ile billing'e bağla (slug değişebilir).
+  // Landing anonim vitrin ise default 'feedl' workspace'ini çözer; hata olursa
+  // null → PricingManager slug fallback kullanır.
+  const landingWorkspaceId = await getWorkspaceId().catch(() => null);
 
   const steps = [
     {
@@ -406,7 +411,7 @@ export default async function RootPage() {
             PricingManager (Free kartı + Pro kartı, Pro'da aylık/yıllık switch
             varsayılan yıllık). Landing feedl kök workspace'ini temsil eder. */}
         <div className="mt-10">
-          <PricingManager workspaceSlug="feedl" />
+          <PricingManager workspaceSlug="feedl" workspaceId={landingWorkspaceId} />
         </div>
 
         <p className="mt-6 text-center text-muted-foreground">

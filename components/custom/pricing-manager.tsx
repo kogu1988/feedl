@@ -13,6 +13,7 @@ import {
   PRO_PLAN,
   PRO_TRIAL_DAYS,
 } from "@/components/custom/plan-config";
+import { pollProActivation } from "@/components/custom/billing-activation";
 
 // Sprint 49/52 (Faz 5) — public /pricing. Free vs Pro karşılaştırma tablosu;
 // "Pro'ya Geç" Paddle.js sandbox/live overlay checkout'u açar (webhook
@@ -60,9 +61,12 @@ function FeatureList({ items }: { items: string[] }) {
 
 export function PricingManager({
   workspaceSlug,
+  workspaceId,
   paddleCustomerId,
 }: {
   workspaceSlug: string;
+  // P0-2: immutable workspace UUID — billing identity (slug değişebilir).
+  workspaceId?: string | null;
   paddleCustomerId?: string | null;
 }) {
   const [paddle, setPaddle] = useState<Paddle | undefined>();
@@ -81,8 +85,7 @@ export function PricingManager({
       ...(paddleCustomerId ? { pwCustomer: { id: paddleCustomerId } } : {}),
       eventCallback: (event) => {
         if (event.name === "checkout.completed") {
-          setInfo("Ödeme tamamlandı, sayfa yenileniyor…");
-          window.setTimeout(() => window.location.reload(), 2500);
+          void handleCheckoutCompleted();
         } else if (event.name === "checkout.closed") {
           setError("Ödeme tamamlanmadı. Tekrar deneyebilirsin.");
         }
@@ -91,6 +94,21 @@ export function PricingManager({
       .then((p) => setPaddle(p))
       .catch(() => setError("Paddle yüklenemedi."));
   }, []);
+
+  // P0-1: checkout.completed → webhook'u bekle, Pro aktif olunca yenile.
+  async function handleCheckoutCompleted() {
+    setError(null);
+    setInfo("Ödemeniz alındı, Pro aktivasyonu doğrulanıyor…");
+    const res = await pollProActivation();
+    if (res.activated) {
+      setInfo("Pro aktif! Sayfa yenileniyor…");
+      window.setTimeout(() => window.location.reload(), 1200);
+    } else if (res.timeout) {
+      setInfo("Ödemeniz alındı. Aktivasyon birazdan tamamlanır — sayfayı yenileyebilirsin.");
+    } else {
+      setInfo("Ödeme alındı. Aktivasyon durumu doğrulanamadı; sayfayı yenile.");
+    }
+  }
 
   function openProCheckout() {
     setError(null);
@@ -109,7 +127,11 @@ export function PricingManager({
           quantity: 1,
         },
       ],
-      customData: { slug: workspaceSlug },
+      // P0-2: checkout'a immutable workspace_id geç (varsa); slug fallback olarak kalır.
+      customData: {
+        ...(workspaceId ? { workspace_id: workspaceId } : {}),
+        slug: workspaceSlug,
+      },
     });
   }
 

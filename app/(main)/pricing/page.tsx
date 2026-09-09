@@ -12,20 +12,23 @@ export const dynamic = "force-dynamic";
 
 export default async function PricingPage() {
   let slug = "feedl";
+  let workspaceId: string | null = null;
   let paddleCustomerId: string | null = null;
   try {
-    const workspaceId = await getWorkspaceId();
+    const resolvedId = await getWorkspaceId();
     const [row] = await getDb()
       .select({ slug: workspaces.slug, paddleCustomerId: workspaces.paddleCustomerId })
       .from(workspaces)
-      .where(eq(workspaces.id, workspaceId))
+      .where(eq(workspaces.id, resolvedId))
       .limit(1);
     if (row?.slug) slug = row.slug;
+    // P0-2: immutable workspace UUID — billing checkpoint'e gider (slug DEĞİL).
+    workspaceId = resolvedId;
     // Sprint 64 (Paddle Retain): giriş yapmış Pro workspace owner'ının müşteri
     // ID'si — anonim/ücretsizde null olur.
     paddleCustomerId = row?.paddleCustomerId ?? null;
   } catch (err) {
-    console.error("PricingPage workspace slug fallback:", err instanceof Error ? err.message : err);
+    console.error("PricingPage workspace fallback:", err instanceof Error ? err.message : err);
   }
 
   return (
@@ -41,7 +44,7 @@ export default async function PricingPage() {
       </div>
 
       <div className="mt-10">
-        <PricingManager workspaceSlug={slug} paddleCustomerId={paddleCustomerId} />
+        <PricingManager workspaceSlug={slug} workspaceId={workspaceId} paddleCustomerId={paddleCustomerId} />
       </div>
 
       <p className="mt-10 text-xs text-muted-foreground">

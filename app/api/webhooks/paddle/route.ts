@@ -6,26 +6,41 @@ import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { workspaces } from "@/lib/db/schema";
 import { PADDLE_ENV, derivePlanFromStatus, verifyPaddleWebhook, fetchCustomerEmail } from "@/lib/paddle";
-import {
-  grantedAccess,
-  upsertCustomer,
-  upsertSubscription,
-} from "@/lib/db/paddle-fulfillment";
+import { upsertCustomer, upsertSubscription } from "@/lib/db/paddle-fulfillment";
 
 // Sprint 48h/64 — Paddle webhook. SDK `webhooks.unmarshal` ile imza doğrulanır
 // (raw body, JSON.parse ÖNCEDEN YAPILMAZ). subscription.activated/canceled →
 // plan senkron + `customers`/`subscriptions` aynalanır (idempotent upsert).
-// `custom_data.slug` üzerinden workspace eşleştirilir. Diğer tipler güvenle yoksayılır.
-// Guardrail: canlı entity silinmez; yalnız upsert (ekleme/güncelleme).
+// Workspace eşleştirme `custom_data.workspace_id` (immutable UUID) üzerinden
+// yapılır; eski checkout'lar için `custom_data.slug` fallback kalır. Diğer
+// tipler güvenle yoksayılır. Guardrail: canlı entity silinmez; yalnız upsert.
 
-// Event'ten workspaceId çözer (custom_data.slug → workspace slug) + plan senkron.
-async function resolveWorkspaceBySlug(slug: string): Promise<string | null> {
-  const [row] = await getDb()
-    .select({ id: workspaces.id })
-    .from(workspaces)
-    .where(eq(workspaces.slug, slug))
-    .limit(1);
-  return row?.id ?? null;
+// Event'ten workspaceId çözer. Öncelik Custom Data'daki immutable `workspace_id`
+// (UUID); o yoksa eski `slug` fallback (geriye dönük uyum). Slug kullanıcıya
+// dönük/değişebilir olduğundan billing identity olarak UUID tercih edilir.
+async function resolveWorkspaceId(input: {
+  workspaceId?: string | null;
+  slug?: string | null;
+}): Promise<string | null> {
+  // 1) Immutable workspace UUID (P0-2 — billing identity slug DEĞİL).
+  if (input.workspaceId) {
+    const [byId] = await getDb()
+      .select({ id: workspaces.id })
+      .from(workspaces)
+      .where(eq(workspaces.id, input.workspaceId))
+      .limit(1);
+    if (byId) return byId.id;
+  }
+  // 2) Slug fallback (eski checkout'lar).
+  if (input.slug) {
+    const [bySlug] = await getDb()
+      .select({ id: workspaces.id })
+      .from(workspaces)
+      .where(eq(workspaces.slug, input.slug))
+      .limit(1);
+    if (bySlug) return bySlug.id;
+  }
+  return null;
 }
 
 export async function POST(req: Request) {
@@ -56,8 +71,10 @@ export async function POST(req: Request) {
     }
     const { eventType, data } = verified;
 
-    const customData = (data.custom_data as { slug?: string } | undefined) ?? {};
+    const customData =
+      (data.custom_data as { slug?: string; workspace_id?: string } | undefined) ?? {};
     const slug = customData.slug ?? "";
+    const rawWorkspaceId = customData.workspace_id ?? "";
     const subscriptionStatus = (data.status as string | undefined) ?? "";
     const subscriptionId =
       (data.id as string | undefined) ?? (data.subscription_id as string | undefined) ?? "";
@@ -88,7 +105,10 @@ export async function POST(req: Request) {
       ? new Date(scheduledChange.effective_at as string)
       : null;
 
-    const workspaceId = slug ? await resolveWorkspaceBySlug(slug) : null;
+    const workspaceId = await resolveWorkspaceId({
+      workspaceId: rawWorkspaceId || null,
+      slug: slug || null,
+    });
 
     // subscription.* event'leri email taşımaz; eksikse Paddle API'den doldur.
     if (!email && customerId && eventType.startsWith("subscription.")) {
@@ -114,7 +134,8 @@ export async function POST(req: Request) {
         workspaceId,
       });
 
-      if (slug) {
+      // Plan senkronu — workspace'i UUID ile güncelle (immutable identity).
+      if (workspaceId) {
         const plan = derivePlanFromStatus(subscriptionStatus);
         if (plan) {
           await getDb()
@@ -126,7 +147,7 @@ export async function POST(req: Request) {
               ...(customerId ? { paddleCustomerId: customerId } : {}),
               updatedAt: new Date(),
             })
-            .where(eq(workspaces.slug, slug));
+            .where(eq(workspaces.id, workspaceId));
         } else {
           // Bilinmeyen durum — kimlikler yine saklanır, plan değişmez.
           await getDb()
@@ -137,7 +158,7 @@ export async function POST(req: Request) {
               ...(customerId ? { paddleCustomerId: customerId } : {}),
               updatedAt: new Date(),
             })
-            .where(eq(workspaces.slug, slug));
+            .where(eq(workspaces.id, workspaceId));
         }
       }
     }

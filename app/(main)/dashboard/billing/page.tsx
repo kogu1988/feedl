@@ -50,6 +50,7 @@ export default async function BillingPage() {
           paddleSubscriptionId={data.paddleSubscriptionId}
           paddleSubscriptionStatus={data.paddleSubscriptionStatus}
           workspaceSlug={data.slug}
+          workspaceId={data.id}
           pricing={{
             monthlyPriceId:
               process.env.NEXT_PUBLIC_PADDLE_PRO_MONTHLY_PRICE_ID ?? "",
@@ -67,6 +68,7 @@ async function loadWorkspace() {
   const workspaceId = await getWorkspaceId();
   const [row] = await getDb()
     .select({
+      id: workspaces.id,
       plan: workspaces.plan,
       paddleSubscriptionId: workspaces.paddleSubscriptionId,
       paddleCustomerId: workspaces.paddleCustomerId,
