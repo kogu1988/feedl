@@ -24,10 +24,7 @@ import { getRole } from "@/lib/auth/admin";
 import { getWorkspaceId, isShowcaseRequest } from "@/lib/db/workspace";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { IdeaCard } from "@/components/custom/idea-card";
-import { StatusBadge } from "@/components/custom/status-badge";
-import { TypeBadge } from "@/components/custom/type-badge";
-import { SentimentBadge } from "@/components/custom/sentiment-badge";
+import { HeroDemoCard } from "@/components/custom/hero-demo-card";
 import { PricingManager } from "@/components/custom/pricing-manager";
 import { generateCanonical, ogImage } from "@/lib/seo";
 
@@ -301,28 +298,10 @@ export default async function RootPage() {
         </div>
 
         <div aria-hidden="true" className="hero-rise" style={{ animationDelay: "180ms" }}>
-          {/* F5: mock kart — DemoPostCard yerine tek kaynak IdeaCard (link'siz, aria-hidden). */}
-          <IdeaCard
-            title="Karanlık mod desteği"
-            ariaHidden
-            badges={
-              <>
-                <StatusBadge status="shipped" />
-                <TypeBadge type="feature" />
-                <SentimentBadge sentiment="pozitif" />
-              </>
-            }
-            date="31 Ağustos 2026"
-            tags={
-              <>
-                <Badge className="border-border bg-muted text-muted-foreground">#karanlıkmod</Badge>
-                <Badge className="border-border bg-muted text-muted-foreground">#tema</Badge>
-              </>
-            }
-            description="Gözleri çok yoran açık temaya alternatif olarak karanlık mod istiyoruz. Ayarlardan açılıp kapatılabilse iyi olur."
-            voteCount={128}
-            commentCount={32}
-          />
+          {/* F5: mock kart — DemoPostCard yerine tek kaynak IdeaCard (link'siz,
+              aria-hidden). frontend-design: tek orkestralı "yeni oy geldi" pop'u
+              HeroDemoCard'da (128→129, ölçülü; reduced-motion'da statik). */}
+          <HeroDemoCard />
         </div>
       </section>
 
