@@ -88,7 +88,7 @@ export function PricingManager({
           </div>
           <div className="mt-4 flex items-baseline gap-1">
             <span className="text-4xl font-bold tracking-tight">$0</span>
-            <span className="text-sm text-muted-foreground">sonsuza dek</span>
+            <span className="text-sm text-muted-foreground">şimdilik ücretsiz</span>
           </div>
           <FeatureList items={freeFeatures} />
           <div className="mt-auto pt-6">

@@ -33,7 +33,7 @@ const DIFFERENCES = [
   { title: "AI her içgörüde", text: "Otomatik etiket, özet, duygu ve benzerlik; tahminle değil veriyle karar ver." },
   { title: "Gelir bağlamı", text: "Oy + müşteri + açık fırsat (MRR) ile gerçekten değerli isteği üste taşı." },
   { title: "Ekip başı fiyat", text: "Kullanıcı başına değil ekip başına — küçük ekipte öngörülebilir maliyet." },
-  { title: "Hosted, kurulum yok", text: "İki dakikada yayına al; veri/auth altyapısından bizi ilgilendirme." },
+  { title: "Hosted, kurulum yok", text: "Birkaç dakikada yayına al; veri/auth altyapısından bizi ilgilendirme." },
 ];
 
 const FAQ = [
@@ -170,7 +170,7 @@ export default function CannyAlternativePage() {
           <div className="flex h-full flex-col rounded-2xl border bg-card p-6">
             <p className="text-lg font-semibold">Free</p>
             <p className="mt-2 text-4xl font-bold tracking-tight">$0</p>
-            <p className="mt-1 text-sm text-muted-foreground">sonsuza dek — küçük ekipler için</p>
+            <p className="mt-1 text-sm text-muted-foreground">şimdilik ücretsiz — küçük ekipler için</p>
             <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
               <li>1 board · 1 üye · 50 takipçi</li>
               <li>Fikir + oy + yorum</li>

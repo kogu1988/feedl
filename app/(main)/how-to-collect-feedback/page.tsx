@@ -112,7 +112,7 @@ export default function HowToCollectFeedbackPage() {
 
       {/* Kapanış CTA */}
       <section className="mx-auto mt-16 max-w-3xl rounded-2xl border bg-brand-soft p-8 text-center">
-        <h2 className="text-2xl font-bold tracking-tight">İlk fikri 2 dakikada topla</h2>
+        <h2 className="text-2xl font-bold tracking-tight">İlk fikri birkaç dakikada topla</h2>
         <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
           Kurulum yok, ücret yok. Bugün ücretsiz başla, müşteri isteklerini veriyle
           önceliklendir.

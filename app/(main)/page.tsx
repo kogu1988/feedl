@@ -156,7 +156,7 @@ export default async function RootPage() {
     {
       title: "Ekip & Rol Yönetimi",
       description:
-        "Sahip, admin, katkıcı rolleriyle ekibin doğru kişiyi doğru işe yönlendirir; iç notlar gizli kalır.",
+        "Sahip, yönetici, katkıcı ve üye rolleriyle ekibin doğru kişiyi doğru işe yönlendirir; iç notlar gizli kalır.",
       icon: UsersIcon,
       plan: "free",
     },
@@ -274,8 +274,8 @@ export default async function RootPage() {
             style={{ animationDelay: "60ms" }}
           >
             Fikirleri toplamak, oylamak ve AI ile analiz etmek için tek
-            platform. Canny&apos;ye ücretsiz bir alternatif — ürününü müşteri
-            sesiyle şekillendir.
+            platform. Canny&apos;nin ücretsiz planına bir alternatif — ürününü
+            müşteri sesiyle şekillendir.
           </p>
           <div
             className="hero-rise mt-8 flex flex-wrap items-center gap-3"
