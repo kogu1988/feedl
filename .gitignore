@@ -72,3 +72,6 @@ next-env.d.ts
 /docs/design_report.md
 /.agents/skills/feedl/code_architect_skill.md
 /.agents/skills/feedl/design_architect_skill.md
+
+# contextcheck tool artifacts
+.contextcheck/

@@ -1,19 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { initializePaddle, type Paddle } from "@paddle/paddle-js";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  getPlanEnv,
-  PRO_PLAN,
-  PRO_TRIAL_DAYS,
-} from "@/components/custom/plan-config";
-import { pollProActivation } from "@/components/custom/billing-activation";
+import { PRO_PLAN, PRO_TRIAL_DAYS } from "@/components/custom/plan-config";
+import { useCheckout } from "@/components/custom/use-checkout";
+import { CheckoutStatusBanner } from "@/components/custom/checkout-status";
 
 // Sprint 49/52 (Faz 5) — public /pricing. Free vs Pro karşılaştırma tablosu;
 // "Pro'ya Geç" Paddle.js sandbox/live overlay checkout'u açar (webhook
@@ -22,9 +18,6 @@ import { pollProActivation } from "@/components/custom/billing-activation";
 // Aylık/yıllık switch Pro kartının içindedir, varsayılan YILLIK; yıllıkta
 // PRO_PLAN.yearlyMonthlyPrice, aylıkta PRO_PLAN.monthlyPrice. Butonlar kart
 // içi altta aynı hizada (flex-col + mt-auto), hepsi Button komponenti.
-
-const env = getPlanEnv();
-const clientToken = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN ?? "";
 
 const freeFeatures = [
   "1 board · 1 üye · 50 takipçi",
@@ -69,70 +62,18 @@ export function PricingManager({
   workspaceId?: string | null;
   paddleCustomerId?: string | null;
 }) {
-  const [paddle, setPaddle] = useState<Paddle | undefined>();
-  const [error, setError] = useState<string | null>(null);
-  const [info, setInfo] = useState<string | null>(null);
   // Varsayılan: yıllık seçili.
   const [annual, setAnnual] = useState(true);
-
-  useEffect(() => {
-    if (!clientToken) return;
-    initializePaddle({
-      environment: env === "sandbox" ? "sandbox" : undefined,
-      token: clientToken,
-      // Sprint 64 (Paddle Retain): giriş yapmış kullanıcının Paddle customer
-      // ID'sini ilet — antialtı/inceleme desteği için. Anonimde yoksa undefined.
-      ...(paddleCustomerId ? { pwCustomer: { id: paddleCustomerId } } : {}),
-      eventCallback: (event) => {
-        if (event.name === "checkout.completed") {
-          void handleCheckoutCompleted();
-        } else if (event.name === "checkout.closed") {
-          setError("Ödeme tamamlanmadı. Tekrar deneyebilirsin.");
-        }
-      },
-    })
-      .then((p) => setPaddle(p))
-      .catch(() => setError("Paddle yüklenemedi."));
-  }, []);
-
-  // P0-1: checkout.completed → webhook'u bekle, Pro aktif olunca yenile.
-  async function handleCheckoutCompleted() {
-    setError(null);
-    setInfo("Ödemeniz alındı, Pro aktivasyonu doğrulanıyor…");
-    const res = await pollProActivation();
-    if (res.activated) {
-      setInfo("Pro aktif! Sayfa yenileniyor…");
-      window.setTimeout(() => window.location.reload(), 1200);
-    } else if (res.timeout) {
-      setInfo("Ödemeniz alındı. Aktivasyon birazdan tamamlanır — sayfayı yenileyebilirsin.");
-    } else {
-      setInfo("Ödeme alındı. Aktivasyon durumu doğrulanamadı; sayfayı yenile.");
-    }
-  }
+  // Sprint 64: Paddle OVERLAY (default) — v1.6.5 INLINE stabil değil
+  // (frameTarget string→"appendChild" undefined, element→JSON circular).
+  const { openCheckout, status } = useCheckout({
+    paddleCustomerId,
+    workspaceId,
+    workspaceSlug,
+  });
 
   function openProCheckout() {
-    setError(null);
-    if (!paddle) {
-      setError("Paddle hazır değil, tekrar dene.");
-      return;
-    }
-    // Sprint 64: Paddle v1.6.5 INLINE stabil değil (frameTarget string →
-    // "appendChild" undefined, element → JSON circular). Güvenilir yol: OVERLAY
-    // (Paddle default) — kullanıcı gerçek ödemeyi burada test edebilir.
-    setInfo("Ödeme kutusu yükleniyor…");
-    paddle.Checkout.open({
-      items: [
-        {
-          priceId: annual ? PRO_PLAN.yearlyPriceId : PRO_PLAN.monthlyPriceId,
-          quantity: 1,
-        },
-      ],
-      // P0-2: checkout'a immutable workspace_id geç (varsa); slug fallback olarak kalır.
-      customData: {
-        ...(workspaceId ? { workspace_id: workspaceId } : {}),
-        slug: workspaceSlug,
-      },
-    });
+    openCheckout(annual ? PRO_PLAN.yearlyPriceId : PRO_PLAN.monthlyPriceId);
   }
 
   const proPrice = annual ? PRO_PLAN.yearlyMonthlyPrice : PRO_PLAN.monthlyPrice;
@@ -228,8 +169,7 @@ export function PricingManager({
         </div>
       </div>
 
-      {error && <p className="text-center text-sm text-destructive">{error}</p>}
-      {info && <p className="text-center text-sm text-emerald-700 dark:text-emerald-300">{info}</p>}
+      <CheckoutStatusBanner status={status} />
     </div>
   );
 }
