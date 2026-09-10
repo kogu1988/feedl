@@ -31,7 +31,6 @@
   "use strict";
 
   if (window.__feedlWidgetLoaded) return;
-  window.__feedlWidgetLoaded = true;
 
   var currentScript =
     document.currentScript ||
@@ -69,6 +68,11 @@
   } catch {
     return;
   }
+
+  // Idempotans bayrağı, doğrulama GEÇTİKTEN sonra set edilir: eksik/geçersiz
+  // yapılandırmayla çıkan bir çalıştırma (ör. `data-feedl-url` henüz gelmedi)
+  // sonraki denemeleri kalıcı olarak engellemesin.
+  window.__feedlWidgetLoaded = true;
 
   var token = attr("data-token") || globalCfg.token || null;
   var buttonText = attr("data-button-text") || globalCfg.buttonText || "Geri bildirim";
@@ -195,6 +199,22 @@
   style.textContent = CSS;
   document.head.appendChild(style);
 
+  // Gövdeye ekleme: script `<head>`'e konulduğunda (ör. `<script async>` veya
+  // Next.js'in async script'i head'e taşıması) bu noktada `document.body` henüz
+  // YOKTUR — doğrudan appendChild TypeError atar ve widget hiç görünmez. Bu
+  // yüzden body hazır değilse DOMContentLoaded'a kadar beklenir.
+  function mount(el) {
+    if (document.body) {
+      document.body.appendChild(el);
+      return;
+    }
+    document.addEventListener(
+      "DOMContentLoaded",
+      function () { document.body.appendChild(el); },
+      { once: true },
+    );
+  }
+
   var launcher = document.createElement("button");
   launcher.type = "button";
   launcher.className = "feedl-widget-launcher";
@@ -234,8 +254,8 @@
   panel.appendChild(closeBtn);
   panel.appendChild(iframe);
   overlay.appendChild(panel);
-  document.body.appendChild(launcher);
-  document.body.appendChild(overlay);
+  mount(launcher);
+  mount(overlay);
 
   // Panel ve kapat butonu çözümlenen temaya uyar (auto: işletim sistemi
   // tercihini izler, tercih değişirse anında güncellenir).
@@ -325,8 +345,8 @@
   var vfHint = document.createElement("div");
   vfHint.className = "feedl-vf-hint";
   vfHint.textContent = "Sorunlu noktayı tıkla — ekran görüntüsü ve bağlam otomatik eklenir.";
-  document.body.appendChild(vfLayer);
-  document.body.appendChild(vfHint);
+  mount(vfLayer);
+  mount(vfHint);
   vfHint.hidden = true;
 
   var vfPin = null;
