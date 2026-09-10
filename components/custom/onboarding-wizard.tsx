@@ -77,7 +77,7 @@ export function OnboardingWizard() {
 
   const nextSteps = [
     { label: "İlk feedback panosunu düzenle", href: "/dashboard/boards" },
-    { label: "Bir entegrasyon bağla (Linear / Jira / Slack)", href: "/dashboard/settings" },
+    { label: "Bir entegrasyon bağla (Linear / Jira / Slack)", href: "/dashboard/integrations" },
     { label: "Ekibini davet et", href: "/dashboard/members" },
     { label: "Widget'ı kur", href: "/dashboard/widget" },
   ];

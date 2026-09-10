@@ -4,6 +4,7 @@ import { NonRetriableError } from "inngest";
 import { planFromString } from "@/lib/paddle";
 
 import { analyzeIdea, compareIdeas, normalizeTags } from "@/lib/ai/analysis";
+import { buildLearnedContext } from "@/lib/ai/prompts";
 import { analyzeCorpus } from "@/lib/ai/insights";
 import { embedText } from "@/lib/ai/openrouter";
 import { sendEmails } from "@/lib/email/send";
@@ -27,6 +28,7 @@ import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import {
   aiSuggestions,
+  aiTriageSignals,
   boards,
   changelogEntries,
   changelogSubscribers,
@@ -179,6 +181,7 @@ export const aiAutopilot = inngest.createFunction(
       const [post] = await getDb()
         .select({
           boardId: posts.boardId,
+          workspaceId: posts.workspaceId,
           deviceType: posts.deviceType,
           viewportWidth: posts.viewportWidth,
           viewportHeight: posts.viewportHeight,
@@ -188,7 +191,9 @@ export const aiAutopilot = inngest.createFunction(
         .from(posts)
         .where(eq(posts.id, payload.postId))
         .limit(1);
-      if (!post) return { boardName: undefined, technical: undefined };
+      if (!post) {
+        return { boardName: undefined, technical: undefined, learned: undefined };
+      }
       let boardName: string | undefined;
       if (post.boardId) {
         const [board] = await getDb()
@@ -205,15 +210,43 @@ export const aiAutopilot = inngest.createFunction(
       }
       if (post.browser) parts.push(`tarayıcı: ${post.browser}`);
       if (post.os) parts.push(`OS: ${post.os}`);
+
+      // Faz 3: workspace'in son triage sinyalleri (ilgisiz / tür düzeltmesi) →
+      // prompt bağlamı. En yeni 8 sinyal, post başlığıyla birlikte.
+      const signalRows = await getDb()
+        .select({
+          kind: aiTriageSignals.kind,
+          aiValue: aiTriageSignals.aiValue,
+          correctValue: aiTriageSignals.correctValue,
+          title: posts.title,
+        })
+        .from(aiTriageSignals)
+        .innerJoin(posts, eq(posts.id, aiTriageSignals.postId))
+        .where(eq(aiTriageSignals.workspaceId, post.workspaceId))
+        .orderBy(desc(aiTriageSignals.createdAt))
+        .limit(8);
+      const learned = buildLearnedContext(
+        signalRows.map((s) => ({
+          kind: s.kind === "type_corrected" ? "type_corrected" : "not_relevant",
+          title: s.title,
+          aiValue: s.aiValue,
+          correctValue: s.correctValue,
+        })),
+      );
       return {
         boardName,
         technical: parts.length > 0 ? parts.join(" · ") : undefined,
+        learned: learned || undefined,
       };
     });
     const analysis = await step.run("analyze-idea", async () =>
       analyzeIdea(
         { title: payload.title, description: payload.description },
-        { boardName: aiContext.boardName, technical: aiContext.technical },
+        {
+          boardName: aiContext.boardName,
+          technical: aiContext.technical,
+          learned: aiContext.learned,
+        },
       ),
     );
 

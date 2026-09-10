@@ -8,6 +8,7 @@ import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import {
+  aiTriageSignals,
   boards,
   comments,
   postStatusEnum,
@@ -47,6 +48,8 @@ const patchSchema = z
     effort: z.number().int().min(1).max(3).nullable().optional(),
     // Sprint 48d: fikri başka board'a taşıma. Board kimlikleri UUID'dir.
     boardId: z.uuid("Geçersiz board.").nullable().optional(),
+    // Faz 3 (AI öğrenme): admin "ilgisiz" işaretler (null → kaldır).
+    triageLabel: z.enum(["not_relevant"]).nullable().optional(),
   })
   .refine(
     (data) =>
@@ -153,6 +156,7 @@ export async function PATCH(req: Request) {
         id: posts.id,
         status: posts.status,
         postType: posts.postType,
+        triageLabel: posts.triageLabel,
       })
       .from(posts)
       .where(
@@ -211,6 +215,9 @@ export async function PATCH(req: Request) {
     const typeChanged =
       parsed.data.postType !== undefined &&
       parsed.data.postType !== existing.postType;
+    const triageChanged =
+      parsed.data.triageLabel !== undefined &&
+      parsed.data.triageLabel !== existing.triageLabel;
 
     const [updated] = await getDb()
       .update(posts)
@@ -237,6 +244,9 @@ export async function PATCH(req: Request) {
         ...(parsed.data.boardId !== undefined
           ? { boardId: parsed.data.boardId }
           : {}),
+        ...(parsed.data.triageLabel !== undefined
+          ? { triageLabel: parsed.data.triageLabel }
+          : {}),
         updatedAt: new Date(),
       })
       .where(eq(posts.id, parsed.data.postId))
@@ -245,6 +255,7 @@ export async function PATCH(req: Request) {
         title: posts.title,
         status: posts.status,
         postType: posts.postType,
+        triageLabel: posts.triageLabel,
         updatedAt: posts.updatedAt,
       });
 
@@ -327,6 +338,64 @@ export async function PATCH(req: Request) {
           noteErr instanceof Error ? noteErr.message : noteErr,
         );
       }
+    }
+
+    // Faz 3 (AI öğrenme): sinyalleri kaydet (best-effort). İki tür:
+    //  - triageLabel: admin "ilgisiz" işaretledi/kaldırdı.
+    //  - typeChanged: admin AI'nın türünü düzeltti ("less like this").
+    // Sinyaller autopilot'un prompt bağlamını besler (workspace-scoped).
+    try {
+      if (triageChanged) {
+        if (parsed.data.triageLabel === "not_relevant") {
+          await getDb()
+            .insert(aiTriageSignals)
+            .values({
+              workspaceId: await getWorkspaceId(),
+              postId: updated.id,
+              kind: "not_relevant",
+              createdBy: adminId,
+            })
+            .onConflictDoUpdate({
+              target: [aiTriageSignals.postId, aiTriageSignals.kind],
+              set: { createdAt: new Date(), createdBy: adminId },
+            });
+        } else {
+          await getDb()
+            .delete(aiTriageSignals)
+            .where(
+              and(
+                eq(aiTriageSignals.postId, updated.id),
+                eq(aiTriageSignals.kind, "not_relevant"),
+              ),
+            );
+        }
+      }
+      if (typeChanged && existing.postType) {
+        await getDb()
+          .insert(aiTriageSignals)
+          .values({
+            workspaceId: await getWorkspaceId(),
+            postId: updated.id,
+            kind: "type_corrected",
+            aiValue: existing.postType,
+            correctValue: updated.postType ?? null,
+            createdBy: adminId,
+          })
+          .onConflictDoUpdate({
+            target: [aiTriageSignals.postId, aiTriageSignals.kind],
+            set: {
+              aiValue: existing.postType,
+              correctValue: updated.postType ?? null,
+              createdAt: new Date(),
+              createdBy: adminId,
+            },
+          });
+      }
+    } catch (signalErr) {
+      console.error(
+        "ai triage signal could not be saved:",
+        signalErr instanceof Error ? signalErr.message : signalErr,
+      );
     }
 
     return NextResponse.json({ success: true, data: updated });

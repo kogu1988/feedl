@@ -24,6 +24,7 @@ import { CommentCountBadge } from "@/components/custom/comment-count-badge";
 import { ClerkTriggerButton } from "@/components/custom/clerk-trigger-button";
 import { KeywordChips } from "@/components/custom/keyword-chips";
 import { MergeControls } from "@/components/custom/merge-controls";
+import { TriageControls } from "@/components/custom/triage-controls";
 import {
   OpportunityLinkControls,
   type LinkableOpportunity,
@@ -566,6 +567,10 @@ export default async function PostDetailPage({
           ) : null}
 
           {isAdmin ? (
+            <TriageControls postId={post.id} triageLabel={post.triageLabel} />
+          ) : null}
+
+          {isAdmin ? (
             <MergeControls postId={post.id} mergedInto={mergedInto} />
           ) : null}
 
@@ -642,6 +647,8 @@ async function loadPost(postId: string, userId: string | null) {
       screenshotUrl: posts.screenshotUrl,
       pinX: posts.pinX,
       pinY: posts.pinY,
+      // Faz 3: AI triage işareti (admin "ilgisiz").
+      triageLabel: posts.triageLabel,
       createdAt: posts.createdAt,
       voteCount: count(votes.id),
     })

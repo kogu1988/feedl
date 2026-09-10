@@ -136,6 +136,9 @@ export const posts = pgTable(
     pinX: real("pin_x"),
     pinY: real("pin_y"),
     screenshotUrl: text("screenshot_url"),
+    // Faz 3 (AI öğrenme): admin "ilgisiz" işaretlediyse 'not_relevant'; AI
+    // eğitim sinyalleri ai_triage_signals'ta tutulur (denormalize kolon).
+    triageLabel: varchar("triage_label", { length: 20 }),
     // Sprint 27: Türkçe full-text arama kolonu (GENERATED ALWAYS STORED).
     // İki-argümanlı to_tsvector('turkish', ...) immutable olduğu için
     // generated kolonda kullanılabilir.
@@ -949,6 +952,49 @@ export const widgetOrigins = pgTable(
 
 export type WidgetOrigin = typeof widgetOrigins.$inferSelect;
 export type NewWidgetOrigin = typeof widgetOrigins.$inferInsert;
+
+// Faz 3 (AI öğrenme) — workspace-scoped triage sinyalleri. Admin "ilgisiz"
+// işaretlediğinde (kind='not_relevant') ya da AI'nın türünü düzelttiğinde
+// (kind='type_corrected') bir satır yazılır. Autopilot, yeni fikri
+// sınıflandırırken bu workspace'in son sinyallerini prompt bağlamına katar
+// (Feedly "mute / less like this" muadili). Post başına tür başına tek satır
+// (unique) — düzeltme üzerine yazılır; işaret kaldırılınca silinir.
+export const aiTriageSignals = pgTable(
+  "ai_triage_signals",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    postId: uuid("post_id")
+      .notNull()
+      .references(() => posts.id, { onDelete: "cascade" }),
+    // not_relevant | type_corrected
+    kind: varchar("kind", { length: 20 }).notNull(),
+    // AI'nın verdiği değer (ör. postType) / admin'in doğru değeri.
+    aiValue: varchar("ai_value", { length: 40 }),
+    correctValue: varchar("correct_value", { length: 40 }),
+    createdBy: text("created_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("ai_triage_signals_post_kind_key").on(
+      table.postId,
+      table.kind,
+    ),
+    index("ai_triage_signals_workspace_created_idx").on(
+      table.workspaceId,
+      table.createdAt,
+    ),
+  ],
+);
+
+export type AiTriageSignal = typeof aiTriageSignals.$inferSelect;
+export type NewAiTriageSignal = typeof aiTriageSignals.$inferInsert;
 
 // companies: Sprint 30 — müşteri şirketleri (P3.1). MRR opsiyonel; Sprint 31
 // opportunities bu tabloya bağlanacak.

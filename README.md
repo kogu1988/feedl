@@ -55,6 +55,11 @@ planına bir alternatif — herkese açık bir topluluk portalı + gelir odaklı
 7. **Multi-tenant:** Her workspace kendi subdomain'i (`acme.feedl.app`), kendi
    markası (logo/renk/domain), kendi board'ları.
 8. **Public API + Webhook:** HMAC-SHA256 imzalı olaylar, anahtar erişimi.
+9. **Görsel geri bildirim & teknik bağlam:** Kullanıcı sayfada sorunlu noktayı
+işaretler (pin); cihaz/viewport/tarayıcı/OS otomatik eklenir, ekran görüntüsü
+alınır (private Blob). Adminde cihaz filtresi (Masaüstü/Tablet/Mobil).
+10. **AI triage öğrenmesi:** Admin bir fikri "ilgisiz" işaretler ya da AI'nın
+türünü düzeltir → workspace-scoped sinyaller sonraki sınıflandırmayı yönlendirir.
 
 ## Farklılaşma (neden feedl?)
 
@@ -146,7 +151,7 @@ npm run test:e2e  # Playwright + axe erişilebilirlik + auth akışı (çalışa
 
 | Katman | Sonuç | Kapsam |
 | :--- | :--- | :--- |
-| **Birim test** (`npm test`) | ✅ 28 dosya · **136 test geçti** | Saf mantık: renk/WCAG, sayfalama, CSV, şifreleme, rate-limit, Paddle imza+plan türetme, oy doğrulama, post-format, post-search, widget-origins, workspace-host çözümleme, AI içgörüleri, OpenRouter modelleri, e-posta teslimatı, api-keys, davet e-postası, widget gönderim modu, free-plan oy limiti |
+| **Birim test** (`npm test`) | ✅ 29 dosya · **141 test geçti** | Saf mantık: renk/WCAG, sayfalama, CSV, şifreleme, rate-limit, Paddle imza+plan türetme, oy doğrulama, post-format, post-search, widget-origins, workspace-host çözümleme, AI içgörüleri, OpenRouter modelleri, e-posta teslimatı, api-keys, davet e-postası, widget gönderim modu, free-plan oy limiti |
 | **Tenant izolasyonu** | ✅ `resolveWorkspaceByHost` öncelik (custom_domain > subdomain > varsayılan) + hata | `tests/lib/tenant-isolation.test.ts` |
 | **Paddle plan türetme** | ✅ `derivePlanFromStatus` (trialing/active→pro; canceled/past_due/dunned→free; unknown→null) | `tests/lib/paddle-plans.test.ts` |
 | **Merge/unmerge karar mantığı** | ✅ Şema doğrulama (uuid, self-merge) + reason→HTTP eşleme | `tests/lib/post-merge.test.ts` |

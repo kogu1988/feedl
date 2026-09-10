@@ -187,6 +187,8 @@
     ".feedl-widget-close:hover{background:#fff}",
     ".feedl-widget-iframe{width:100%;height:100%;border:0;display:block}",
     "@media (max-width:480px){.feedl-widget-launcher{right:12px;bottom:12px}",
+    ".feedl-vf-shot{right:12px;bottom:68px;padding:10px}",
+    ".feedl-vf-shot span{display:none}", // mobil: yalnız ikon (yer kazan)
     ".feedl-widget-overlay{padding:0}",
     ".feedl-widget-panel{width:100vw;height:100vh;height:100dvh;border-radius:0}}"
   ].join("");
