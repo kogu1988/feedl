@@ -8,18 +8,16 @@ import { getDb } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { getWorkspaceRole } from "@/lib/db/membership";
 
-// Rolun tek kaynağı DB'deki users.role (standarts.md; middleware sadece
-// giriş kontrolü yapar). Sprint 48c-2: workspace_members katmanı eklendi —
-// getRole önce workspace rolünü (owner/admin → "admin", member →
-// "customer") döner; membership yoksa global users.role'a düşer (geçiş
-// dönemi uyumluluğu). Sayfa ve API'ler bu yardımcıyla admin'i doğrular.
-//
-// Sprint 63+ (yetki matrisi — kullanıcı onayı): üç kademe —
-//   owner/admin → "admin"  (tam yönetim)
+// Dashboard yetkisinin TEK kaynağı workspace_members'tır (ROL AYRIMI
+// 2026-09-10). Roller:
+//   owner/admin → "admin"  (tam yönetim; owner en yetkili kademe)
 //   contributor  → "team"    (kısmi yönetim: ürün/fikir operasyonu)
 //   member       → "customer" (yalnız public portal)
-// "admin" içeren kontroller (`=== "admin"`) contributor'da yine false
-// döner — portal iç-not görünürlüğü ve kritik admin API'leri etkilenmez.
+// Üyelik yoksa yetki YOKTUR.
+//
+// `users.role='admin'` artık feedl PLATFORM personeli işaretidir (kendi iç
+// admin panelimiz için ayrılmıştır) ve workspace dashboard erişimi VERMEZ;
+// bkz. `isPlatformAdmin`.
 
 export type WorkspaceScope = "admin" | "team" | "customer" | null;
 
@@ -37,15 +35,7 @@ const fetchRole = cache(async (userId: string): Promise<WorkspaceScope> => {
   if (membershipRole === "member") {
     return "customer";
   }
-  // Geçiş dönemi: workspace_members'da yoksa global users.role (admin). Bu,
-  // eski admin hesaplarının hâlâ çalışmasını sağlar.
-  const [row] = await getDb()
-    .select({ role: users.role })
-    .from(users)
-    .where(eq(users.id, userId))
-    .limit(1);
-  if (row?.role === "admin") return "admin";
-  return row?.role === "customer" ? "customer" : null;
+  return null;
 });
 
 export async function getRole(userId: string): Promise<WorkspaceScope> {
@@ -95,4 +85,16 @@ export async function getNonAdminRedirectTarget(): Promise<string> {
   if (!userId) return "/portal";
   const role = await getRole(userId);
   return role === "team" ? "/dashboard" : "/portal";
+}
+
+// PLATFORM personeli mi (feedl ekibi)? `users.role='admin'` işareti workspace
+// yetkisinden AYRI tutulur: müşteri workspace'lerine erişim vermez, feedl'in
+// kendi iç admin paneli için ayrılmıştır.
+export async function isPlatformAdmin(userId: string): Promise<boolean> {
+  const [row] = await getDb()
+    .select({ role: users.role })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  return row?.role === "admin";
 }

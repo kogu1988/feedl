@@ -30,6 +30,7 @@ import { EmptyState } from "@/components/custom/empty-state";
 import { getTeamUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
+import { listWorkspaceTeam } from "@/lib/db/membership";
 import { loadOnboardingState } from "@/lib/db/onboarding";
 import { listBoards, resolveBoardBySlug } from "@/lib/db/board";
 import { loadCustomerCounts } from "@/lib/db/customer-counts";
@@ -876,10 +877,13 @@ async function loadPlannerData() {
     .orderBy(desc(posts.updatedAt))
     .limit(50);
 
-  const admins = await getDb()
-    .select({ id: users.id, name: users.name })
-    .from(users)
-    .where(eq(users.role, "admin"));
+  // Yol haritası "sorumlu" seçenekleri workspace EKİBİDİR (owner/admin/
+  // contributor) — platform personeli (`users.role='admin'`) değil.
+  const team = await listWorkspaceTeam(await getWorkspaceId());
+  const admins = team.map((member) => ({
+    id: member.userId,
+    name: member.name ?? member.userId,
+  }));
 
   return {
     rows: rows.map((row) => ({
@@ -892,10 +896,7 @@ async function loadPlannerData() {
       impact: row.impact,
       effort: row.effort,
     })),
-    admins: admins.map((admin) => ({
-      id: admin.id,
-      name: admin.name ?? admin.id,
-    })),
+    admins,
   };
 }
 

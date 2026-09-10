@@ -66,11 +66,11 @@ export const viewport = {
 // Hedef: feedl'i (SaaS) satın alacak şirket temsilcisi. Portal yüzeyleri son
 // kullanıcıya ait olduğundan "fikir verme / göz at" çağrıları yerine
 // "Ücretsiz Başla", "Canlı Demo", "Fiyatlandırma" CTA'ları var.
-// Giriş yapmışsa role'e göre dashboard/portal yönlendirmesi. Rolün tek kaynağı
-// Neon (Sprint 48c-2): önce workspace_members (owner/admin → admin) sonra
-// users.role fallback. `getRole` kullanılır — ham users.role sütunu, owner'ı
-// workspace'te yaşayan (Clerk webhook'undan gelen) hesaplarda yanlış → portal'a
-// düşürürdü (kullanıcı bildirdi: "admin giriş yaptı ama portal'a yönlendim").
+// Giriş yapmışsa role göre dashboard/portal yönlendirmesi. Rolün TEK kaynağı
+// workspace_members'tır (ROL AYRIMI 2026-09-10): owner/admin → "admin",
+// contributor → "team", member → "customer". Ham `users.role` sütunu
+// kullanılmaz — o sütun artık feedl PLATFORM personelini işaret eder ve
+// workspace yetkisi vermez.
 // Sprint 63 (rev.): onboarding'e YALNIZCA SaaS-funnel signup butonlarının
 // redirectUrl'u ile gidilir; burada admin→dashboard / diğer→portal kalır —
 // portal uç kullanıcısı onboarding'e hiç gönderilmez.

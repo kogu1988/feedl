@@ -1,12 +1,16 @@
-import { and, asc, count, eq } from "drizzle-orm";
+import { and, asc, count, eq, inArray } from "drizzle-orm";
 
 import { getDb } from "./index";
 import { getWorkspaceId } from "./workspace";
 import { users, workspaceMembers } from "./schema";
 
-// Sprint 48c-2 (madde 8): workspace rol matrisi. getAdminUserId bu
-// katmandan doğrular; geriye dönük uyumluluk için users.role='admin' de
-// kabul edilir (geçiş dönemi). Roller: owner | admin | member.
+// Sprint 48c-2 (madde 8): workspace rol matrisi. Roller: owner | admin |
+// member | contributor.
+//
+// ROL AYRIMI (2026-09-10, kullanıcı kararı): workspace yetkisinin TEK kaynağı
+// burasıdır (workspace_members). `users.role='admin'` artık feedl PLATFORM
+// personelini işaret eder (kendi iç admin panelimiz için ayrılmıştır) ve
+// workspace yetkisi VERMEZ. Dashboard'da en yetkili kademe owner'dır.
 
 export type WorkspaceMemberRole = "owner" | "admin" | "member" | "contributor";
 
@@ -26,20 +30,39 @@ export async function getWorkspaceRole(
   return row?.role ?? null;
 }
 
-// Bir kullanıcı bu workspace'teki en az bir rolü kapasitesine eşit veya
-// üstündeyse true. (owner/admin admin sayılır; member sayılmaz.)
+// Bir kullanıcı bu workspace'te yönetici mi? (owner/admin)
+// Platform personeli (`users.role='admin'`) workspace yetkisi KAZANMAZ —
+// yetki yalnız üyelikten gelir.
 export async function hasWorkspaceAdminAccess(
   userId: string,
 ): Promise<boolean> {
   const role = await getWorkspaceRole(userId);
-  if (role === "owner" || role === "admin") return true;
-  // Geriye dönük: users.role='admin' ise yine admin (geçiş dönemi).
-  const [userRow] = await getDb()
-    .select({ role: users.role })
-    .from(users)
-    .where(eq(users.id, userId))
-    .limit(1);
-  return userRow?.role === "admin";
+  return role === "owner" || role === "admin";
+}
+
+// Workspace ekibi (owner/admin/contributor) — portal son kullanıcıları
+// (member) hariç. Bildirim alıcıları ve yol haritası "sorumlu" seçimi bu
+// listeyi kullanır; açık workspaceId alır (Inngest/istek dışı bağlamlarda
+// getWorkspaceId() çözülemez).
+export async function listWorkspaceTeam(workspaceId: string) {
+  return getDb()
+    .select({
+      userId: workspaceMembers.userId,
+      role: workspaceMembers.role,
+      name: users.name,
+      email: users.email,
+      emailDigest: users.emailDigest,
+      unsubscribeToken: users.unsubscribeToken,
+    })
+    .from(workspaceMembers)
+    .innerJoin(users, eq(users.id, workspaceMembers.userId))
+    .where(
+      and(
+        eq(workspaceMembers.workspaceId, workspaceId),
+        inArray(workspaceMembers.role, ["owner", "admin", "contributor"]),
+      ),
+    )
+    .orderBy(asc(workspaceMembers.createdAt));
 }
 
 export async function listWorkspaceMembers() {

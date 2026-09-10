@@ -36,7 +36,9 @@ import {
 export * from "./schema/shared";
 
 // users: Clerk ile senkronize edilir (app/api/webhooks/clerk/route.ts).
-// id, Clerk user ID'sidir (tek kaynak: Neon users.role).
+// id, Clerk user ID'sidir. `role`: 'admin' = feedl PLATFORM personeli (kendi iç
+// panelimiz için ayrılmıştır); workspace yetkisi VERMEZ — dashboard erişimi
+// workspace_members'tan gelir (lib/db/membership.ts).
 export const users = pgTable("users", {
   id: text("id").primaryKey(),
   email: text("email").notNull(),
@@ -314,10 +316,10 @@ export const boards = pgTable("boards", {
 export type Board = typeof boards.$inferSelect;
 export type NewBoard = typeof boards.$inferInsert;
 
-// Sprint 48c-2 (madde 8): role matrix — workspace üyeleri. users.role
-// (admin/customer) global kalır; bu tablo workspace bağlamında owner /
-// admin / member rolleri taşır. getAdminUserId buradan doğrular (geriye
-// dönük: users.role=admin de kabul edilir, geçişte kırılma olmaz).
+// Sprint 48c-2 (madde 8): role matrix — workspace üyeleri. Workspace
+// yetkisinin TEK kaynağıdır (ROL AYRIMI 2026-09-10): owner / admin /
+// contributor / member. `users.role` artık platform personeli işaretidir ve
+// buraya fallback YAPILMAZ.
 
 
 export const workspaceMembers = pgTable("workspace_members", {

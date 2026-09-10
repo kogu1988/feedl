@@ -27,6 +27,7 @@ import {
 } from "@/lib/webhooks/delivery-log";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
+import { listWorkspaceTeam } from "@/lib/db/membership";
 import {
   aiSuggestions,
   aiTriageSignals,
@@ -486,13 +487,20 @@ export const notifyAdminNewPost = inngest.createFunction(
   async ({ event, step }) => {
     const payload: PostCreatedEvent = postCreatedEventSchema.parse(event.data);
 
-    // 1) Alıcılar (DB tek kaynak: users.role=admin) + yazar bilgisi.
-    //    Yazarın kendi e-postası admin listesinden çıkarılır.
-    const context = await step.run("fetch-admins-and-author", async () => {
-      const adminRows = await getDb()
-        .select({ email: users.email })
-        .from(users)
-        .where(eq(users.role, "admin"));
+    // 1) Alıcılar = workspace EKİBİ (owner/admin/contributor) + yazar bilgisi.
+    //    Platform personeli (`users.role='admin'`) bilinçli olarak dahil DEĞİL —
+    //    o işaret feedl iç paneli için ayrılmıştır ve müşteri bildirimi almaz.
+    //    Yazarın kendi e-postası listeden çıkarılır.
+    const context = await step.run("fetch-team-and-author", async () => {
+      const [post] = await getDb()
+        .select({ workspaceId: posts.workspaceId })
+        .from(posts)
+        .where(eq(posts.id, payload.postId))
+        .limit(1);
+
+      const team = post?.workspaceId
+        ? await listWorkspaceTeam(post.workspaceId)
+        : [];
 
       const [author] = await getDb()
         .select({ name: users.name, email: users.email })
@@ -501,7 +509,7 @@ export const notifyAdminNewPost = inngest.createFunction(
         .limit(1);
 
       return {
-        adminEmails: adminRows
+        adminEmails: team
           .map((row) => row.email)
           .filter((email) => email !== author?.email),
         authorName: author?.name ?? author?.email ?? "Bir üye",
@@ -1032,7 +1040,8 @@ export const corpusInsights = inngest.createFunction(
 //  · Sıklık: haftalık cron (Pazartesi 06:00 UTC = 09:00 TRT) + "yeni geri
 //    bildirim yoksa gönderme" eşiği (boş özet gürültüdür).
 //  · Teslimat: hem dashboard içgörü önbelleği tazelenir hem admin'lere e-posta.
-//  · Kime: users.role='admin' ve email_digest tercihi açık olanlar.
+//  · Kime: workspace ekibi (owner/admin/contributor) ve email_digest tercihi
+//    açık olanlar — platform personeli (`users.role='admin'`) dahil değil.
 // LLM maliyeti workspace başına haftada 1 korpus çağrısıdır; free plan hiç
 // çağrı üretmez (erken çıkış).
 export const weeklyDigest = inngest.createFunction(
@@ -1079,10 +1088,11 @@ export const weeklyDigest = inngest.createFunction(
               : eq(posts.workspaceId, ws.id),
           );
 
-        const recipients = await db
-          .select({ email: users.email, token: users.unsubscribeToken })
-          .from(users)
-          .where(and(eq(users.role, "admin"), eq(users.emailDigest, true)));
+        // Alıcılar: workspace EKİBİ (owner/admin/contributor) ve digest
+        // tercihi açık olanlar. Platform personeli dahil değil.
+        const recipients = (await listWorkspaceTeam(ws.id)).filter(
+          (member) => member.emailDigest,
+        );
 
         const plan = planFromString(ws.plan);
         const newPostCount = Number(newPosts);
@@ -1142,7 +1152,7 @@ export const weeklyDigest = inngest.createFunction(
               inboxUrl: `${appUrl}/dashboard/insights`,
               newPostCount,
               totalPostCount: Number(totalPosts),
-              unsubscribeUrl: `${appUrl}/api/unsubscribe?token=${recipient.token}&type=digest`,
+              unsubscribeUrl: `${appUrl}/api/unsubscribe?token=${recipient.unsubscribeToken}&type=digest`,
             });
             return {
               to: recipient.email,

@@ -91,36 +91,40 @@ export async function POST(req: Request) {
           });
 
         // Aynı kişi yeni bir Clerk kimliğiyle dönebilir (yeniden kayıt ya da
-        // farklı giriş sağlayıcı) → yeni satır "customer" açılır ve kişi sahibi
-        // olduğu workspace'in dashboard erişimini kaybederdi. Bu durumda, aynı
-        // DOĞRULANMIŞ e-postayla kayıtlı bir admin varsa rolü ve workspace
-        // üyeliklerini devral.
+        // farklı giriş sağlayıcı) → yeni satır "customer" açılır ve kişi
+        // workspace üyeliklerini (dolayısıyla dashboard erişimini) kaybederdi.
+        // Aynı DOĞRULANMIŞ e-postayla kayıtlı bir satır varsa üyelikleri
+        // devral; platform personeli işareti (users.role='admin') yalnız
+        // kardeş satırda da varsa taşınır.
         //
         // Yalnız `verification.status === "verified"` iken: aksi halde
-        // başkasının adresini yazan biri yetki devralabilirdi (Clerk adresi
-        // zaten doğrulanmış olarak işaretlemeden bu desene izin verme).
+        // başkasının adresini yazan biri yetki devralabilirdi.
         const verification = (
           primary as { verification?: { status?: string } | null } | undefined
         )?.verification;
         if (evt.type === "user.created" && verification?.status === "verified") {
           const [sibling] = await getDb()
-            .select({ id: users.id })
+            .select({ id: users.id, role: users.role })
             .from(users)
             .where(
               and(
                 ne(users.id, id),
                 sql`lower(${users.email}) = ${primaryEmail.toLowerCase()}`,
-                eq(users.role, "admin"),
               ),
             )
             .limit(1);
 
           if (sibling) {
-            await getDb()
-              .update(users)
-              .set({ role: "admin", updatedAt: new Date() })
-              .where(eq(users.id, id));
+            // Platform personeli işareti (feedl iç paneli) — workspace
+            // yetkisinden AYRI; yalnız aynı kişi zaten personelse taşınır.
+            if (sibling.role === "admin") {
+              await getDb()
+                .update(users)
+                .set({ role: "admin", updatedAt: new Date() })
+                .where(eq(users.id, id));
+            }
 
+            // Workspace üyelikleri — dashboard erişiminin tek kaynağı.
             const memberships = await getDb()
               .select({
                 workspaceId: workspaceMembers.workspaceId,
