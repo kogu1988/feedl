@@ -274,8 +274,9 @@ export default async function RootPage() {
             style={{ animationDelay: "60ms" }}
           >
             Fikirleri toplamak, oylamak ve AI ile analiz etmek için tek
-            platform. Canny&apos;nin ücretsiz planına bir alternatif — ürününü
-            müşteri sesiyle şekillendir.
+            platform. Canny&apos;nin ücretsiz planına bir alternatif — müşterin
+            hesap açmadan geri bildirim versin, ürününü müşteri sesiyle
+            şekillendir.
           </p>
           <div
             className="hero-rise mt-8 flex flex-wrap items-center gap-3"

@@ -7,6 +7,7 @@ import { getWorkspaceId } from "@/lib/db/workspace";
 import { getDefaultBoardId } from "@/lib/db/board";
 import { postFollowers, posts, votes, boards } from "@/lib/db/schema";
 import { createPostSchema } from "@/lib/validations/post";
+import { resolveClientContext } from "@/lib/client-context";
 import { inngest } from "@/inngest/client";
 import { buildPostSearch } from "@/lib/post-search";
 import { enforceRateLimit, clientIpFrom } from "@/lib/rate-limit";
@@ -141,6 +142,12 @@ export async function POST(req: Request) {
       boardId = parsed.data.boardId;
     }
 
+    // Faz 1: otomatik teknik bağlam (istemciden veya UA header'ından).
+    const ctx = resolveClientContext(
+      parsed.data.clientContext,
+      req.headers.get("user-agent") ?? "",
+    );
+
     const [created] = await getDb()
       .insert(posts)
       .values({
@@ -150,6 +157,12 @@ export async function POST(req: Request) {
         description: parsed.data.description,
         boardId,
         source: "portal",
+        deviceType: ctx.device,
+        viewportWidth: ctx.viewportWidth,
+        viewportHeight: ctx.viewportHeight,
+        browser: ctx.browser,
+        os: ctx.os,
+        pageUrl: ctx.pageUrl,
       })
       .returning({
         id: posts.id,

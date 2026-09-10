@@ -63,7 +63,9 @@ export default function DemoPage() {
         </h1>
         <p className="mt-4 max-w-xl text-lg text-muted-foreground">
           Aşağıdaki yüzeyler feedl&apos;in canlı örnekleridir. Kendi müşterilerinin
-          isteklerini bu şekilde toplayıp, analiz edip duyurabilirsin.
+          isteklerini bu şekilde toplayıp, analiz edip duyurabilirsin —
+          müşterin <span className="text-foreground">hesap açmadan</span> geri
+          bildirim verir.
         </p>
         <div className="mt-8 flex flex-wrap items-center gap-3">
           <SignUpButton forceRedirectUrl="/onboarding">

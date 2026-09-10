@@ -12,6 +12,7 @@ import {
   createPostSchema,
   type CreatePostInput,
 } from "@/lib/validations/post";
+import { collectClientContext } from "@/lib/client-context";
 
 // Sprint 63z — widget fikir formu. Workspace gönderim moduna göre davranır:
 //   anonymous → oturum GEREKMEZ; fikir doğrudan POST /api/widget/posts?a=ws
@@ -88,7 +89,8 @@ export function WidgetPostForm({
       const res = await fetch(`/api/widget/posts${wsParam}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
+        // Faz 1: teknik bağlam (cihaz/viewport/tarayıcı/OS/URL) otomatik eklenir.
+        body: JSON.stringify({ ...values, clientContext: collectClientContext() }),
         credentials: "include",
       });
       const json = (await res.json()) as { success?: boolean; error?: string };

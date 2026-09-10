@@ -483,6 +483,38 @@ export default async function PostDetailPage({
             </div>
           ) : null}
 
+          {/* Faz 1: teknik bağlam — gönderim anında otomatik toplandı (admin). */}
+          {isAdmin &&
+          (post.deviceType || post.browser || post.os || post.viewportWidth) ? (
+            <div className="grid gap-1.5 rounded-md border border-dashed p-3">
+              <p className="text-xs font-medium text-muted-foreground">
+                Teknik bağlam (yalnızca admin)
+              </p>
+              <div className="grid gap-0.5 text-sm text-muted-foreground">
+                {post.deviceType ? (
+                  <span>
+                    Cihaz:{" "}
+                    <span className="font-medium text-foreground">
+                      {deviceLabels[post.deviceType] ?? post.deviceType}
+                    </span>
+                  </span>
+                ) : null}
+                {post.viewportWidth && post.viewportHeight ? (
+                  <span className="tabular-nums">
+                    Viewport: {post.viewportWidth}×{post.viewportHeight}
+                  </span>
+                ) : null}
+                {post.browser ? <span>Tarayıcı: {post.browser}</span> : null}
+                {post.os ? <span>Sistem: {post.os}</span> : null}
+                {post.pageUrl ? (
+                  <span className="truncate" title={post.pageUrl}>
+                    Sayfa: {post.pageUrl}
+                  </span>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+
           {isAdmin ? (
             <div className="grid gap-2 rounded-md border border-dashed p-3">
               <p className="text-xs font-medium text-muted-foreground">
@@ -551,6 +583,13 @@ export default async function PostDetailPage({
   );
 }
 
+// Faz 1: cihaz etiketleri (admin teknik bağlam kartı).
+const deviceLabels: Record<string, string> = {
+  desktop: "Masaüstü",
+  tablet: "Tablet",
+  mobile: "Mobil",
+};
+
 async function loadPost(postId: string, userId: string | null) {
   const [row] = await getDb()
     .select({
@@ -564,6 +603,13 @@ async function loadPost(postId: string, userId: string | null) {
       aiSummary: posts.aiSummary,
       mergedIntoId: posts.mergedIntoId,
       boardId: posts.boardId,
+      // Faz 1: teknik bağlam (admin yan panelinde gösterilir).
+      deviceType: posts.deviceType,
+      viewportWidth: posts.viewportWidth,
+      viewportHeight: posts.viewportHeight,
+      browser: posts.browser,
+      os: posts.os,
+      pageUrl: posts.pageUrl,
       createdAt: posts.createdAt,
       voteCount: count(votes.id),
     })

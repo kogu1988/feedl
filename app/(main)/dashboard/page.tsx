@@ -86,6 +86,7 @@ export default async function DashboardPage({
     per?: string;
     page?: string;
     board?: string;
+    device?: string;
     tab?: string;
   }>;
 }) {
@@ -102,9 +103,12 @@ export default async function DashboardPage({
   // plan.md Sprint 12: durum filtresi ?status= ile gelir; geçersiz değer
   // "Tümü"ne düşer. İstatistikler her zaman TÜM fikirlerden hesaplanır,
   // filtre yalnızca tabloyu etkiler.
-  const { status: rawStatus, tag: rawTag, range: rawRange, per: rawPer, page: rawPage, board: rawBoard, tab: rawTab } = await searchParams;
+  const { status: rawStatus, tag: rawTag, range: rawRange, per: rawPer, page: rawPage, board: rawBoard, device: rawDevice, tab: rawTab } = await searchParams;
   const statusFilter =
     postStatusEnum.enumValues.find((value) => value === rawStatus) ?? null;
+  // Faz 1: cihaz filtresi (desktop | tablet | mobile).
+  const deviceFilter =
+    (["desktop", "tablet", "mobile"] as const).find((v) => v === rawDevice) ?? null;
   // Sprint 21: etiket filtresi (portal ile aynı normalize kuralı).
   const tagFilter = (rawTag ?? "").trim().toLocaleLowerCase("tr").slice(0, 30);
   // Sprint 48d: board filtresi (
@@ -175,7 +179,7 @@ export default async function DashboardPage({
     postStats = statsData.stats;
     sentimentCounts = statsData.sentimentCounts;
     topPosts = statsData.topPosts;
-    totalCount = await countDashboardPosts(tagFilter, statusFilter, activeBoard?.id);
+    totalCount = await countDashboardPosts(tagFilter, statusFilter, activeBoard?.id, deviceFilter);
     totalPages =
       per === "all" ? 1 : Math.max(1, Math.ceil(totalCount / perSize));
     currentPage = Math.min(requestedPage, totalPages);
@@ -185,6 +189,7 @@ export default async function DashboardPage({
       perSize,
       (currentPage - 1) * perSize,
       activeBoard?.id,
+      deviceFilter,
     );
     customerCountByPost = await loadCustomerCounts(rows.map((row) => row.id));
     revenueContexts = await loadRevenueContexts(rows.map((row) => row.id));
@@ -306,6 +311,7 @@ export default async function DashboardPage({
                         ...(statusFilter ? { status: statusFilter } : {}),
                         ...(tagFilter ? { tag: tagFilter } : {}),
                         ...(boardSlug ? { board: boardSlug } : {}),
+                        ...(deviceFilter ? { device: deviceFilter } : {}),
                       }}
                       options={rangeOptions}
                     />
@@ -399,7 +405,7 @@ export default async function DashboardPage({
             <CardDescription>
               {loadError
                 ? "Liste yüklenemedi."
-                : statusFilter
+                : statusFilter || deviceFilter
                   ? `Filtrede ${totalCount} fikir — durumu satırdan değiştirebilirsin.`
                   : `Toplam ${totalCount} fikir — durumu satırdan değiştirebilirsin.`}
             </CardDescription>
@@ -426,6 +432,7 @@ export default async function DashboardPage({
                     ...(section ? { tab: section } : {}),
                     ...(tagFilter ? { tag: tagFilter } : {}),
                     ...(boardSlug ? { board: boardSlug } : {}),
+                    ...(deviceFilter ? { device: deviceFilter } : {}),
                     ...(per !== "5" ? { per } : {}),
                   }}
                   options={[
@@ -434,6 +441,25 @@ export default async function DashboardPage({
                       value,
                       label: statusLabels[value] ?? value,
                     })),
+                  ]}
+                />
+                {/* Faz 1: cihaz filtresi (Desktop / Tablet / Mobile). */}
+                <FilterTabs
+                  paramName="device"
+                  basePath="/dashboard"
+                  active={deviceFilter ?? ""}
+                  extraParams={{
+                    ...(section ? { tab: section } : {}),
+                    ...(statusFilter ? { status: statusFilter } : {}),
+                    ...(tagFilter ? { tag: tagFilter } : {}),
+                    ...(boardSlug ? { board: boardSlug } : {}),
+                    ...(per !== "5" ? { per } : {}),
+                  }}
+                  options={[
+                    { value: "", label: "Tüm Cihazlar" },
+                    { value: "desktop", label: "Masaüstü" },
+                    { value: "tablet", label: "Tablet" },
+                    { value: "mobile", label: "Mobil" },
                   ]}
                 />
                 {tagOptions.length > 0 ? (
@@ -445,6 +471,7 @@ export default async function DashboardPage({
                       ...(section ? { tab: section } : {}),
                       ...(statusFilter ? { status: statusFilter } : {}),
                       ...(boardSlug ? { board: boardSlug } : {}),
+                      ...(deviceFilter ? { device: deviceFilter } : {}),
                       ...(per !== "5" ? { per } : {}),
                     }}
                     options={[
@@ -463,6 +490,7 @@ export default async function DashboardPage({
                       ["status", statusFilter],
                       ["tag", tagFilter],
                       ["board", boardSlug || null],
+                      ["device", deviceFilter],
                     ].filter(
                       (pair): pair is [string, string] =>
                         pair[1] !== null && pair[1] !== "",
@@ -478,7 +506,7 @@ export default async function DashboardPage({
               <Notice size="md">
                 Fikirler yüklenemedi. Sayfayı yenilemeyi dene.
               </Notice>
-            ) : rows.length === 0 && (statusFilter || tagFilter) ? (
+            ) : rows.length === 0 && (statusFilter || tagFilter || deviceFilter) ? (
               <EmptyState>
                 Bu filtrede fikir yok.
               </EmptyState>
@@ -529,10 +557,12 @@ export default async function DashboardPage({
                   ...(statusFilter ? { status: statusFilter } : {}),
                   ...(tagFilter ? { tag: tagFilter } : {}),
                   ...(boardSlug ? { board: boardSlug } : {}),
+                  ...(deviceFilter ? { device: deviceFilter } : {}),
                 }}
                 pageParams={{
                   ...(section ? { tab: section } : {}),
                   ...(statusFilter ? { status: statusFilter } : {}),
+                  ...(deviceFilter ? { device: deviceFilter } : {}),
                   ...(tagFilter ? { tag: tagFilter } : {}),
                   ...(boardSlug ? { board: boardSlug } : {}),
                   ...(per !== "5" ? { per } : {}),
@@ -594,6 +624,7 @@ async function loadPosts(
   limit: number,
   offset: number,
   boardId?: string,
+  deviceFilter?: string | null,
 ) {
   const workspaceId = await getWorkspaceId();
   return getDb()
@@ -611,7 +642,7 @@ async function loadPosts(
     })
     .from(posts)
     .leftJoin(votes, eq(votes.postId, posts.id))
-    .where(dashboardPostConditions(workspaceId, tagFilter, statusFilter, boardId))
+    .where(dashboardPostConditions(workspaceId, tagFilter, statusFilter, boardId, deviceFilter))
     .groupBy(posts.id)
     .orderBy(desc(posts.createdAt))
     .limit(limit)
@@ -627,10 +658,12 @@ function dashboardPostConditions(
   tagFilter: string,
   statusFilter: (typeof postStatusEnum.enumValues)[number] | null | undefined,
   boardId?: string,
+  deviceFilter?: string | null,
 ) {
   return and(
     eq(posts.workspaceId, workspaceId),
     boardId ? eq(posts.boardId, boardId) : undefined,
+    deviceFilter ? eq(posts.deviceType, deviceFilter) : undefined,
     tagFilter
       ? inArray(
           posts.id,
@@ -654,6 +687,7 @@ async function countDashboardPosts(
   tagFilter: string,
   statusFilter: (typeof postStatusEnum.enumValues)[number] | null,
   boardId?: string,
+  deviceFilter?: string | null,
 ) {
   const [row] = await getDb()
     .select({ value: count() })
@@ -664,6 +698,7 @@ async function countDashboardPosts(
         tagFilter,
         statusFilter,
         boardId,
+        deviceFilter,
       ),
     );
   return row.value;

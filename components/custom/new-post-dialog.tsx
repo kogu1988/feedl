@@ -23,6 +23,7 @@ import {
   createPostSchema,
   type CreatePostInput,
 } from "@/lib/validations/post";
+import { collectClientContext } from "@/lib/client-context";
 
 interface SimilarPost {
   id: string;
@@ -104,7 +105,8 @@ export function NewPostDialog({ boardOptions = [] }: { boardOptions?: BoardOptio
       const res = await fetch("/api/posts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
+        // Faz 1: teknik bağlam (cihaz/viewport/tarayıcı/OS/URL) otomatik eklenir.
+        body: JSON.stringify({ ...values, clientContext: collectClientContext() }),
       });
       const json = (await res.json()) as { success?: boolean; error?: string };
 

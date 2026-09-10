@@ -6,6 +6,7 @@ import { getWorkspaceId, resolveWorkspaceIdFromSlug } from "@/lib/db/workspace";
 import { getDefaultBoardId } from "@/lib/db/board";
 import { postFollowers, posts, votes } from "@/lib/db/schema";
 import { createPostSchema } from "@/lib/validations/post";
+import { resolveClientContext } from "@/lib/client-context";
 import { buildPostSearch } from "@/lib/post-search";
 import { inngest } from "@/inngest/client";
 import { getWidgetSession } from "@/lib/widget/jwt";
@@ -189,6 +190,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Faz 1: otomatik teknik bağlam (istemciden veya UA header'ından). Widget
+    // iframe'inde pageUrl `document.referrer` (host sayfa) olabilir.
+    const ctx = resolveClientContext(
+      parsed.data.clientContext,
+      req.headers.get("user-agent") ?? "",
+    );
+
     const [created] = await getDb()
       .insert(posts)
       .values({
@@ -199,6 +207,12 @@ export async function POST(req: NextRequest) {
         boardId: await getDefaultBoardId(),
         widgetOrigin: origin?.slice(0, 200) ?? null,
         source: "widget_embed",
+        deviceType: ctx.device,
+        viewportWidth: ctx.viewportWidth,
+        viewportHeight: ctx.viewportHeight,
+        browser: ctx.browser,
+        os: ctx.os,
+        pageUrl: ctx.pageUrl,
       })
       .returning({
         id: posts.id,

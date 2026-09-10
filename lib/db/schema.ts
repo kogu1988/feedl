@@ -122,6 +122,14 @@ export const posts = pgTable(
     // ticket.id vb. Aynı kaynak (mesaj/ticket) tekrar gelirse idempotent
     // reddedilir (çift post engellenir). Portal/widget/api satırları null.
     sourceRef: varchar("source_ref", { length: 120 }),
+    // Faz 1 (teknik bağlam): gönderim anında otomatik toplanan cihaz/ortam
+    // bilgisi — AI triage'a bağlam, admin'e cihaz filtresi sağlar.
+    deviceType: varchar("device_type", { length: 10 }), // desktop | tablet | mobile
+    viewportWidth: integer("viewport_width"),
+    viewportHeight: integer("viewport_height"),
+    browser: varchar("browser", { length: 60 }),
+    os: varchar("os", { length: 60 }),
+    pageUrl: text("page_url"),
     // Sprint 27: Türkçe full-text arama kolonu (GENERATED ALWAYS STORED).
     // İki-argümanlı to_tsvector('turkish', ...) immutable olduğu için
     // generated kolonda kullanılabilir.

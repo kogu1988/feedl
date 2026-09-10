@@ -16,14 +16,15 @@ import {
 /** prompts.md §1: özet + sentiment + tür + etiketler üretir. */
 export function analyzeIdea(
   post: { title: string; description: string },
-  context?: { boardName?: string },
+  context?: { boardName?: string; technical?: string },
 ): Promise<IdeaAnalysis> {
-  // PII maskele + tenant bağlamı (board/workspace).
+  // PII maskele + tenant bağlamı (board/workspace) + Faz 1 teknik bağlam.
   const title = maskPii(post.title);
   const description = maskPii(post.description);
-  const contextLine = context?.boardName
-    ? `Board: ${context.boardName}`
-    : undefined;
+  const ctxParts: string[] = [];
+  if (context?.boardName) ctxParts.push(`Board: ${context.boardName}`);
+  if (context?.technical) ctxParts.push(`Teknik: ${context.technical}`);
+  const contextLine = ctxParts.length > 0 ? ctxParts.join(" | ") : undefined;
   return chatJson({
     system: ANALYZE_IDEA_SYSTEM_PROMPT,
     user: analyzeIdeaUserPrompt(title, description, contextLine),

@@ -173,26 +173,47 @@ export const aiAutopilot = inngest.createFunction(
 
     // 4) Özet + sentiment + etiketler. Tenant bağlamı: postun board adı
     // analyzeIdea'ya geçirilir (bağımsız workspace'lerde içerik karışmaz).
-    const boardContext: string | null | undefined = await step.run(
-      "resolve-board-context",
-      async () => {
+    // Faz 1: teknik bağlam (cihaz/viewport/tarayıcı/OS) da eklenir — AI'ya
+    // "kanıt" verir (ör. "mobilde" bug'ı).
+    const aiContext = await step.run("resolve-ai-context", async () => {
       const [post] = await getDb()
-        .select({ boardId: posts.boardId })
+        .select({
+          boardId: posts.boardId,
+          deviceType: posts.deviceType,
+          viewportWidth: posts.viewportWidth,
+          viewportHeight: posts.viewportHeight,
+          browser: posts.browser,
+          os: posts.os,
+        })
         .from(posts)
         .where(eq(posts.id, payload.postId))
         .limit(1);
-      if (!post?.boardId) return undefined;
-      const [board] = await getDb()
-        .select({ name: boards.name })
-        .from(boards)
-        .where(eq(boards.id, post.boardId))
-        .limit(1);
-      return board?.name ?? undefined;
+      if (!post) return { boardName: undefined, technical: undefined };
+      let boardName: string | undefined;
+      if (post.boardId) {
+        const [board] = await getDb()
+          .select({ name: boards.name })
+          .from(boards)
+          .where(eq(boards.id, post.boardId))
+          .limit(1);
+        boardName = board?.name ?? undefined;
+      }
+      const parts: string[] = [];
+      if (post.deviceType) parts.push(`cihaz: ${post.deviceType}`);
+      if (post.viewportWidth && post.viewportHeight) {
+        parts.push(`viewport: ${post.viewportWidth}×${post.viewportHeight}`);
+      }
+      if (post.browser) parts.push(`tarayıcı: ${post.browser}`);
+      if (post.os) parts.push(`OS: ${post.os}`);
+      return {
+        boardName,
+        technical: parts.length > 0 ? parts.join(" · ") : undefined,
+      };
     });
     const analysis = await step.run("analyze-idea", async () =>
       analyzeIdea(
         { title: payload.title, description: payload.description },
-        { boardName: boardContext ?? undefined },
+        { boardName: aiContext.boardName, technical: aiContext.technical },
       ),
     );
 
