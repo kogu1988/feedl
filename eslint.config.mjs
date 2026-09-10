@@ -18,6 +18,10 @@ const eslintConfig = [
       "out/**",
       "build/**",
       "next-env.d.ts",
+      // Vendored istemci kütüphanesi (html-to-image) — `npm run vendor:capture`
+      // ile üretilen minify tek satırlık bundle. Kendi kodumuz değil; lint
+      // etmek CI'ı sürekli düşürüyordu (52 bulgu, 1 error).
+      "public/widget-capture.js",
     ],
   },
 ];
