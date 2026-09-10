@@ -71,6 +71,9 @@ const isPublicRoute = createRouteMatcher([
   // auth'suz istekleri redirect/404'e çevirip bu uçları kırıyordu; diğer API
   // namespace'leriyle (v1/widget/webhooks) tutarlı hale getirildi.
   "/api/paddle(.*)",
+  // Faz 2: görsel feedback görsel proxy'i (private Blob) de auth'u handler'da
+  // (getAdminUserId) yapar — aynı nedenle public matcher'da olmalı.
+  "/api/visual-feedback(.*)",
 
   // Sprint 48o: Slack/Zendesk/Intercom entegrasyon webhook'ları — Slack
   // kendi imzasıyla çağırır (lib/slack), Clerk oturumu gerekmez.
