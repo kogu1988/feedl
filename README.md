@@ -60,6 +60,9 @@ işaretler (pin); cihaz/viewport/tarayıcı/OS otomatik eklenir, ekran görünt�
 alınır (private Blob). Adminde cihaz filtresi (Masaüstü/Tablet/Mobil).
 10. **AI triage öğrenmesi:** Admin bir fikri "ilgisiz" işaretler ya da AI'nın
 türünü düzeltir → workspace-scoped sinyaller sonraki sınıflandırmayı yönlendirir.
+11. **Haftalık AI özeti (digest):** Pazartesi sabahı Pro workspace'ler için
+korpus analizi yeniden üretilir; yeni geri bildirim varsa admin'lere tema/risk/
+hızlı kazanım özeti e-posta olarak gider (tek tıkla kapatılabilir).
 
 ## Farklılaşma (neden feedl?)
 
@@ -147,11 +150,11 @@ npm test        # Vitest birim testleri
 npm run test:e2e  # Playwright + axe erişilebilirlik + auth akışı (çalışan sunucu gerekir)
 ```
 
-### Test durumu (2026-09-07)
+### Test durumu (2026-09-10)
 
 | Katman | Sonuç | Kapsam |
 | :--- | :--- | :--- |
-| **Birim test** (`npm test`) | ✅ 29 dosya · **141 test geçti** | Saf mantık: renk/WCAG, sayfalama, CSV, şifreleme, rate-limit, Paddle imza+plan türetme, oy doğrulama, post-format, post-search, widget-origins, workspace-host çözümleme, AI içgörüleri, OpenRouter modelleri, e-posta teslimatı, api-keys, davet e-postası, widget gönderim modu, free-plan oy limiti |
+| **Birim test** (`npm test`) | ✅ 31 dosya · **156 test geçti** | Saf mantık: renk/WCAG, sayfalama, CSV, şifreleme, rate-limit, Paddle imza+plan türetme, oy doğrulama, post-format, post-search, widget-origins, widget gömme (body-bekleme), workspace-host çözümleme, AI içgörüleri, OpenRouter modelleri, e-posta teslimatı, haftalık digest e-postası + gönderim kararı, api-keys, davet e-postası, widget gönderim modu, free-plan oy limiti |
 | **Tenant izolasyonu** | ✅ `resolveWorkspaceByHost` öncelik (custom_domain > subdomain > varsayılan) + hata | `tests/lib/tenant-isolation.test.ts` |
 | **Paddle plan türetme** | ✅ `derivePlanFromStatus` (trialing/active→pro; canceled/past_due/dunned→free; unknown→null) | `tests/lib/paddle-plans.test.ts` |
 | **Merge/unmerge karar mantığı** | ✅ Şema doğrulama (uuid, self-merge) + reason→HTTP eşleme | `tests/lib/post-merge.test.ts` |

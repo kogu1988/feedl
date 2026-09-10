@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import { NonRetriableError } from "inngest";
 
 import { planFromString } from "@/lib/paddle";
@@ -13,6 +13,7 @@ import { renderChangelogEmail } from "@/lib/email/changelog";
 import { renderCommentEmail } from "@/lib/email/comment";
 import { renderStatusUpdateEmail } from "@/lib/email/status-update";
 import { renderShippedEmail } from "@/lib/email/shipped";
+import { renderDigestEmail, shouldSendDigest } from "@/lib/email/digest";
 import { statusLabels } from "@/lib/post-format";
 import {
   deliverWebhook,
@@ -1023,5 +1024,161 @@ export const corpusInsights = inngest.createFunction(
       });
       throw err;
     }
+  },
+);
+
+// Faz 4 — haftalık AI özeti (digest).
+// Alınan kararlar (2026-09-10):
+//  · Sıklık: haftalık cron (Pazartesi 06:00 UTC = 09:00 TRT) + "yeni geri
+//    bildirim yoksa gönderme" eşiği (boş özet gürültüdür).
+//  · Teslimat: hem dashboard içgörü önbelleği tazelenir hem admin'lere e-posta.
+//  · Kime: users.role='admin' ve email_digest tercihi açık olanlar.
+// LLM maliyeti workspace başına haftada 1 korpus çağrısıdır; free plan hiç
+// çağrı üretmez (erken çıkış).
+export const weeklyDigest = inngest.createFunction(
+  {
+    id: "weekly-digest",
+    retries: 2,
+    concurrency: 1,
+    triggers: { cron: "0 6 * * 1" },
+  },
+  async ({ step }) => {
+    const candidates = await step.run("load-pro-workspaces", async () =>
+      getDb()
+        .select({
+          id: workspaces.id,
+          name: workspaces.name,
+          plan: workspaces.plan,
+          lastSentAt: workspaces.digestLastSentAt,
+        })
+        .from(workspaces)
+        .where(eq(workspaces.plan, "pro")),
+    );
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://feedl.app";
+    const summary: { workspaceId: string; status: string }[] = [];
+
+    for (const ws of candidates) {
+      const outcome = await step.run(`digest-${ws.id}`, async () => {
+        const db = getDb();
+        const now = new Date();
+        // `step.run` dönüşü JSON'a çevrilir (Inngest dayanıklılığı) → timestamp
+        // alanı string olarak gelir; karşılaştırma için Date'e çevir.
+        const since = ws.lastSentAt ? new Date(ws.lastSentAt) : null;
+
+        const [{ totalPosts }] = await db
+          .select({ totalPosts: count(posts.id) })
+          .from(posts)
+          .where(eq(posts.workspaceId, ws.id));
+        const [{ newPosts }] = await db
+          .select({ newPosts: count(posts.id) })
+          .from(posts)
+          .where(
+            since
+              ? and(eq(posts.workspaceId, ws.id), gte(posts.createdAt, since))
+              : eq(posts.workspaceId, ws.id),
+          );
+
+        const recipients = await db
+          .select({ email: users.email, token: users.unsubscribeToken })
+          .from(users)
+          .where(and(eq(users.role, "admin"), eq(users.emailDigest, true)));
+
+        const plan = planFromString(ws.plan);
+        const newPostCount = Number(newPosts);
+        if (
+          !shouldSendDigest({
+            plan,
+            enabled: recipients.length > 0,
+            lastSentAt: since,
+            newPostCount,
+            now,
+          })
+        ) {
+          return {
+            status: "skipped",
+            reason:
+              plan !== "pro"
+                ? "not-pro"
+                : recipients.length === 0
+                  ? "no-recipients"
+                  : newPostCount === 0
+                    ? "no-new-feedback"
+                    : "too-soon",
+          };
+        }
+
+        const rows = await db
+          .select({
+            id: posts.id,
+            title: posts.title,
+            description: posts.description,
+            status: posts.status,
+            voteCount: count(votes.id),
+          })
+          .from(posts)
+          .leftJoin(votes, eq(votes.postId, posts.id))
+          .where(eq(posts.workspaceId, ws.id))
+          .groupBy(posts.id)
+          .orderBy(desc(count(votes.id)), asc(posts.id))
+          .limit(MAX_CORPUS);
+
+        const insights = await analyzeCorpus(
+          rows.map((r) => ({
+            title: r.title,
+            description: r.description,
+            status: r.status,
+            votes: Number(r.voteCount),
+          })),
+        );
+
+        // Önce gönder, SONRA işaretle: gönderim başarısız olursa hafta
+        // kaybedilmesin (aynı adım retry edilir, e-posta gönderilmemiş kalır).
+        const result = await sendEmails(
+          recipients.map((recipient) => {
+            const message = renderDigestEmail({
+              workspaceName: ws.name,
+              insights,
+              inboxUrl: `${appUrl}/dashboard/insights`,
+              newPostCount,
+              totalPostCount: Number(totalPosts),
+              unsubscribeUrl: `${appUrl}/api/unsubscribe?token=${recipient.token}&type=digest`,
+            });
+            return {
+              to: recipient.email,
+              subject: message.subject,
+              html: message.html,
+              text: message.text,
+            };
+          }),
+        );
+
+        await db
+          .update(workspaces)
+          .set({
+            corpusInsights: insights,
+            corpusInsightsAt: now,
+            corpusInsightsStatus: "done",
+            digestLastSentAt: now,
+            updatedAt: now,
+          })
+          .where(eq(workspaces.id, ws.id));
+
+        return {
+          status: "sent",
+          recipients: recipients.length,
+          sent: result.sent,
+          failed: result.failed,
+        };
+      });
+
+      summary.push({ workspaceId: ws.id, status: outcome.status });
+    }
+
+    return {
+      workspaces: candidates.length,
+      sent: summary.filter((s) => s.status === "sent").length,
+      summary,
+    };
   },
 );

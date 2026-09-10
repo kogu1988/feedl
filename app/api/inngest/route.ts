@@ -9,6 +9,7 @@ import {
   notifyCommentCreated,
   notifyShipped,
   sendWebhooks,
+  weeklyDigest,
 } from "@/inngest/functions";
 
 // Inngest serve endpoint. Lokal geliştirmede Dev Server (localhost:8288),
@@ -24,5 +25,6 @@ export const { GET, POST, PUT } = serve({
     notifyCommentCreated,
     notifyChangelog,
     sendWebhooks,
+    weeklyDigest,
   ],
 });

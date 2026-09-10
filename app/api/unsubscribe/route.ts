@@ -13,7 +13,7 @@ import { changelogSubscribers, users } from "@/lib/db/schema";
 
 const unsubscribeSchema = z.object({
   token: z.uuid("Geçersiz bağlantı."),
-  type: z.enum(["status", "comment", "changelog"], {
+  type: z.enum(["status", "comment", "digest", "changelog"], {
     error: "Geçersiz bildirim türü.",
   }),
 });
@@ -77,10 +77,14 @@ export async function GET(req: Request) {
       );
     }
 
+    // Faz 4 — haftalık AI özeti tercihi. Diğerleriyle aynı yapı: token'lı,
+    // tek yönlü kapatma.
     const patch =
       parsed.data.type === "status"
         ? { emailStatusUpdates: false }
-        : { emailComments: false };
+        : parsed.data.type === "digest"
+          ? { emailDigest: false }
+          : { emailComments: false };
 
     const updated = await getDb()
       .update(users)
@@ -99,7 +103,9 @@ export async function GET(req: Request) {
       "Bildirimler kapatıldı",
       parsed.data.type === "status"
         ? "Artık fikir durumu güncellemeleri e-posta ile gönderilmeyecek."
-        : "Artık yorum bildirimleri e-posta ile gönderilmeyecek.",
+        : parsed.data.type === "digest"
+          ? "Artık haftalık geri bildirim özeti e-posta ile gönderilmeyecek."
+          : "Artık yorum bildirimleri e-posta ile gönderilmeyecek.",
     );
   } catch (err) {
     console.error(

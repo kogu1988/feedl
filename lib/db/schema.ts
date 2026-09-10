@@ -49,6 +49,9 @@ export const users = pgTable("users", {
   // e-postalarının altındaki link bu token ile çalışır).
   emailStatusUpdates: boolean("email_status_updates").notNull().default(true),
   emailComments: boolean("email_comments").notNull().default(true),
+  // Faz 4 (haftalık AI özeti): admin'lere giden digest e-postası tercihi.
+  // Diğer bildirimlerle aynı desen — unsubscribe linkiyle kapatılır.
+  emailDigest: boolean("email_digest").notNull().default(true),
   unsubscribeToken: uuid("unsubscribe_token")
     .notNull()
     .defaultRandom()
@@ -220,6 +223,9 @@ export const workspaces = pgTable("workspaces", {
   corpusInsightsStatus: varchar("corpus_insights_status", { length: 20 })
     .notNull()
     .default("idle"), // idle | pending | done | error
+  // Faz 4 (haftalık AI özeti): son digest e-postasının gönderildiği an.
+  // Boş özet göndermemek ve tekrar gönderimi engellemek için kullanılır.
+  digestLastSentAt: timestamp("digest_last_sent_at", { withTimezone: true }),
   // Widget fikir gönderim modu (Sprint 63z): anonymous (üye olmadan, IP bazlı
   // fikir+oy), email (sadece email → fikir, kayıt yok), signup (Clerk kayıt
   // zorunlu — mevcut davranış). Varsayılan signup → eski/mevcut davranış korunur.
