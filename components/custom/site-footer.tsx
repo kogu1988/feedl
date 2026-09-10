@@ -18,19 +18,17 @@ const PRIVATE_APP_PREFIXES = [
   "/sign-up",
 ];
 
-const companyLinks = [
+// Tek sıra, tek standart: şirket/legal + SEO kaynak linkleri AYNI listede ve
+// AYNI stille (aralarında görsel fark yok). SEO linkleri orphan sayfaları
+// (canny-alternative / how-to-collect-feedback) anonim ziyaretçiye ulaştırır.
+const footerLinks = [
+  { href: "/canny-alternative", label: "Canny Alternatifi" },
+  { href: "/how-to-collect-feedback", label: "Geri Bildirim Rehberi" },
   { href: "/contact", label: "İletişim" },
   { href: "/privacy", label: "Gizlilik Politikası" },
   { href: "/terms", label: "Kullanım Şartları" },
   // Sprint 63x — Paddle canlı onayı: refund politikası linki zorunlu.
   { href: "/refund", label: "İade Politikası" },
-];
-
-// SEO iç linkler — anonim ziyaretçiye gösterilir (footer yalnız anonimde
-// render edilir). Orphan SEO sayfalarına ulaşım + iç bağlantı (crawl için).
-const resourceLinks = [
-  { href: "/canny-alternative", label: "Canny Alternatifi" },
-  { href: "/how-to-collect-feedback", label: "Geri Bildirim Rehberi" },
 ];
 
 export function SiteFooter({ brand }: { brand: { name: string; brandColor?: string | null; logoUrl?: string | null } }) {
@@ -66,38 +64,21 @@ export function SiteFooter({ brand }: { brand: { name: string; brandColor?: stri
               herkese açık topluluk portalında.
             </p>
           </div>
-          <div className="flex flex-wrap items-start gap-x-10 gap-y-4 text-sm md:pt-1">
-            <ul
-              className="flex flex-wrap items-center gap-x-6 gap-y-2"
-              aria-label="Şirket linkleri"
-            >
-              {companyLinks.map((link) => (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    className="text-muted-foreground transition-colors hover:text-foreground"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-            <ul
-              className="flex flex-wrap items-center gap-x-6 gap-y-2"
-              aria-label="Kaynaklar"
-            >
-              {resourceLinks.map((link) => (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    className="text-muted-foreground transition-colors hover:text-foreground"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
+          <ul
+            className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm md:pt-1"
+            aria-label="Alt bilgi linkleri"
+          >
+            {footerLinks.map((link) => (
+              <li key={link.href}>
+                <Link
+                  href={link.href}
+                  className="text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  {link.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
         </div>
 
         {/* Telif — normal footer içinde, ortalanmış. */}

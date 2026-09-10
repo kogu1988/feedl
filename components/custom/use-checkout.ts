@@ -27,13 +27,16 @@ export interface UseCheckoutOptions {
   // P0-2: checkout'ta workspace'i immutable UUID ile eşleştir.
   workspaceId?: string | null;
   workspaceSlug: string;
+  // Ödeme tamamlanınca gidilecek yer (girişli kullanıcı → "/dashboard").
+  // Verilmezse mevcut sayfa yenilenir (billing kartındaki davranış).
+  successRedirect?: string;
 }
 
 export function useCheckout(opts: UseCheckoutOptions) {
   const [paddle, setPaddle] = useState<Paddle | undefined>();
   const [status, setStatus] = useState<CheckoutStatus>({ tone: "idle", message: "" });
   const completedRef = useRef(false);
-  const { paddleCustomerId, workspaceId, workspaceSlug } = opts;
+  const { paddleCustomerId, workspaceId, workspaceSlug, successRedirect } = opts;
 
   // Paddle'ı kur. customerId yüklenince (null → id) yeniden kurulur; bu,
   // eksik `paddleCustomerId` bağımlılığı uyarısını da giderir (Retain için).
@@ -71,21 +74,47 @@ export function useCheckout(opts: UseCheckoutOptions) {
     return () => {
       cancelled = true;
     };
+    // Tek seferlik Paddle kurulumu; handleCompleted güncel değerleri ref'ler
+    // üzerinden okur (dep'e eklemek Paddle'ı her render'da yeniden başlatırdı).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paddleCustomerId]);
+
+  // Aktivasyon tamamlanınca: hedef varsa oraya git (ör. satın alan girişli
+  // kullanıcı dashboard'a), yoksa mevcut sayfayı yenile.
+  function finish(message: string, delayMs: number, redirect?: string) {
+    setStatus({ tone: "success", message });
+    window.setTimeout(() => {
+      if (redirect) window.location.assign(redirect);
+      else window.location.reload();
+    }, delayMs);
+  }
+
+  // successRedirect render'lar arası değişebilir; effect tek seferlik Paddle
+  // init'i olduğundan callback'in EN GÜNCEL değeri okuması için ref kullanılır
+  // (effect bağımlılığına eklemek Paddle'ı gereksiz yeniden başlatırdı).
+  const successRedirectRef = useRef(successRedirect);
+  successRedirectRef.current = successRedirect;
 
   async function handleCompleted() {
     setStatus({
       tone: "processing",
       message: "Ödemeniz alındı. Pro aktivasyonu doğrulanıyor…",
     });
+    const redirect = successRedirectRef.current;
     const res = await pollProActivation();
     if (res.activated) {
-      setStatus({ tone: "success", message: "Pro aktif! Sayfa güncelleniyor…" });
-      window.setTimeout(() => window.location.reload(), 1200);
+      finish(
+        redirect ? "Pro aktif! Yönetim paneline yönlendiriliyorsun…" : "Pro aktif! Sayfa güncelleniyor…",
+        1200,
+        redirect,
+      );
     } else {
       // Webhook gecikse bile Paddle onay ekranını kaldırıp güncel durumu göster.
-      setStatus({ tone: "success", message: "Ödemeniz alındı. Sayfa güncelleniyor…" });
-      window.setTimeout(() => window.location.reload(), 2500);
+      finish(
+        redirect ? "Ödemeniz alındı. Panele yönlendiriliyorsun…" : "Ödemeniz alındı. Sayfa güncelleniyor…",
+        2500,
+        redirect,
+      );
     }
   }
 

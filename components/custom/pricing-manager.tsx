@@ -56,11 +56,14 @@ export function PricingManager({
   workspaceSlug,
   workspaceId,
   paddleCustomerId,
+  successRedirect,
 }: {
   workspaceSlug: string;
   // P0-2: immutable workspace UUID — billing identity (slug değişebilir).
   workspaceId?: string | null;
   paddleCustomerId?: string | null;
+  // Girişli kullanıcı ödeme sonrası buraya yönlendirilir (ör. /dashboard).
+  successRedirect?: string;
 }) {
   // Varsayılan: yıllık seçili.
   const [annual, setAnnual] = useState(true);
@@ -70,6 +73,7 @@ export function PricingManager({
     paddleCustomerId,
     workspaceId,
     workspaceSlug,
+    successRedirect,
   });
 
   function openProCheckout() {
@@ -91,7 +95,7 @@ export function PricingManager({
             <span className="text-sm text-muted-foreground">şimdilik ücretsiz</span>
           </div>
           <FeatureList items={freeFeatures} />
-          <div className="mt-auto pt-6">
+          <div className="mt-auto pt-5">
             <Button
               size="lg"
               variant="outline"
@@ -151,23 +155,27 @@ export function PricingManager({
 
           <FeatureList items={proFeatures} />
 
-          {/* Sprint 64: Paddle checkout kendi şartlar kabulünü sağlar; burada yalnız bilgi linkleri (zorunlu değil). */}
-          <p className="mt-4 text-xs text-muted-foreground">
-            Ödeme sırasında <Link href="/terms" className="underline underline-offset-2 hover:text-primary">Kullanım Şartları</Link>{" "}
-            ve <Link href="/refund" className="underline underline-offset-2 hover:text-primary">İade Politikası</Link>{" "}
-            geçerlidir — Paddle ödeme ekranında şartları kabul ettirir.
-          </p>
-
-          {/* Sprint 64: inline checkout hedefi — butondan ÖNCE (buton en dipte eşit hizada). */}
-          <div id="feedl-checkout" className="mt-4 min-h-[120px]" />
-
-          <div className="mt-auto pt-6">
+          <div className="mt-auto pt-5">
             <Button size="lg" className="w-full" onClick={openProCheckout}>
               Pro&apos;ya Geç
             </Button>
           </div>
         </div>
       </div>
+
+      {/* Şartlar notu — iki kartı dengede tutmak için kart DIŞINDA. Paddle
+          ödeme ekranında şartları kabul ettirdiği için burada yalnız bilgi. */}
+      <p className="text-center text-xs text-muted-foreground">
+        Ödeme sırasında{" "}
+        <Link href="/terms" className="underline underline-offset-2 hover:text-primary">
+          Kullanım Şartları
+        </Link>{" "}
+        ve{" "}
+        <Link href="/refund" className="underline underline-offset-2 hover:text-primary">
+          İade Politikası
+        </Link>{" "}
+        geçerlidir.
+      </p>
 
       <CheckoutStatusBanner status={status} />
     </div>

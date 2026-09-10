@@ -214,11 +214,6 @@ export function BillingOverview({
               <Button className="w-full" onClick={handleProChange}>
                 Pro&apos;ya Geç
               </Button>
-              {/* Sprint 64: inline checkout hedefi — sayfa içi gömülü iframe. */}
-              <div id="feedl-checkout-billing" className="mt-4 min-h-[120px]" />
-              <p className="mt-2 text-center text-xs text-muted-foreground">
-                Ödeme sayfadan ayrılmadan güvenli olarak tamamlanır.
-              </p>
             </div>
           ) : (
             <p className="mt-4 text-xs text-muted-foreground">

@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import { auth } from "@clerk/nextjs/server";
 
 import { PricingManager } from "@/components/custom/pricing-manager";
 import { getDb } from "@/lib/db";
@@ -23,6 +24,11 @@ export async function generateMetadata(): Promise<import("next").Metadata> {
 }
 
 export default async function PricingPage() {
+  // Girişli kullanıcı ödeme sonrası ürünün içine (dashboard) düşer; anonim
+  // ziyaretçi satın alamaz → yönlendirme yok (sayfa yenilenir).
+  const { userId } = await auth();
+  const successRedirect = userId ? "/dashboard" : undefined;
+
   let slug = "feedl";
   let workspaceId: string | null = null;
   let paddleCustomerId: string | null = null;
@@ -56,7 +62,12 @@ export default async function PricingPage() {
       </div>
 
       <div className="mt-10">
-        <PricingManager workspaceSlug={slug} workspaceId={workspaceId} paddleCustomerId={paddleCustomerId} />
+        <PricingManager
+          workspaceSlug={slug}
+          workspaceId={workspaceId}
+          paddleCustomerId={paddleCustomerId}
+          successRedirect={successRedirect}
+        />
       </div>
 
       <p className="mt-10 text-xs text-muted-foreground">
