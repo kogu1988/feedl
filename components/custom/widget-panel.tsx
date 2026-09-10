@@ -133,7 +133,9 @@ export function WidgetPanel({
 
   return (
     <div className="w-full">
-      {/* Kompakt araç çubuğu: Fikir ara + Fikir gönder + (iframe'de) Görsel. */}
+      {/* Kompakt araç çubuğu: Fikir ara + Fikir gönder + (iframe'de) Görsel.
+          Dar telefonlarda (<360px) üç etiket tek satıra sığmaz; ikonlar
+          gizlenir — etiketler kırpılmaz, dokunma hedefi bozulmaz. */}
       <div className="flex flex-wrap items-center gap-2">
         <Button
           type="button"
@@ -143,7 +145,11 @@ export function WidgetPanel({
           onClick={() => setSearchOpen((v) => !v)}
           aria-expanded={searchOpen}
         >
-          {searchOpen ? <XIcon className="size-3.5" aria-hidden="true" /> : <SearchIcon className="size-3.5" aria-hidden="true" />}
+          {searchOpen ? (
+            <XIcon className="size-3.5 max-[359px]:hidden" aria-hidden="true" />
+          ) : (
+            <SearchIcon className="size-3.5 max-[359px]:hidden" aria-hidden="true" />
+          )}
           Fikir ara
         </Button>
         <Button
@@ -154,7 +160,7 @@ export function WidgetPanel({
           onClick={() => setFormOpen((v) => !v)}
           aria-expanded={formOpen}
         >
-          <PlusIcon className="size-3.5" aria-hidden="true" />
+          <PlusIcon className="size-3.5 max-[359px]:hidden" aria-hidden="true" />
           Fikir gönder
         </Button>
         {/* Faz 2: yalnız gömülü (iframe) bağlamda — host sayfada pin + ekran görüntüsü. */}
@@ -167,7 +173,7 @@ export function WidgetPanel({
             onClick={startVisualFeedback}
             aria-label="Görsel geri bildirim"
           >
-            <MapPinIcon className="size-3.5" aria-hidden="true" />
+            <MapPinIcon className="size-3.5 max-[359px]:hidden" aria-hidden="true" />
             Görsel
           </Button>
         ) : null}
