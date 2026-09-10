@@ -21,8 +21,6 @@ import {
   UsersIcon,
   XIcon,
 } from "lucide-react";
-import { UserButton } from "@clerk/nextjs";
-
 import { cn } from "@/lib/utils";
 
 // Sprint 51 (Batch 2): admin kabuk — yalnız /dashboard altında solda
@@ -203,17 +201,6 @@ export function AppSidebar({ scope }: { scope?: DashboardScope | null }) {
           </button>
         </div>
         <NavList collapsed={collapsed} scope={scope ?? null} />
-        <div
-          className={cn(
-            "flex items-center gap-2 border-t border-sidebar-border p-2.5",
-            collapsed && "justify-center px-0",
-          )}
-        >
-          <UserButton />
-          {!collapsed && (
-            <span className="text-sm text-sidebar-foreground/70">Hesap</span>
-          )}
-        </div>
       </aside>
 
       {/* Mobil tetik çubuğu */}
@@ -267,10 +254,6 @@ export function AppSidebar({ scope }: { scope?: DashboardScope | null }) {
             </button>
           </div>
           <NavList collapsed={false} scope={scope ?? null} />
-          <div className="flex items-center gap-2 border-t border-sidebar-border p-2.5">
-            <UserButton />
-            <span className="text-sm text-sidebar-foreground/70">Hesap</span>
-          </div>
         </aside>
       </div>
     </>

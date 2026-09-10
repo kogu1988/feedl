@@ -113,8 +113,10 @@ kalır; **yalnız admin `/dashboard`** 240px daralabilir sidebar alır
 (56px ikon rayına iner; mobilde çekmece). Sidebar nav gerçek route setiyle
 3 grup: Genel (Genel Bakış / Board'lar / Gelir), Yönetim (Şirketler /
 Üyeler / Alanlar / Çalışma Alanları), Sistem (Widget / Faturalama /
-Ayarlar); altta UserButton. Bileşen: `app-sidebar` — dashboard altı
-`layout.tsx` sağlar; rail durumu localStorage.
+Ayarlar). Hesap erişimi (UserButton) sidebar'ın dibinde DEĞİL, üst bardadır
+(2026-09-10: alttaki yinelenen "Hesap" bölümü kaldırıldı — masaüstünde header
+sağında, mobilde header hamburger menüsünde). Bileşen: `app-sidebar` —
+dashboard altı `layout.tsx` sağlar; rail durumu localStorage.
 
 **Sidebar rol kademesi (2026-09-06, kullanıcı onaylı yetki matrisi):**
 `workspace_members.role` → owner/admin (tam), contributor (kısmi team),
