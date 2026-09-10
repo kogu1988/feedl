@@ -138,6 +138,20 @@ export async function POST(req: Request) {
       if (workspaceId) {
         const plan = derivePlanFromStatus(subscriptionStatus);
         if (plan) {
+          // Plan Pro'ya YÜKSELDİYSE bayat içgörü cache'ini temizle: free
+          // dönemde kilitli/boş kalan cache, Pro sayfada gerçek içgörü
+          // sanılıp gösterilmesin (yaşandı: sayfada hem "Pro plan özelliğidir"
+          // metni hem "Yenile" butonu görünüyordu). Yalnız GEÇİŞTE temizlenir;
+          // her yenileme webhook'u meşru cache'i silmez.
+          let resetInsights = false;
+          if (plan === "pro") {
+            const [current] = await getDb()
+              .select({ plan: workspaces.plan })
+              .from(workspaces)
+              .where(eq(workspaces.id, workspaceId))
+              .limit(1);
+            resetInsights = current?.plan !== "pro";
+          }
           await getDb()
             .update(workspaces)
             .set({
@@ -145,6 +159,9 @@ export async function POST(req: Request) {
               paddleSubscriptionStatus: subscriptionStatus || null,
               ...(plan === "pro" ? { paddleSubscriptionId: subscriptionId } : {}),
               ...(customerId ? { paddleCustomerId: customerId } : {}),
+              ...(resetInsights
+                ? { corpusInsights: null, corpusInsightsStatus: "idle" }
+                : {}),
               updatedAt: new Date(),
             })
             .where(eq(workspaces.id, workspaceId));

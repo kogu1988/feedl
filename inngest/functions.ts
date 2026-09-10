@@ -925,19 +925,18 @@ export const corpusInsights = inngest.createFunction(
       });
       if (planKey !== "pro") {
         await step.run("store-pro-required", async () => {
+          // Cache'e PLAN METNİ YAZILMAZ. Eskiden buraya "AI içgörüleri Pro plan
+          // özelliğidir…" cümlesi recommendation olarak yazılıyordu; plan
+          // Pro'ya geçince bu bayat metin gerçek içgörü sanılıp gösteriliyordu
+          // (sayfada hem Pro uyarısı hem "Yenile" butonu görünüyordu).
+          // Doğrusu: cache'i BOŞ bırak — sayfa kilit durumunu CANLI plandan
+          // türetir, cache yalnız gerçek analiz sonucu taşır.
           await db
             .update(workspaces)
             .set({
-              corpusInsightsStatus: "done",
+              corpusInsights: null,
+              corpusInsightsStatus: "idle",
               corpusInsightsAt: new Date(),
-              corpusInsights: {
-                themes: [],
-                trends: [],
-                quickWins: [],
-                risks: [],
-                recommendation:
-                  "AI içgörüleri Pro plan özelliğidir. Workspace Pro plana geçince yeniden analiz edilebilir.",
-              },
               updatedAt: new Date(),
             })
             .where(eq(workspaces.id, workspaceId));
