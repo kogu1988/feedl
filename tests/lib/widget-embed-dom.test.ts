@@ -34,6 +34,11 @@ interface FakeEl {
   querySelector(): null;
 }
 
+// Launcher arka planı TEMAYA duyarlı olmalı: sabit koyu renk koyu bir sitede
+// sayfa zeminiyle aynı renge düşüp görünmez oluyordu (kontrast ~1.1:1).
+const ACCENT_DARK_DEFAULT = "#f4f4f5";
+const ACCENT_LIGHT_DEFAULT = "#111827";
+
 function makeEl(tag = "div"): FakeEl {
   const el = {
     tagName: tag.toUpperCase(),
@@ -77,7 +82,13 @@ function makeEl(tag = "div"): FakeEl {
   return el as unknown as FakeEl;
 }
 
-function bootWidget({ bodyAvailable }: { bodyAvailable: boolean }) {
+function bootWidget({
+  bodyAvailable,
+  attrs = {},
+}: {
+  bodyAvailable: boolean;
+  attrs?: Record<string, string>;
+}) {
   const head = makeEl("head");
   const body = makeEl("body");
   const docListeners: Record<string, ((...args: unknown[]) => void)[]> = {};
@@ -85,6 +96,9 @@ function bootWidget({ bodyAvailable }: { bodyAvailable: boolean }) {
   const currentScript = makeEl("script");
   currentScript.setAttribute("data-feedl-url", "https://feedl.app");
   currentScript.setAttribute("data-feedl-workspace", "feedl");
+  for (const [key, value] of Object.entries(attrs)) {
+    currentScript.setAttribute(key, value);
+  }
 
   const document = {
     currentScript,
@@ -124,6 +138,10 @@ function mountBody(body: FakeEl) {
   return body.children.map((c) => c.className);
 }
 
+function launcherOf(body: FakeEl): FakeEl | undefined {
+  return body.children.find((c) => c.className === "feedl-widget-launcher");
+}
+
 describe("widget embed — body henüz yokken bağlanma", () => {
   it("document.body yoksa launcher'ı DOMContentLoaded'a erteler", () => {
     const { body, docListeners, document } = bootWidget({ bodyAvailable: false });
@@ -154,5 +172,31 @@ describe("widget embed — body henüz yokken bağlanma", () => {
   it("idempotans bayrağını yalnız doğrulama geçtikten sonra set eder", () => {
     const { window } = bootWidget({ bodyAvailable: true });
     expect((window as unknown as { __feedlWidgetLoaded?: boolean }).__feedlWidgetLoaded).toBe(true);
+  });
+});
+
+describe("widget launcher rengi — tema duyarlı görünürlük", () => {
+  it("açık temada nötr koyu varsayılanı kullanır", () => {
+    const { body } = bootWidget({ bodyAvailable: true, attrs: { "data-theme": "light" } });
+    expect(launcherOf(body)?.style.background).toBe(ACCENT_LIGHT_DEFAULT);
+  });
+
+  it("koyu temada AÇIK varsayılana geçer (koyu zeminde görünür kalsın)", () => {
+    const { body } = bootWidget({ bodyAvailable: true, attrs: { "data-theme": "dark" } });
+    expect(launcherOf(body)?.style.background).toBe(ACCENT_DARK_DEFAULT);
+  });
+
+  it("açıkça verilen data-accent her zaman kazanır", () => {
+    const { body } = bootWidget({
+      bodyAvailable: true,
+      attrs: { "data-theme": "dark", "data-accent": "#ff5c35" },
+    });
+    expect(launcherOf(body)?.style.background).toBe("#ff5c35");
+  });
+
+  it("metin rengini arka plana göre seçer (açık zeminde koyu yazı)", () => {
+    const { body } = bootWidget({ bodyAvailable: true, attrs: { "data-theme": "dark" } });
+    // #f4f4f5 açık bir renk → üzerine koyu yazı gelmeli.
+    expect(launcherOf(body)?.style.color).toBe("#18181b");
   });
 });

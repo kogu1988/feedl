@@ -17,7 +17,9 @@
  *   Doğru ayarlanırsa widget'ın tüm verileri (fikir/oy) müşterinin kendi
  *   workspace'inde toplanır (Sprint 63p tenant-aware).
  * - data-accent: launcher butonunun arka plan rengi (yalnızca hex kabul;
- *   yazı rengi WCAG kontrastına göre otomatik seçilir). Varsayılan #111827.
+ *   yazı rengi WCAG kontrastına göre otomatik seçilir). Verilmezse TEMA
+ *   duyarlı varsayılan kullanılır (açık tema #111827, koyu tema #f4f4f5) —
+ *   sabit koyu renk koyu sitelerde görünmez oluyordu.
  * - data-theme: panel ve iframe teması — light | dark | auto (varsayılan
  *   light; auto = ziyaretçinin işletim sistemi tercihini izler).
  *
@@ -83,13 +85,33 @@
 
   // Görünüm: data-accent launcher arka plan rengi (yalnızca hex kabul;
   // geçersizse varsayılana düşer), data-theme panel + iframe teması.
-  var ACCENT_DEFAULT = "#111827";
-  var accentRaw = (attr("data-accent") || globalCfg.accent || "").trim();
-  var accent = /^#([0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(accentRaw)
-    ? accentRaw.toLowerCase()
-    : ACCENT_DEFAULT;
   var themeRaw = (attr("data-theme") || globalCfg.theme || "light").toLowerCase();
   var themeParam = themeRaw === "dark" || themeRaw === "auto" ? themeRaw : "light";
+
+  // Çözümlenmiş tema hem panel kromu hem launcher varsayılan rengi için
+  // gerekir, bu yüzden medya sorgusu burada kurulur (aşağıda tekrar kurulmaz).
+  var prefersDark = window.matchMedia
+    ? window.matchMedia("(prefers-color-scheme: dark)")
+    : null;
+  function isDarkResolved() {
+    if (themeParam === "dark") return true;
+    if (themeParam === "auto") return Boolean(prefersDark && prefersDark.matches);
+    return false;
+  }
+
+  // Varsayılan launcher rengi TEMAYA duyarlı: sabit koyu (#111827) koyu bir
+  // sitede sayfa zeminiyle neredeyse aynı renge düşüp görünmez oluyordu
+  // (kontrast ~1.1:1). Açık temada koyu, koyu temada açık nötr kullanılır.
+  // Açıkça geçerli bir `data-accent` verilirse bu varsayım devre dışı kalır.
+  var ACCENT_DEFAULT_LIGHT = "#111827";
+  var ACCENT_DEFAULT_DARK = "#f4f4f5";
+  var ACCENT_RE = /^#([0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
+  var accentRaw = (attr("data-accent") || globalCfg.accent || "").trim();
+  var accentExplicit = ACCENT_RE.test(accentRaw);
+  function defaultAccent() {
+    return isDarkResolved() ? ACCENT_DEFAULT_DARK : ACCENT_DEFAULT_LIGHT;
+  }
+  var accent = accentExplicit ? accentRaw.toLowerCase() : defaultAccent();
 
   function hexChannels(h) {
     var v = h.slice(1);
@@ -257,21 +279,22 @@
   mount(launcher);
   mount(overlay);
 
-  // Panel ve kapat butonu çözümlenen temaya uyar (auto: işletim sistemi
-  // tercihini izler, tercih değişirse anında güncellenir).
-  var prefersDark = window.matchMedia
-    ? window.matchMedia("(prefers-color-scheme: dark)")
-    : null;
-  function isDarkResolved() {
-    if (themeParam === "dark") return true;
-    if (themeParam === "auto") return Boolean(prefersDark && prefersDark.matches);
-    return false;
-  }
+  // Panel, kapat butonu ve launcher çözümlenen temaya uyar (auto: işletim
+  // sistemi tercihini izler, tercih değişirse anında güncellenir).
   function applyChrome() {
     var dark = isDarkResolved();
     panel.style.background = dark ? "#1c1c1c" : "#fff";
     closeBtn.style.background = dark ? "rgba(28,28,28,.9)" : "rgba(255,255,255,.9)";
     closeBtn.style.color = dark ? "#d4d4d4" : "#374151";
+    // Tema değişince launcher'ın varsayılan rengi de güncellenir — aksi halde
+    // kullanıcı koyu moda geçtiğinde buton koyu zeminde kaybolur. Açıkça
+    // verilen `data-accent` her zaman kazanır.
+    if (!accentExplicit) {
+      accent = defaultAccent();
+      launcherColor = launcherTextColor(accent);
+    }
+    launcher.style.background = accent;
+    launcher.style.color = launcherColor;
   }
   if (themeParam === "auto" && prefersDark) {
     var onPrefChange = function () { applyChrome(); };

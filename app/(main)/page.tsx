@@ -428,6 +428,7 @@ export default async function RootPage() {
         data-feedl-url="https://feedl.app"
         data-feedl-workspace="feedl"
         data-button-text="Geri bildirim"
+        data-accent="#ff5c35"
         data-theme="auto"
         async
       />

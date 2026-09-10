@@ -1,9 +1,9 @@
 import { Webhook } from "svix";
 import { headers } from "next/headers";
 import type { WebhookEvent } from "@clerk/nextjs/server";
-import { eq } from "drizzle-orm";
+import { and, eq, ne, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { users } from "@/lib/db/schema";
+import { users, workspaceMembers } from "@/lib/db/schema";
 
 // Clerk -> Neon users tablosu senkronizasyonu.
 // Clerk Dashboard > Webhooks > Endpoint: /api/webhooks/clerk
@@ -66,10 +66,11 @@ export async function POST(req: Request) {
       case "user.created":
       case "user.updated": {
         const { id, email_addresses, first_name, last_name } = evt.data;
-        const primaryEmail =
+        const primary =
           email_addresses.find(
             (e) => e.id === evt.data.primary_email_address_id,
-          )?.email_address ?? email_addresses[0]?.email_address;
+          ) ?? email_addresses[0];
+        const primaryEmail = primary?.email_address;
 
         if (!primaryEmail) {
           return Response.json(
@@ -88,6 +89,60 @@ export async function POST(req: Request) {
             target: users.id,
             set: { email: primaryEmail, name, updatedAt: new Date() },
           });
+
+        // Aynı kişi yeni bir Clerk kimliğiyle dönebilir (yeniden kayıt ya da
+        // farklı giriş sağlayıcı) → yeni satır "customer" açılır ve kişi sahibi
+        // olduğu workspace'in dashboard erişimini kaybederdi. Bu durumda, aynı
+        // DOĞRULANMIŞ e-postayla kayıtlı bir admin varsa rolü ve workspace
+        // üyeliklerini devral.
+        //
+        // Yalnız `verification.status === "verified"` iken: aksi halde
+        // başkasının adresini yazan biri yetki devralabilirdi (Clerk adresi
+        // zaten doğrulanmış olarak işaretlemeden bu desene izin verme).
+        const verification = (
+          primary as { verification?: { status?: string } | null } | undefined
+        )?.verification;
+        if (evt.type === "user.created" && verification?.status === "verified") {
+          const [sibling] = await getDb()
+            .select({ id: users.id })
+            .from(users)
+            .where(
+              and(
+                ne(users.id, id),
+                sql`lower(${users.email}) = ${primaryEmail.toLowerCase()}`,
+                eq(users.role, "admin"),
+              ),
+            )
+            .limit(1);
+
+          if (sibling) {
+            await getDb()
+              .update(users)
+              .set({ role: "admin", updatedAt: new Date() })
+              .where(eq(users.id, id));
+
+            const memberships = await getDb()
+              .select({
+                workspaceId: workspaceMembers.workspaceId,
+                role: workspaceMembers.role,
+              })
+              .from(workspaceMembers)
+              .where(eq(workspaceMembers.userId, sibling.id));
+
+            if (memberships.length > 0) {
+              await getDb()
+                .insert(workspaceMembers)
+                .values(
+                  memberships.map((m) => ({
+                    workspaceId: m.workspaceId,
+                    userId: id,
+                    role: m.role,
+                  })),
+                )
+                .onConflictDoNothing();
+            }
+          }
+        }
         break;
       }
       case "user.deleted": {
