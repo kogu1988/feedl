@@ -49,10 +49,13 @@ async function uploadScreenshot(
   try {
     const { put } = await import("@vercel/blob");
     const ext = contentType === "image/png" ? "png" : contentType === "image/jpeg" ? "jpg" : "webp";
+    // Private store: ekran görüntüleri müşteri sayfası içerebilir → public URL
+    // YOK; yalnız admin-auth proxy route (`/api/visual-feedback/image`) ile
+    // `get(access:'private')` üzerinden akıtılır.
     const blob = await put(
       `visual-feedback/${workspaceId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`,
       buffer,
-      { access: "public", contentType, token },
+      { access: "private", contentType, token },
     );
     return blob.url;
   } catch (err) {

@@ -348,13 +348,16 @@
   var vfShotLib = null; // html-to-image yüklendiyse global
 
   function vfLoadShotLib() {
+    // Self-host: html-to-image feedl.app'ten servis edilir (public/widget-capture.js)
+    // → müşteri sitesinde EK CSP İZNİ GEREKMEZ (feedl.app zaten script-src'te)
+    // ve 3. taraf script yüklenmez. Yüklenemezse görüntüsüz gönderilir.
     if (vfShotLib || window.htmlToImage) {
       vfShotLib = vfShotLib || window.htmlToImage;
       return Promise.resolve(vfShotLib);
     }
     return new Promise(function (resolve) {
       var s = document.createElement("script");
-      s.src = "https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js";
+      s.src = baseUrl + "/widget-capture.js";
       s.onload = function () { vfShotLib = window.htmlToImage || null; resolve(vfShotLib); };
       s.onerror = function () { resolve(null); };
       document.head.appendChild(s);

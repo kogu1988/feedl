@@ -495,10 +495,10 @@ export default async function PostDetailPage({
                 </p>
               ) : null}
               {post.screenshotUrl ? (
-                // Harici Blob görseli; boyut bilinmez → next/image yerine <img>.
+                // Private Blob → doğrudan URL yok; admin-auth proxy'den akıtılır.
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={post.screenshotUrl}
+                  src={`/api/visual-feedback/image?postId=${post.id}`}
                   alt="Gönderilen ekran görüntüsü"
                   className="w-full rounded-md border object-cover"
                   loading="lazy"
