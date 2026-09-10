@@ -7,6 +7,7 @@ import {
   jsonb,
   numeric,
   pgTable,
+  real,
   text,
   uniqueIndex,
   timestamp,
@@ -130,6 +131,11 @@ export const posts = pgTable(
     browser: varchar("browser", { length: 60 }),
     os: varchar("os", { length: 60 }),
     pageUrl: text("page_url"),
+    // Faz 2 (görsel feedback): kullanıcının işaret ettiği nokta (viewport
+    // yüzdesi 0-100) + opsiyonel ekran görüntüsü (Vercel Blob URL'i).
+    pinX: real("pin_x"),
+    pinY: real("pin_y"),
+    screenshotUrl: text("screenshot_url"),
     // Sprint 27: Türkçe full-text arama kolonu (GENERATED ALWAYS STORED).
     // İki-argümanlı to_tsvector('turkish', ...) immutable olduğu için
     // generated kolonda kullanılabilir.

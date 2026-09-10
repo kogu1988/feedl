@@ -34,3 +34,26 @@ export const createPostSchema = z.object({
 
 export type CreatePostInput = z.infer<typeof createPostSchema>;
 export type ClientContextInput = z.infer<typeof clientContextSchema>;
+
+// Faz 2 (görsel feedback): kullanıcı sayfada bir noktayı işaretler. pinX/pinY
+// viewport YÜZDESİdir (0-100) — çözünürlükten bağımsız konum. screenshot
+// opsiyonel data URL (base64); sunucuda Blob'a yüklenir (yoksa post yine oluşur).
+export const visualFeedbackSchema = z.object({
+  title: z
+    .string()
+    .trim()
+    .min(3, "Başlık en az 3 karakter olmalı.")
+    .max(140, "Başlık en fazla 140 karakter olabilir."),
+  description: z
+    .string()
+    .trim()
+    .min(3, "Açıklama en az 3 karakter olmalı.")
+    .max(2000, "Açıklama en fazla 2000 karakter olabilir."),
+  pinX: z.number().min(0).max(100),
+  pinY: z.number().min(0).max(100),
+  clientContext: clientContextSchema.optional(),
+  // data URL (~2MB base64 ≈ 1.5MB ikili). Çok büyükse istemci göndermez.
+  screenshot: z.string().max(3_000_000).optional(),
+});
+
+export type VisualFeedbackInput = z.infer<typeof visualFeedbackSchema>;

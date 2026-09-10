@@ -483,6 +483,34 @@ export default async function PostDetailPage({
             </div>
           ) : null}
 
+          {/* Faz 2: görsel feedback — ekran görüntüsü + işaretlenen nokta (admin). */}
+          {isAdmin && (post.screenshotUrl || (post.pinX != null && post.pinY != null)) ? (
+            <div className="grid gap-2 rounded-md border border-dashed p-3">
+              <p className="text-xs font-medium text-muted-foreground">
+                Görsel geri bildirim (yalnızca admin)
+              </p>
+              {post.pinX != null && post.pinY != null ? (
+                <p className="text-xs text-muted-foreground tabular-nums">
+                  İşaretlenen nokta: %{Math.round(post.pinX)} × %{Math.round(post.pinY)}
+                </p>
+              ) : null}
+              {post.screenshotUrl ? (
+                // Harici Blob görseli; boyut bilinmez → next/image yerine <img>.
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={post.screenshotUrl}
+                  alt="Gönderilen ekran görüntüsü"
+                  className="w-full rounded-md border object-cover"
+                  loading="lazy"
+                />
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Ekran görüntüsü yok.
+                </p>
+              )}
+            </div>
+          ) : null}
+
           {/* Faz 1: teknik bağlam — gönderim anında otomatik toplandı (admin). */}
           {isAdmin &&
           (post.deviceType || post.browser || post.os || post.viewportWidth) ? (
@@ -610,6 +638,10 @@ async function loadPost(postId: string, userId: string | null) {
       browser: posts.browser,
       os: posts.os,
       pageUrl: posts.pageUrl,
+      // Faz 2: görsel feedback (ekran görüntüsü + pin konumu).
+      screenshotUrl: posts.screenshotUrl,
+      pinX: posts.pinX,
+      pinY: posts.pinY,
       createdAt: posts.createdAt,
       voteCount: count(votes.id),
     })

@@ -286,4 +286,213 @@
     if (event.origin !== feedlOrigin) return;
     if (event.data && event.data.type === "feedl:close") closeWidget();
   });
+
+  // ---- Faz 2: görsel feedback (host sayfada pin + ekran görüntüsü) ----
+  // Müşteri sitesinde bir noktayı işaret eder; otomatik bağlam + opsiyonel
+  // ekran görüntüsü /api/widget/visual-feedback'e gönderilir. Ekran görüntüsü
+  // için `html-to-image` yalnız gerektiğinde CDN'den yüklenir; yüklenemezse
+  // görüntüsüz gönderilir (özellik çalışmaya devam eder).
+  var VISUAL_CSS = [
+    ".feedl-vf-shot{position:fixed;right:20px;bottom:76px;z-index:2147483000;",
+    "display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border:1px solid rgba(15,23,42,.15);border-radius:9999px;",
+    "background:#fff;color:#111827;font:600 13px/1 system-ui,-apple-system,sans-serif;cursor:pointer;",
+    "box-shadow:0 8px 20px rgba(0,0,0,.15)}",
+    ".feedl-vf-layer{position:fixed;inset:0;z-index:2147483002;cursor:crosshair;",
+    "background:rgba(15,23,42,.08)}",
+    ".feedl-vf-layer[hidden]{display:none}",
+    ".feedl-vf-hint{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:2147483004;",
+    "background:#111827;color:#fff;font:600 13px/1.4 system-ui,-apple-system,sans-serif;",
+    "padding:8px 14px;border-radius:9999px;box-shadow:0 8px 20px rgba(0,0,0,.3);max-width:90vw}",
+    ".feedl-vf-pin{position:fixed;z-index:2147483003;width:18px;height:18px;margin:-9px 0 0 -9px;",
+    "border-radius:9999px;background:#ff5c35;border:3px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,.4)}",
+    ".feedl-vf-form{position:fixed;z-index:2147483004;width:min(320px,calc(100vw - 24px));background:#fff;color:#111827;",
+    "border-radius:12px;box-shadow:0 20px 50px rgba(0,0,0,.35);padding:12px;font:13px/1.4 system-ui,-apple-system,sans-serif}",
+    ".feedl-vf-form input,.feedl-vf-form textarea{width:100%;box-sizing:border-box;border:1px solid #d4d4d8;",
+    "border-radius:8px;padding:7px 9px;font:13px/1.4 system-ui,-apple-system,sans-serif;margin-top:6px}",
+    ".feedl-vf-form textarea{resize:vertical;min-height:56px}",
+    ".feedl-vf-actions{display:flex;gap:8px;margin-top:10px}",
+    ".feedl-vf-actions button{flex:1;border-radius:8px;padding:8px;font:600 13px/1 system-ui,-apple-system,sans-serif;cursor:pointer;border:0}",
+    ".feedl-vf-send{background:" + accent + ";color:" + launcherColor + "}",
+    ".feedl-vf-cancel{background:#f4f4f5;color:#374151}",
+    ".feedl-vf-msg{margin-top:6px;font-size:12px;color:#b91c1c}",
+    ".feedl-vf-toast{position:fixed;right:20px;bottom:132px;z-index:2147483004;background:#065f46;color:#fff;",
+    "font:600 13px/1.4 system-ui,-apple-system,sans-serif;padding:10px 14px;border-radius:10px;box-shadow:0 8px 20px rgba(0,0,0,.3)}"
+  ].join("");
+  var vfStyle = document.createElement("style");
+  vfStyle.textContent = VISUAL_CSS;
+  document.head.appendChild(vfStyle);
+
+  var vfButton = document.createElement("button");
+  vfButton.type = "button";
+  vfButton.className = "feedl-vf-shot";
+  vfButton.setAttribute("aria-label", "Görsel geri bildirim: sayfada bir noktayı işaretle");
+  vfButton.innerHTML =
+    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+    'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<path d="M12 21s-7-6.5-7-11a7 7 0 0 1 14 0c0 4.5-7 11-7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>' +
+    "<span>Görsel geri bildirim</span>";
+  document.body.appendChild(vfButton);
+
+  var vfLayer = document.createElement("div");
+  vfLayer.className = "feedl-vf-layer";
+  vfLayer.hidden = true;
+  var vfHint = document.createElement("div");
+  vfHint.className = "feedl-vf-hint";
+  vfHint.textContent = "Sorunlu noktayı tıkla — ekran görüntüsü ve bağlam otomatik eklenir.";
+  document.body.appendChild(vfLayer);
+  document.body.appendChild(vfHint);
+  vfHint.hidden = true;
+
+  var vfPin = null;
+  var vfForm = null;
+  var vfShotLib = null; // html-to-image yüklendiyse global
+
+  function vfLoadShotLib() {
+    if (vfShotLib || window.htmlToImage) {
+      vfShotLib = vfShotLib || window.htmlToImage;
+      return Promise.resolve(vfShotLib);
+    }
+    return new Promise(function (resolve) {
+      var s = document.createElement("script");
+      s.src = "https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js";
+      s.onload = function () { vfShotLib = window.htmlToImage || null; resolve(vfShotLib); };
+      s.onerror = function () { resolve(null); };
+      document.head.appendChild(s);
+    });
+  }
+
+  function vfCollectContext() {
+    var ua = navigator.userAgent || "";
+    var w = window.innerWidth || null;
+    var h = window.innerHeight || null;
+    var device = /ipad|tablet|(android(?!.*mobile))/i.test(ua)
+      ? "tablet"
+      : /mobi|iphone|ipod|android.*mobile/i.test(ua) || (w && w < 768)
+        ? "mobile"
+        : "desktop";
+    var browser = /Edg\//.test(ua) ? "Edge" : /OPR\//.test(ua) ? "Opera" : /Chrome\//.test(ua) ? "Chrome" : /Firefox\//.test(ua) ? "Firefox" : /Safari\//.test(ua) ? "Safari" : "Other";
+    var os = /iPhone|iPad|iPod/.test(ua) ? "iOS" : /Android/.test(ua) ? "Android" : /Windows/.test(ua) ? "Windows" : /Mac OS X/.test(ua) ? "macOS" : /Linux/.test(ua) ? "Linux" : "Other";
+    return { device: device, viewportWidth: w, viewportHeight: h, browser: browser, os: os, pageUrl: String(location.href).slice(0, 1000) };
+  }
+
+  function vfCleanup() {
+    vfLayer.hidden = true;
+    vfHint.hidden = true;
+    if (vfPin) { vfPin.remove(); vfPin = null; }
+    if (vfForm) { vfForm.remove(); vfForm = null; }
+  }
+
+  function vfToast(text) {
+    var t = document.createElement("div");
+    t.className = "feedl-vf-toast";
+    t.textContent = text;
+    document.body.appendChild(t);
+    setTimeout(function () { t.remove(); }, 2600);
+  }
+
+  function vfOpenForm(x, y) {
+    vfForm = document.createElement("div");
+    vfForm.className = "feedl-vf-form";
+    var left = Math.min(Math.max(12, x + 14), window.innerWidth - 332);
+    var top = Math.min(Math.max(12, y + 14), window.innerHeight - 220);
+    vfForm.style.left = left + "px";
+    vfForm.style.top = top + "px";
+    vfForm.innerHTML =
+      '<div style="font-weight:700">Burada ne var?</div>' +
+      '<input data-vf="title" maxlength="140" placeholder="Kısa başlık (örn. Mobilde buton aşağıda)">' +
+      '<textarea data-vf="desc" maxlength="2000" placeholder="Neyin yanlış olduğunu kısaca anlat"></textarea>' +
+      '<div class="feedl-vf-actions"><button type="button" class="feedl-vf-cancel">İptal</button>' +
+      '<button type="button" class="feedl-vf-send">Gönder</button></div>' +
+      '<div class="feedl-vf-msg" hidden></div>';
+    document.body.appendChild(vfForm);
+    vfForm.querySelector(".feedl-vf-cancel").addEventListener("click", vfCleanup);
+    vfForm.querySelector(".feedl-vf-send").addEventListener("click", function () { vfSubmit(x, y); });
+    var input = vfForm.querySelector('[data-vf="title"]');
+    if (input) input.focus();
+  }
+
+  function vfSubmit(x, y) {
+    if (!vfForm) return;
+    var titleEl = vfForm.querySelector('[data-vf="title"]');
+    var descEl = vfForm.querySelector('[data-vf="desc"]');
+    var msgEl = vfForm.querySelector(".feedl-vf-msg");
+    var title = (titleEl && titleEl.value ? titleEl.value : "").trim();
+    var desc = (descEl && descEl.value ? descEl.value : "").trim();
+    if (title.length < 3 || desc.length < 3) {
+      if (msgEl) { msgEl.hidden = false; msgEl.textContent = "Başlık ve açıklama gerekli."; }
+      return;
+    }
+    var sendBtn = vfForm.querySelector(".feedl-vf-send");
+    if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = "Gönderiliyor…"; }
+    var pinX = Math.round((x / Math.max(1, window.innerWidth)) * 1000) / 10;
+    var pinY = Math.round((y / Math.max(1, window.innerHeight)) * 1000) / 10;
+    var payload = {
+      title: title, description: desc, pinX: pinX, pinY: pinY,
+      clientContext: vfCollectContext(),
+    };
+    // Ekran görüntüsü: overlay/pin görünmesin diye önce gizle, sonra yakala.
+    var pinWasHidden = vfPin ? vfPin.style.visibility : null;
+    var formWasHidden = vfForm.style.visibility;
+    if (vfPin) vfPin.style.visibility = "hidden";
+    vfForm.style.visibility = "hidden";
+    vfHint.hidden = true;
+    vfLoadShotLib().then(function (lib) {
+      var capture = lib
+        ? lib.toJpeg(document.documentElement, { quality: 0.6, pixelRatio: 1, skipFonts: true })
+            .catch(function () { return null; })
+        : Promise.resolve(null);
+      return capture;
+    }).then(function (dataUrl) {
+      if (dataUrl && dataUrl.length < 2_900_000) payload.screenshot = dataUrl;
+      var url = baseUrl + "/api/widget/visual-feedback" + (workspace ? "?ws=" + encodeURIComponent(workspace) : "");
+      return fetch(url, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    }).then(function (res) {
+      return res.json().then(function (json) { return { ok: res.ok, json: json }; });
+    }).then(function (r) {
+      if (!r.ok || !r.json || !r.json.success) {
+        if (msgEl) { msgEl.hidden = false; msgEl.textContent = (r.json && r.json.error) || "Gönderilemedi."; }
+        if (pinWasHidden !== null && vfPin) vfPin.style.visibility = pinWasHidden;
+        vfForm.style.visibility = formWasHidden;
+        if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = "Gönder"; }
+        return;
+      }
+      vfCleanup();
+      vfToast("Teşekkürler! Geri bildirimin alındı.");
+    }).catch(function () {
+      if (msgEl) { msgEl.hidden = false; msgEl.textContent = "Bağlantı hatası."; }
+      if (pinWasHidden !== null && vfPin) vfPin.style.visibility = pinWasHidden;
+      vfForm.style.visibility = formWasHidden;
+      if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = "Gönder"; }
+    });
+  }
+
+  function vfStart() {
+    vfCleanup();
+    vfLayer.hidden = false;
+    vfHint.hidden = false;
+  }
+
+  vfButton.addEventListener("click", vfStart);
+  vfLayer.addEventListener("click", function (event) {
+    if (event.target !== vfLayer) return;
+    var x = event.clientX;
+    var y = event.clientY;
+    if (vfPin) vfPin.remove();
+    vfPin = document.createElement("div");
+    vfPin.className = "feedl-vf-pin";
+    vfPin.style.left = x + "px";
+    vfPin.style.top = y + "px";
+    document.body.appendChild(vfPin);
+    vfHint.hidden = true;
+    if (vfForm) { vfForm.remove(); vfForm = null; }
+    vfOpenForm(x, y);
+  });
+  document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape" && !vfLayer.hidden) vfCleanup();
+  });
 })();
