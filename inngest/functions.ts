@@ -509,9 +509,9 @@ export const notifyAdminNewPost = inngest.createFunction(
         .limit(1);
 
       return {
-        adminEmails: team
-          .map((row) => row.email)
-          .filter((email) => email !== author?.email),
+        adminEmails: [...new Set(team.map((row) => row.email))].filter(
+          (email) => email !== author?.email,
+        ),
         authorName: author?.name ?? author?.email ?? "Bir üye",
       };
     });
@@ -1089,10 +1089,15 @@ export const weeklyDigest = inngest.createFunction(
           );
 
         // Alıcılar: workspace EKİBİ (owner/admin/contributor) ve digest
-        // tercihi açık olanlar. Platform personeli dahil değil.
-        const recipients = (await listWorkspaceTeam(ws.id)).filter(
+        // tercihi açık olanlar. Platform personeli dahil değil. Aynı kişi iki
+        // Clerk kimliğiyle üye olabildiği için e-postaya göre tekilleştirilir
+        // (aksi halde tek adrese iki özet giderdi).
+        const team = (await listWorkspaceTeam(ws.id)).filter(
           (member) => member.emailDigest,
         );
+        const recipients = [
+          ...new Map(team.map((member) => [member.email, member])).values(),
+        ];
 
         const plan = planFromString(ws.plan);
         const newPostCount = Number(newPosts);
