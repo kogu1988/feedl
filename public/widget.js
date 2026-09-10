@@ -174,7 +174,11 @@
     "display:flex;align-items:flex-end;justify-content:flex-end;padding:20px}",
     ".feedl-widget-overlay[hidden]{display:none}",
     ".feedl-widget-panel{position:relative;width:min(420px,calc(100vw - 24px));",
-    "height:min(600px,calc(100vh - 24px));border-radius:16px;background:#fff;overflow:hidden;",
+    // Mobil tarayıcıda `100vh` adres çubuğunun arkasını da sayar → panel
+    // ekrana sığmaz (alt içerik kesilir). `100dvh` görünür alanı kullanır;
+    // desteklemeyen tarayıcılar için `100vh` fallback önce yazılır.
+    "height:min(600px,calc(100vh - 24px));height:min(600px,calc(100dvh - 24px));",
+    "border-radius:16px;background:#fff;overflow:hidden;",
     "box-shadow:0 25px 60px rgba(0,0,0,.3)}",
     ".feedl-widget-close{position:absolute;top:8px;right:8px;z-index:1;width:28px;height:28px;",
     "display:flex;align-items:center;justify-content:center;border:0;border-radius:9999px;",
@@ -183,7 +187,8 @@
     ".feedl-widget-close:hover{background:#fff}",
     ".feedl-widget-iframe{width:100%;height:100%;border:0;display:block}",
     "@media (max-width:480px){.feedl-widget-launcher{right:12px;bottom:12px}",
-    ".feedl-widget-overlay{padding:0}.feedl-widget-panel{width:100vw;height:100vh;border-radius:0}}"
+    ".feedl-widget-overlay{padding:0}",
+    ".feedl-widget-panel{width:100vw;height:100vh;height:100dvh;border-radius:0}}"
   ].join("");
 
   var style = document.createElement("style");
