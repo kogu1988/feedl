@@ -168,9 +168,7 @@ export function WidgetPanel({
             aria-label="Görsel geri bildirim"
           >
             <MapPinIcon className="size-3.5" aria-hidden="true" />
-            {/* Dar ekranda "Görsel" — üç buton 320px'te tek satıra sığsın. */}
-            <span className="hidden min-[380px]:inline">Görsel geri bildirim</span>
-            <span className="min-[380px]:hidden">Görsel</span>
+            Görsel
           </Button>
         ) : null}
       </div>

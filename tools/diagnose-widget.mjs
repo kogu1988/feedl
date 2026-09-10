@@ -116,6 +116,23 @@ for (const { label, scheme, viewport } of scenarios) {
   const hasVisual = buttons.some((b) => b.includes("Görsel"));
   console.log(`${hasVisual ? "✅" : "❌"} iframe butonları: ${JSON.stringify(buttons.slice(0, 3))}`);
 
+  // Üst üç eylem AYNI SATIRDA olmalı (ara / gönder / görsel).
+  const actionNames = ["Fikir ara", "Fikir gönder", "Görsel geri bildirim"];
+  const boxes = [];
+  for (const name of actionNames) {
+    const box = await frame.getByRole("button", { name, exact: true }).boundingBox();
+    if (box) boxes.push({ name, ...box });
+  }
+  const tops = [...new Set(boxes.map((b) => Math.round(b.y)))];
+  const rightEdge = Math.max(...boxes.map((b) => b.x + b.width));
+  const oneRow = tops.length === 1;
+  console.log(
+    `${oneRow ? "✅" : "❌"} üst eylemler tek satırda: ${oneRow} (y=${tops.join("/")}, sağ kenar ${Math.round(rightEdge)} / ${viewport.width})`,
+  );
+  if (!oneRow) {
+    for (const b of boxes) console.log(`    ${b.name}: x=${Math.round(b.x)} y=${Math.round(b.y)} w=${Math.round(b.width)}`);
+  }
+
   if (hasVisual) {
     await frame.getByRole("button", { name: "Görsel geri bildirim" }).click();
     await page.waitForTimeout(700);
