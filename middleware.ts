@@ -85,6 +85,13 @@ const isPublicRoute = createRouteMatcher([
   // abone olabilir; e-posta formatı handler içinde doğrulanır
   "/api/changelog(.*)",
 
+  // Bildirim e-postalarının altındaki token'lı unsubscribe linki. Alıcı
+  // e-postayı tarayıcısında AÇMADIĞI için oturumu YOKTUR; Clerk `protect`
+  // bu ucu 404'e çeviriyordu ve tüm bildirimlerin (durum/yorum/digest/
+  // changelog) abonelikten çıkma linki kırıktı. Yetki token ile handler'da
+  // doğrulanır (users.unsubscribe_token).
+  "/api/unsubscribe(.*)",
+
 ]);
 
 // Sprint 55 (Platformlaşma #3) — board temiz URL: `/portal/:slug` (uuid
