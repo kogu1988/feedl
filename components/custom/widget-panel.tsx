@@ -10,7 +10,7 @@ import { StatusBadge } from "@/components/custom/status-badge";
 import { WidgetVoteButton } from "@/components/custom/widget-vote-button";
 import { WidgetPostForm } from "@/components/custom/widget-post-form";
 import { WidgetTriage } from "@/components/custom/widget-triage";
-import { SearchIcon, PlusIcon, XIcon } from "lucide-react";
+import { SearchIcon, PlusIcon, XIcon, MapPinIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { summarize } from "@/lib/post-format";
 
@@ -112,10 +112,22 @@ export function WidgetPanel({
     setSort(next);
   }
 
+  // Faz 2: görsel feedback butonu yalnız iframe içinde (host sayfa varken)
+  // anlamlı — panelin parent'ına postMessage ile devreder; pin + ekran
+  // görüntüsü host script'te (public/widget.js) çalışır (iframe host DOM'una
+  // erişemez). Standalone /widget sayfasında (parent yok) gizlenir.
+  const embedded = typeof window !== "undefined" && window.parent !== window;
+
+  function startVisualFeedback() {
+    // Host script `feedl:visual-start` mesajını feedl origin'i doğrulayarak
+    // karşılar; panel kapanır ve pin overlay host sayfada açılır.
+    window.parent.postMessage({ type: "feedl:visual-start" }, "*");
+  }
+
   return (
     <div className="w-full">
-      {/* Kompakt araç çubuğu: Fikir ara + Fikir gönder. */}
-      <div className="flex items-center gap-2">
+      {/* Kompakt araç çubuğu: Fikir ara + Fikir gönder + (iframe'de) Görsel. */}
+      <div className="flex flex-wrap items-center gap-2">
         <Button
           type="button"
           variant="outline"
@@ -138,6 +150,19 @@ export function WidgetPanel({
           <PlusIcon className="size-3.5" aria-hidden="true" />
           Fikir gönder
         </Button>
+        {/* Faz 2: yalnız gömülü (iframe) bağlamda — host sayfada pin + ekran görüntüsü. */}
+        {embedded ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="shrink-0 gap-1.5"
+            onClick={startVisualFeedback}
+          >
+            <MapPinIcon className="size-3.5" aria-hidden="true" />
+            Görsel geri bildirim
+          </Button>
+        ) : null}
       </div>
 
       {/* Arama alanı (açılır) — canlı değil, uygula değil; Enter/yazınca filtreler. */}

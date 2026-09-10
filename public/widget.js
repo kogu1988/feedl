@@ -187,8 +187,6 @@
     ".feedl-widget-close:hover{background:#fff}",
     ".feedl-widget-iframe{width:100%;height:100%;border:0;display:block}",
     "@media (max-width:480px){.feedl-widget-launcher{right:12px;bottom:12px}",
-    ".feedl-vf-shot{right:12px;bottom:68px;padding:10px}",
-    ".feedl-vf-shot span{display:none}", // mobil: yalnız ikon (yer kazan)
     ".feedl-widget-overlay{padding:0}",
     ".feedl-widget-panel{width:100vw;height:100vh;height:100dvh;border-radius:0}}"
   ].join("");
@@ -295,10 +293,6 @@
   // için `html-to-image` yalnız gerektiğinde CDN'den yüklenir; yüklenemezse
   // görüntüsüz gönderilir (özellik çalışmaya devam eder).
   var VISUAL_CSS = [
-    ".feedl-vf-shot{position:fixed;right:20px;bottom:76px;z-index:2147483000;",
-    "display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border:1px solid rgba(15,23,42,.15);border-radius:9999px;",
-    "background:#fff;color:#111827;font:600 13px/1 system-ui,-apple-system,sans-serif;cursor:pointer;",
-    "box-shadow:0 8px 20px rgba(0,0,0,.15)}",
     ".feedl-vf-layer{position:fixed;inset:0;z-index:2147483002;cursor:crosshair;",
     "background:rgba(15,23,42,.08)}",
     ".feedl-vf-layer[hidden]{display:none}",
@@ -323,17 +317,6 @@
   var vfStyle = document.createElement("style");
   vfStyle.textContent = VISUAL_CSS;
   document.head.appendChild(vfStyle);
-
-  var vfButton = document.createElement("button");
-  vfButton.type = "button";
-  vfButton.className = "feedl-vf-shot";
-  vfButton.setAttribute("aria-label", "Görsel geri bildirim: sayfada bir noktayı işaretle");
-  vfButton.innerHTML =
-    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
-    'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-    '<path d="M12 21s-7-6.5-7-11a7 7 0 0 1 14 0c0 4.5-7 11-7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>' +
-    "<span>Görsel geri bildirim</span>";
-  document.body.appendChild(vfButton);
 
   var vfLayer = document.createElement("div");
   vfLayer.className = "feedl-vf-layer";
@@ -482,7 +465,17 @@
     vfHint.hidden = false;
   }
 
-  vfButton.addEventListener("click", vfStart);
+  // Buton artık widget panelinin (iframe) içinde — panel "feedl:visual-start"
+  // mesajı gönderince pin modu host sayfada başlar. Mesaj yalnız feedl
+  // origin'inden kabul edilir.
+  window.addEventListener("message", function (event) {
+    if (event.origin !== feedlOrigin) return;
+    if (event.data && event.data.type === "feedl:visual-start") {
+      closeWidget();
+      vfStart();
+    }
+  });
+
   vfLayer.addEventListener("click", function (event) {
     if (event.target !== vfLayer) return;
     var x = event.clientX;
