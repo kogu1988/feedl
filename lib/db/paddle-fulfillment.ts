@@ -1,7 +1,5 @@
 import "server-only";
 
-import { eq } from "drizzle-orm";
-
 import { getDb } from "@/lib/db";
 import { customers, subscriptions } from "@/lib/db/schema";
 

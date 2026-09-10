@@ -290,8 +290,9 @@
   // ---- Faz 2: görsel feedback (host sayfada pin + ekran görüntüsü) ----
   // Müşteri sitesinde bir noktayı işaret eder; otomatik bağlam + opsiyonel
   // ekran görüntüsü /api/widget/visual-feedback'e gönderilir. Ekran görüntüsü
-  // için `html-to-image` yalnız gerektiğinde CDN'den yüklenir; yüklenemezse
-  // görüntüsüz gönderilir (özellik çalışmaya devam eder).
+  // için `html-to-image` yalnız gerektiğinde ve SELF-HOST olarak
+  // (feedl.app/widget-capture.js) yüklenir — 3. taraf yok, ek CSP izni gerekmez;
+  // yüklenemezse görüntüsüz gönderilir (özellik çalışmaya devam eder).
   var VISUAL_CSS = [
     ".feedl-vf-layer{position:fixed;inset:0;z-index:2147483002;cursor:crosshair;",
     "background:rgba(15,23,42,.08)}",
@@ -431,7 +432,9 @@
         : Promise.resolve(null);
       return capture;
     }).then(function (dataUrl) {
-      if (dataUrl && dataUrl.length < 2_900_000) payload.screenshot = dataUrl;
+      // Sunucudaki MAX_IMAGE_BYTES (1.5MB ikili) ile hizalı: base64 ≈ 4/3 ×
+      // ikili → 2MB data-URL üstü zaten sunucuda düşürülür, boşuna yüklemeyiz.
+      if (dataUrl && dataUrl.length < 2_000_000) payload.screenshot = dataUrl;
       var url = baseUrl + "/api/widget/visual-feedback" + (workspace ? "?ws=" + encodeURIComponent(workspace) : "");
       return fetch(url, {
         method: "POST",

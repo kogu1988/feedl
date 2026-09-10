@@ -57,7 +57,15 @@ export function WidgetPanel({
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Faz 2: gömülü mü? SSR'de `window` yok → başlangıçta false, mount sonrası
+  // ölçülür. Render sırasında okunsaydı sunucu (false) ile istemci (true)
+  // çıktısı farklılaşır ve hydration mismatch oluşurdu.
+  const [embedded, setEmbedded] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setEmbedded(window.parent !== window);
+  }, []);
 
   const wsParam = ws ? `&ws=${encodeURIComponent(ws)}` : "";
 
@@ -116,8 +124,6 @@ export function WidgetPanel({
   // anlamlı — panelin parent'ına postMessage ile devreder; pin + ekran
   // görüntüsü host script'te (public/widget.js) çalışır (iframe host DOM'una
   // erişemez). Standalone /widget sayfasında (parent yok) gizlenir.
-  const embedded = typeof window !== "undefined" && window.parent !== window;
-
   function startVisualFeedback() {
     // Host script `feedl:visual-start` mesajını feedl origin'i doğrulayarak
     // karşılar; panel kapanır ve pin overlay host sayfada açılır.
@@ -158,9 +164,12 @@ export function WidgetPanel({
             size="sm"
             className="shrink-0 gap-1.5"
             onClick={startVisualFeedback}
+            aria-label="Görsel geri bildirim"
           >
             <MapPinIcon className="size-3.5" aria-hidden="true" />
-            Görsel geri bildirim
+            {/* Dar ekranda "Görsel" — üç buton 320px'te tek satıra sığsın. */}
+            <span className="hidden min-[380px]:inline">Görsel geri bildirim</span>
+            <span className="min-[380px]:hidden">Görsel</span>
           </Button>
         ) : null}
       </div>
