@@ -34,10 +34,11 @@ interface FakeEl {
   querySelector(): null;
 }
 
-// Launcher arka planı TEMAYA duyarlı olmalı: sabit koyu renk koyu bir sitede
-// sayfa zeminiyle aynı renge düşüp görünmez oluyordu (kontrast ~1.1:1).
-const ACCENT_DARK_DEFAULT = "#f4f4f5";
-const ACCENT_LIGHT_DEFAULT = "#111827";
+// Launcher varsayılanı = feedl marka rengi. Free plan snippet'e `data-accent`
+// yazmadığı için marka rengi uygulanır (plan matrisi); Pro özelleştirir.
+// Sabit nötr koyu varsayılan koyu sitelerde görünmez oluyordu (~1.1:1) —
+// marka rengi her iki zeminde de okunur (3.07:1 / 6.44:1).
+const ACCENT_BRAND = "#ff5c35";
 
 function makeEl(tag = "div"): FakeEl {
   const el = {
@@ -175,28 +176,35 @@ describe("widget embed — body henüz yokken bağlanma", () => {
   });
 });
 
-describe("widget launcher rengi — tema duyarlı görünürlük", () => {
-  it("açık temada nötr koyu varsayılanı kullanır", () => {
+describe("widget launcher rengi — plan matrisi ve görünürlük", () => {
+  it("data-accent yoksa marka rengini kullanır (free plan varsayılanı)", () => {
     const { body } = bootWidget({ bodyAvailable: true, attrs: { "data-theme": "light" } });
-    expect(launcherOf(body)?.style.background).toBe(ACCENT_LIGHT_DEFAULT);
+    expect(launcherOf(body)?.style.background).toBe(ACCENT_BRAND);
   });
 
-  it("koyu temada AÇIK varsayılana geçer (koyu zeminde görünür kalsın)", () => {
+  it("koyu temada da marka renginde kalır (koyu zeminde görünür)", () => {
     const { body } = bootWidget({ bodyAvailable: true, attrs: { "data-theme": "dark" } });
-    expect(launcherOf(body)?.style.background).toBe(ACCENT_DARK_DEFAULT);
+    expect(launcherOf(body)?.style.background).toBe(ACCENT_BRAND);
   });
 
-  it("açıkça verilen data-accent her zaman kazanır", () => {
+  it("açıkça verilen data-accent kazanır (Pro özel rengi)", () => {
     const { body } = bootWidget({
       bodyAvailable: true,
-      attrs: { "data-theme": "dark", "data-accent": "#ff5c35" },
+      attrs: { "data-theme": "dark", "data-accent": "#123456" },
     });
-    expect(launcherOf(body)?.style.background).toBe("#ff5c35");
+    expect(launcherOf(body)?.style.background).toBe("#123456");
   });
 
-  it("metin rengini arka plana göre seçer (açık zeminde koyu yazı)", () => {
-    const { body } = bootWidget({ bodyAvailable: true, attrs: { "data-theme": "dark" } });
-    // #f4f4f5 açık bir renk → üzerine koyu yazı gelmeli.
+  it("geçersiz data-accent marka rengine düşer", () => {
+    const { body } = bootWidget({
+      bodyAvailable: true,
+      attrs: { "data-accent": "javascript:alert(1)" },
+    });
+    expect(launcherOf(body)?.style.background).toBe(ACCENT_BRAND);
+  });
+
+  it("metin rengini arka plana göre seçer (mercan üstünde koyu yazı)", () => {
+    const { body } = bootWidget({ bodyAvailable: true });
     expect(launcherOf(body)?.style.color).toBe("#18181b");
   });
 });

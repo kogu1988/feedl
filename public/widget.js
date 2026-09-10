@@ -17,9 +17,9 @@
  *   Doğru ayarlanırsa widget'ın tüm verileri (fikir/oy) müşterinin kendi
  *   workspace'inde toplanır (Sprint 63p tenant-aware).
  * - data-accent: launcher butonunun arka plan rengi (yalnızca hex kabul;
- *   yazı rengi WCAG kontrastına göre otomatik seçilir). Verilmezse TEMA
- *   duyarlı varsayılan kullanılır (açık tema #111827, koyu tema #f4f4f5) —
- *   sabit koyu renk koyu sitelerde görünmez oluyordu.
+ *   yazı rengi WCAG kontrastına göre otomatik seçilir). Verilmezse feedl
+ *   marka rengi (#ff5c35) kullanılır — free planın varsayılanı budur; Pro
+ *   planda özel renk bu attribute ile verilir.
  * - data-theme: panel ve iframe teması — light | dark | auto (varsayılan
  *   light; auto = ziyaretçinin işletim sistemi tercihini izler).
  *
@@ -99,19 +99,17 @@
     return false;
   }
 
-  // Varsayılan launcher rengi TEMAYA duyarlı: sabit koyu (#111827) koyu bir
-  // sitede sayfa zeminiyle neredeyse aynı renge düşüp görünmez oluyordu
-  // (kontrast ~1.1:1). Açık temada koyu, koyu temada açık nötr kullanılır.
-  // Açıkça geçerli bir `data-accent` verilirse bu varsayım devre dışı kalır.
-  var ACCENT_DEFAULT_LIGHT = "#111827";
-  var ACCENT_DEFAULT_DARK = "#f4f4f5";
+  // Varsayılan launcher rengi = feedl marka rengi. FREE planlı workspace'ler
+  // snippet'e `data-accent` yazmaz, dolayısıyla marka rengi uygulanır (plan
+  // matrisi); Pro'da `data-accent` ile özelleştirilir ve bu varsayılan devre
+  // dışı kalır. Marka rengi hem açık hem koyu zeminde görünür (ölçülen
+  // kontrast 3.07:1 / 6.44:1) — eski nötr koyu varsayılan koyu sitelerde
+  // sayfa zeminiyle karışıp görünmez oluyordu (~1.1:1).
+  var ACCENT_DEFAULT = "#ff5c35";
   var ACCENT_RE = /^#([0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
   var accentRaw = (attr("data-accent") || globalCfg.accent || "").trim();
   var accentExplicit = ACCENT_RE.test(accentRaw);
-  function defaultAccent() {
-    return isDarkResolved() ? ACCENT_DEFAULT_DARK : ACCENT_DEFAULT_LIGHT;
-  }
-  var accent = accentExplicit ? accentRaw.toLowerCase() : defaultAccent();
+  var accent = accentExplicit ? accentRaw.toLowerCase() : ACCENT_DEFAULT;
 
   function hexChannels(h) {
     var v = h.slice(1);
@@ -286,13 +284,6 @@
     panel.style.background = dark ? "#1c1c1c" : "#fff";
     closeBtn.style.background = dark ? "rgba(28,28,28,.9)" : "rgba(255,255,255,.9)";
     closeBtn.style.color = dark ? "#d4d4d4" : "#374151";
-    // Tema değişince launcher'ın varsayılan rengi de güncellenir — aksi halde
-    // kullanıcı koyu moda geçtiğinde buton koyu zeminde kaybolur. Açıkça
-    // verilen `data-accent` her zaman kazanır.
-    if (!accentExplicit) {
-      accent = defaultAccent();
-      launcherColor = launcherTextColor(accent);
-    }
     launcher.style.background = accent;
     launcher.style.color = launcherColor;
   }

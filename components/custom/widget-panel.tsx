@@ -10,6 +10,7 @@ import { StatusBadge } from "@/components/custom/status-badge";
 import { WidgetVoteButton } from "@/components/custom/widget-vote-button";
 import { WidgetPostForm } from "@/components/custom/widget-post-form";
 import { WidgetTriage } from "@/components/custom/widget-triage";
+import { PoweredByFeedlMark } from "@/components/custom/powered-by-feedl-mark";
 import { SearchIcon, PlusIcon, XIcon, MapPinIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { summarize } from "@/lib/post-format";
@@ -304,6 +305,13 @@ export function WidgetPanel({
             Sonraki &rarr;
           </Button>
         </nav>
+      ) : null}
+
+      {/* Plan matrisi: free workspace'te feedl rozeti (logoya tıklayınca siteye
+          gider); Pro'da gizlenir. Rozet iframe içinde (feedl origin) render
+          edildiği için müşteri sayfasından kaldırılamaz. */}
+      {!isPro ? (
+        <PoweredByFeedlMark className="mt-4 flex items-center justify-center gap-1.5 text-xs text-muted-foreground" />
       ) : null}
     </div>
   );

@@ -10,15 +10,26 @@ import { Input } from "@/components/ui/input";
 // üretir (POST /api/admin/widget-token) ve embed snippet'ini jetonla
 // doldurur. Üretimde jetonu müşterinin kendi backend'i imalar; bu form
 // MVP/test amaçlıdır. Sprint 41: vurgu rengi + tema seçimi snippet'e
-// data-accent / data-theme olarak yansır (varsayılanlar snippet'e yazılmaz).
-const ACCENT_DEFAULT = "#111827";
+// data-accent / data-theme olarak yansır.
+//
+// Plan matrisi: FREE planın widget rengi SABİTTİR (feedl marka rengi) ve
+// panelde feedl rozeti görünür; özel renk ve rozetin kaldırılması Pro'ya
+// aittir. Bu yüzden renk seçici yalnız Pro'da gösterilir ve free snippet'e
+// `data-accent` HİÇ yazılmaz (widget varsayılanı marka rengidir).
+const WIDGET_BRAND_ACCENT = "#ff5c35";
 
-export function WidgetSetup({ baseUrl }: { baseUrl: string }) {
+export function WidgetSetup({
+  baseUrl,
+  isPro,
+}: {
+  baseUrl: string;
+  isPro: boolean;
+}) {
   const [sub, setSub] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [token, setToken] = useState<string | null>(null);
-  const [accent, setAccent] = useState(ACCENT_DEFAULT);
+  const [accent, setAccent] = useState(WIDGET_BRAND_ACCENT);
   const [theme, setTheme] = useState<"light" | "dark" | "auto">("light");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,7 +41,7 @@ export function WidgetSetup({ baseUrl }: { baseUrl: string }) {
     `  data-feedl-url="${baseUrl}"`,
     ...(token ? [`  data-token="${token}"`] : []),
     `  data-button-text="Geri bildirim"`,
-    ...(accent.toLowerCase() !== ACCENT_DEFAULT
+    ...(isPro && accent.toLowerCase() !== WIDGET_BRAND_ACCENT
       ? [`  data-accent="${accent.toLowerCase()}"`]
       : []),
     ...(theme !== "light" ? [`  data-theme="${theme}"`] : []),
@@ -133,24 +144,38 @@ export function WidgetSetup({ baseUrl }: { baseUrl: string }) {
 
       <div className="grid gap-3">
         <p className="text-sm text-muted-foreground">
-          2) Widget görünümünü ayarlayın. Vurgu rengi launcher butonuna
-          uygulanır; yazı rengi seçtiğiniz rengin parlaklığına göre otomatik
-          belirlenir.
+          {isPro
+            ? "2) Widget görünümünü ayarlayın. Vurgu rengi launcher butonuna uygulanır; yazı rengi seçtiğiniz rengin parlaklığına göre otomatik belirlenir."
+            : "2) Widget görünümünü ayarlayın. Free planda vurgu rengi feedl marka rengidir ve panelde feedl rozeti görünür."}
         </p>
         <div className="grid gap-2 sm:grid-cols-2">
-          <label className="flex h-8 items-center gap-2 rounded-lg border border-input bg-transparent px-2.5 text-sm">
-            <input
-              type="color"
-              value={accent}
-              onChange={(event) => setAccent(event.target.value)}
-              className="size-5 shrink-0 cursor-pointer rounded border-0 bg-transparent p-0"
-              aria-label="Vurgu rengi"
-            />
-            <span className="text-muted-foreground">Vurgu rengi</span>
-            <code className="ml-auto text-xs uppercase text-muted-foreground">
-              {accent.toUpperCase()}
-            </code>
-          </label>
+          {isPro ? (
+            <label className="flex h-8 items-center gap-2 rounded-lg border border-input bg-transparent px-2.5 text-sm">
+              <input
+                type="color"
+                value={accent}
+                onChange={(event) => setAccent(event.target.value)}
+                className="size-5 shrink-0 cursor-pointer rounded border-0 bg-transparent p-0"
+                aria-label="Vurgu rengi"
+              />
+              <span className="text-muted-foreground">Vurgu rengi</span>
+              <code className="ml-auto text-xs uppercase text-muted-foreground">
+                {accent.toUpperCase()}
+              </code>
+            </label>
+          ) : (
+            <div className="flex h-8 items-center gap-2 rounded-lg border border-input bg-muted/40 px-2.5 text-sm">
+              <span
+                className="size-5 shrink-0 rounded border border-black/10"
+                style={{ backgroundColor: WIDGET_BRAND_ACCENT }}
+                aria-hidden="true"
+              />
+              <span className="text-muted-foreground">Vurgu rengi</span>
+              <code className="ml-auto text-xs uppercase text-muted-foreground">
+                {WIDGET_BRAND_ACCENT.toUpperCase()}
+              </code>
+            </div>
+          )}
           <select
             value={theme}
             onChange={(event) =>
@@ -164,6 +189,11 @@ export function WidgetSetup({ baseUrl }: { baseUrl: string }) {
             <option value="auto">Tema: Sistem</option>
           </select>
         </div>
+        {!isPro ? (
+          <p className="text-xs text-muted-foreground">
+            Özel vurgu rengi ve feedl rozetinin kaldırılması Pro plana dahildir.
+          </p>
+        ) : null}
       </div>
 
       <div className="grid gap-3">

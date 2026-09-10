@@ -13,6 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { getAdminUserId, getNonAdminRedirectTarget } from "@/lib/auth/admin";
+import { getPlanLimits } from "@/lib/paddle";
 import { trDateTimeFormatter } from "@/lib/post-format";
 import { isWidgetConfigured } from "@/lib/widget/jwt";
 import { listWidgetOrigins } from "@/lib/widget/origins";
@@ -35,6 +36,9 @@ export default async function WidgetAdminPage() {
   const baseUrl = `${proto}://${host}`;
 
   const configured = isWidgetConfigured();
+  // Plan matrisi: free'de vurgu rengi sabit (marka rengi) + feedl rozeti;
+  // özel renk Pro'ya ait. Renk seçici buna göre gösterilir.
+  const isPro = (await getPlanLimits()).key === "pro";
   const originRows = await listWidgetOrigins();
   const originItems: WidgetOriginItem[] = originRows.map((row) => ({
     id: row.id,
@@ -67,7 +71,7 @@ export default async function WidgetAdminPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <WidgetSetup baseUrl={baseUrl} />
+          <WidgetSetup baseUrl={baseUrl} isPro={isPro} />
         </CardContent>
       </Card>
 
