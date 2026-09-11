@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import type { ZodType } from "zod";
 import { maskPii } from "./pii";
 
@@ -5,16 +6,46 @@ const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 
 // Modeller docs/README.md §1 ve docs/prompts.md'de sabitlendi (canlı test edildi).
 // Sprint 63w (B4): LLM_MODEL env ile override edilebilir; LLM_FALLBACK_MODEL
-// varsa birincil model 429/5xx verince fallback denenir (ücretli gemini vs.).
-const LLM_MODEL_DEFAULT = "minimax/minimax-m3:free";
+// varsa birincil model 429/5xx/kullanılamaz durumunda sıradaki denenir.
+//
+// DERS (2026-09-11): OpenRouter ücretsiz modelleri HABER VERMEDEN emekliye
+// ayrılıyor — `minimax/minimax-m3:free` bir gün 404 dönmeye başladı ve
+// üretimde tüm AI fonksiyonları (ai-autopilot 9/9, corpus-insights 1/1)
+// öldü; tek sinyal Inngest'teki failed run'lardı. Bu yüzden:
+//   1) varsayılanlar yalnızca CANLI doğrulanmış ücretli modeller olur
+//      (ücretsizler upstream 429 + reasoning token sızıntısı ile düzensiz —
+//      `tools/probe-llm-models.mjs` ile ölçüldü),
+//   2) fallback zinciri her zaman dolu tutulur (env'den),
+//   3) tüm modeller tükenirse hata SESLİ (Sentry) hale gelir.
+// Ölçümler ve istemler: tools/llm-model-test-prompts.md
+const LLM_MODEL_DEFAULT = "amazon/nova-micro-v1";
+const LLM_FALLBACK_DEFAULT = "mistralai/mistral-nemo";
 const EMBEDDING_MODEL = "nvidia/nemotron-3-embed-1b:free";
 
-// Aktif LLM model listesi: birincil + opsiyonel fallback. Birincili env override
-// edip dengeyi değiştirmeden fallback zincirini kullanabilirsin. (Test için export.)
+// Aktif LLM model listesi: birincil + fallback. Üçüncü bir model id'si
+// virgülle LLM_FALLBACK_MODEL'a yazılabilir. (Test için export.)
 export function chatModels(): string[] {
   const primary = process.env.LLM_MODEL || LLM_MODEL_DEFAULT;
-  const fallback = process.env.LLM_FALLBACK_MODEL;
-  return fallback ? [primary, fallback] : [primary];
+  const fallbackRaw = process.env.LLM_FALLBACK_MODEL || LLM_FALLBACK_DEFAULT;
+  const extras = fallbackRaw
+    .split(",")
+    .map((m) => m.trim())
+    .filter(Boolean);
+  const chain = [primary, ...extras].filter((m, i, arr) => arr.indexOf(m) === i);
+  return chain;
+}
+
+// AI hattı sessizce ölmesin: bir model emekliye ayrıldığında ya da tüm zincir
+// tükendiğinde Sentry'ye raporla (DSN yoksa capture no-op'tur).
+function reportLlmFailure(scope: string, models: string[], err: unknown): void {
+  try {
+    Sentry.captureException(err, {
+      tags: { area: "llm", scope },
+      extra: { models },
+    });
+  } catch {
+    /* Sentry yapılandırılmamışsa veya hata verirse ana akışı bozma */
+  }
 }
 
 function getApiKey(): string {
@@ -43,9 +74,12 @@ export async function embedText(input: string): Promise<number[]> {
 
   if (!response.ok) {
     const detail = await response.text().catch(() => "");
-    throw new Error(
+    const err = new Error(
       `Embedding request failed (${response.status}): ${detail.slice(0, 200)}`,
     );
+    // Embedding modeli de haber verilmeden emekliye ayrılabilir → sesli hata.
+    reportLlmFailure("embedding", [EMBEDDING_MODEL], err);
+    throw err;
   }
 
   const payload: unknown = await response.json();
@@ -118,16 +152,14 @@ async function parseChatContent(response: Response): Promise<unknown> {
 }
 
 // LLM çağrısı yapar, yanıttaki ilk `{` ile son `}` arası JSON'u çıkarır ve
-// ham (unsafe) çıktıyı döner. Sprint 63w: model zinciri — birincil ücretsiz
-// 429/5xx verirse ve LLM_FALLBACK_MODEL varsa sıradaki modele geçer (tek modelde
-// kısa beklemeli retry de `fetchWithRetry` ile zaten var). Ağ/hata son modelde
-// fırlatır → Inngest retry yakar. Şema doğrulaması çağıran tarafındadır.
+// ham (unsafe) çıktıyı döner. Model zinciri: birincil başarısız olursa
+// (429/5xx/kullanılamaz) sıradaki denenir. Zincir tamamen tükenirse hata
+// SESLİ hale getirilir (Sentry) ve Inngest retry için fırlatılır.
 async function requestChatJson(options: ChatJsonOptions): Promise<unknown> {
   const models = chatModels();
   let lastErr: unknown;
 
-  for (let i = 0; i < models.length; i++) {
-    const model = models[i];
+  for (const model of models) {
     try {
       const response = await fetchWithRetry(`${OPENROUTER_BASE_URL}/chat/completions`, {
         method: "POST",
@@ -150,19 +182,22 @@ async function requestChatJson(options: ChatJsonOptions): Promise<unknown> {
         return await parseChatContent(response);
       }
 
-      // HTTP hatası: son modeldeyse fırlat, değilse fallback'e geç.
       const detail = await response.text().catch(() => "");
-      const err = new Error(
+      lastErr = new Error(
         `LLM request failed (${response.status}) [${model}]: ${detail.slice(0, 200)}`,
       );
-      if (i === models.length - 1) throw err;
-      lastErr = err;
+      console.error(`LLM modeli başarısız [${model}]: HTTP ${response.status}`);
     } catch (err) {
-      if (i === models.length - 1) throw err;
       lastErr = err;
+      console.error(
+        `LLM modeli başarısız [${model}]:`,
+        err instanceof Error ? err.message : err,
+      );
     }
   }
 
+  // Tüm modeller tükendi: sessiz ölüm yerine sesli hata.
+  reportLlmFailure("chat-json", models, lastErr);
   throw lastErr;
 }
 

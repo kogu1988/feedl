@@ -111,7 +111,7 @@ yüzeyinde webhook/API jargonu kullanma.
 | DB | Neon PostgreSQL + pgvector (Drizzle ORM) |
 | UI | Tailwind v4 + shadcn/ui + Base UI |
 | Background | Inngest |
-| AI | OpenRouter (`minimax/minimax-m3:free` LLM + fallback, `nemotron-3-embed-1b:free` embedding) |
+| AI | OpenRouter (LLM `amazon/nova-micro-v1` → fallback `mistralai/mistral-nemo`, embedding `nemotron-3-embed-1b:free`) |
 | Email | Resend (deliverability webhook) |
 | Billing | Paddle (live) |
 | Rate-limit | Upstash Redis |
