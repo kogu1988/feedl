@@ -16,6 +16,7 @@ import { renderShippedEmail } from "@/lib/email/shipped";
 import { renderDigestEmail, shouldSendDigest } from "@/lib/email/digest";
 import { statusLabels } from "@/lib/post-format";
 import {
+  deliverToAllEndpoints,
   deliverWebhook,
   loadWebhookEndpoints,
   type WebhookEventName,
@@ -745,30 +746,39 @@ export const sendWebhooks = inngest.createFunction(
       hydrateWebhookPayload(webhookEvent, event.data),
     );
 
-    let delivered = 0;
-    for (const endpoint of endpoints) {
-      await step.run(`deliver-${endpoint.id}`, async () => {
-        const upsert = {
-          workspaceId: await getWorkspaceId(),
-          endpointId: endpoint.id,
-          event: webhookEvent,
-          payload: hydrated,
-        };
-        try {
-          await deliverWebhook(endpoint, webhookEvent, hydrated);
-          await markDeliveryDelivered(upsert);
-        } catch (deliveryErr) {
-          // Dead-letter kaydı + Inngest'in retry etmesi için rethrow.
-          await recordDeliveryFailure(
-            upsert,
-            deliveryErr instanceof Error
-              ? deliveryErr.message
-              : "Bilinmeyen teslimat hatası",
-          );
-          throw deliveryErr;
-        }
-      });
-      delivered += 1;
+    // Her endpoint'e BAĞIMSIZ teslimat: bir endpoint'in hatası diğerlerini aç
+    // bırakmasın. Hatalar toplanır ve sonunda fırlatılır → Inngest retry eder
+    // + dead-letter kaydı düşer; başarılı endpoint'ler step memoization
+    // sayesinde TEKRAR teslim edilmez.
+    const { delivered, failed } = await deliverToAllEndpoints(
+      endpoints,
+      (endpoint) =>
+        step.run(`deliver-${endpoint.id}`, async () => {
+          const upsert = {
+            workspaceId: await getWorkspaceId(),
+            endpointId: endpoint.id,
+            event: webhookEvent,
+            payload: hydrated,
+          };
+          try {
+            await deliverWebhook(endpoint, webhookEvent, hydrated);
+            await markDeliveryDelivered(upsert);
+          } catch (deliveryErr) {
+            // Dead-letter kaydı + Inngest'in retry etmesi için rethrow.
+            await recordDeliveryFailure(
+              upsert,
+              deliveryErr instanceof Error
+                ? deliveryErr.message
+                : "Bilinmeyen teslimat hatası",
+            );
+            throw deliveryErr;
+          }
+        }),
+    );
+    if (failed.length > 0) {
+      throw new Error(
+        `${failed.length}/${endpoints.length} webhook endpoint teslimatı başarısız: ${failed.join(", ")}`,
+      );
     }
 
     return { event: webhookEvent, delivered };

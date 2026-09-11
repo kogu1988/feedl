@@ -91,3 +91,34 @@ export async function deliverWebhook(
     throw new Error(`Webhook teslimatı başarısız: HTTP ${res.status}`);
   }
 }
+
+// Birden çok endpoint'e BAĞIMSIZ teslimat: bir endpoint'in hatası
+// diğerlerinin teslimatını ENGELLEMEZ. Hatalar toplanır, çağıran taraf
+// (Inngest fonksiyonu) sonunda tek seferde fırlatıp retry'ı tetikler.
+//
+// Neden: eski akış `for (endpoint) { await step.run(...) }` idi ve ilk hata
+// döngüyü kırıyordu → tek bir ölü endpoint, listede kendisinden SONRAKİ tüm
+// endpoint'leri kalıcı olarak aç bırakıyordu (2026-09-11'de canlıda
+// gözlemlendi: send-webhooks 9/9 failed).
+export async function deliverToAllEndpoints(
+  endpoints: WebhookEndpointRow[],
+  // Dönüş değeri kullanılmaz; Inngest `step.run` void yerine `null`
+  // döndürebildiği için `unknown` kabul edilir.
+  deliver: (endpoint: WebhookEndpointRow) => Promise<unknown>,
+): Promise<{ delivered: number; failed: string[] }> {
+  let delivered = 0;
+  const failed: string[] = [];
+  for (const endpoint of endpoints) {
+    try {
+      await deliver(endpoint);
+      delivered += 1;
+    } catch (err) {
+      failed.push(endpoint.id);
+      console.error(
+        `Webhook teslimatı başarısız (endpoint ${endpoint.id}):`,
+        err instanceof Error ? err.message : err,
+      );
+    }
+  }
+  return { delivered, failed };
+}
