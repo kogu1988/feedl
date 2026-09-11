@@ -103,5 +103,40 @@ Notlar:
   havuzu) ve reasoning modelleri token bütçesini yiyip çıktıyı kesebiliyor.
 - Hacim düşük olduğu için ücretli modeller pratikte bedava: 1.000
   sınıflandırma ≈ **$0.01** (llama-3.1-8b ile).
-- `LLM_FALLBACK_MODEL` tanımlı olmadığı için model emekliye ayrılınca üretim
-  sessizce öldü. Fallback zinciri + `/widget` gibi bir sağlık kontrolü şart.
+
+---
+
+## Ölçülen sonuçlar — İstem B (iç içe şema, 2026-09-11)
+
+| Model | Durum | Gecikme | Maliyet/çağrı | `themes` nesne dizisi |
+|---|---|---|---|---|
+| `amazon/nova-micro-v1` | ✅ | **2.4s** | $0.000076 | ✓ |
+| `amazon/nova-lite-v1` | ✅ | 2.4s | $0.000157 | ✓ |
+| `mistralai/mistral-nemo` | ✅ | **3.3s** | **$0.000018** | ✓ |
+| `mistralai/mistral-small-24b-instruct-2501` | ✅ | 14.7s | $0.000063 | ✓ |
+| `meta-llama/llama-3.1-8b-instruct` | ✅ | 48.8s | $0.000080 | ✓ (ama çok yavaş → elendi) |
+| `openai/gpt-oss-20b` | ⚠ | 16.7s | $0.000129 | ✗ 900 token'ı yiyip **BOŞ** döndü |
+| `nex-agi/nex-n2.5-pro:free` | ⚠ | 17.4s | $0 | ✗ boş |
+| `nex-agi/nex-n2.5-mini:free` | ⚠ | 4.5s | $0 | ✗ boş |
+
+**Kritik bulgu:** reasoning tarzı modeller "YALNIZCA JSON döndür" istendiğinde
+bütçeyi düşünce üretmeye harcayıp **boş string** döndürüyor → iç içe şemada
+kullanılamaz. Ücretsiz adayların hepsi (ve `gpt-oss-20b`) bu yüzden düştü.
+Yani "İstem A'yı geçti" yeterli değil — B ayrıca test edilmeli (bu dokümanın
+varlık sebebi bu).
+
+---
+
+## Karar (2026-09-11)
+
+- **Birincil:** `amazon/nova-micro-v1` — her iki şemada en hızlı (0.8s / 2.4s),
+  ucuz, temiz JSON.
+- **Fallback:** `mistralai/mistral-nemo` — her iki şemayı geçen **en ucuz**
+  model, farklı sağlayıcı (tek sağlayıcı kesintisine karşı).
+- Vercel `LLM_MODEL` / `LLM_FALLBACK_MODEL` set edildi; kod varsayılanları da
+  aynı → env'siz kurulum da korumalı ve model emekliye ayrılırsa **deploy
+  etmeden** env ile değiştirilir.
+- **Sessiz ölüm kapatıldı:** zincir tükenirse / embedding modeli hata verirse
+  `lib/ai/openrouter.ts` Sentry'ye raporlar (fails loudly).
+- İzleme: `node tools/probe-llm-models.mjs [--prompt=b]` — bir modeli
+  sabitlemeden veya değiştirmeden önce çalıştır.
