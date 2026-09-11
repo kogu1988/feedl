@@ -1,9 +1,10 @@
 // Görsel feedback ekran görüntüsünün ADMIN oturumuyla gerçekten aktığını
 // doğrular: Clerk sign-in token ile owner olarak oturum açar, private-Blob
-// proxy'sini (/api/visual-feedback/image) sayfa içinden çeker ve portal detay
-// sayfasında <img>'in gerçekten boyutlandığını (naturalWidth > 0) kontrol eder.
+// proxy'sini (/api/visual-feedback/image) sayfa içinden çeker, ekran
+// görüntüsünü PİKSEL düzeyinde çözüp vurgu halkasının işaretlenen noktada
+// olduğunu ve portal detay sayfasında <img>'in render edildiğini kontrol eder.
 //
-// Kullanım: node tools/verify-visual-image.mjs <postId> [email]
+// Kullanım: node tools/verify-visual-image.mjs <postId> [email] [markX] [markY]
 // Prod Clerk instance'ında test kullanıcıları yok; sign-in token kullanılır.
 import { readFileSync } from "node:fs";
 import { chromium } from "@playwright/test";
@@ -11,8 +12,12 @@ import { chromium } from "@playwright/test";
 const app = "https://feedl.app";
 const postId = process.argv[2];
 const email = process.argv[3] ?? "oguzkir@gmail.com";
+const markX = Number(process.argv[4] ?? 320);
+const markY = Number(process.argv[5] ?? 420);
 if (!postId) {
-  console.error("kullanım: node tools/verify-visual-image.mjs <postId> [email]");
+  console.error(
+    "kullanım: node tools/verify-visual-image.mjs <postId> [email] [markX] [markY]",
+  );
   process.exit(1);
 }
 
@@ -75,19 +80,56 @@ console.log(`${signIn.hasSession ? "✅" : "❌"} oturum açıldı (status=${sig
 
 await page.waitForTimeout(1500);
 
-// 1) Proxy'i oturumlu sayfadan çek.
-const proxied = await page.evaluate(async (id) => {
-  const res = await fetch(`/api/visual-feedback/image?postId=${id}`);
-  const buf = await res.arrayBuffer();
-  return {
-    status: res.status,
-    ct: res.headers.get("content-type") || "",
-    bytes: buf.byteLength,
-  };
-}, postId);
-const proxyOk = proxied.status === 200 && proxied.ct.startsWith("image/") && proxied.bytes > 0;
+// 1) Proxy'i oturumlu sayfadan çek + vurgu halkasını piksel düzeyinde doğrula.
+const proxied = await page.evaluate(
+  async ({ id, mx, my }) => {
+    const res = await fetch(`/api/visual-feedback/image?postId=${id}`);
+    const blob = await res.blob();
+    const bmp = await createImageBitmap(blob);
+    const canvas = new OffscreenCanvas(bmp.width, bmp.height);
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(bmp, 0, 0);
+    // Halkanın opak kenarı: merkezden 46px uzaklıkta (dış yarıçap 48, border
+    // 4px → 44-48 bandı). Dört yönden örnekle.
+    const r = 46;
+    const pts = [
+      [mx - r, my],
+      [mx + r, my],
+      [mx, my - r],
+      [mx, my + r],
+    ];
+    const samples = pts.map(([x, y]) => {
+      const d = ctx.getImageData(x, y, 1, 1).data;
+      return [d[0], d[1], d[2]];
+    });
+    // Marka mercan tonu: R yüksek, R-G farkı belirgin, G-B farkı küçük.
+    const coral = samples.filter(
+      (c) => c[0] > 190 && c[0] - c[1] > 60 && c[1] - c[2] < 90,
+    ).length;
+    return {
+      status: res.status,
+      ct: res.headers.get("content-type") || "",
+      bytes: blob.size,
+      width: bmp.width,
+      height: bmp.height,
+      samples,
+      coral,
+    };
+  },
+  { id: postId, mx: markX, my: markY },
+);
+const proxyOk =
+  proxied.status === 200 && proxied.ct.startsWith("image/") && proxied.bytes > 0;
 console.log(
   `${proxyOk ? "✅" : "❌"} private-blob proxy: ${proxied.status} ${proxied.ct} ${proxied.bytes} bayt`,
+);
+console.log(
+  `   görüntü ${proxied.width}x${proxied.height} · halka örnekleri ` +
+    `${JSON.stringify(proxied.samples)} · mercan eşleşen ${proxied.coral}/4`,
+);
+console.log(
+  `${proxied.coral >= 3 ? "✅" : "❌"} vurgu halkası (${markX},${markY}) noktasında ` +
+    `(mercan ${proxied.coral}/4 kenar)`,
 );
 
 // 2) Portal detay sayfasında görsel gerçekten render oluyor mu?

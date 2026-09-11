@@ -16,6 +16,10 @@ import { Input } from "@/components/ui/input";
 // panelde feedl rozeti görünür; özel renk ve rozetin kaldırılması Pro'ya
 // aittir. Bu yüzden renk seçici yalnız Pro'da gösterilir ve free snippet'e
 // `data-accent` HİÇ yazılmaz (widget varsayılanı marka rengidir).
+//
+// İşaret rengi (data-mark-color) İSTİSNADIR: görsel geri bildirimde ekran
+// görüntüsüne eklenen vurgu halkasının rengidir, kamuya açık markalama
+// değildir — görünürlük ayarı olduğu için TÜM planlarda ayarlanabilir.
 const WIDGET_BRAND_ACCENT = "#ff5c35";
 
 export function WidgetSetup({
@@ -30,6 +34,7 @@ export function WidgetSetup({
   const [email, setEmail] = useState("");
   const [token, setToken] = useState<string | null>(null);
   const [accent, setAccent] = useState(WIDGET_BRAND_ACCENT);
+  const [markColor, setMarkColor] = useState(WIDGET_BRAND_ACCENT);
   const [theme, setTheme] = useState<"light" | "dark" | "auto">("light");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,6 +48,9 @@ export function WidgetSetup({
     `  data-button-text="Geri bildirim"`,
     ...(isPro && accent.toLowerCase() !== WIDGET_BRAND_ACCENT
       ? [`  data-accent="${accent.toLowerCase()}"`]
+      : []),
+    ...(markColor.toLowerCase() !== WIDGET_BRAND_ACCENT
+      ? [`  data-mark-color="${markColor.toLowerCase()}"`]
       : []),
     ...(theme !== "light" ? [`  data-theme="${theme}"`] : []),
     `></script>`,
@@ -148,7 +156,7 @@ export function WidgetSetup({
             ? "2) Widget görünümünü ayarlayın. Vurgu rengi launcher butonuna uygulanır; yazı rengi seçtiğiniz rengin parlaklığına göre otomatik belirlenir."
             : "2) Widget görünümünü ayarlayın. Free planda vurgu rengi feedl marka rengidir ve panelde feedl rozeti görünür."}
         </p>
-        <div className="grid gap-2 sm:grid-cols-2">
+        <div className="grid gap-2 sm:grid-cols-3">
           {isPro ? (
             <label className="flex h-8 items-center gap-2 rounded-lg border border-input bg-transparent px-2.5 text-sm">
               <input
@@ -176,6 +184,19 @@ export function WidgetSetup({
               </code>
             </div>
           )}
+          <label className="flex h-8 items-center gap-2 rounded-lg border border-input bg-transparent px-2.5 text-sm">
+            <input
+              type="color"
+              value={markColor}
+              onChange={(event) => setMarkColor(event.target.value)}
+              className="size-5 shrink-0 cursor-pointer rounded border-0 bg-transparent p-0"
+              aria-label="İşaret rengi"
+            />
+            <span className="text-muted-foreground">İşaret rengi</span>
+            <code className="ml-auto text-xs uppercase text-muted-foreground">
+              {markColor.toUpperCase()}
+            </code>
+          </label>
           <select
             value={theme}
             onChange={(event) =>
@@ -189,6 +210,10 @@ export function WidgetSetup({
             <option value="auto">Tema: Sistem</option>
           </select>
         </div>
+        <p className="text-xs text-muted-foreground">
+          İşaret rengi, görsel geri bildirimde ekran görüntüsüne eklenen vurgu
+          halkasının rengidir — sitenizin rengine göre görünür bir ton seçin.
+        </p>
         {!isPro ? (
           <p className="text-xs text-muted-foreground">
             Özel vurgu rengi ve feedl rozetinin kaldırılması Pro plana dahildir.

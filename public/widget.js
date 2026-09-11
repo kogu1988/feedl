@@ -9,6 +9,7 @@
  *   data-token="<1 saatlik HS256 widget JWT — opsiyonel>"
  *   data-button-text="Geri bildirim"
  *   data-accent="#7f1d1d"
+ *   data-mark-color="#f59e0b"
  *   data-theme="light"
  *   ></script>
  *
@@ -20,6 +21,9 @@
  *   yazı rengi WCAG kontrastına göre otomatik seçilir). Verilmezse feedl
  *   marka rengi (#ff5c35) kullanılır — free planın varsayılanı budur; Pro
  *   planda özel renk bu attribute ile verilir.
+ * - data-mark-color: görsel geri bildirimde pin'in ve ekran görüntüsüne
+ *   eklenen vurgu halkasının rengi (yalnızca hex). Verilmezse vurgu rengi
+ *   kullanılır. Sitenizin rengine göre görünürlüğü artırmak için ayarlanır.
  * - data-theme: panel ve iframe teması — light | dark | auto (varsayılan
  *   light; auto = ziyaretçinin işletim sistemi tercihini izler).
  *
@@ -133,6 +137,15 @@
     return 1.05 / (l + 0.05) >= (l + 0.05) / 0.05 ? "#ffffff" : "#18181b";
   }
   var launcherColor = launcherTextColor(accent);
+
+  // Faz 2: görsel feedback pin + vurgu halkası rengi. Varsayılan = vurgu rengi;
+  // müşteri `data-mark-color` ile sitenin rengine göre görünür bir ton seçer
+  // (ör. koyu sitede açık sarı). Yalnızca hex kabul edilir.
+  var markRaw = (attr("data-mark-color") || globalCfg.markColor || "").trim();
+  var markColor = ACCENT_RE.test(markRaw) ? markRaw.toLowerCase() : accent;
+  var markChannels = hexChannels(markColor);
+  var markFill =
+    "rgba(" + markChannels[0] + "," + markChannels[1] + "," + markChannels[2] + ",0.22)";
 
   // Kimlik: müşteri uygulaması ürettiği kısa ömürlü jetonu session
   // ucuna gönderir; feedl httpOnly SameSite=None çerez bırakır. Çağrı
@@ -390,8 +403,13 @@
     ".feedl-vf-hint{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:2147483004;",
     "background:#111827;color:#fff;font:600 13px/1.4 system-ui,-apple-system,sans-serif;",
     "padding:8px 14px;border-radius:9999px;box-shadow:0 8px 20px rgba(0,0,0,.3);max-width:90vw}",
-    ".feedl-vf-pin{position:fixed;z-index:2147483003;width:18px;height:18px;margin:-9px 0 0 -9px;",
-    "border-radius:9999px;background:#ff5c35;border:3px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,.4)}",
+    ".feedl-vf-pin{position:fixed;box-sizing:border-box;z-index:2147483003;width:18px;height:18px;margin:-9px 0 0 -9px;",
+    "border-radius:9999px;background:" + markColor + ";border:3px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,.4)}",
+    // Ekran görüntüsüne GİREN işaret: geniş, açık renkli halka. absolute +
+    // doküman koordinatı → tam-sayfa yakalamada doğru noktaya oturur.
+    ".feedl-vf-mark{position:absolute;box-sizing:border-box;z-index:2147483003;width:96px;height:96px;margin:-48px 0 0 -48px;",
+    "border-radius:9999px;border:4px solid " + markColor + ";background:" + markFill + ";",
+    "box-shadow:0 0 0 2px rgba(255,255,255,.7)}",
     ".feedl-vf-form{position:fixed;z-index:2147483004;width:min(320px,calc(100vw - 24px));background:#fff;color:#111827;",
     "border-radius:12px;box-shadow:0 20px 50px rgba(0,0,0,.35);padding:12px;font:13px/1.4 system-ui,-apple-system,sans-serif}",
     ".feedl-vf-form input,.feedl-vf-form textarea{width:100%;box-sizing:border-box;border:1px solid #d4d4d8;",
@@ -402,8 +420,15 @@
     ".feedl-vf-send{background:" + accent + ";color:" + launcherColor + "}",
     ".feedl-vf-cancel{background:#f4f4f5;color:#374151}",
     ".feedl-vf-msg{margin-top:6px;font-size:12px;color:#b91c1c}",
-    ".feedl-vf-toast{position:fixed;right:20px;bottom:132px;z-index:2147483004;background:#065f46;color:#fff;",
-    "font:600 13px/1.4 system-ui,-apple-system,sans-serif;padding:10px 14px;border-radius:10px;box-shadow:0 8px 20px rgba(0,0,0,.3)}"
+    // Toast launcher'ın HEMEN üstünde belirir (launcher: bottom 20px + ~38px
+    // yükseklik → 58px; 8px boşlukla 66px). Mobilde launcher 12px'te → 58px.
+    ".feedl-vf-toast{position:fixed;right:20px;bottom:66px;z-index:2147483005;",
+    "max-width:min(340px,calc(100vw - 40px));background:#065f46;color:#fff;",
+    "font:600 13px/1.4 system-ui,-apple-system,sans-serif;padding:10px 14px;border-radius:10px;",
+    "box-shadow:0 8px 20px rgba(0,0,0,.3);animation:feedl-vf-in .18s ease-out}",
+    ".feedl-vf-toast-error{background:#b91c1c}",
+    "@keyframes feedl-vf-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}",
+    "@media (max-width:480px){.feedl-vf-toast{right:12px;bottom:58px}}"
   ].join("");
   var vfStyle = document.createElement("style");
   vfStyle.textContent = VISUAL_CSS;
@@ -421,6 +446,8 @@
 
   var vfPin = null;
   var vfForm = null;
+  var vfMark = null; // ekran görüntüsüne giren vurgu halkası
+  var vfSending = false; // çift gönderimi engeller
   var vfShotLib = null; // html-to-image yüklendiyse global
 
   function vfLoadShotLib() {
@@ -459,14 +486,53 @@
     vfHint.hidden = true;
     if (vfPin) { vfPin.remove(); vfPin = null; }
     if (vfForm) { vfForm.remove(); vfForm = null; }
+    if (vfMark) { vfMark.remove(); vfMark = null; }
   }
 
-  function vfToast(text) {
+  // Vurgu halkasını pin'in sayfa (doküman) koordinatına yerleştirir. Göreli
+  // konumlandırma için offsetParent'ın doküman ofseti ölçülür — body'de
+  // position:relative veya margin olsa bile işaret doğru noktaya oturur.
+  function vfPlaceMark(clientX, clientY) {
+    var m = document.createElement("div");
+    m.className = "feedl-vf-mark";
+    document.body.appendChild(m);
+    var docLeft = clientX + (window.pageXOffset || 0);
+    var docTop = clientY + (window.pageYOffset || 0);
+    var baseLeft = 0;
+    var baseTop = 0;
+    var op = m.offsetParent;
+    if (op) {
+      var r = op.getBoundingClientRect();
+      baseLeft = r.left + (window.pageXOffset || 0);
+      baseTop = r.top + (window.pageYOffset || 0);
+    }
+    m.style.left = docLeft - baseLeft + "px";
+    m.style.top = docTop - baseTop + "px";
+    return m;
+  }
+
+  function vfScheduleToast(t, hold) {
+    if (t.__feedlTimer) clearTimeout(t.__feedlTimer);
+    t.__feedlTimer = setTimeout(function () { t.remove(); }, hold);
+  }
+
+  // Toast launcher'ın HEMEN üstünde belirir (konum CSS'te). Uzun `hold` ile
+  // yapışkan kalır — sonuç gelince vfToastUpdate ile güncellenir.
+  function vfToast(text, hold) {
     var t = document.createElement("div");
     t.className = "feedl-vf-toast";
+    t.setAttribute("role", "status");
     t.textContent = text;
     document.body.appendChild(t);
-    setTimeout(function () { t.remove(); }, 2600);
+    vfScheduleToast(t, hold || 2600);
+    return t;
+  }
+
+  function vfToastUpdate(t, text, isError) {
+    if (!t || !t.isConnected) return;
+    t.textContent = text;
+    t.className = isError ? "feedl-vf-toast feedl-vf-toast-error" : "feedl-vf-toast";
+    vfScheduleToast(t, isError ? 5000 : 2200);
   }
 
   function vfOpenForm(x, y) {
@@ -491,7 +557,7 @@
   }
 
   function vfSubmit(x, y) {
-    if (!vfForm) return;
+    if (!vfForm || vfSending) return;
     var titleEl = vfForm.querySelector('[data-vf="title"]');
     var descEl = vfForm.querySelector('[data-vf="desc"]');
     var msgEl = vfForm.querySelector(".feedl-vf-msg");
@@ -501,27 +567,48 @@
       if (msgEl) { msgEl.hidden = false; msgEl.textContent = "Başlık ve açıklama gerekli."; }
       return;
     }
-    var sendBtn = vfForm.querySelector(".feedl-vf-send");
-    if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = "Gönderiliyor…"; }
+    vfSending = true;
+
     var pinX = Math.round((x / Math.max(1, window.innerWidth)) * 1000) / 10;
     var pinY = Math.round((y / Math.max(1, window.innerHeight)) * 1000) / 10;
     var payload = {
       title: title, description: desc, pinX: pinX, pinY: pinY,
       clientContext: vfCollectContext(),
     };
-    // Ekran görüntüsü: overlay/pin görünmesin diye önce gizle, sonra yakala.
-    var pinWasHidden = vfPin ? vfPin.style.visibility : null;
-    var formWasHidden = vfForm.style.visibility;
-    if (vfPin) vfPin.style.visibility = "hidden";
-    vfForm.style.visibility = "hidden";
-    vfHint.hidden = true;
+
+    // 1) UI'ı HEMEN toparla: overlay/ipucu/form/pin kalkar → kullanıcı beklemez
+    //    ve tekrar tıklayamaz (vfSending + öğeler DOM'dan çıktı). Pin yerine
+    //    ekran görüntüsüne GİREN vurgu halkası konur.
+    vfCleanup();
+    vfMark = vfPlaceMark(x, y);
+
+    // 2) Anında geri bildirim: toast launcher'ın hemen üstünde, yükleme metniyle.
+    var toast = vfToast("Geri bildirimin gönderiliyor…", 60000);
+
+    // 3) Ekran görüntüsü (vurgu halkası görünür) + gönderim.
     vfLoadShotLib().then(function (lib) {
-      var capture = lib
-        ? lib.toJpeg(document.documentElement, { quality: 0.6, pixelRatio: 1, skipFonts: true })
-            .catch(function () { return null; })
-        : Promise.resolve(null);
-      return capture;
+      return lib
+        ? lib.toJpeg(document.documentElement, {
+            quality: 0.6,
+            pixelRatio: 1,
+            skipFonts: true,
+            // Widget kromu (toast/katman/ipucu/form/pin) ekran görüntüsüne
+            // girmesin; yalnız sayfa içeriği + vurgu halkası yakalanır.
+            filter: function (node) {
+              var cl = node && node.classList;
+              if (!cl) return true;
+              return !(
+                cl.contains("feedl-vf-toast") ||
+                cl.contains("feedl-vf-layer") ||
+                cl.contains("feedl-vf-hint") ||
+                cl.contains("feedl-vf-form") ||
+                cl.contains("feedl-vf-pin")
+              );
+            },
+          }).catch(function () { return null; })
+        : null;
     }).then(function (dataUrl) {
+      if (vfMark) { vfMark.remove(); vfMark = null; }
       // Sunucudaki MAX_IMAGE_BYTES (1.5MB ikili) ile hizalı: base64 ≈ 4/3 ×
       // ikili → 2MB data-URL üstü zaten sunucuda düşürülür, boşuna yüklemeyiz.
       if (dataUrl && dataUrl.length < 2_000_000) payload.screenshot = dataUrl;
@@ -536,23 +623,19 @@
       return res.json().then(function (json) { return { ok: res.ok, json: json }; });
     }).then(function (r) {
       if (!r.ok || !r.json || !r.json.success) {
-        if (msgEl) { msgEl.hidden = false; msgEl.textContent = (r.json && r.json.error) || "Gönderilemedi."; }
-        if (pinWasHidden !== null && vfPin) vfPin.style.visibility = pinWasHidden;
-        vfForm.style.visibility = formWasHidden;
-        if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = "Gönder"; }
+        vfToastUpdate(toast, (r.json && r.json.error) || "Geri bildirim gönderilemedi.", true);
         return;
       }
-      vfCleanup();
-      vfToast("Teşekkürler! Geri bildirimin alındı.");
+      vfToastUpdate(toast, "Teşekkürler! Geri bildirimin alındı.", false);
     }).catch(function () {
-      if (msgEl) { msgEl.hidden = false; msgEl.textContent = "Bağlantı hatası."; }
-      if (pinWasHidden !== null && vfPin) vfPin.style.visibility = pinWasHidden;
-      vfForm.style.visibility = formWasHidden;
-      if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = "Gönder"; }
+      vfToastUpdate(toast, "Bağlantı hatası. Tekrar deneyin.", true);
+    }).then(function () {
+      vfSending = false;
     });
   }
 
   function vfStart() {
+    if (vfSending) return;
     vfCleanup();
     vfLayer.hidden = false;
     vfHint.hidden = false;
@@ -570,7 +653,7 @@
   });
 
   vfLayer.addEventListener("click", function (event) {
-    if (event.target !== vfLayer) return;
+    if (vfSending || event.target !== vfLayer) return;
     var x = event.clientX;
     var y = event.clientY;
     if (vfPin) vfPin.remove();

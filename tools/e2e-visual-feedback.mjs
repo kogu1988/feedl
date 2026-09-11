@@ -26,8 +26,13 @@ const env = Object.fromEntries(
 const sql = neon(env.DATABASE_URL);
 
 const marker = `E2E görsel ${new Date().toISOString().slice(0, 19)}`;
+// Tıklanacak nokta (viewport koordinatı). Ekran görüntüsü tam-sayfa olduğu
+// için testte sayfa en üste kaydırılır → doküman koordinatı = bu değer.
+const MARK_X = 320;
+const MARK_Y = 420;
 console.log("URL:", url);
 console.log("marker:", marker);
+console.log("işaret noktası:", MARK_X, MARK_Y);
 
 const browser = await chromium.launch();
 const context = await browser.newContext({
@@ -57,6 +62,9 @@ page.on("response", async (res) => {
 });
 
 await page.goto(url, { waitUntil: "networkidle", timeout: 60000 });
+// Determinizm: sayfa başına kaydır (mark konumu = tıklama koordinatı olsun).
+await page.evaluate(() => window.scrollTo(0, 0));
+await page.waitForTimeout(300);
 
 const launcher = page.locator(".feedl-widget-launcher");
 await launcher.waitFor({ state: "visible", timeout: 15000 });
@@ -78,7 +86,7 @@ if (!layerVisible) {
 }
 
 // Bir noktaya tıkla → pin + form.
-await page.mouse.click(320, 420);
+await page.mouse.click(MARK_X, MARK_Y);
 const titleInput = page.locator('.feedl-vf-form [data-vf="title"]');
 await titleInput.waitFor({ state: "visible", timeout: 5000 });
 const fields = await page.locator(".feedl-vf-form input, .feedl-vf-form textarea").count();
@@ -141,6 +149,7 @@ if (outcome === "toast") {
     for (const [label, ok] of checks) console.log(`${ok ? "✅" : "❌"} ${label}`);
     console.log("kanıt:", JSON.stringify(row));
     console.log("post id:", row.id);
+    console.log(`doğrulama: node tools/verify-visual-image.mjs ${row.id} oguzkir@gmail.com ${MARK_X} ${MARK_Y}`);
   }
 }
 
