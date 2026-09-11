@@ -901,7 +901,13 @@ export const corpusInsights = inngest.createFunction(
     id: "corpus-insights",
     retries: 2,
     triggers: { event: "corpus-insights.request" },
-    concurrency: 1,
+    // Workspace BASINA 1 eşzamanlı analiz (anahtarlı). Eskiden global
+    // FUNCTION limitiydi (`concurrency: 1`): tek bir workspace'in yavaş
+    // analizi diğer TÜM workspace'leri bekletiyordu (çok kiracılı
+    // adaletsizlik) ve 2026-09-11'de bu tek global slot takılıp fonksiyon
+    // saatlerce QUEUED kaldı (diğer fonksiyonlar normal çalışırken).
+    // Anahtarlı limit her workspace'e kendi slotunu verir.
+    concurrency: { limit: 1, key: "event.data.workspaceId" },
   },
   async ({ event, step }) => {
     const workspaceId = (event.data as { workspaceId: string }).workspaceId;
