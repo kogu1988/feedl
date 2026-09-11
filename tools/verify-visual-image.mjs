@@ -6,7 +6,7 @@
 //
 // Kullanım: node tools/verify-visual-image.mjs <postId> [email] [markX] [markY]
 // Prod Clerk instance'ında test kullanıcıları yok; sign-in token kullanılır.
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { chromium } from "@playwright/test";
 
 const app = "https://feedl.app";
@@ -14,6 +14,9 @@ const postId = process.argv[2];
 const email = process.argv[3] ?? "oguzkir@gmail.com";
 const markX = Number(process.argv[4] ?? 320);
 const markY = Number(process.argv[5] ?? 420);
+// Opsiyonel: görüntüyü bu yola kaydet (gözle incelemek için). Ör.
+// docs/verify-shot.jpg — docs/ gitignored'dır.
+const saveTo = process.argv[6] ?? null;
 if (!postId) {
   console.error(
     "kullanım: node tools/verify-visual-image.mjs <postId> [email] [markX] [markY]",
@@ -131,6 +134,15 @@ console.log(
   `${proxied.coral >= 3 ? "✅" : "❌"} vurgu halkası (${markX},${markY}) noktasında ` +
     `(mercan ${proxied.coral}/4 kenar)`,
 );
+
+if (saveTo) {
+  // page.request context çerezlerini paylaşır → oturumlu indirme.
+  const imgRes = await page.request.get(
+    `${app}/api/visual-feedback/image?postId=${postId}`,
+  );
+  writeFileSync(saveTo, await imgRes.body());
+  console.log(`✅ görüntü kaydedildi: ${saveTo}`);
+}
 
 // 2) Portal detay sayfasında görsel gerçekten render oluyor mu?
 await page.goto(`${app}/portal/${postId}`, { waitUntil: "networkidle", timeout: 60000 });
