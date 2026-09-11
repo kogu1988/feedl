@@ -139,7 +139,7 @@ npm run dev                 # http://localhost:3000
     `GET https://api.inngest.com/v1/events` (uygulama/fonksiyon listesi yok —
     onun için panel kullanılır). Fonksiyon kaydını doğrulamanın yolu Inngest
     audit log'udur (`inngest/audit-log`, `action: function.updated`).
-- Resend: `RESEND_API_KEY`, `RESEND_WEBHOOK_SECRET` · Test: `ETHEREAL_EMAIL_USER`, `ETHEREAL_EMAIL_PASSWORD`
+- Resend: `RESEND_API_KEY`, `RESEND_WEBHOOK_SECRET`
 - Widget: `FEEDL_WIDGET_SECRET`, `FEEDL_WIDGET_ALLOWED_ORIGINS`
 - Paddle: `PADDLE_API_KEY`, `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN`, `PADDLE_WEBHOOK_SECRET`
 - Upstash: `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`

@@ -413,7 +413,6 @@ export const notifyShipped = inngest.createFunction(
     }
 
     // 2) Her alıcı için kişisel unsubscribe linkiyle render et ve gönder.
-    // Provider (Resend/Ethereal) env'e göre lib/email/send.ts'te seçilir.
     const result = await step.run("send-status-emails", async () => {
       const appUrl =
         process.env.NEXT_PUBLIC_APP_URL ?? "https://feedl.app";
@@ -474,7 +473,6 @@ export const notifyShipped = inngest.createFunction(
       recipients: recipients.recipients.length,
       sent: result.sent,
       failed: result.failed,
-      previewUrls: result.previewUrls,
     };
   },
 );
@@ -543,7 +541,6 @@ export const notifyAdminNewPost = inngest.createFunction(
       recipients: context.adminEmails.length,
       sent: result.sent,
       failed: result.failed,
-      previewUrls: result.previewUrls,
     };
   },
 );
@@ -696,7 +693,6 @@ export const notifyCommentCreated = inngest.createFunction(
       recipients: context.recipients.length,
       sent: result.sent,
       failed: result.failed,
-      previewUrls: result.previewUrls,
     };
   },
 );
@@ -823,7 +819,6 @@ export const notifyChangelog = inngest.createFunction(
     }
 
     // 2) Her abone için kişisel unsubscribe linkiyle render et ve gönder.
-    // Provider (Resend/Ethereal) env'e göre lib/email/send.ts'te seçilir.
     const result = await step.run("send-changelog-emails", async () => {
       const appUrl =
         process.env.NEXT_PUBLIC_APP_URL ?? "https://feedl.app";
@@ -882,7 +877,6 @@ export const notifyChangelog = inngest.createFunction(
       recipients: recipients.length,
       sent: result.sent,
       failed: result.failed,
-      previewUrls: result.previewUrls,
     };
   },
 );

@@ -1,15 +1,9 @@
 import "server-only";
 
-import nodemailer from "nodemailer";
 import { Resend } from "resend";
 
-// Sağlayıcı seçimi (plan.md Sprint 6): RESEND_API_KEY varsa production'da
-// Resend kullanılır; yoksa Ethereal.email SMTP ile test edilir (gerçek teslimat
-// yok, mesajlar Ethereal gelen kutusunda önizlenir). İkisi de yoksa e-posta
+// Sağlayıcı seçimi: RESEND_API_KEY varsa Resend ile gönderilir. Yoksa e-posta
 // atlanır — bildirim hatası ana akışı bozmamalı.
-
-const ETHEREAL_SMTP_HOST = "smtp.ethereal.email";
-const ETHEREAL_SMTP_PORT = 587;
 
 // Resend'de mail.feedl.app subdomaini doğrulanana kadar test göndericisi;
 // EMAIL_FROM ile override edilebilir (feedl <no-reply@mail.feedl.app>).
@@ -27,11 +21,9 @@ export interface EmailMessage {
 }
 
 export interface EmailSendResult {
-  provider: "resend" | "ethereal" | "skipped";
+  provider: "resend" | "skipped";
   sent: number;
   failed: number;
-  // Ethereal'de her mesajın web önizleme adresi (testte kanıt olarak kullanılır).
-  previewUrls: string[];
   // Sprint 63v: mesaj sırasıyla hizalı Resend message id (deliverability
   // webhook'u `email_deliveries.provider_id` ile eşleştirir). Alınamadıysa null.
   ids: (string | null)[];
@@ -39,7 +31,7 @@ export interface EmailSendResult {
 
 export async function sendEmails(messages: EmailMessage[]): Promise<EmailSendResult> {
   if (messages.length === 0) {
-    return { provider: "skipped", sent: 0, failed: 0, previewUrls: [], ids: [] };
+    return { provider: "skipped", sent: 0, failed: 0, ids: [] };
   }
 
   const resendKey = process.env.RESEND_API_KEY;
@@ -47,16 +39,8 @@ export async function sendEmails(messages: EmailMessage[]): Promise<EmailSendRes
     return sendWithResend(resendKey, messages);
   }
 
-  const etherealUser = process.env.ETHEREAL_EMAIL_USER;
-  const etherealPass = process.env.ETHEREAL_EMAIL_PASSWORD;
-  if (etherealUser && etherealPass) {
-    return sendWithEthereal(etherealUser, etherealPass, messages);
-  }
-
-  console.warn(
-    "Email skipped: no provider configured (set RESEND_API_KEY or Ethereal credentials).",
-  );
-  return { provider: "skipped", sent: 0, failed: 0, previewUrls: [], ids: [] };
+  console.warn("Email skipped: RESEND_API_KEY not configured.");
+  return { provider: "skipped", sent: 0, failed: 0, ids: [] };
 }
 
 async function sendWithResend(
@@ -91,59 +75,6 @@ async function sendWithResend(
     provider: "resend",
     sent: ids.filter(Boolean).length,
     failed: 0,
-    previewUrls: [],
     ids,
-  };
-}
-
-async function sendWithEthereal(
-  user: string,
-  pass: string,
-  messages: EmailMessage[],
-): Promise<EmailSendResult> {
-  const transporter = nodemailer.createTransport({
-    host: ETHEREAL_SMTP_HOST,
-    port: ETHEREAL_SMTP_PORT,
-    secure: false,
-    auth: { user, pass },
-  });
-
-  const results = await Promise.allSettled(
-    messages.map(async (message) => {
-      const info = await transporter.sendMail({
-        from: process.env.EMAIL_FROM ?? "feedl <no-reply@feedl.app>",
-        to: message.to,
-        subject: message.subject,
-        html: message.html,
-        text: message.text,
-      });
-      const previewUrl = nodemailer.getTestMessageUrl(info);
-      return typeof previewUrl === "string" ? previewUrl : null;
-    }),
-  );
-
-  const previewUrls: string[] = [];
-  let failed = 0;
-  for (const result of results) {
-    if (result.status === "fulfilled") {
-      if (result.value) {
-        previewUrls.push(result.value);
-      }
-    } else {
-      failed += 1;
-      console.error(
-        "Ethereal send failed:",
-        result.reason instanceof Error ? result.reason.message : result.reason,
-      );
-    }
-  }
-
-  // Ethereal'de gerçek teslimat geri bildirimi yok → ids null (webhook yok).
-  return {
-    provider: "ethereal",
-    sent: results.length - failed,
-    failed,
-    previewUrls,
-    ids: messages.map(() => null),
   };
 }
