@@ -48,8 +48,9 @@ planına bir alternatif — herkese açık bir topluluk portalı + gelir odaklı
 3. **Değişiklik Günlüğü:** Draft → yayın akışı; herkese açık güncelleme sayfası.
 4. **Gelir Skoru:** Oy + müşteri sayısı + fırsat değeri (MRR) → revenue-weighted
    prioritization.
-5. **Ekip & Roller:** Owner / admin / contributor / member — kısmi dashboard
-   erişimi, iç notlar (private).
+5. **Ekip & Roller:** Owner / Manager / Member (3 kademe) — kısmi dashboard
+   erişimi, iç notlar (private). `admin` adı ileride feedl'in iç yönetim paneli
+   için ayrılmıştır.
 6. **Entegrasyonlar:** Slack, Zendesk, Intercom, Linear, Jira, Webhook'lar,
    Public API (`/api/v1`) + müşteri sitesine gömülen widget.
 7. **Multi-tenant:** Her workspace kendi subdomain'i (`acme.feedl.app`), kendi
@@ -252,7 +253,7 @@ e2e/               Playwright smoke + axe erişilebilirlik
 | Uç | Kimlik | Not |
 |---|---|---|
 | `/api/posts` | Clerk (GET public, POST auth) | workspace-scoped |
-| `/api/admin/*` | Clerk + rol | owner/admin/contributor/member kademesi |
+| `/api/admin/*` | Clerk + rol | owner/manager/member kademesi |
 | `/api/v1/*` | Bearer API key (`fk_live_`) | `Idempotency-Key`, rate-limit
 | `/api/webhooks/{paddle,clerk,slack,...}` | HMAC/imza | at-least-once, idempotent |
 | Workspace çözümü | host / subdomain / custom-domain / widget-session | `getWorkspaceId` |

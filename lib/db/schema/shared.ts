@@ -39,11 +39,16 @@ export const boardVisibilityEnum = pgEnum("board_visibility", [
   "private",
 ]);
 
+// 2026-09-11 (kullanıcı kararı): 3 kademe. owner = her şey (billing dahil),
+// manager = ürün ops + üye yönetimi (billing hariç), member = ürün ops.
+// "user" (yetkisiz düz kullanıcı) SAKLANAN bir rol değildir: üyelik satırı
+// olmamasıdır (yalnız public portal + widget). Eski `admin`/`contributor`
+// kaldırıldı → manager/member olarak yeniden adlandırıldı. `admin` adı artık
+// yalnız `user_role` enum'unda feedl PLATFORM personeli için ayrılmıştır.
 export const workspaceMemberRoleEnum = pgEnum("workspace_member_role", [
   "owner",
-  "admin",
+  "manager",
   "member",
-  "contributor",
 ]);
 
 export const widgetTriageEnum = pgEnum("widget_triage_type", [

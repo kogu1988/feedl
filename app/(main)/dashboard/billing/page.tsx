@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { count, eq, sql } from "drizzle-orm";
 
 import { BillingOverview } from "@/components/custom/billing-overview";
-import { getAdminUserId, getNonAdminRedirectTarget } from "@/lib/auth/admin";
+import { getNonAdminRedirectTarget, getOwnerUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { boards, workspaceMembers, workspaces } from "@/lib/db/schema";
@@ -17,8 +17,10 @@ export const dynamic = "force-dynamic";
 // takipçi (tracked) tahmini: workspace'e oy/posta düşen eşsiz kullanıcı sayısı
 // yerine basitçe mevcut üye sayısı + plan limiti gösterilir (MVP).
 export default async function BillingPage() {
-  const adminId = await getAdminUserId();
-  if (!adminId) {
+  // Faturalandırma YALNIZ owner'a açık ("owner = ürünü satın alan"): manager
+  // (eski workspace-admin) artık plan/ödeme yönetemez.
+  const ownerId = await getOwnerUserId();
+  if (!ownerId) {
     redirect(await getNonAdminRedirectTarget());
   }
 

@@ -486,7 +486,7 @@ export const notifyAdminNewPost = inngest.createFunction(
   async ({ event, step }) => {
     const payload: PostCreatedEvent = postCreatedEventSchema.parse(event.data);
 
-    // 1) Alıcılar = workspace EKİBİ (owner/admin/contributor) + yazar bilgisi.
+    // 1) Alıcılar = workspace EKİBİ (owner/manager/member) + yazar bilgisi.
     //    Platform personeli (`users.role='admin'`) bilinçli olarak dahil DEĞİL —
     //    o işaret feedl iç paneli için ayrılmıştır ve müşteri bildirimi almaz.
     //    Yazarın kendi e-postası listeden çıkarılır.
@@ -1049,7 +1049,7 @@ export const corpusInsights = inngest.createFunction(
 //  · Sıklık: haftalık cron (Pazartesi 06:00 UTC = 09:00 TRT) + "yeni geri
 //    bildirim yoksa gönderme" eşiği (boş özet gürültüdür).
 //  · Teslimat: hem dashboard içgörü önbelleği tazelenir hem admin'lere e-posta.
-//  · Kime: workspace ekibi (owner/admin/contributor) ve email_digest tercihi
+// · Kime: workspace ekibi (owner/manager/member) ve email_digest tercihi
 //    açık olanlar — platform personeli (`users.role='admin'`) dahil değil.
 // LLM maliyeti workspace başına haftada 1 korpus çağrısıdır; free plan hiç
 // çağrı üretmez (erken çıkış).
@@ -1097,7 +1097,7 @@ export const weeklyDigest = inngest.createFunction(
               : eq(posts.workspaceId, ws.id),
           );
 
-        // Alıcılar: workspace EKİBİ (owner/admin/contributor) ve digest
+        // Alıcılar: workspace EKİBİ (owner/manager/member) ve digest
         // tercihi açık olanlar. Platform personeli dahil değil. Aynı kişi iki
         // Clerk kimliğiyle üye olabildiği için e-postaya göre tekilleştirilir
         // (aksi halde tek adrese iki özet giderdi).

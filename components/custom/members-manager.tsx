@@ -17,14 +17,15 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 
-// Sprint 48c-2 (madde 8) — üye/rol matrisi. Üye ekle (var olan Clerk
-// kullanıcısı), rol değiştir (owner/admin/member), çıkar (son owner
-// kaldırılamaz — API engeller).
+// Sprint 48c-2 (madde 8) + 2026-09-11 — üye/rol matrisi. 3 kademe:
+// owner (Sahip) = her şey + faturalandırma; manager (Yönetici) = ürün ops +
+// üye yönetimi; member (Üye) = ürün ops. Üye ekle (var olan Clerk kullanıcısı),
+// rol değiştir, çıkar (son owner kaldırılamaz — API engeller).
 
 export interface MemberView {
   id: string;
   userId: string;
-  role: "owner" | "admin" | "member" | "contributor";
+  role: "owner" | "manager" | "member";
   createdAt: Date;
   name: string | null;
   email: string;
@@ -37,9 +38,8 @@ export interface MemberUserOption {
 
 const roleOptions = [
   { value: "owner", label: "Sahip" },
-  { value: "admin", label: "Yönetici" },
+  { value: "manager", label: "Yönetici" },
   { value: "member", label: "Üye" },
-  { value: "contributor", label: "Katkıcı" },
 ] as const;
 
 const selectClassName =
@@ -54,7 +54,7 @@ export function MembersManager({
 }) {
   const [members, setMembers] = useState<MemberView[]>(initial);
   const [addedUserId, setAddedUserId] = useState("");
-  const [addedRole, setAddedRole] = useState<"member" | "admin" | "owner">("member");
+  const [addedRole, setAddedRole] = useState<"member" | "manager" | "owner">("member");
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("member");
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -203,7 +203,7 @@ export function MembersManager({
                     className={selectClassName}
                     value={addedRole}
                     onChange={(e) =>
-                      setAddedRole(e.target.value as "owner" | "admin" | "member")
+                      setAddedRole(e.target.value as "owner" | "manager" | "member")
                     }
                   >
                     {roleOptions.map((option) => (
@@ -257,8 +257,7 @@ export function MembersManager({
                     onChange={(e) => setInviteRole(e.target.value)}
                   >
                     <option value="member">Üye</option>
-                    <option value="contributor">Katkıcı</option>
-                    <option value="admin">Yönetici</option>
+                    <option value="manager">Yönetici</option>
                     <option value="owner">Sahip</option>
                   </select>
                 </div>

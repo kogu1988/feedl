@@ -877,8 +877,8 @@ async function loadPlannerData() {
     .orderBy(desc(posts.updatedAt))
     .limit(50);
 
-  // Yol haritası "sorumlu" seçenekleri workspace EKİBİDİR (owner/admin/
-  // contributor) — platform personeli (`users.role='admin'`) değil.
+  // Yol haritası "sorumlu" seçenekleri workspace EKİBİDİR (owner/manager/
+  // member) — platform personeli (`users.role='admin'`) değil.
   const team = await listWorkspaceTeam(await getWorkspaceId());
   const admins = team.map((member) => ({
     id: member.userId,

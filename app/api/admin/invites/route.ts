@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
-import { getAdminUserId } from "@/lib/auth/admin";
+import { getAdminUserId, getOwnerUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { workspaces, users } from "@/lib/db/schema";
@@ -22,7 +22,7 @@ import {
 
 const inviteSchema = z.object({
   email: z.string().trim().email("Geçerli bir e-posta gerekli.").max(200),
-  role: z.enum(["owner", "admin", "member", "contributor"]).default("member"),
+  role: z.enum(["owner", "manager", "member"]).default("member"),
 });
 
 // GET /api/admin/invites — bekleyen/geçmiş davetler.
@@ -70,6 +70,17 @@ export async function POST(req: Request) {
       return NextResponse.json(
         { success: false, error: "E-posta ve rol geçersiz." },
         { status: 400 },
+      );
+    }
+
+    // Owner olarak davet yalnız OWNER'ın yetkisindedir (manager owner yaratamaz).
+    if (parsed.data.role === "owner" && !(await getOwnerUserId())) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Owner olarak davet yalnızca workspace sahibinin yetkisindedir.",
+        },
+        { status: 403 },
       );
     }
 

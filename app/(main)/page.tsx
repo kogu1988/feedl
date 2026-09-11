@@ -67,10 +67,10 @@ export const viewport = {
 // kullanıcıya ait olduğundan "fikir verme / göz at" çağrıları yerine
 // "Ücretsiz Başla", "Canlı Demo", "Fiyatlandırma" CTA'ları var.
 // Giriş yapmışsa role göre dashboard/portal yönlendirmesi. Rolün TEK kaynağı
-// workspace_members'tır (ROL AYRIMI 2026-09-10): owner/admin → "admin",
-// contributor → "team", member → "customer". Ham `users.role` sütunu
-// kullanılmaz — o sütun artık feedl PLATFORM personelini işaret eder ve
-// workspace yetkisi vermez.
+// workspace_members'tır (3 kademe, 2026-09-11): owner → "owner", manager →
+// "admin", member → "team"; üyeliği olmayan → portal. Ham `users.role` sütunu
+// kullanılmaz — o sütun feedl PLATFORM personelini işaret eder ve workspace
+// yetkisi vermez.
 // Sprint 63 (rev.): onboarding'e YALNIZCA SaaS-funnel signup butonlarının
 // redirectUrl'u ile gidilir; burada admin→dashboard / diğer→portal kalır —
 // portal uç kullanıcısı onboarding'e hiç gönderilmez.

@@ -10,7 +10,7 @@ export default async function DashboardLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   // Sprint 63+ (yetki matrisi): sidebar, kullanıcının dashboard kademesine
-  // göre admin-only öğeleri gizler (contributor → "team").
+  // göre admin-only/owner-only öğeleri gizler (member → "team").
   const scope = await getDashboardScope();
   return (
     <div className="flex w-full flex-col md:flex-row">

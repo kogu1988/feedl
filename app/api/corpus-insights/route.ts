@@ -11,7 +11,7 @@ import { inngest } from "@/inngest/client";
 
 // Sprint 63l — corpus AI içgörülerini ARKA PLANDA tetikle (dashboard/insights
 // "Yenile" butonu). Sayfa LLM çağrısını engellemez; Inngest üretir ve cache'ler.
-// Team (owner/admin/contributor) erişebilir; member → portal.
+// Team (owner/manager/member) erişebilir.
 // Sprint 63n — LLM maliyet koruması: kullanıcı başına 5/saat + workspace başına
 // 3/15dk (peşpeşe "Yenile" sonrası bile kaynak tüketmez). Upstash Redis
 // (checkRateLimit) + in-process fallback.

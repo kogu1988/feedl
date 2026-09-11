@@ -60,16 +60,18 @@ const navGroups = [
     items: [
       { href: "/dashboard/widget", label: "Widget", icon: PuzzleIcon, adminOnly: true },
       { href: "/dashboard/integrations", label: "Entegrasyonlar", icon: PlugIcon, adminOnly: true },
-      { href: "/dashboard/billing", label: "Faturalama", icon: CreditCardIcon, adminOnly: true },
+      // Faturalama yalnız OWNER'a görünür ("owner = ürünü satın alan").
+      { href: "/dashboard/billing", label: "Faturalama", icon: CreditCardIcon, ownerOnly: true },
     ],
   },
 ];
 
-// Sprint 63+ (yetki matrisi — kullanıcı onayı): dashboard yalnız
-// owner/admin (tam) + contributor (kısmi team) tarafından görülür.
-// adminOnly öğeler (gelir, üyeler, çalışma alanları, sistem) yalnız
-// "admin" kademesine görünür; "team" kademesinde gizlenir.
-type DashboardScope = "admin" | "team" | null;
+// 3 kademe (2026-09-11, kullanıcı kararı): owner = her şey (billing dahil),
+// manager = ürün ops + üye yönetimi (billing hariç), member = ürün ops.
+// `adminOnly` öğeler (gelir, üyeler, çalışma alanları, sistem) owner+manager'a
+// görünür; `ownerOnly` (faturalama) yalnız owner'a. Member ("team") kademesinde
+// ikisi de gizlenir.
+type DashboardScope = "owner" | "admin" | "team" | null;
 
 function isActive(pathname: string, href: string) {
   if (href === "/dashboard") return pathname === "/dashboard";
@@ -81,9 +83,12 @@ function NavList({ collapsed, scope }: { collapsed: boolean; scope: DashboardSco
   return (
     <nav aria-label="Yönetim menüsü" className="flex-1 overflow-y-auto p-2">
       {navGroups.map((group) => {
-        const visibleItems = group.items.filter(
-          (item) => scope === "admin" || !((item as { adminOnly?: boolean }).adminOnly),
-        );
+        const visibleItems = group.items.filter((item) => {
+          const flags = item as { adminOnly?: boolean; ownerOnly?: boolean };
+          if (flags.ownerOnly) return scope === "owner";
+          if (flags.adminOnly) return scope === "owner" || scope === "admin";
+          return true;
+        });
         if (visibleItems.length === 0) return null;
         return (
           <div key={group.label} className="mb-3 last:mb-0">

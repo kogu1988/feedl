@@ -118,13 +118,15 @@ Ayarlar). Hesap erişimi (UserButton) sidebar'ın dibinde DEĞİL, üst bardadı
 sağında, mobilde header hamburger menüsünde). Bileşen: `app-sidebar` —
 dashboard altı `layout.tsx` sağlar; rail durumu localStorage.
 
-**Sidebar rol kademesi (2026-09-06, kullanıcı onaylı yetki matrisi):**
-`workspace_members.role` → owner/admin (tam), contributor (kısmi team),
-member (public). Contributor, `adminOnly` işaretli öğeleri (Gelir / Üyeler /
-Çalışma Alanları / Widget / Faturalama / Ayarlar) sidebar'da GÖRMEZ; onun
-nav listesi Genel Bakış / Board'lar / Aktivasyon / AI İçgörüleri / Şirketler /
-Alanlar olur. `layout.tsx` `getDashboardScope()` ile `scope="admin|"team`
-prop'unu `AppSidebar`'a geçirir.
+**Sidebar rol kademesi (3 kademe, 2026-09-11):**
+`workspace_members.role` → owner (her şey; faturalama + workspace silme +
+owner devri), manager (ürün ops + üye yönetimi), member (ürün ops). Üyeliği
+olmayan = portal son kullanıcısı ("user"; saklanan rol değil). `adminOnly`
+öğeler (Gelir / Üyeler / Çalışma Alanları / Widget / Entegrasyonlar)
+owner+manager'a görünür; `ownerOnly` (Faturalama) yalnız owner'a. Member'ın nav
+listesi Genel Bakış / Board'lar / Aktivasyon / AI İçgörüleri / Şirketler /
+Alanlar olur. `layout.tsx` `getDashboardScope()` ile
+`scope="owner|admin|team"` prop'unu `AppSidebar`'a geçirir.
 
 - `app/(main)/layout.tsx`: `ClerkProvider(appearance: variables/elements)` > `ThemeProvider` >
   `flex min-h-svh flex-col` (üst bar / flex-1 içerik / alt bar).

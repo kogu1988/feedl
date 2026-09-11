@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
-import { getAdminUserId } from "@/lib/auth/admin";
+import { getAdminUserId, getOwnerUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import {
@@ -15,10 +15,11 @@ import {
 } from "@/lib/db/membership";
 import { enforceLimit } from "@/lib/paddle";
 
-// Sprint 48c-2 (madde 8) — workspace üyeleri ve rol matrisi. Üye ekle/rol
-// değiştir/çıkar; roller owner/admin/member. Son owner kaldırılamaz.
+// Sprint 48c-2 (madde 8) + 2026-09-11 — workspace üyeleri ve rol matrisi.
+// Roller: owner | manager | member. Son owner kaldırılamaz/düşürülemez ve
+// owner atama/devri YALNIZ owner'ın yetkisindedir (manager owner yaratamaz).
 
-const roleEnum = z.enum(["owner", "admin", "member", "contributor"]);
+const roleEnum = z.enum(["owner", "manager", "member"]);
 const memberSchema = z.object({
   userId: z.string().min(1, "Kullanıcı gerekli."),
   role: roleEnum.default("member"),
@@ -77,6 +78,17 @@ export async function POST(req: Request) {
       return NextResponse.json(
         { success: false, error: "Kullanıcı ve rol geçersiz." },
         { status: 400 },
+      );
+    }
+
+    // Owner olarak ekleme yalnız OWNER'ın yetkisinde.
+    if (parsed.data.role === "owner" && !(await getOwnerUserId())) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Owner atama yalnızca workspace sahibinin yetkisindedir.",
+        },
+        { status: 403 },
       );
     }
 
@@ -147,6 +159,22 @@ export async function PATCH(req: Request) {
         { status: 400 },
       );
     }
+
+    // Owner atama VEYA mevcut owner'ın rolünü değiştirme (owner devri) yalnız
+    // OWNER'ın yetkisindedir.
+    const members = await listWorkspaceMembers();
+    const target = members.find((m) => m.userId === parsed.data.userId);
+    const touchesOwner =
+      parsed.data.role === "owner" || target?.role === "owner";
+    if (touchesOwner && !(await getOwnerUserId())) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Owner atama/devri yalnızca workspace sahibinin yetkisindedir.",
+        },
+        { status: 403 },
+      );
+    }
     const updated = await upsertWorkspaceMember(
       parsed.data.userId,
       parsed.data.role as WorkspaceMemberRole,
@@ -179,6 +207,20 @@ export async function DELETE(req: Request) {
       return NextResponse.json(
         { success: false, error: "Geçersiz kullanıcı." },
         { status: 400 },
+      );
+    }
+    // Owner çıkarma yalnız OWNER'ın yetkisinde (manager owner'ı atamaz).
+    const members = await listWorkspaceMembers();
+    if (
+      members.find((m) => m.userId === userId)?.role === "owner" &&
+      !(await getOwnerUserId())
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Owner çıkarma yalnızca workspace sahibinin yetkisindedir.",
+        },
+        { status: 403 },
       );
     }
     try {
