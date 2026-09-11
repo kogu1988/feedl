@@ -130,6 +130,15 @@ npm run dev                 # http://localhost:3000
 - Neon: `DATABASE_URL`
 - OpenRouter: `OPENROUTER_API_KEY`
 - Inngest: `INNGEST_EVENT_KEY`, `INNGEST_SIGNING_KEY`, `INNGEST_API_KEY`
+  - `INNGEST_DEV=1` **yalnız lokal** `.env.local` içindir: SDK'yı "dev" moduna
+    alır → olaylar yerel Inngest Dev Server'a (`localhost:8288`) gider ve imza
+    doğrulaması atlanır. Üretimde bu değişken **yoktur** (Vercel production'da
+    doğrulandı); kaldırılırsa lokal kod Inngest Cloud'a bağlanır ve **gerçek**
+    olay/otomasyon tetikleyebilir (gerçek e-posta gidebilir) — bilinçli yapın.
+  - `INNGEST_API_KEY` yönetim REST API'si içindir; erişilebilen tek uç
+    `GET https://api.inngest.com/v1/events` (uygulama/fonksiyon listesi yok —
+    onun için panel kullanılır). Fonksiyon kaydını doğrulamanın yolu Inngest
+    audit log'udur (`inngest/audit-log`, `action: function.updated`).
 - Resend: `RESEND_API_KEY`, `RESEND_WEBHOOK_SECRET` · Test: `ETHEREAL_EMAIL_USER`, `ETHEREAL_EMAIL_PASSWORD`
 - Widget: `FEEDL_WIDGET_SECRET`, `FEEDL_WIDGET_ALLOWED_ORIGINS`
 - Paddle: `PADDLE_API_KEY`, `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN`, `PADDLE_WEBHOOK_SECRET`
