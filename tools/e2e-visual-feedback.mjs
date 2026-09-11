@@ -121,6 +121,29 @@ try {
 }
 console.log(`${outcome === "toast" ? "✅" : "❌"} UI sonucu: ${outcome}`);
 
+// Toast launcher'ın HEMEN üstünde mi? (aynı sağ hizada, küçük boşluk)
+if (outcome === "toast") {
+  const layout = await page.evaluate(() => {
+    const t = document.querySelector(".feedl-vf-toast");
+    const l = document.querySelector(".feedl-widget-launcher");
+    if (!t || !l) return null;
+    const tr = t.getBoundingClientRect();
+    const lr = l.getBoundingClientRect();
+    return {
+      gap: Math.round(lr.top - tr.bottom),
+      rightGap: Math.round(Math.abs(tr.right - lr.right)),
+    };
+  });
+  if (!layout) {
+    console.log("⚠️  toast/launcher konumu ölçülemedi");
+  } else {
+    const ok = layout.gap >= 0 && layout.gap <= 24 && layout.rightGap <= 24;
+    console.log(
+      `${ok ? "✅" : "❌"} toast launcher üstünde (boşluk ${layout.gap}px, sağ hiza farkı ${layout.rightGap}px)`,
+    );
+  }
+}
+
 for (let i = 0; i < 80 && !post; i++) await page.waitForTimeout(250);
 console.log(
   "POST /api/widget/visual-feedback →",
