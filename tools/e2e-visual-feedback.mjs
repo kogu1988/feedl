@@ -30,9 +30,12 @@ const marker = `E2E görsel ${new Date().toISOString().slice(0, 19)}`;
 // için testte sayfa en üste kaydırılır → doküman koordinatı = bu değer.
 const MARK_X = 320;
 const MARK_Y = 420;
+// Sayfa bir miktar kaydırılır: yeni yakalama "görünür alanı" çektiği için
+// kaydırma sonrası işaretin görüntüde doğru yere oturması da test edilir.
+const SCROLL_Y = 600;
 console.log("URL:", url);
 console.log("marker:", marker);
-console.log("işaret noktası:", MARK_X, MARK_Y);
+console.log("işaret noktası (viewport):", MARK_X, MARK_Y, "· kaydırma:", SCROLL_Y);
 
 const browser = await chromium.launch();
 const context = await browser.newContext({
@@ -62,9 +65,9 @@ page.on("response", async (res) => {
 });
 
 await page.goto(url, { waitUntil: "networkidle", timeout: 60000 });
-// Determinizm: sayfa başına kaydır (mark konumu = tıklama koordinatı olsun).
-await page.evaluate(() => window.scrollTo(0, 0));
-await page.waitForTimeout(300);
+// Determinizm: sayfayı belirli bir miktar kaydır ve orada bırak.
+await page.evaluate((y) => window.scrollTo(0, y), SCROLL_Y);
+await page.waitForTimeout(400);
 
 const launcher = page.locator(".feedl-widget-launcher");
 await launcher.waitFor({ state: "visible", timeout: 15000 });
@@ -98,20 +101,27 @@ await page
   .fill("E2E: checkout butonu mobilde ekran dışına taşıyor (otomatik test kaydı).");
 await page.locator(".feedl-vf-send").click();
 
-// Sonuç: yeşil toast (başarı) veya form içi hata mesajı.
+// Sonuç: BAŞARI toast'ı ("Teşekkürler") veya hata durumu.
 let outcome = "timeout";
 try {
-  await page.locator(".feedl-vf-toast").waitFor({ state: "visible", timeout: 25000 });
+  await page
+    .locator(".feedl-vf-toast", { hasText: "Teşekkürler" })
+    .waitFor({ state: "visible", timeout: 40000 });
   outcome = "toast";
 } catch {
-  const msg = page.locator(".feedl-vf-msg");
-  if ((await msg.count()) > 0 && (await msg.isVisible())) {
-    outcome = "form-error: " + (await msg.innerText());
+  const t = page.locator(".feedl-vf-toast");
+  if ((await t.count()) > 0 && (await t.isVisible())) {
+    outcome = "toast-error: " + (await t.innerText());
+  } else {
+    const msg = page.locator(".feedl-vf-msg");
+    if ((await msg.count()) > 0 && (await msg.isVisible())) {
+      outcome = "form-error: " + (await msg.innerText());
+    }
   }
 }
 console.log(`${outcome === "toast" ? "✅" : "❌"} UI sonucu: ${outcome}`);
 
-for (let i = 0; i < 20 && !post; i++) await page.waitForTimeout(250);
+for (let i = 0; i < 80 && !post; i++) await page.waitForTimeout(250);
 console.log(
   "POST /api/widget/visual-feedback →",
   post ? `${post.status} ${JSON.stringify(post.json)}` : "(yanıt yakalanmadı)",

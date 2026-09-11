@@ -587,26 +587,39 @@
 
     // 3) Ekran görüntüsü (vurgu halkası görünür) + gönderim.
     vfLoadShotLib().then(function (lib) {
-      return lib
-        ? lib.toJpeg(document.documentElement, {
-            quality: 0.6,
-            pixelRatio: 1,
-            skipFonts: true,
-            // Widget kromu (toast/katman/ipucu/form/pin) ekran görüntüsüne
-            // girmesin; yalnız sayfa içeriği + vurgu halkası yakalanır.
-            filter: function (node) {
-              var cl = node && node.classList;
-              if (!cl) return true;
-              return !(
-                cl.contains("feedl-vf-toast") ||
-                cl.contains("feedl-vf-layer") ||
-                cl.contains("feedl-vf-hint") ||
-                cl.contains("feedl-vf-form") ||
-                cl.contains("feedl-vf-pin")
-              );
-            },
-          }).catch(function () { return null; })
-        : null;
+      if (!lib) return null;
+      // Görünür alanı yakala: klonu kaydırma kadar ötele → ekran görüntüsü
+      // kullanıcının O AN gördüğü alanı gösterir. Aksi halde html-to-image
+      // documentElement.clientHeight kadar bir alanı sayfanın EN ÜSTÜNDEN
+      // çeker ve aşağı kaydırılmış sayfada işaret görüntü dışında kalırdı.
+      return lib.toJpeg(document.documentElement, {
+        quality: 0.6,
+        pixelRatio: 1,
+        skipFonts: true,
+        width: window.innerWidth,
+        height: window.innerHeight,
+        style: {
+          transform:
+            "translate(-" + (window.pageXOffset || 0) + "px, -" +
+            (window.pageYOffset || 0) + "px)",
+          transformOrigin: "top left",
+        },
+        // Widget kromu (toast/katman/ipucu/form/pin/launcher) görüntüye
+        // girmesin; yalnız sayfa içeriği + vurgu halkası yakalanır.
+        filter: function (node) {
+          var cl = node && node.classList;
+          if (!cl) return true;
+          return !(
+            cl.contains("feedl-vf-toast") ||
+            cl.contains("feedl-vf-layer") ||
+            cl.contains("feedl-vf-hint") ||
+            cl.contains("feedl-vf-form") ||
+            cl.contains("feedl-vf-pin") ||
+            cl.contains("feedl-widget-launcher") ||
+            cl.contains("feedl-widget-overlay")
+          );
+        },
+      }).catch(function () { return null; });
     }).then(function (dataUrl) {
       if (vfMark) { vfMark.remove(); vfMark = null; }
       // Sunucudaki MAX_IMAGE_BYTES (1.5MB ikili) ile hizalı: base64 ≈ 4/3 ×
