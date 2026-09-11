@@ -54,6 +54,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# Kullanıcı göçü geri dönüş yedekleri (kişisel veri içerir) — asla commit'lenmez
+tools/merge-backup-*.json
+
 .vercel
 .env*
 
