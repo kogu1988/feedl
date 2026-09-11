@@ -423,9 +423,10 @@
     // Toast launcher'ın HEMEN üstünde belirir. Launcher: bottom 20px + 42px
     // yükseklik = 62px → 8px boşlukla bottom 70px. Mobilde launcher 12px'te.
     ".feedl-vf-toast{position:fixed;right:20px;bottom:70px;z-index:2147483005;",
-    "max-width:min(340px,calc(100vw - 40px));background:#065f46;color:#fff;",
+    "max-width:min(340px,calc(100vw - 40px));background:#1f2937;color:#fff;",
     "font:600 13px/1.4 system-ui,-apple-system,sans-serif;padding:10px 14px;border-radius:10px;",
     "box-shadow:0 8px 20px rgba(0,0,0,.3);animation:feedl-vf-in .18s ease-out}",
+    ".feedl-vf-toast-ok{background:#065f46}",
     ".feedl-vf-toast-error{background:#b91c1c}",
     "@keyframes feedl-vf-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}",
     "@media (max-width:480px){.feedl-vf-toast{right:12px;bottom:62px}}"
@@ -531,7 +532,9 @@
   function vfToastUpdate(t, text, isError) {
     if (!t || !t.isConnected) return;
     t.textContent = text;
-    t.className = isError ? "feedl-vf-toast feedl-vf-toast-error" : "feedl-vf-toast";
+    // Nötr (gönderiliyor) → yeşil (başarı) / kırmızı (hata).
+    t.className =
+      "feedl-vf-toast " + (isError ? "feedl-vf-toast-error" : "feedl-vf-toast-ok");
     vfScheduleToast(t, isError ? 5000 : 2200);
   }
 
