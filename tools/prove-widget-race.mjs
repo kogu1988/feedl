@@ -51,10 +51,19 @@ const delayed = await run({ delayChunks: true });
 console.log("\n--- sonuc ---");
 console.log("kontrol:", control);
 console.log("gecikmeli:", delayed);
+// Bu betik bir DOĞRULAMA aracıdır: chunk'ları geciktirip widget'ı hidrasyondan
+// önce bağlanmaya zorlar. Hata çıkarsa düzeltme YOK/bozuk; çıkmazsa düzeltme
+// tutuyor demektir.
 if (delayed.hydration > 0 || !delayed.launcher) {
-  console.log("\n✅ HIPOTEZ DOGRULANDI: widget hidrasyondan once baglanirsa React onu siliyor.");
+  console.log(
+    "\n⚠️ YARIS YENIDEN URETILDI — widget hidrasyondan once baglaniyor ve React onu siliyor.",
+  );
+  console.log("   (Duzeltme kaldirilmissa ya da bozulmussa beklenen sonuc budur.)");
+  process.exitCode = 1;
 } else {
-  console.log("\n❌ Hipotez dogrulanmadi: gecikme bu yolla hatayi uretmiyor.");
+  console.log(
+    "\n✅ Yarisa girilmiyor: gecikmeli durumda da launcher VAR ve hidrasyon hatasi YOK.",
+  );
 }
 
 await browser.close();
