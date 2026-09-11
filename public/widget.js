@@ -219,21 +219,77 @@
   style.textContent = CSS;
   document.head.appendChild(style);
 
-  // Gövdeye ekleme: script `<head>`'e konulduğunda (ör. `<script async>` veya
-  // Next.js'in async script'i head'e taşıması) bu noktada `document.body` henüz
-  // YOKTUR — doğrudan appendChild TypeError atar ve widget hiç görünmez. Bu
-  // yüzden body hazır değilse DOMContentLoaded'a kadar beklenir.
-  function mount(el) {
-    if (document.body) {
-      document.body.appendChild(el);
-      return;
+  // ── Gövdeye bağlanma: hidrasyon yarışına karşı İKİ KATMANLI koruma ─────
+  //
+  // Next.js App Router'da root layout `<html>`/`<body>` render eder, yani React
+  // `<body>`'yi hidrasyon sırasında sahiplenir. Widget düğümü o sırada body'de
+  // olursa React onu "beklenmeyen çocuk" görür → #418 uyuşmazlık hatası → body
+  // yeniden render edilir ve widget SİLİNİR. (Kanıt: ana JS chunk'ları
+  // geciktirilip widget'ın önce bağlanması sağlanınca belirti birebir
+  // üretiliyor — tools/prove-widget-race.mjs.)
+  //
+  //   1) BEKLEME: bağlanma `load` + boşta kalma anına ertelenir; ana JS
+  //      chunk'ları `load`'dan önce çalışmış olur, hidrasyon bitmiş olur.
+  //   2) GERİ BAĞLANMA: yine de silinirsek MutationObserver geri koyar.
+  //
+  // Not: script `<head>`'e konulduğunda (async embed) `document.body` henüz
+  // yoktur; bekleyen düğümler body oluşunca bağlanır.
+  var pendingMounts = [];
+  var mountsFlushed = false;
+
+  function appendPending() {
+    if (!document.body) return;
+    for (var i = 0; i < pendingMounts.length; i++) {
+      if (!pendingMounts[i].isConnected) document.body.appendChild(pendingMounts[i]);
     }
-    document.addEventListener(
-      "DOMContentLoaded",
-      function () { document.body.appendChild(el); },
-      { once: true },
-    );
   }
+
+  function watchRemoval() {
+    if (typeof MutationObserver === "undefined" || !document.body) return;
+    new MutationObserver(function () {
+      for (var i = 0; i < pendingMounts.length; i++) {
+        if (!pendingMounts[i].isConnected) {
+          appendPending();
+          return;
+        }
+      }
+    }).observe(document.body, { childList: true });
+  }
+
+  function flushMounts() {
+    if (mountsFlushed || !document.body) return;
+    mountsFlushed = true;
+    appendPending();
+    watchRemoval();
+  }
+
+  function mount(el) {
+    pendingMounts.push(el);
+    // Zaten bağlandıysak (ör. görsel feedback katmanı sonradan oluşturuldu)
+    // doğrudan ekle; değilse sıraya al.
+    if (mountsFlushed && !el.isConnected && document.body) {
+      document.body.appendChild(el);
+    }
+  }
+
+  (function scheduleMount() {
+    function viaIdle() {
+      if (typeof window.requestIdleCallback === "function") {
+        window.requestIdleCallback(flushMounts, { timeout: 1500 });
+      } else {
+        setTimeout(flushMounts, 0);
+      }
+    }
+    function ready() {
+      if (document.readyState === "complete") viaIdle();
+      else window.addEventListener("load", viaIdle, { once: true });
+      // Emniyet supabı: `load` takılırsa (asılı kaynak) widget sonsuza kadar
+      // beklemesin. Erken bağlanma olursa 2. katman toparlar.
+      setTimeout(flushMounts, 8000);
+    }
+    if (document.body) ready();
+    else document.addEventListener("DOMContentLoaded", ready, { once: true });
+  })();
 
   var launcher = document.createElement("button");
   launcher.type = "button";

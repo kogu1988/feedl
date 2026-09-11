@@ -7,10 +7,14 @@ import { describe, expect, it } from "vitest";
 // Widget gömme betiği (public/widget.js) bir tarayıcı IIFE'si. Burada gerçek
 // DOM yerine minimal bir stub ile `vm` içinde çalıştırılır.
 //
-// Regresyon: script `<head>`'e konulduğunda (müşteri snippet'i ya da Next.js'in
-// `async` script'i head'e taşıması) çalışma anında `document.body` henüz YOKTUR.
-// Doğrudan `document.body.appendChild(...)` çağrısı TypeError atar ve widget
-// HİÇ görünmez. Betik bu yüzden DOMContentLoaded'a kadar beklemeli.
+// İki regresyon korunuyor:
+//  1) Script `<head>`'de çalıştığında `document.body` henüz yoktur; doğrudan
+//     `appendChild` TypeError atıp widget'ı komple öldürürdü.
+//  2) Next.js App Router root layout `<html>`/`<body>` render ettiği için React
+//     `<body>`'yi hidrasyon sırasında sahiplenir: widget o anda body'de olursa
+//     React #418 uyuşmazlık hatası verip body'yi yeniden render eder ve widget
+//     SİLİNİR (kanıt: tools/prove-widget-race.mjs). Bu yüzden bağlanma `load` +
+//     boşta kalma anına ertelenir.
 const SOURCE = readFileSync(
   fileURLToPath(new URL("../../public/widget.js", import.meta.url)),
   "utf8",
@@ -22,6 +26,7 @@ interface FakeEl {
   style: Record<string, string>;
   className: string;
   hidden: boolean;
+  isConnected: boolean;
   _attrs: Record<string, string>;
   lastChild: FakeEl | null;
   appendChild(child: FakeEl): FakeEl;
@@ -36,8 +41,6 @@ interface FakeEl {
 
 // Launcher varsayılanı = feedl marka rengi. Free plan snippet'e `data-accent`
 // yazmadığı için marka rengi uygulanır (plan matrisi); Pro özelleştirir.
-// Sabit nötr koyu varsayılan koyu sitelerde görünmez oluyordu (~1.1:1) —
-// marka rengi her iki zeminde de okunur (3.07:1 / 6.44:1).
 const ACCENT_BRAND = "#ff5c35";
 
 function makeEl(tag = "div"): FakeEl {
@@ -47,18 +50,23 @@ function makeEl(tag = "div"): FakeEl {
     style: {} as Record<string, string>,
     className: "",
     hidden: false,
+    isConnected: false,
     _attrs: {} as Record<string, string>,
     _html: "",
     lastChild: null as FakeEl | null,
     appendChild(child: FakeEl) {
       el.children.push(child);
+      child.isConnected = true;
       return child;
     },
     removeChild(child: FakeEl) {
       el.children = el.children.filter((c) => c !== child);
+      child.isConnected = false;
       return child;
     },
-    remove() {},
+    remove() {
+      el.isConnected = false;
+    },
     setAttribute(name: string, value: string) {
       el._attrs[name] = value;
     },
@@ -92,7 +100,10 @@ function bootWidget({
 }) {
   const head = makeEl("head");
   const body = makeEl("body");
+  body.isConnected = true;
   const docListeners: Record<string, ((...args: unknown[]) => void)[]> = {};
+  const loadListeners: ((...args: unknown[]) => void)[] = [];
+  const idleQueue: (() => void)[] = [];
 
   const currentScript = makeEl("script");
   currentScript.setAttribute("data-feedl-url", "https://feedl.app");
@@ -105,6 +116,7 @@ function bootWidget({
     currentScript,
     head,
     body: bodyAvailable ? body : null,
+    readyState: "loading",
     createElement: (tag: string) => makeEl(tag),
     getElementsByTagName: () => [] as FakeEl[],
     addEventListener: (type: string, fn: (...args: unknown[]) => void) => {
@@ -113,7 +125,13 @@ function bootWidget({
   };
 
   const window = {
-    addEventListener() {},
+    addEventListener(type: string, fn: (...args: unknown[]) => void) {
+      if (type === "load") loadListeners.push(fn);
+    },
+    requestIdleCallback(fn: () => void) {
+      idleQueue.push(fn);
+      return idleQueue.length;
+    },
     matchMedia: undefined as unknown,
   };
 
@@ -123,16 +141,29 @@ function bootWidget({
     navigator: { userAgent: "vitest" },
     location: { href: "https://example.com/pricing" },
     console,
-    setTimeout,
-    clearTimeout,
+    // Gerçek zamanlayıcı kurma (8sn emniyet supabı testleri asmasın).
+    setTimeout: () => 0,
+    clearTimeout: () => {},
     URL,
+    MutationObserver: undefined as unknown,
     fetch: () => Promise.resolve({ ok: true, json: async () => ({ success: true }) }),
   };
 
   vm.createContext(sandbox);
   vm.runInContext(SOURCE, sandbox, { filename: "widget.js" });
 
-  return { body, docListeners, window, document };
+  // `load` geldi varsayıp bekleyen bağlanmayı tamamla.
+  // Gerçek tarayıcı sırası taklit edilir: DOMContentLoaded tetiklenmeden ÖNCE
+  // `document.body` atanır (head'e konan async embed'in beklediği an).
+  function finishLoad() {
+    if (!document.body) document.body = body;
+    for (const fn of docListeners.DOMContentLoaded ?? []) fn();
+    document.readyState = "complete";
+    for (const fn of loadListeners) fn();
+    for (const fn of idleQueue) fn();
+  }
+
+  return { body, docListeners, window, document, finishLoad };
 }
 
 function mountBody(body: FakeEl) {
@@ -143,31 +174,25 @@ function launcherOf(body: FakeEl): FakeEl | undefined {
   return body.children.find((c) => c.className === "feedl-widget-launcher");
 }
 
-describe("widget embed — body henüz yokken bağlanma", () => {
-  it("document.body yoksa launcher'ı DOMContentLoaded'a erteler", () => {
-    const { body, docListeners, document } = bootWidget({ bodyAvailable: false });
-
-    // Boot anında gövdeye HİÇBİR ŞEY eklenmemeli (eskiden burada TypeError
-    // atıyor ve widget hiç görünmüyordu).
+describe("widget embed — gövde hazır olma ve hidrasyon yarışı", () => {
+  it("document.body yokken hiçbir şey bağlamaz, sonra bağlar", () => {
+    const { body, finishLoad } = bootWidget({ bodyAvailable: false });
     expect(mountBody(body)).toEqual([]);
-
-    // DOM hazır olduğunda launcher + overlay bağlanır. Tarayıcı, bu olayı
-    // tetiklemeden önce `document.body`'yi atar — stub bunu taklit eder.
-    expect(docListeners.DOMContentLoaded?.length).toBeGreaterThan(0);
-    document.body = body;
-    for (const fn of docListeners.DOMContentLoaded) fn();
-
+    finishLoad();
     expect(mountBody(body)).toContain("feedl-widget-launcher");
     expect(mountBody(body)).toContain("feedl-widget-overlay");
   });
 
-  it("document.body hazırsa senkron bağlanır", () => {
-    const { body, docListeners } = bootWidget({ bodyAvailable: true });
+  it("body hazır olsa bile HİDRASYON bitene kadar bağlanmayı erteler", () => {
+    const { body, finishLoad } = bootWidget({ bodyAvailable: true });
 
+    // Kritik: body hazır olsa da `load` gelmeden bağlanmamalı — aksi halde
+    // React hidrasyonu sırasında body'de oluruz ve #418 ile siliniriz.
+    expect(mountBody(body)).toEqual([]);
+
+    finishLoad();
     expect(mountBody(body)).toContain("feedl-widget-launcher");
     expect(mountBody(body)).toContain("feedl-widget-overlay");
-    // Erteleme yolu kullanılmadı.
-    expect(docListeners.DOMContentLoaded ?? []).toHaveLength(0);
   });
 
   it("idempotans bayrağını yalnız doğrulama geçtikten sonra set eder", () => {
@@ -178,33 +203,44 @@ describe("widget embed — body henüz yokken bağlanma", () => {
 
 describe("widget launcher rengi — plan matrisi ve görünürlük", () => {
   it("data-accent yoksa marka rengini kullanır (free plan varsayılanı)", () => {
-    const { body } = bootWidget({ bodyAvailable: true, attrs: { "data-theme": "light" } });
+    const { body, finishLoad } = bootWidget({
+      bodyAvailable: true,
+      attrs: { "data-theme": "light" },
+    });
+    finishLoad();
     expect(launcherOf(body)?.style.background).toBe(ACCENT_BRAND);
   });
 
   it("koyu temada da marka renginde kalır (koyu zeminde görünür)", () => {
-    const { body } = bootWidget({ bodyAvailable: true, attrs: { "data-theme": "dark" } });
+    const { body, finishLoad } = bootWidget({
+      bodyAvailable: true,
+      attrs: { "data-theme": "dark" },
+    });
+    finishLoad();
     expect(launcherOf(body)?.style.background).toBe(ACCENT_BRAND);
   });
 
   it("açıkça verilen data-accent kazanır (Pro özel rengi)", () => {
-    const { body } = bootWidget({
+    const { body, finishLoad } = bootWidget({
       bodyAvailable: true,
       attrs: { "data-theme": "dark", "data-accent": "#123456" },
     });
+    finishLoad();
     expect(launcherOf(body)?.style.background).toBe("#123456");
   });
 
   it("geçersiz data-accent marka rengine düşer", () => {
-    const { body } = bootWidget({
+    const { body, finishLoad } = bootWidget({
       bodyAvailable: true,
       attrs: { "data-accent": "javascript:alert(1)" },
     });
+    finishLoad();
     expect(launcherOf(body)?.style.background).toBe(ACCENT_BRAND);
   });
 
   it("metin rengini arka plana göre seçer (mercan üstünde koyu yazı)", () => {
-    const { body } = bootWidget({ bodyAvailable: true });
+    const { body, finishLoad } = bootWidget({ bodyAvailable: true });
+    finishLoad();
     expect(launcherOf(body)?.style.color).toBe("#18181b");
   });
 });
