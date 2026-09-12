@@ -38,6 +38,7 @@ import {
   computeRevenueScore,
   loadPostImpactContexts,
   loadRevenueContexts,
+  revenueScoreOrderSql,
 } from "@/lib/db/revenue-scores";
 import {
   aiSuggestions,
@@ -106,6 +107,8 @@ export default async function DashboardPage({
   // "Tümü"ne düşer. İstatistikler her zaman TÜM fikirlerden hesaplanır,
   // filtre yalnızca tabloyu etkiler.
   const { status: rawStatus, tag: rawTag, range: rawRange, per: rawPer, page: rawPage, board: rawBoard, device: rawDevice, tab: rawTab } = await searchParams;
+  // `sort` Next'in ürettiği searchParams tipinde tanımlı değil → cast ile okunur.
+  const rawSort = ((await searchParams) as Record<string, string | undefined>).sort;
   const statusFilter =
     postStatusEnum.enumValues.find((value) => value === rawStatus) ?? null;
   // Faz 1: cihaz filtresi (desktop | tablet | mobile).
@@ -140,6 +143,9 @@ export default async function DashboardPage({
     "Genel Bakış";
   // Sprint 39: tablo sayfalaması — 5 varsayılan, 25/50/Tümü (ortak parse).
   const { per, perSize, requestedPage } = parsePagination(rawPer, rawPage);
+  // 2026-09-12 (P1-8): sıralama — whitelist dışı değer varsayılana düşer.
+  const sortFilter: PostSort =
+    POST_SORTS.find((value) => value === rawSort) ?? "newest";
 
   let rows: Awaited<ReturnType<typeof loadPosts>> = [];
   let totalCount = 0;
@@ -192,6 +198,7 @@ export default async function DashboardPage({
       (currentPage - 1) * perSize,
       activeBoard?.id,
       deviceFilter,
+      sortFilter,
     );
     customerCountByPost = await loadCustomerCounts(rows.map((row) => row.id));
     // Gelir skoru Pro özelliği (2026-09-12): Free'de bağlam HİÇ yüklenmez.
@@ -439,6 +446,7 @@ export default async function DashboardPage({
                     ...(boardSlug ? { board: boardSlug } : {}),
                     ...(deviceFilter ? { device: deviceFilter } : {}),
                     ...(per !== "5" ? { per } : {}),
+                    ...(sortFilter !== "newest" ? { sort: sortFilter } : {}),
                   }}
                   options={[
                     { value: "", label: "Tümü" },
@@ -459,12 +467,35 @@ export default async function DashboardPage({
                     ...(tagFilter ? { tag: tagFilter } : {}),
                     ...(boardSlug ? { board: boardSlug } : {}),
                     ...(per !== "5" ? { per } : {}),
+                    ...(sortFilter !== "newest" ? { sort: sortFilter } : {}),
                   }}
                   options={[
                     { value: "", label: "Tüm Cihazlar" },
                     { value: "desktop", label: "Masaüstü" },
                     { value: "tablet", label: "Tablet" },
                     { value: "mobile", label: "Mobil" },
+                  ]}
+                />
+                {/* 2026-09-12 (frontend_plan P1-8): sıralama. "İş etkisi"
+                    yalnız Pro'da seçilebilir — skor sütunu da Pro (Free'de
+                    MRR/fırsat verisi yok, sıralama yanıltıcı olurdu). */}
+                <FilterTabs
+                  paramName="sort"
+                  basePath="/dashboard"
+                  active={sortFilter}
+                  extraParams={{
+                    ...(section ? { tab: section } : {}),
+                    ...(statusFilter ? { status: statusFilter } : {}),
+                    ...(tagFilter ? { tag: tagFilter } : {}),
+                    ...(boardSlug ? { board: boardSlug } : {}),
+                    ...(deviceFilter ? { device: deviceFilter } : {}),
+                  }}
+                  options={[
+                    { value: "", label: "En yeni" },
+                    { value: "votes", label: "En çok oy" },
+                    ...(isPro
+                      ? [{ value: "impact", label: "İş etkisi" }]
+                      : []),
                   ]}
                 />
                 {tagOptions.length > 0 ? (
@@ -477,6 +508,7 @@ export default async function DashboardPage({
                       ...(statusFilter ? { status: statusFilter } : {}),
                       ...(boardSlug ? { board: boardSlug } : {}),
                       ...(deviceFilter ? { device: deviceFilter } : {}),
+                      ...(sortFilter !== "newest" ? { sort: sortFilter } : {}),
                       ...(per !== "5" ? { per } : {}),
                     }}
                     options={[
@@ -569,6 +601,7 @@ export default async function DashboardPage({
                   ...(tagFilter ? { tag: tagFilter } : {}),
                   ...(boardSlug ? { board: boardSlug } : {}),
                   ...(deviceFilter ? { device: deviceFilter } : {}),
+                  ...(sortFilter !== "newest" ? { sort: sortFilter } : {}),
                 }}
                 pageParams={{
                   ...(section ? { tab: section } : {}),
@@ -576,6 +609,7 @@ export default async function DashboardPage({
                   ...(deviceFilter ? { device: deviceFilter } : {}),
                   ...(tagFilter ? { tag: tagFilter } : {}),
                   ...(boardSlug ? { board: boardSlug } : {}),
+                  ...(sortFilter !== "newest" ? { sort: sortFilter } : {}),
                   ...(per !== "5" ? { per } : {}),
                 }}
               />
@@ -629,6 +663,13 @@ const dateFormatter = new Intl.DateTimeFormat("tr-TR", {
 
 // Sprint 21: ?tag= filtresi — birleşmiş fikirler dahil (admin görür).
 // Sprint 39: durum filtresi sunucuda uygulanır + offset/limit sayfalama.
+// 2026-09-12 (frontend_plan P1-8): sıralama seçenekleri. `newest` varsayılan
+// (mevcut davranış KORUNUR). `votes` talebe, `impact` iş etkisine göre sıralar;
+// ikisi de SQL'de yapılır → sayfalama bozulmaz (tüm liste JS'e çekilmez).
+// Sayfa modülünden export EDİLMEZ (Next.js sayfa export'ları için güvenli değil).
+const POST_SORTS = ["newest", "votes", "impact"] as const;
+type PostSort = (typeof POST_SORTS)[number];
+
 async function loadPosts(
   tagFilter: string,
   statusFilter: (typeof postStatusEnum.enumValues)[number] | null,
@@ -636,6 +677,7 @@ async function loadPosts(
   offset: number,
   boardId?: string,
   deviceFilter?: string | null,
+  sort: PostSort = "newest",
 ) {
   const workspaceId = await getWorkspaceId();
   return getDb()
@@ -655,7 +697,13 @@ async function loadPosts(
     .leftJoin(votes, eq(votes.postId, posts.id))
     .where(dashboardPostConditions(workspaceId, tagFilter, statusFilter, boardId, deviceFilter))
     .groupBy(posts.id)
-    .orderBy(desc(posts.createdAt))
+    .orderBy(
+      sort === "votes"
+        ? desc(count(votes.id))
+        : sort === "impact"
+          ? revenueScoreOrderSql(workspaceId)
+          : desc(posts.createdAt),
+    )
     .limit(limit)
     .offset(offset);
 }

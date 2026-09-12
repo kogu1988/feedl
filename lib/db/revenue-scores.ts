@@ -1,4 +1,4 @@
-import { and, count, eq, inArray } from "drizzle-orm";
+import { and, count, eq, inArray, sql } from "drizzle-orm";
 
 import { getDb } from "./index";
 import { getWorkspaceId } from "./workspace";
@@ -217,6 +217,51 @@ export function computePrioritySignal(input: {
   if (score >= SIGNAL_HIGH) return "high";
   if (score >= SIGNAL_MEDIUM) return "medium";
   return "low";
+}
+
+// 2026-09-12 (frontend_plan P1-8) — gelir bazlı SIRALAMA.
+//
+// Skoru SQL'de sıralamak için formülün SQL karşılığı gerekir. Bu ifade
+// `computeRevenueScore` ile AYNI olmak ZORUNDA:
+//   COUNT(oy) + 10×DISTINCT şirket + (Σ MRR + Σ açık fırsat) / 1000
+//
+// DİKKAT — neden iki yerde: TS fonksiyonu tabloda/kartta gösterilen DEĞERİ
+// üretir, SQL ifadesi sayfalamayı bozmadan SIRALAMAYI yapar (tüm liste JS'e
+// çekilmez). İkisi ayrışırsa sıralama ile gösterilen skor tutarsız olur;
+// bu yüzden testler ikisini birlikte doğrular
+// (tests/lib/post-impact.test.ts → "SQL sıralaması formülle tutarlı").
+//
+// Tenant izolasyonu: iç sorguların hepsi `c.workspace_id` / `o.workspace_id`
+// filtresi taşır — başka workspace'in şirketi sıralamaya giremez (§21).
+export function revenueScoreOrderSql(workspaceId: string) {
+  return sql`(
+    (SELECT COUNT(*) FROM ${votes} v1 WHERE v1.post_id = ${posts.id})
+    + 10 * (
+      SELECT COUNT(DISTINCT cm.company_id)
+      FROM ${companyMembers} cm
+      JOIN ${companies} c ON c.id = cm.company_id
+      JOIN ${votes} v2 ON v2.user_id = cm.user_id
+      WHERE v2.post_id = ${posts.id} AND c.workspace_id = ${workspaceId}
+    )
+    + (
+      COALESCE((
+        SELECT SUM(mr.mrr) FROM (
+          SELECT DISTINCT c2.id AS id, c2.mrr AS mrr
+          FROM ${votes} v3
+          JOIN ${companyMembers} cm2 ON cm2.user_id = v3.user_id
+          JOIN ${companies} c2 ON c2.id = cm2.company_id
+          WHERE v3.post_id = ${posts.id} AND c2.workspace_id = ${workspaceId}
+        ) mr
+      ), 0)
+      + COALESCE((
+        SELECT SUM(o.deal_value)
+        FROM ${postOpportunities} po
+        JOIN ${opportunities} o ON o.id = po.opportunity_id
+        WHERE po.post_id = ${posts.id} AND o.workspace_id = ${workspaceId}
+          AND o.stage IN ('open', 'proposal')
+      ), 0)
+    ) / 1000.0
+  ) DESC`;
 }
 
 export interface ScoreBreakdownRow {

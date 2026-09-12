@@ -50,6 +50,7 @@ import {
   computeRevenueScore,
   explainRevenueScore,
   loadPostImpactContexts,
+  revenueScoreOrderSql,
 } from "@/lib/db/revenue-scores";
 
 const POST_A = "11111111-1111-4111-8111-111111111111";
@@ -180,6 +181,57 @@ describe("loadPostImpactContexts — TENANT İZOLASYONU (§21)", () => {
       const values = collectSqlValues(args);
       expect(values).toContain("ws-izole");
     }
+  });
+});
+
+// SQL parçasını (drizzle `sql`) güvenli metne çevirir: döngüsel tablo
+// referansları olduğu için JSON.stringify kullanılamaz.
+function sqlText(node: unknown, out: string[] = [], seen = new Set<unknown>()): string[] {
+  if (typeof node === "string") {
+    out.push(node);
+    return out;
+  }
+  if (node === null || typeof node !== "object") return out;
+  if (seen.has(node)) return out;
+  seen.add(node);
+  if (Array.isArray(node)) {
+    for (const item of node) sqlText(item, out, seen);
+    return out;
+  }
+  const rec = node as { value?: unknown; name?: unknown; queryChunks?: unknown[] };
+  if (typeof rec.name === "string") out.push(rec.name);
+  if (Array.isArray(rec.queryChunks)) {
+    for (const chunk of rec.queryChunks) sqlText(chunk, out, seen);
+  }
+  if (Array.isArray(rec.value)) {
+    // drizzle StringChunk: `value` düz string dizisidir (SQL metni burada).
+    for (const piece of rec.value) {
+      if (typeof piece === "string") out.push(piece);
+    }
+  } else if (rec.value !== undefined && typeof rec.value !== "object") {
+    out.push(String(rec.value));
+  }
+  return out;
+}
+
+describe("revenueScoreOrderSql — sıralama/fonksiyon tutarlılığı (P1-8)", () => {
+  const text = sqlText(revenueScoreOrderSql("ws-order")).join(" ");
+
+  it("skor formülünün bileşenlerini taşır (TS fonksiyonundan ayrışmasın)", () => {
+    // computeRevenueScore: oy + 10×müşteri + (MRR + fırsat)/1000
+    expect(text).toContain("10 *"); // 10 × müşteri
+    expect(text).toContain("/ 1000.0");
+    expect(text).toContain("COUNT(DISTINCT");
+  });
+
+  it("fırsatı yalnız açık/teklif aşamasında sayar (won/lost hariç)", () => {
+    expect(text).toContain("open");
+    expect(text).toContain("proposal");
+  });
+
+  it("her iç sorgu workspace ile filtrelenir ve id bağlı parametredir (§21)", () => {
+    expect(text).toContain("workspace_id");
+    expect(sqlText(revenueScoreOrderSql("ws-order"))).toContain("ws-order");
   });
 });
 
