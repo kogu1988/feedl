@@ -154,6 +154,7 @@ export default async function DashboardPage({
   let postStats = { totalPosts: 0, totalVotes: 0, openCount: 0, shippedCount: 0 };
   let sentimentCounts = { pozitif: 0, notr: 0, negatif: 0, unanalyzed: 0 };
   let topPosts: Awaited<ReturnType<typeof loadPostStats>>["topPosts"] = [];
+  let topRevenuePosts: Awaited<ReturnType<typeof loadTopRevenuePosts>> = [];
   let tagOptions: Awaited<ReturnType<typeof loadTagOptions>> = [];
   let views: Awaited<ReturnType<typeof loadSavedViews>> = [];
   let changelogData: Awaited<ReturnType<typeof loadChangelogData>> = {
@@ -204,6 +205,7 @@ export default async function DashboardPage({
     // Gelir skoru Pro özelliği (2026-09-12): Free'de bağlam HİÇ yüklenmez.
     if (isPro) {
       revenueContexts = await loadRevenueContexts(rows.map((row) => row.id));
+      topRevenuePosts = await loadTopRevenuePosts(tagFilter);
     }
     tagOptions = await loadTagOptions();
     views = await loadSavedViews();
@@ -336,6 +338,8 @@ export default async function DashboardPage({
                       weekly: weeklyCounts,
                       sentiment: sentimentCounts,
                       topPosts,
+                      topRevenuePosts,
+                      isPro,
                     }}
                   />
                 </CardContent>
@@ -837,6 +841,53 @@ async function loadPostStats(tagFilter: string) {
     .limit(5);
 
   return { stats, sentimentCounts, topPosts };
+}
+
+// 2026-09-12 (frontend_plan P1-11) — dashboard içgörüsü: "Gelir etkisi en
+// yüksek". "En çok istenenler" (oy) ile aynı kapsam ve aynı dönem/etiket
+// davranışı, ama sıralama TALEP değil İŞ ETKİSİ üzerinden.
+//
+// Sıralama SQL'de: mevcut `revenueScoreOrderSql` kullanılır — `?sort=impact`
+// ile AYNI ifade, böylece listedeki sıra ile gösterilen skor ayrışamaz (§6).
+// Tüm liste JS'e çekilmez, yalnız en iyi 5 satır gelir (§33).
+//
+// Skor sütunu Pro olduğu için bu sorgu Free'de HİÇ koşmaz (çağıran `isPro`
+// ile korur) — kilitli bir özellik için veri çekmenin anlamı yok.
+async function loadTopRevenuePosts(tagFilter: string) {
+  const workspaceId = await getWorkspaceId();
+  const rows = await getDb()
+    .select({ id: posts.id, title: posts.title, status: posts.status })
+    .from(posts)
+    .where(
+      and(
+        dashboardPostConditions(workspaceId, tagFilter, undefined),
+        isNull(posts.mergedIntoId),
+      ),
+    )
+    .orderBy(revenueScoreOrderSql(workspaceId))
+    .limit(5);
+
+  const contexts = await loadPostImpactContexts(rows.map((row) => row.id));
+  return rows.map((row) => {
+    const voteCount = contexts.get(row.id)?.voteCount ?? 0;
+    const customerCount = contexts.get(row.id)?.customerCount ?? 0;
+    const mrrTotal = contexts.get(row.id)?.mrrTotal ?? 0;
+    const openOpportunityValue = contexts.get(row.id)?.opportunityValue ?? 0;
+    return {
+      id: row.id,
+      title: row.title,
+      status: row.status,
+      voteCount,
+      customerCount,
+      mrrTotal,
+      score: computeRevenueScore({
+        voteCount,
+        customerCount,
+        mrrTotal,
+        openOpportunityValue,
+      }),
+    };
+  });
 }
 
 // Sprint 21: etiket filtre sekmeleri — en çok kullanılan 8 etiket.
