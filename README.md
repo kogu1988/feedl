@@ -181,21 +181,25 @@ Notlar:
 ## Doğrulama
 
 ```bash
-npm run build   # tip + lint (in-session tek doğrulama)
-npm test        # Vitest birim testleri
+npx tsc --noEmit  # tip kontrolü
+npm run lint      # ESLint
+npx vitest run    # 215 birim testi
+npm run build     # üretim derlemesi
 npm run test:e2e  # Playwright + axe erişilebilirlik + auth akışı (çalışan sunucu gerekir)
 ```
 
-### Test durumu (2026-09-10)
+### Test durumu (2026-09-12)
 
 | Katman | Sonuç | Kapsam |
 | :--- | :--- | :--- |
-| **Birim test** (`npm test`) | ✅ 31 dosya · **156 test geçti** | Saf mantık: renk/WCAG, sayfalama, CSV, şifreleme, rate-limit, Paddle imza+plan türetme, oy doğrulama, post-format, post-search, widget-origins, widget gömme (body-bekleme), workspace-host çözümleme, AI içgörüleri, OpenRouter modelleri, e-posta teslimatı, haftalık digest e-postası + gönderim kararı, api-keys, davet e-postası, widget gönderim modu, free-plan oy limiti |
-| **Tenant izolasyonu** | ✅ `resolveWorkspaceByHost` öncelik (custom_domain > subdomain > varsayılan) + hata | `tests/lib/tenant-isolation.test.ts` |
+| **Birim test** (`npm test`) | ✅ 38 dosya · **215 test geçti** | Saf mantık: renk/WCAG, sayfalama, CSV, şifreleme, rate-limit, Paddle imza+plan türetme, oy doğrulama, post-format, post-search, widget-origins, widget gömme (body-bekleme), workspace-host çözümleme, AI içgörüleri, OpenRouter modelleri, e-posta teslimatı, haftalık digest e-postası + gönderim kararı, api-keys, davet e-postası, widget gönderim modu, free-plan oy limiti, **entegrasyon URL token doğrulaması**, **`getWorkspaceId` önceliği**, **middleware public allowlist'i** |
+| **Tenant izolasyonu** | ✅ `resolveWorkspaceByHost` öncelik (custom_domain > subdomain > varsayılan) + hata; `getWorkspaceId` sırası (widget > çerez > host) + modül-global önbellek regresyonu | `tests/lib/tenant-isolation.test.ts`, `tests/lib/workspace-precedence.test.ts` |
+| **Entegrasyon webhook token** | ✅ Zaman-sabit karşılaştırma; yanlış/boş/eksik token → null (handler 403); legacy yol uyarısı tekrarlamaz | `tests/lib/integration-url-token.test.ts` |
+| **Middleware yetki yüzeyi** | ✅ Açık allowlist fail-closed; önek sızması yok (`/api/adminx` kapalı); `/dashboard` + `/onboarding` korunur | `tests/lib/public-paths.test.ts` |
 | **Paddle plan türetme** | ✅ `derivePlanFromStatus` (trialing/active→pro; canceled/past_due/dunned→free; unknown→null) | `tests/lib/paddle-plans.test.ts` |
 | **Merge/unmerge karar mantığı** | ✅ Şema doğrulama (uuid, self-merge) + reason→HTTP eşleme | `tests/lib/post-merge.test.ts` |
 | **Entegrasyon secret şifreleme** | ✅ `saveIntegration` + Linear connect `encryptSecret` (AES-256-GCM); okuma `decryptSecret` (düz eski satırlar backward-compat) | `tests/lib/encrypt.test.ts` |
-| **E2E smoke** (`test:e2e`) | ⚠️ Sunucu gerekir; deploy/CI'da koşar | Ana yüzeyler + public API yüzeyi (OpenAPI, v1 401 gate) + axe a11y |
+| **E2E smoke** (`test:e2e`) | ✅ CI'da koşar (`e2e` job'u; `DATABASE_URL` secret'ı gerekir, yoksa yeşil no-op). Landing testi host-aware — CI'da `NEXT_PUBLIC_APP_URL=localhost` olduğu için GERÇEK landing doğrulanır | Ana yüzeyler + public API yüzeyi (OpenAPI, v1 401 gate) + axe a11y |
 | **E2E auth akışı** | ⚠️ Clerk test env + seed gerekir; yoksa otomatik atlanır | Admin dashboard erişimi + portal fikir oluşturma |
 
 > **Doğrulananlar (2026-09-07):** · `workspace_integrations` secret'ları `encryptSecret` ile şifreli (Linear/Jira/Slack/Zendesk/Intercom) ✓ · Public API **idempotency** (`withIdempotency`, `Idempotency-Key`) + **OpenAPI** (`/api/v1/openapi`) ✓ · `robots.txt`/`sitemap.xml` App Router route handler (`app/robots.txt/route.ts`) ✓. Mimari: kimlik Clerk, tenant/iş verisi Neon (Clerk Organization senkronu bilinçli YAPILMADI — karar 2026-09-07).
@@ -317,7 +321,7 @@ e2e/               Playwright smoke + axe erişilebilirlik
 | Clerk kimlik, Neon iş/tenant verisi | basit, tek kaynak | Clerk Organizasyon senkronu (bilinçli DEĞİL — 2026-09-07) |
 | Chat: ücretli küçük modeller (nova-micro + mistral-nemo), embedding: ücretsiz | kararlılık vs ~$0.0001/çağrı | `LLM_MODEL`/`LLM_FALLBACK_MODEL` env; `tools/probe-llm-models.mjs` |
 | Paddle merchant-of-record | vergi basitliği vs marj | canlıya geçildi (live) — tax/fiyat kontrol |
-| `@paddle/paddle-js` v1.6.5 | overlay zorunlu (inline frameTarget bozuk) | v2 upgrade |
+| `@paddle/paddle-js` v1.6.5 (**en güncel sürüm — v2 YOK**) | overlay kullanıyoruz; inline 1.6.5'te destekli ama canlı doğrulanmadı | inline'a geçiş bir ÜRÜN kararı, sürüm işi değil |
 
 ## Teknik Borç (`tech-debt` çıkarımı)
 
@@ -330,12 +334,12 @@ e2e/               Playwright smoke + axe erişilebilirlik
 | 3 | Billing association `slug`→`workspace_id` (DÜZELTİLDİ: checkout custom_data workspace_id, webhook UUID-first) | Mimari | 4 | 4 | 2 | 16 |
 | 4 | Billing activation `setTimeout(reload)` yarışı (DÜZELTİLDİ: `/api/paddle/status` poll) | Kod | 4 | 3 | 2 | 14 |
 | 5 | Önceden yapılmış çoğaltılmış checkout/nav/rozet (tek kaynaklar oluşturuldu) | Kod | 3 | 3 | 1 | 12 |
-| 6 | `@paddle/paddle-js` v1.6.5 inline frameTarget bozuk → overlay | Bağımlılık | 3 | 3 | 3 | 10 |
+| 6 | **ÖNCÜL YANLIŞ (2026-09-12 doğrulandı):** "`@paddle/paddle-js` v2 upgrade" diye bir iş YOK — `npm view` `latest` = **1.6.5** (2026-08-25), zaten kurulu; `dist-tags` yalnız `latest` / `beta` (0.0.5) / `next` (1.6.3-next.0), paket deprecated değil. "inline `frameTarget` bozuk" teşhisi de yanlıştı: inline 1.6.5'te DESTEKLİ (`initializePaddle({ checkout: { settings: { displayMode: "inline", frameTarget, frameInitialHeight: 450, frameStyle } } })`; kurulu tipler `frameTarget`/`frameInitialHeight`/`frameStyle`'ı içeriyor, Paddle dokümanı da bunları inline için zorunlu/önerilen sayıyor). Yani gerçek durum "sürüm eski" değil, "inline hiç denenmemiş". **Kapatıldı: yapılacak bağımlılık işi yok.** Inline'a geçiş istenirse ayrı bir ürün işi olarak açılmalı (kapsayıcı `<div>`, `checkout.loaded`/`checkout.updated` ile dinamik yükseklik, gerçek kartla canlı doğrulama) — overlay canlıda çalışıyor. | Bağımlılık | 2 | 2 | 1 | 10 |
 | 7 | Sentry `onRequestError` + `global-error` YOKTU → sunucudaki yakalanmayan hatalar Sentry'ye HİÇ düşmüyordu (90 günde uygulamadan tek otomatik olay yok) ve markasız/İngilizce hata sayfası çıkıyordu (DÜZELTİLDİ: `instrumentation.ts` → `onRequestError` + `app/global-error.tsx`, satır içi stille — kök layout yerine geçtiği için Tailwind'e güvenilmez) | Bağımlılık | 3 | 4 | 1 | 35 |
-| 8 | Test: DB-backed/E2E sunucu + seed gerektiriyor; CI push'ta build ama e2e env'siz | Test | 3 | 2 | 3 | 10 |
+| 8 | Test: DB-backed/E2E sunucu + seed gerektiriyor; CI push'ta build ama e2e env'siz (DÜZELTİLDİ: `ci.yml`'e koşullu `e2e` job'u — `DATABASE_URL` secret'ı yoksa yeşil no-op, varsa seed + build + `npm run test:e2e`; seed `tools/seed-e2e.mjs` olarak takipli, workspace/board'u kendisi kuruyor ve dolu workspace'e `--force` olmadan yazmıyor. Ayrıca `isFeedlRootHost` port'u yok saymıyordu → `NEXT_PUBLIC_APP_URL=http://localhost:3000` iken `/` landing yerine portal render ediyordu, landing e2e'de hiç koşamıyordu; düzeltildi) | Test | 3 | 2 | 1 | 25 |
 | 9 | README/mimari belgelerdeki eskimiş satırlar (Paddle sandbox, 98 test, Canny karşılaştırması) | Dokümantasyon | 2 | 2 | 1 | 8 |
-| 10 | Entegrasyon webhook'ları `?ws=&t=` URL token'a bağlı; token yoksa 403 (Intercom webhook için doğrulanmamış kanal) | Mimari | 2 | 3 | 3 | 8 |
-| 11 | Özel `getWorkspaceId` (host/cookie/widget) — tenant izolasyonu tek testle sunucu kanıtı eksik | Mimari | 2 | 3 | 4 | 6 |
+| 10 | Entegrasyon webhook'ları `?ws=&t=` URL token'a bağlı; token yoksa 403 (Intercom webhook için doğrulanmamış kanal) (DÜZELTİLDİ: paylaşılan `resolveIntegrationByUrlToken` + yeni `urlTokenMatches` ile token karşılaştırması **zaman-sabit** (`timingSafeEqual`; repoda widget JWT'si de böyle); boş/kayıtsız token asla eşleşmez. Legacy (token'sız) yol ölçülebilir hale geldi: `warnLegacyInboundWebhook(provider)` tek seferlik uyarı + Sentry (`area=integrations`) basıyor — Faz 3'teki emeklilik kararı artık canlı kullanım verisine dayanabilir (davranış değişmedi). Intercom kanalı zaten çözülmüş/tanımlı: imza başlığı yok, birincil doğrulama `app_id` eşleşmesi; `INTERCOM_WEBHOOK_SECRET` hiçbir ortamda yok ve gerekmiyor. Testler: `tests/lib/integration-url-token.test.ts` (11) | Mimari/Güvenlik | 2 | 3 | 2 | 16 |
+| 11 | Özel `getWorkspaceId` (host/cookie/widget) — tenant izolasyonu tek testle sunucu kanıtı eksik (DÜZELTİLDİ: `tests/lib/workspace-precedence.test.ts` (7) öncelik sırasını sunucu tarafında sabitler — widget oturumu > `feedl_active_ws` çerezi > host (doğrulanmış custom domain → subdomain slug → varsayılan); bilinmeyen slug sonraki sinyale düşer. Ayrıca modül-global önbellek REGRESYON testi: ardışık iki istek birbirinin workspace'ini devralamaz — bu repoda Sprint 63w'de tam olarak bu sınıf bug yaşanmıştı) | Mimari | 2 | 3 | 2 | 14 |
 | 12 | Embedding girdisi 4096 token sınırını aşınca TÜM AI zenginleştirmesi düşüyordu (DÜZELTİLDİ: `capEmbeddingInput`, 7000 karakter; 2026-09-12'de canlı provada bulundu) | Kod | 3 | 2 | 1 | 25 |
 | 13 | Sentry `LLM pipeline failure` ÖZEL kuralı henüz kurulmadı — **acil DEĞİL, uyarı zaten çalışıyor** (mevcut "high priority issues" kuralı 807520 canlı provada tetiklendi: FEEDL-4, `culprit POST /api/inngest`). Ek kural yalnızca sağlamlaştırma: `area=llm` kapsamasını açıkça belgeler + önceliği düşmüş tekrarlayan arızaları da yakalar. Kurulum: `node tools/create-llm-alert.mjs --apply` (`alerts:write` scope'lu `SENTRY_API_TOKEN` gerekir) ya da Sentry UI'dan 1 dakikada | Operasyon | 1 | 2 | 1 | 15 |
 
@@ -350,12 +354,12 @@ e2e/               Playwright smoke + axe erişilebilirlik
 | 18 | Custom domain: biçim doğrulaması yoktu, sahiplik doğrulanmıyordu, unique değildi → hostname squatting (DÜZELTİLDİ: normalize+validasyon, `_feedl.<domain>` TXT doğrulaması, unique index; migration `0056`) | Mimari | 4 | 4 | 3 | 24 |
 | 19 | Paddle webhook: `as` cast'leri, kullanılmayan şema, içi boş `transaction.completed` dalı, bayat yorum (DÜZELTİLDİ: patlamayan zod şeması + ölü kod/ yorum temizliği) | Kod | 2 | 2 | 2 | 16 |
 | 20 | **BEKLİYOR — custom domain TXT akışının canlı uçtan uca testi.** Kod + migration (0056) canlıda; negatif yollar (biçim/rezerve host reddi, "DNS yok" hatası, doğrulanmamış alanın host çözümlemesinde yok sayılması) denenebilir. HAPPY PATH (doğrulandı → portal o adreste) için **DNS'ini bizim yönettiğimiz bir alan** gerekiyor. `test.feedl.app` KULLANILAMAZ: `feedl.app` + alt alanları koda gömülü rezerve (TXT eklenemez; o senaryo zaten slug routing ile `test.feedl.app` → slug `test`). Test: `feedback.<alan>` yaz → panelde çıkan TXT'i ekle (`_feedl.feedback.<alan>` = `feedl-verify=<token>`) → **Doğrula** → portal o alana düşmeli. Sahibi olunmayan bir alanla (ör. `feedback.ornek.com`) yalnız negatif yollar denenir ve test sonrası alan **KALDIRILMALI** (unique index gerçek sahibini bloklar). Yayılım kontrolü: `node:dns` `resolveTxt`. | Operasyon | 2 | 3 | 1 | 25 |
-| 21 | Clerk `createRouteMatcher` DEPRECATED (v8'de kalkacak) ve gerekçesi tam da bu repoda 3 kez bug üreten sınıf: "path matching … leave protected resources reachable". Savunma derinliği eklendi (`dashboard/layout.tsx` → `auth.protect()`); `/onboarding` zaten kendi guard'ına sahip, `/api/{admin,comments,corpus-insights,invites,onboarding,votes}` handler'ları da kendi auth'unu yapıyor. **KALAN:** bu 6 namespace'in ALT rotalarını tek tek denetleyip (handler auth'u olmayan bir GET var mı?) middleware matcher'ı kaldırmak — o zaman `createRouteMatcher` tamamen gider. | Bağımlılık | 3 | 3 | 3 | 18 |
+| 21 | Clerk `createRouteMatcher` DEPRECATED (v8'de kalkacak); gerekçesi tam da bu repoda 3 kez bug üreten sınıf: "path matching … leave protected resources reachable". Savunma derinliği eklendi (`dashboard/layout.tsx` → `auth.protect()`). **TAMAMEN KALDIRILDI (2026-09-12):** matcher yerine açık allowlist `lib/auth/public-paths.ts` (`isPublicPath`, **fail-closed**: listede yoksa korunur; önek eşleşmesi segment sınırında — `/api/adminx` açılmaz) + `tests/lib/public-paths.test.ts` (8). 6 namespace'in ALT rotaları tek tek denetlendi: her handler kendi auth'unu yapıyor (metod başına auth çağrısı sayıldı, eksiği yok). Namespace'ler allowlist'e alındı çünkü middleware `protect()`'i bu API'leri **Clerk 404'üne** çeviriyordu. Canlı kanıt (yerel `next start`, eski vs yeni middleware): `/api/admin/members` ve `/api/admin/webhooks` eski halde **404 text/html**, yeni halde **403 application/json**; `/dashboard` 404'ü (yerel Clerk sign-in yapılandırması) her iki sürümde AYNI → değişiklik korunan sayfa davranışını bozmadı | Bağımlılık | 3 | 3 | 2 | 24 |
 
 ### Fazlı (feature ile paralel) iyileştirme planı
 - **Faz 1 (bu hafta, küçük):** README/mimari doğruluğu (#9), orta ve düşük borçların kapatılması — kod/içerik düzeltmeleri zaten commit'li. `tsc`/`vitest` (189) yeşil.
-- **Faz 2 (bu çeyrek):** `@paddle/paddle-js` v2 upgrade (#6), e2e için CI env + test seed (#8), Clerk `createRouteMatcher`'ın kaldırılması (#21 — alt rota denetimi sonrası), custom domain için gerçek DNS uçtan uca denemesi (#20 — farklı bir alanla, DNS'i bizde olan).
-- **Faz 3 (sonra):** Servise bölme / ölçek (#1 takas), ikinci tenant'la gerçek çok kiracılı kanıt (#11), eski global webhook secret'larının (`LINEAR_WEBHOOK_SECRET` vb.) emekliye ayrılması — per-workspace `?ws=&t=` yolu varken global secret tek sızıntı noktası.
+- **Faz 2 (bu çeyrek):** e2e için CI env + test seed (#8 — **bitti**, `DATABASE_URL` secret'ı eklenince koşar), custom domain için gerçek DNS uçtan uca denemesi (#20 — farklı bir alanla, DNS'i bizde olan).
+- **Faz 3 (sonra):** Servise bölme / ölçek (#1 takas), ikinci tenant'la gerçek çok kiracılı kanıt (#11 — testler eklendi, canlı ikinci tenant kanıtı hâlâ bekliyor), eski global webhook secret'larının (`LINEAR_WEBHOOK_SECRET` vb.) emekliye ayrılması — per-workspace `?ws=&t=` yolu varken global secret tek sızıntı noktası. **Karar artık ölçülebilir:** #10 ile legacy yol Sentry'e uyarı basıyor (`area=integrations`); canlıda uyarı gelmiyorsa global secret'lar güvenle emekliye ayrılabilir.
 
 ## Lisans
 
