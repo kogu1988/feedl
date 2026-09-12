@@ -1,5 +1,6 @@
 import { ClerkProvider } from "@clerk/nextjs";
 import { trTR } from "@clerk/localizations";
+import { notFound } from "next/navigation";
 
 import { clerkElements, clerkVariables } from "@/lib/clerk-theme";
 
@@ -7,7 +8,10 @@ import { SiteHeader } from "@/components/custom/site-header";
 import { SiteFooter } from "@/components/custom/site-footer";
 import { ThemeProvider } from "@/components/custom/theme-provider";
 import { CanonicalLink } from "@/components/custom/canonical-link";
-import { getWorkspaceBrand } from "@/lib/db/workspace";
+import {
+  getWorkspaceBrand,
+  resolveWorkspaceForCurrentHost,
+} from "@/lib/db/workspace";
 import { workspaceBrandStyle } from "@/lib/brand-style";
 
 // Sprint 63w (F3) / 2026-09-12: marka paleti artık `lib/brand-style.ts`
@@ -26,6 +30,18 @@ export default async function MainLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // 2026-09-12 (fail-closed host kapısı): var olmayan bir alt alan veya
+  // doğrulanmamış bir custom domain artık varsayılan workspace'i GÖSTERMEZ;
+  // 404 döner. Gerekçe + muafiyetler: lib/db/workspace.ts → isDefaultFallbackHost.
+  //
+  // Bu kapı BİLEREK layout'ta ve getWorkspaceId'in DIŞINDA: `getWorkspaceId`
+  // çağrılarının çoğu `try { ... } catch {}` içinde (ör. changelog/page.tsx) ve
+  // `notFound()` oradan fırlarsa sessizce yutulur, kırık sayfa render edilirdi.
+  const hostWorkspace = await resolveWorkspaceForCurrentHost();
+  if (!hostWorkspace) {
+    notFound();
+  }
+
   // Sprint 48k: workspace markası (subdomain'e göre) üst bara taşınır.
   const brand = await getWorkspaceBrand();
   const brandStyle = workspaceBrandStyle(brand.brandColor);

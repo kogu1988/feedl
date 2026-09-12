@@ -1,5 +1,7 @@
 import type { NextRequest } from "next/server";
 
+import { resolveWorkspaceForHostname } from "@/lib/db/workspace";
+
 // robots.txt — explicit route handler. Vercel, `/robots.txt` ve `/sitemap.xml`'i
 // rezerve path olarak ele alıp `public/`'ten servis ETMEZ; bu yüzden App Router
 // route handler kesin çözümdür (statik dosya 404'lüyor). Host istekten türetilir.
@@ -16,13 +18,32 @@ Disallow: /api/
 Sitemap: https://${host}/sitemap.xml
 `;
 
-export function GET(req: NextRequest) {
+// 2026-09-12 (fail-closed): host bilinen bir workspace'e çözülmüyorsa
+// (var olmayan alt alan / doğrulanmamış custom domain) taramanın tamamı
+// kapatılır ve sitemap satırı YAZILMAZ — bilinmeyen bir host kendini
+// indeksletmeye davet etmemeli. Kök host ve *.vercel.app preview'ları normal
+// davranışı korur (bkz. lib/db/workspace.ts → isDefaultFallbackHost).
+const UNKNOWN_HOST_ROBOTS = `User-agent: *
+Disallow: /
+`;
+
+export async function GET(req: NextRequest) {
   const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? "feedl.app";
-  return new Response(ROBOTS(host), {
+
+  let workspace: Awaited<ReturnType<typeof resolveWorkspaceForHostname>> = null;
+  try {
+    workspace = await resolveWorkspaceForHostname(host);
+  } catch {
+    // DB erişilemezse robots'u 500 yapmayalım — güvenli tarafa (kapalı) düş.
+    workspace = null;
+  }
+
+  return new Response(workspace ? ROBOTS(host) : UNKNOWN_HOST_ROBOTS, {
     status: 200,
     headers: {
       "Content-Type": "text/plain; charset=utf-8",
       "Cache-Control": "public, max-age=3600",
+      "X-Robots-Tag": workspace ? "all" : "noindex",
     },
   });
 }

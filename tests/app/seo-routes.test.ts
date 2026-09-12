@@ -1,10 +1,21 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
 // SEO-regresyon: sitemap.xml ve robots.txt App Router route handler'ları.
 // Bunlar SEO için kritik (crawl + indexability) ve yeni SEO sayfaları
 // (alternative / how-to-collect-feedback) sitemap'e alınmalı;
 // robots, indexlenmemesi gereken yüzeyleri (auth/api/widget) disallow eder.
+//
+// 2026-09-12 (fail-closed): handler'lar artık host'un bilinen bir workspace'e
+// çözülüp çözülmediğine bakar. DB'ye gitmemek için çözümleme mock'lanır;
+// gerçek çözümleme mantığı tests/lib/host-fallback-policy.test.ts'te kanıtlı.
+const h = vi.hoisted(() => ({ resolved: true }));
+
+vi.mock("@/lib/db/workspace", () => ({
+  resolveWorkspaceForHostname: async () =>
+    h.resolved ? { id: "x", slug: "feedl", name: "feedl" } : null,
+}));
+
 import { GET as sitemapGET } from "@/app/sitemap.xml/route";
 import { GET as robotsGET } from "@/app/robots.txt/route";
 
@@ -13,6 +24,10 @@ function req(path: string, host = "feedl.app"): NextRequest {
     headers: { "x-forwarded-host": host },
   });
 }
+
+beforeEach(() => {
+  h.resolved = true;
+});
 
 describe("sitemap.xml", () => {
   it("returns XML with the public pages incl. SEO pages", async () => {
@@ -32,6 +47,15 @@ describe("sitemap.xml", () => {
     const xml = await res.text();
     expect(xml).toContain("https://acme.feedl.app/pricing");
   });
+
+  it("bilinmeyen host'ta BOŞ urlset döner ve noindex başlığı taşır", async () => {
+    h.resolved = false;
+    const res = await sitemapGET(req("/sitemap.xml", "kesinlikleyok12345.feedl.app"));
+    expect(res.status).toBe(200);
+    const xml = await res.text();
+    expect(xml).not.toContain("<loc>");
+    expect(res.headers.get("x-robots-tag")).toBe("noindex");
+  });
 });
 
 describe("robots.txt", () => {
@@ -50,5 +74,16 @@ describe("robots.txt", () => {
     const res = await robotsGET(req("/robots.txt", "feedl.app"));
     const txt = await res.text();
     expect(txt).toContain("Sitemap: https://feedl.app/sitemap.xml");
+  });
+
+  it("bilinmeyen host'ta taramayı tümüyle kapatır (fail-closed)", async () => {
+    h.resolved = false;
+    const res = await robotsGET(req("/robots.txt", "kesinlikleyok12345.feedl.app"));
+    expect(res.status).toBe(200);
+    const txt = await res.text();
+    expect(txt).toContain("Disallow: /");
+    expect(txt).not.toContain("Allow: /");
+    expect(txt).not.toContain("Sitemap:");
+    expect(res.headers.get("x-robots-tag")).toBe("noindex");
   });
 });

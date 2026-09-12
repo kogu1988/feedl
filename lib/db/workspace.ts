@@ -62,16 +62,51 @@ export function isFeedlRootHost(host: string): boolean {
 // Host'tan workspace slug'ı çöz. Feedl kök hostlar → 'feedl'; değilse
 // host'un ilk parçası (subdomain). (Sprint 63i: test için export edildi.)
 export function slugFromHost(host: string): string {
-  const normalized = host.replace(/[:\s]/g, "").toLowerCase();
-  if (isFeedlRootHost(normalized)) {
+  return subdomainSlugFromHost(host) ?? DEFAULT_WORKSPACE_SLUG;
+}
+
+// feedl subdomain'inden slug çıkar; host feedl.app ailesine ait DEĞİLSE null.
+// (2026-09-12 fail-closed karar) `slugFromHost`'tan farkı: bilinmeyen/bizim
+// olmayan host'ta varsayılanı DÖNDÜRMEZ. Aksi halde `feedback.acme.com` gibi
+// doğrulanmamış bir host "feedl" slug'ına sorgu atıp varsayılan workspace'i
+// servis ederdi (custom domain yolu tutmazsa ortaya çıkan sızıntı).
+export function subdomainSlugFromHost(host: string): string | null {
+  if (isFeedlRootHost(host)) {
     return DEFAULT_WORKSPACE_SLUG;
   }
-  // subdomain.feedl.app → 'subdomain'
+  const normalized = normalizeDomainForMatch(host);
   const parts = normalized.split(".");
-  if (parts.length >= 3 && normalized.endsWith("feedl.app")) {
+  if (parts.length >= 3 && normalized.endsWith(".feedl.app")) {
     return parts[0];
   }
-  return DEFAULT_WORKSPACE_SLUG;
+  return null;
+}
+
+// Varsayılan workspace'e DÜŞMESİ GÜVENLİ olan host'lar (2026-09-12 karar,
+// fail-closed):
+//  - feedl kök host'ları (feedl.app / www.feedl.app / NEXT_PUBLIC_APP_URL)
+//  - kendi Vercel preview deploy'larımız (`*.vercel.app`) — bunlar bizim
+//    projemizin dağıtımlarıdır, üçüncü bir taraf bu host'u bize yönlendiremez.
+//  - loopback (`localhost`, `127.0.0.1`, `::1`, `0.0.0.0`) — yerel geliştirme.
+//    Gerekli: `.env.local`'da `NEXT_PUBLIC_APP_URL=https://feedl.app` iken
+//    `http://localhost:3000` kök host SAYILMAZ; bu kural olmadan yerelde her
+//    sayfa 404 olurdu (e2e a11y testleri tam olarak bunu yakaladı). Loopback
+//    hiçbir zaman herkese açık bir hostname değildir, bu yüzden güvenli.
+// Bu listenin DIŞINDAKİ bir host'ta workspace çözülemezse artık varsayılana
+// düşülmez; sayfa katmanı 404 verir. Sebep: wildcard DNS'te her hostname'e 200
+// dönmek (a) sınırsız duplicate-content, (b) markayı rastgele hostname'lere
+// ödünç verme, (c) yanlış yazılmış adresi "çalışıyor" gibi gösterme.
+export function isDefaultFallbackHost(host: string): boolean {
+  if (isFeedlRootHost(host)) return true;
+  const bare = normalizeDomainForMatch(host);
+  if (bare === "vercel.app" || bare.endsWith(".vercel.app")) return true;
+  return (
+    bare === "localhost" ||
+    bare === "127.0.0.1" ||
+    bare === "[::1]" ||
+    bare === "::1" ||
+    bare === "0.0.0.0"
+  );
 }
 
 // İsteğin host'unu çöz (middleware'de değil, server context'te).
@@ -102,16 +137,13 @@ export function normalizeDomainForMatch(host: string): string {
     .replace(/\.$/, "");
 }
 
-// Host'a göre workspace'i çöz; yoksa varsayılan 'feedl'.
-// Dönen: workspace id + slug + name.
-// Sprint 63q — custom domain desteği: host önce `workspaces.custom_domain`
-// ile eşleşir (admin tanımlı, www'li/www'suz her iki yazım için); olmazsa
-// subdomain→slug (acme.feedl.app); en son varsayılan. Böylece
-// `feedback.acme.com` gibi bir custom domain DOĞRU workspace'e düşer
-// (veri + marka + widget hepsi doğru çalışır).
-export async function resolveWorkspaceByHost(
+export type ResolvedWorkspace = { id: string; slug: string; name: string };
+
+// Host'tan workspace ARA (varsayılana düşmeden): doğrulanmış custom domain →
+// feedl subdomain slug. Bulunamazsa null.
+async function lookupWorkspaceByHost(
   host: string,
-): Promise<{ id: string; slug: string; name: string }> {
+): Promise<ResolvedWorkspace | null> {
   // 1) Custom domain eşleşmesi (www'li/www'suz yazımlar). Yalnız TXT kaydıyla
   // DOĞRULANMIŞ domain'ler dikkate alınır (2026-09-12): aksi halde bir tenant
   // başkasının hostname'ini yazıp, kurban DNS'ini feedl'e çevirdiğinde onun
@@ -136,18 +168,25 @@ export async function resolveWorkspaceByHost(
     return byCustom;
   }
 
-  // 2) Subdomain → slug (acme.feedl.app → acme).
-  const slug = slugFromHost(host);
-  const [row] = await getDb()
-    .select({ id: workspaces.id, slug: workspaces.slug, name: workspaces.name })
-    .from(workspaces)
-    .where(eq(workspaces.slug, slug))
-    .limit(1);
-  if (row) {
-    return row;
+  // 2) Subdomain → slug (acme.feedl.app → acme). feedl.app ailesine ait
+  // olmayan host'ta slug YOKTUR (`subdomainSlugFromHost` → null) — aksi halde
+  // doğrulanmamış bir custom domain varsayılan workspace'e düşerdi.
+  const slug = subdomainSlugFromHost(host);
+  if (slug) {
+    const [row] = await getDb()
+      .select({ id: workspaces.id, slug: workspaces.slug, name: workspaces.name })
+      .from(workspaces)
+      .where(eq(workspaces.slug, slug))
+      .limit(1);
+    if (row) {
+      return row;
+    }
   }
 
-  // 3) Bilinmeyen subdomain → varsayılan workspace.
+  return null;
+}
+
+async function loadDefaultWorkspace(): Promise<ResolvedWorkspace> {
   const [fallback] = await getDb()
     .select({ id: workspaces.id, slug: workspaces.slug, name: workspaces.name })
     .from(workspaces)
@@ -159,6 +198,35 @@ export async function resolveWorkspaceByHost(
     );
   }
   return fallback;
+}
+
+// Host'a göre workspace'i çöz; workspace YOKSA varsayılana düşer (geriye dönük
+// sözleşme — testler ve kök-host/preview çağrıları bunu bekler). Yeni
+// yüzeyler fail-closed kapıyı kullanmalıdır: `resolveWorkspaceForHostname`.
+export async function resolveWorkspaceByHost(
+  host: string,
+): Promise<ResolvedWorkspace> {
+  return (await lookupWorkspaceByHost(host)) ?? (await loadDefaultWorkspace());
+}
+
+// `resolveWorkspaceByHost`'un FAIL-CLOSED sürümü (2026-09-12 karar): yalnız
+// kök host / Vercel preview için varsayılana düşer; bilinmeyen host'ta null
+// döner. Çağıran (sayfa katmanı) null'da 404 verir. Sunucu tarafı kapı
+// BİLEREK `getWorkspaceId` içinde DEĞİL: orada `catch {}` blokları (ör.
+// changelog/page.tsx) notFound() hatasını yutar ve kırık sayfa render edilir.
+export async function resolveWorkspaceForHostname(
+  host: string,
+): Promise<ResolvedWorkspace | null> {
+  if (isDefaultFallbackHost(host)) {
+    return loadDefaultWorkspace();
+  }
+  return lookupWorkspaceByHost(host);
+}
+
+// İsteğin host'u bilinen bir workspace'e çözülüyor mu? (app/(main)/layout.tsx
+// bu kapıyı kullanır; app/not-found.tsx aynı çağrıyla "host yok" varyantını seçer.)
+export async function resolveWorkspaceForCurrentHost(): Promise<ResolvedWorkspace | null> {
+  return resolveWorkspaceForHostname(await getRequestHost());
 }
 
 // Sprint 63p — widget tenant-aware: `?ws=<slug>` param'sından workspace id
