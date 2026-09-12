@@ -66,7 +66,7 @@ export function NewPostDialog({ boardOptions = [] }: { boardOptions?: BoardOptio
   const abortRef = useRef<AbortController | null>(null);
 
   // plan.md Sprint 8: başlık yazarken canlı benzer fikir önerisi — duplicate
-  // önleme UX'i (Canny modeli). Arama çok kelimeli ve diakritik duyarsız
+  // önleme UX'i (yaygın geri bildirim aracı modeli). Arama çok kelimeli ve diakritik duyarsız
   // (lib/post-search); embedding tabanlı tam duplicate tespiti arka planda
   // AI autopilot'ta yapılır.
   useEffect(() => {

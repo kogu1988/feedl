@@ -307,7 +307,7 @@ export async function PATCH(req: Request) {
     }
 
     // Durum/tür değişince detay sayfasına otomatik iç not düş (plan.md
-    // Sprint 10 eki; Canny davranışı: değişiklikler iz bırakır). Best-effort:
+    // Sprint 10 eki; değişiklikler iz bırakır). Best-effort:
     // not başarısız olsa bile güncelleme başarılı kalmalıdır.
     if (statusChanged || typeChanged) {
       try {

@@ -36,7 +36,7 @@ export interface FeedlWidgetOptions {
 export interface FeedlWidgetAPI {
   /**
    * Kullanıcı girişi/session sonrası yeni kısa ömürlü jetonla kimliği yenile
-   * (Canny `identify` karşılığı). Token yoksa widget salt-okunur kalır.
+   * (yaygın geri bildirim aracı `identify` karşılığı). Token yoksa widget salt-okunur kalır.
    */
   identify(options: { token?: string; jwt?: string; value?: string }): void;
 }

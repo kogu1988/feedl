@@ -14,7 +14,7 @@ import { textOn } from "@/lib/color";
 //    + CANLI alt alan adı (slug.feedl.app) ve marka rengi önizlemesi.
 // 2) Sonraki adımlar: board, entegrasyon, ekip daveti, widget + "Dashboard'a git".
 
-// Marka rengi seçenekleri (Canny/Intercom tarzı hazır palet + serbest renk).
+// Marka rengi seçenekleri (yaygın geri bildirim aracı/Intercom tarzı hazır palet + serbest renk).
 const BRAND_COLORS = ["#ff5c35", "#0ea5e9", "#10b981", "#8b5cf6", "#f59e0b", "#e11d48", "#64748b"];
 
 function slugify(input: string): string {

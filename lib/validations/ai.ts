@@ -14,7 +14,7 @@ const sentimentSchema = z
 
 export const ideaAnalysisSchema = z.object({
   sentiment: sentimentSchema,
-  // Sprint 21: fikir türü (Canny "category" karşılığı). LLM varyantlarına
+  // Sprint 21: fikir türü (yaygın geri bildirim aracı "category" karşılığı). LLM varyantlarına
   // karşı toleranslı: trim + lowercase + Türkçe yazımlar eşlenir.
   type: z
     .string()

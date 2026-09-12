@@ -14,7 +14,7 @@ import { inngest } from "@/inngest/client";
 import { enforceRateLimit } from "@/lib/rate-limit";
 
 // Sprint 24: yorum düzenleme ve silme. Kendi yorumunu herkes yönetir;
-// admin her yorumu yönetebilir (Canny moderasyon modeli). İç notlar zaten
+// admin her yorumu yönetebilir (yaygın moderasyon modeli). İç notlar zaten
 // yalnızca admin tarafından oluşturulur ve görülür. Parent silinirse
 // yanıtlar cascade ile gider (schema onDelete).
 

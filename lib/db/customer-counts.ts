@@ -5,7 +5,7 @@ import { getWorkspaceId } from "./workspace";
 import { companies, companyMembers, votes } from "./schema";
 
 // Sprint 30: bir fikre oy veren kullanıcıların bağlı olduğu şirket
-// sayısı (Canny'nin "kaç müşteri istedi" sayacı). Aynı şirketten birden çok
+// sayısı (yaygın geri bildirim aracı'nin "kaç müşteri istedi" sayacı). Aynı şirketten birden çok
 // kullanıcı oy verse de şirket bir kez sayılır (countDistinct). Widget
 // ziyaretçilerinin company üyeliği olmadığı için doğal olarak hariç kalır.
 //

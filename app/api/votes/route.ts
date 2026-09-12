@@ -96,7 +96,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // Sprint 26: oy veren otomatik takipçi olur (Canny modeli).
+    // Sprint 26: oy veren otomatik takipçi olur (yaygın ürün modeli).
     await getDb()
       .insert(postFollowers)
       .values({ postId: parsed.data.postId, userId })

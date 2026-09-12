@@ -47,7 +47,7 @@ export function normalizeSubmissionMode(value: string | null | undefined): Widge
 // Anonim ziyaretçi için kararlı bir widget kullanıcı kimliği üretir. Aynı IP
 // (reverse proxy dikkate alınarak) aynı kimliği alır → 1 IP 1 oy / takip,
 // fakat gerçek kişisel kimlik saklanmaz (email/name yok). Kolay geri alınır
-// (IP değişirse farklı kimlik olur — Canny/Clippy modeli). `users.email` NOT
+// (IP değişirse farklı kimlik olur — oturum kimliği modeli). `users.email` NOT
 // NULL olduğundan sentezlenmiş bir e-posta üretilir (gönderilmez, yalnız benzersizlik).
 export function anonymousUserKey(ip: string): string {
   return `anon_${ip}`;

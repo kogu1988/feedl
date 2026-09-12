@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 // Yorum sayısı rozetinin tek görsel kaynağı (plan.md Sprint 13): portal ve
 // roadmap kartları aynı dili kullanır. Sayıya iç notlar (is_internal)
 // dahil değildir — sorgu tarafında join koşulunda filtrelenir. 0'da hiç
-// render edilmez (Canny modeli: sessiz kartlar); tıklanınca detay
+// render edilmez (yaygın geri bildirim aracı modeli: sessiz kartlar); tıklanınca detay
 // sayfasındaki Yorumlar bölümüne gider.
 export function CommentCountBadge({
   postId,

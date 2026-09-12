@@ -91,7 +91,7 @@ async function loadWorkspace() {
     .from(workspaceMembers)
     .where(eq(workspaceMembers.workspaceId, workspaceId));
   // Gerçek tracked-user: workspace'te fikir POST eden veya OY veren eşsiz
-  // kullanıcı sayısı (Canny'nin "tracked user" modeli — workspace_members
+  // kullanıcı sayısı (yaygın geri bildirim aracı'nin "tracked user" modeli — workspace_members
   // değil, gerçek katılımcı). İki küme birleştirilip eşsiz userId sayılır.
   const trackedRes = await getDb().execute(sql`
     SELECT count(DISTINCT u.user_id) AS value FROM (

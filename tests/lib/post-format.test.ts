@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { statusLabels, summarize } from "@/lib/post-format";
 
 describe("statusLabels", () => {
-  it("maps the canny.md status flow", () => {
+  it("maps the external status flow", () => {
     expect(statusLabels.open).toBe("Açık");
     expect(statusLabels["under-review"]).toBe("İncelemede");
     expect(statusLabels.planned).toBe("Planlandı");

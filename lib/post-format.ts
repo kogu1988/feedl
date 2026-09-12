@@ -1,6 +1,6 @@
 // Post durumu etiketleri, tarih formatı ve kart metin yardımcıları —
 // portal, roadmap, dialog ve CSV export'un ortak kaynağı (durum etiketleri
-// canny.md §2'deki akışa karşılık gelir).
+// referans alınan durum akışına karşılık gelir).
 
 export const statusLabels: Record<string, string> = {
   open: "Açık",
@@ -21,7 +21,7 @@ export const sentimentLabels: Record<string, string> = {
   negatif: "Negatif",
 };
 
-// Fikir türü etiketleri (posts.post_type; Sprint 21 — Canny "category"
+// Fikir türü etiketleri (posts.post_type; Sprint 21 — rakip araçlardaki "category"
 // karşılığı). Tek görsel kaynak TypeBadge bileşenidir.
 export const typeLabels: Record<string, string> = {
   feature: "Özellik",

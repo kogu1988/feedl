@@ -24,7 +24,7 @@ import {
 import { trDateTimeFormatter } from "@/lib/post-format";
 
 // Sprint 25: public changelog — roadmap'ten bağımsız duyuru akışı
-// (Canny changelog modeli). Herkes okuyabilir; yazma yalnızca admin.
+// (yaygın geri bildirim aracı changelog modeli). Herkes okuyabilir; yazma yalnızca admin.
 export const dynamic = "force-dynamic";
 
 // F2: statik metadata + server-side canonical (tam path üreten).

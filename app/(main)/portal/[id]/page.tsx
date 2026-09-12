@@ -729,7 +729,7 @@ async function loadComments(postId: string, isAdmin: boolean) {
     .orderBy(asc(comments.createdAt));
 }
 
-// plan.md Sprint 17: embedding tabanlı "Benzer fikirler" (Canny related
+// plan.md Sprint 17: embedding tabanlı "Benzer fikirler" (yaygın geri bildirim aracı related
 // posts modeli). Vektör JS'e taşınmaz: cosine benzerlik Postgres içinde
 // skalar alt sorguyla hesaplanır. Eşik kalibrasyonu inngest/functions.ts
 // duplicate eşiğiyle aynı veriye dayanır — alakasız-generic çiftler 0.489'a

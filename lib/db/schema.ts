@@ -449,7 +449,7 @@ export type Vote = typeof votes.$inferSelect;
 export type NewVote = typeof votes.$inferInsert;
 
 // comments: Fikir altı yorumlar (plan.md Sprint 10). is_internal=true olanlar
-// Canny'deki "internal note" modelidir: sadece admin görür, müşteriye
+// Bilinen "internal note" modelidir: sadece admin görür, müşteriye
 // asla render edilmez (filtre hem sayfada hem API'de uygulanır).
 export const comments = pgTable(
   "comments",
@@ -519,7 +519,7 @@ export const postMerges = pgTable(
 
 export type PostMerge = typeof postMerges.$inferSelect;
 
-// post_status_history: Sprint 23 — her status değişiminin izi (Canny
+// post_status_history: Sprint 23 — her status değişiminin izi (yaygın geri bildirim aracı
 // status history modeli). oldStatus null olabilir (ilk kayıt senaryosu);
 // note admin'in değişim açıklamasıdır ve bildirim e-postasına dahil
 // edilir. Değişimler dashboard PATCH ve bulk rotasında yazılır.
@@ -550,7 +550,7 @@ export type NewPostStatusHistory = typeof postStatusHistory.$inferInsert;
 export type NewPostMerge = typeof postMerges.$inferInsert;
 
 // tags: Sprint 21 serbest form etiketleri (AI keyword'lerinden türetilir,
-// normalize lowercase). Tek taksonomi: Canny'nin "category" kavramı
+// normalize lowercase). Tek taksonomi: rakip araçlardaki "category" kavramı
 // posts.postType enum'uyla karşılanır, ayrı categories tablosu yok.
 export const tags = pgTable(
   "tags",
@@ -621,7 +621,7 @@ export type SavedView = typeof savedViews.$inferSelect;
 export type NewSavedView = typeof savedViews.$inferInsert;
 
 // changelog_entries: Sprint 25 — roadmap'ten BAĞIMSIZ duyuru alanı
-// (Canny changelog modeli; docs/oxalpha.txt §2D). Post ilişkisi
+// (yaygın geri bildirim aracı changelog modeli; docs/oxalpha.txt §2D). Post ilişkisi
 // changelog_post_links üzerinden çoktan çoğa (bir duyuru birden fazla
 // fikri kapsayabilir). Gövde markdown saklanır; MVP'de düz metin gibi
 // render edilir (whitespace-pre-line), markdown parser sonraki sprintte.
@@ -705,7 +705,7 @@ export const changelogSubscribers = pgTable(
 export type ChangelogSubscriber = typeof changelogSubscribers.$inferSelect;
 export type NewChangelogSubscriber = typeof changelogSubscribers.$inferInsert;
 
-// post_followers: Sprint 26 — fikir takipçileri (Canny modeli). Yazar
+// post_followers: Sprint 26 — fikir takipçileri (yaygın geri bildirim aracı modeli). Yazar
 // oluştururken, oy veren ve yorum yazan otomatik takipçi olur; status
 // ve yorum bildirimleri bu tablodan çözülür.
 export const postFollowers = pgTable(
@@ -1224,7 +1224,7 @@ export const workspaceIntegrations = pgTable(
     webhookId: text("webhook_id"),
     // Dış servis API key — webhook silme/refresh için saklanır (Linear key).
     // Not: üretimde şifreli saklanmalı; şimdilik workspace sahibinin kendi
-    // API key'i olduğu için düz tutulur (Canny/Intercom modeli).
+    // API key'i olduğu için düz tutulur (yaygın geri bildirim aracı/Intercom modeli).
     apiKey: text("api_key"),
     // Linear webhook signing secret (HMAC anahtarı).
     webhookSecret: text("webhook_secret"),

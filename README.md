@@ -1,9 +1,8 @@
 # feedl — AI Destekli Müşteri Geri Bildirim Platformu
 
 feedl, ürün ekiplerinin müşteri geri bildirimini toplaması, **AI ile analiz etmesi**,
-önceliklendirmesi ve duyurması için tek bir platformdur. Canny'nin ücretsiz
-planına bir alternatif — herkese açık bir topluluk portalı + gelir odaklı
-önceliklendirme.
+önceliklendirmesi ve duyurması için tek bir platformdur. Hosted ve ücretsiz
+başlangıç — herkese açık bir topluluk portalı + gelir odaklı önceliklendirme.
 
 **Canlı:** [https://feedl.app](https://feedl.app)
 
@@ -67,7 +66,7 @@ hızlı kazanım özeti e-posta olarak gider (tek tıkla kapatılabilir).
 
 ## Farklılaşma (neden feedl?)
 
-| | Canny ($79/ay Pro) | FeedLog (self-host) | **feedl** |
+| | Yaygın SaaS aracı (ücretli Pro) | Self-host araç | **feedl** |
 |---|---|---|---|
 | Hosted + hızlı kurulum | ✅ | ❌ (self-host) | ✅ |
 | AI analiz (etiket/özet/duygu) | ✅ | ⚠️ | ✅ |
@@ -75,7 +74,7 @@ hızlı kazanım özeti e-posta olarak gider (tek tıkla kapatılabilir).
 | Public API + Webhook | ✅ | ⚠️ | ✅ |
 | Fiyat | pahalı | ücretsiz+operasyon | **uygun, hosted** |
 
-**Konum:** *"Canny'nin AI + gelir zekası, self-host derdi olmadan, uygun fiyata."*
+**Konum:** *"AI + gelir zekası, self-host derdi olmadan, uygun fiyata."*
 
 ## Söz dağarcığı (satış / UI)
 
@@ -92,7 +91,8 @@ teknik terim serbest).
 | Portal/Roadmap/Changelog | Topluluk — "İstediğini söyle, oyla" | Fikir Gönder / Oy Ver |
 
 **Kaçın:** "Kurumsal", "enterprise-grade", "AI devrimi" gibi boş terimler;
-Canny'yi kötüleme ("ücretsiz alternatif" olarak konumlandır); son kullanıcı
+Belirli bir rakip markayı ADIYLA anma veya kötüleme (marka adı taşıyan
+karşılaştırma yasal risk); son kullanıcı
 yüzeyinde webhook/API jargonu kullanma.
 
 ## Fiyatlandırma (bkz. `pricing/page.tsx` · `components/custom/plan-config.ts`)
@@ -337,7 +337,7 @@ e2e/               Playwright smoke + axe erişilebilirlik
 | 6 | **ÖNCÜL YANLIŞ (2026-09-12 doğrulandı):** "`@paddle/paddle-js` v2 upgrade" diye bir iş YOK — `npm view` `latest` = **1.6.5** (2026-08-25), zaten kurulu; `dist-tags` yalnız `latest` / `beta` (0.0.5) / `next` (1.6.3-next.0), paket deprecated değil. "inline `frameTarget` bozuk" teşhisi de yanlıştı: inline 1.6.5'te DESTEKLİ (`initializePaddle({ checkout: { settings: { displayMode: "inline", frameTarget, frameInitialHeight: 450, frameStyle } } })`; kurulu tipler `frameTarget`/`frameInitialHeight`/`frameStyle`'ı içeriyor, Paddle dokümanı da bunları inline için zorunlu/önerilen sayıyor). Yani gerçek durum "sürüm eski" değil, "inline hiç denenmemiş". **Kapatıldı: yapılacak bağımlılık işi yok.** Inline'a geçiş istenirse ayrı bir ürün işi olarak açılmalı (kapsayıcı `<div>`, `checkout.loaded`/`checkout.updated` ile dinamik yükseklik, gerçek kartla canlı doğrulama) — overlay canlıda çalışıyor. | Bağımlılık | 2 | 2 | 1 | 10 |
 | 7 | Sentry `onRequestError` + `global-error` YOKTU → sunucudaki yakalanmayan hatalar Sentry'ye HİÇ düşmüyordu (90 günde uygulamadan tek otomatik olay yok) ve markasız/İngilizce hata sayfası çıkıyordu (DÜZELTİLDİ: `instrumentation.ts` → `onRequestError` + `app/global-error.tsx`, satır içi stille — kök layout yerine geçtiği için Tailwind'e güvenilmez) | Bağımlılık | 3 | 4 | 1 | 35 |
 | 8 | Test: DB-backed/E2E sunucu + seed gerektiriyor; CI push'ta build ama e2e env'siz (DÜZELTİLDİ: `ci.yml`'e koşullu `e2e` job'u — `DATABASE_URL` secret'ı yoksa yeşil no-op, varsa seed + build + `npm run test:e2e`; seed `tools/seed-e2e.mjs` olarak takipli, workspace/board'u kendisi kuruyor ve dolu workspace'e `--force` olmadan yazmıyor. Ayrıca `isFeedlRootHost` port'u yok saymıyordu → `NEXT_PUBLIC_APP_URL=http://localhost:3000` iken `/` landing yerine portal render ediyordu, landing e2e'de hiç koşamıyordu; düzeltildi) | Test | 3 | 2 | 1 | 25 |
-| 9 | README/mimari belgelerdeki eskimiş satırlar (Paddle sandbox, 98 test, Canny karşılaştırması) (DÜZELTİLDİ 2026-09-12: test sayısı tablosu güncel (38 dosya · 215 test), "Paddle sandbox" iddiası kalmadı — canlıya geçildi ve takas tablosu "/ sandbox" değil gerçek durumu yazıyor, Canny karşılaştırma sayfası `/canny-alternative` olarak gerçekten var) | Dokümantasyon | 2 | 2 | 1 | 8 |
+| 9 | README/mimari belgelerdeki eskimiş satırlar (Paddle sandbox, 98 test, karşılaştırması) (DÜZELTİLDİ 2026-09-12: test sayısı tablosu güncel, "Paddle sandbox" iddiası kalmadı — canlıya geçildi. **Ayrıca marka adı taşıyan karşılaştırma sayfası kaldırıldı:** rota `/alternative` oldu, içerik araç-bağımsız; eski yol next.config.ts'te 308 ile devrediliyor) | Dokümantasyon | 2 | 2 | 1 | 8 |
 | 10 | Entegrasyon webhook'ları `?ws=&t=` URL token'a bağlı; token yoksa 403 (Intercom webhook için doğrulanmamış kanal) (DÜZELTİLDİ: paylaşılan `resolveIntegrationByUrlToken` + yeni `urlTokenMatches` ile token karşılaştırması **zaman-sabit** (`timingSafeEqual`; repoda widget JWT'si de böyle); boş/kayıtsız token asla eşleşmez. Legacy (token'sız) yol ölçülebilir hale geldi: `warnLegacyInboundWebhook(provider)` tek seferlik uyarı + Sentry (`area=integrations`) basıyor — Faz 3'teki emeklilik kararı artık canlı kullanım verisine dayanabilir (davranış değişmedi). Intercom kanalı zaten çözülmüş/tanımlı: imza başlığı yok, birincil doğrulama `app_id` eşleşmesi; `INTERCOM_WEBHOOK_SECRET` hiçbir ortamda yok ve gerekmiyor. Testler: `tests/lib/integration-url-token.test.ts` (11) | Mimari/Güvenlik | 2 | 3 | 2 | 16 |
 | 11 | Özel `getWorkspaceId` (host/cookie/widget) — tenant izolasyonu tek testle sunucu kanıtı eksik (DÜZELTİLDİ: `tests/lib/workspace-precedence.test.ts` (7) öncelik sırasını sunucu tarafında sabitler — widget oturumu > `feedl_active_ws` çerezi > host (doğrulanmış custom domain → subdomain slug → varsayılan); bilinmeyen slug sonraki sinyale düşer. Ayrıca modül-global önbellek REGRESYON testi: ardışık iki istek birbirinin workspace'ini devralamaz — bu repoda Sprint 63w'de tam olarak bu sınıf bug yaşanmıştı) | Mimari | 2 | 3 | 2 | 14 |
 | 12 | Embedding girdisi 4096 token sınırını aşınca TÜM AI zenginleştirmesi düşüyordu (DÜZELTİLDİ: `capEmbeddingInput`, 7000 karakter; 2026-09-12'de canlı provada bulundu) | Kod | 3 | 2 | 1 | 25 |

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 // Sprint 40: changelog abonelik kutusu — anonim ziyaretçiler dahil herkes
-// e-posta ile yeni duyurulara abone olabilir (Canny changelog modeli).
+// e-posta ile yeni duyurulara abone olabilir (yaygın geri bildirim aracı changelog modeli).
 // Girişli kullanıcıya e-posta alanı sunucudan ön-dolu gelir.
 export function ChangelogSubscribeForm({
   defaultEmail,

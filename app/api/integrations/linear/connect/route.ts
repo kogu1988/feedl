@@ -101,7 +101,7 @@ export async function POST(req: Request) {
     }
 
     // Yeni kaydı yaz (upsert: workspace+provider benzersiz).
-    // apiKey, webhook silme/refresh için saklanır (Canny modeli).
+    // apiKey, webhook silme/refresh için saklanır (yaygın ürün modeli).
     await getDb()
       .insert(workspaceIntegrations)
       .values({

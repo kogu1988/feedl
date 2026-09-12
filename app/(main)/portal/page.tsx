@@ -88,7 +88,7 @@ export default async function PortalPage({
     board: rawBoard,
   } = await searchParams;
   const searchQuery = (rawQuery ?? "").trim().slice(0, 100);
-  // plan.md Sprint 12: "top" varsayılan (Canny modeli — en çok istenen öne
+  // plan.md Sprint 12: "top" varsayılan (yaygın geri bildirim aracı modeli — en çok istenen öne
   // çıkar), "new" en yeni; arama varken alaka sıralaması önceliklidir.
   const sort = rawSort === "new" ? "new" : "top";
   // Sprint 21: ?tag= serbest form etiket filtresi (normalize lowercase).

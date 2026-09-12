@@ -18,7 +18,7 @@ import { inngest } from "@/inngest/client";
 // Sprint 43 (PM raporu §9 madde 6): public API üzerinden yorum yazma.
 // Yazar kimliği `user` (email zorunlu) ile müşteri kullanıcısına upsert
 // edilir; `write` kapsamı gerektirir. İç not / parent desteklemez — yalnızca
-// herkese açık üst düzey yorumlar (Canny'nin public API modeli).
+// herkese açık üst düzey yorumlar (yaygın public API modeli).
 
 const createCommentSchema = z.object({
   user: z.object({
