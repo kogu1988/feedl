@@ -338,10 +338,21 @@ e2e/               Playwright smoke + axe erişilebilirlik
 | 12 | Embedding girdisi 4096 token sınırını aşınca TÜM AI zenginleştirmesi düşüyordu (DÜZELTİLDİ: `capEmbeddingInput`, 7000 karakter; 2026-09-12'de canlı provada bulundu) | Kod | 3 | 2 | 1 | 25 |
 | 13 | Sentry `LLM pipeline failure` ÖZEL kuralı henüz kurulmadı — **acil DEĞİL, uyarı zaten çalışıyor** (mevcut "high priority issues" kuralı 807520 canlı provada tetiklendi: FEEDL-4, `culprit POST /api/inngest`). Ek kural yalnızca sağlamlaştırma: `area=llm` kapsamasını açıkça belgeler + önceliği düşmüş tekrarlayan arızaları da yakalar. Kurulum: `node tools/create-llm-alert.mjs --apply` (`alerts:write` scope'lu `SENTRY_API_TOKEN` gerekir) ya da Sentry UI'dan 1 dakikada | Operasyon | 1 | 2 | 1 | 15 |
 
+**2026-09-12 kod incelemesi (`docs/codereview.md`) — kapatılanlar.** Satır 12-19 sonradan eklendiği için tablo puana göre sıralı değildir.
+
+| # | Başlık | Tür | Etki | Risk | Efor | Öncelik |
+|---|--------|-----|:---:|:---:|:---:|:---:|
+| 14 | Linear webhook'ta `workspaceIdOverride` MODÜL seviyesindeydi ve hiç sıfırlanmıyordu → warm instance'ta sonraki istek önceki kiracının workspace'ine yazıyordu (DÜZELTİLDİ: fonksiyon-lokal `resolvedWorkspaceId` + gerçekten kırmızıya düşen regresyon testi) | Mimari | 5 | 5 | 1 | 50 |
+| 15 | `webhookEndpoints.secret` DB'de düz metin (DÜZELTİLDİ: `encryptSecret`/`decryptSecret`; eski düz satırlar geçiş uyumlu, çözülemeyen satır atlanır) | Güvenlik | 4 | 4 | 2 | 32 |
+| 16 | Gelen entegrasyon webhook'larında (Linear/Jira/Zendesk/Slack/Intercom) hiç rate limit yoktu (DÜZELTİLDİ: `enforceInboundWebhookRateLimit`, 300/dk/IP, imza doğrulamasından ÖNCE) | Güvenlik | 3 | 3 | 1 | 30 |
+| 17 | `ENCRYPTION_KEY` yoksa secret'lar SESSİZCE düz metne düşüyordu (DÜZELTİLDİ: tek seferlik `Sentry.captureMessage`, `area=encrypt`) | Güvenlik | 3 | 3 | 1 | 30 |
+| 18 | Custom domain: biçim doğrulaması yoktu, sahiplik doğrulanmıyordu, unique değildi → hostname squatting (DÜZELTİLDİ: normalize+validasyon, `_feedl.<domain>` TXT doğrulaması, unique index; migration `0056`) | Mimari | 4 | 4 | 3 | 24 |
+| 19 | Paddle webhook: `as` cast'leri, kullanılmayan şema, içi boş `transaction.completed` dalı, bayat yorum (DÜZELTİLDİ: patlamayan zod şeması + ölü kod/ yorum temizliği) | Kod | 2 | 2 | 2 | 16 |
+
 ### Fazlı (feature ile paralel) iyileştirme planı
-- **Faz 1 (bu hafta, küçük):** README/mimari doğruluğu (#9), orta ve düşük borçların kapatılması — kod/içerik düzeltmeleri zaten commit'li. `tsc`/`vitest` (111) yeşil.
-- **Faz 2 (bu çeyrek):** `@paddle/paddle-js` v2 upgrade (#6), Sentry/Clerk deprecation temizliği (#7), e2e için CI env + test seed (#8).
-- **Faz 3 (sonra):** Servise bölme / ölçek (#1 takas), custom-domain + ikinci tenant'la gerçek çok kiracılı kanıt (#11).
+- **Faz 1 (bu hafta, küçük):** README/mimari doğruluğu (#9), orta ve düşük borçların kapatılması — kod/içerik düzeltmeleri zaten commit'li. `tsc`/`vitest` (189) yeşil.
+- **Faz 2 (bu çeyrek):** `@paddle/paddle-js` v2 upgrade (#6), Sentry/Clerk deprecation temizliği (#7), e2e için CI env + test seed (#8), custom domain için gerçek DNS uçtan uca denemesi (#18).
+- **Faz 3 (sonra):** Servise bölme / ölçek (#1 takas), ikinci tenant'la gerçek çok kiracılı kanıt (#11), eski global webhook secret'larının (`LINEAR_WEBHOOK_SECRET` vb.) emekliye ayrılması — per-workspace `?ws=&t=` yolu varken global secret tek sızıntı noktası.
 
 ## Lisans
 
