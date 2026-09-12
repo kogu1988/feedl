@@ -63,6 +63,14 @@ türünü düzeltir → workspace-scoped sinyaller sonraki sınıflandırmayı y
 11. **Haftalık AI özeti (digest):** Pazartesi sabahı Pro workspace'ler için
 korpus analizi yeniden üretilir; yeni geri bildirim varsa admin'lere tema/risk/
 hızlı kazanım özeti e-posta olarak gider (tek tıkla kapatılabilir).
+12. **Sonuç kaydı (outcome):** Yayına giren bir fikrin **gerçekleşen** sonucu
+kaydedilir (genişleme / elde tutma / verimlilik / yeni müşteri + aylık gelir
+etkisi + kanıt linki). Önceliklendirme böylece yalnız tahmine değil, geçmiş
+sonuç verisine de dayanır ("ne yaptık?" → "işe yaradı mı?"). Kayıt içseldir
+(müşteriye görünmez); **yazma Pro**, okuma/silme her admine açık — Pro
+bırakılınca kendi verisine erişememek veri kilidi tuzağı olurdu. Ayrı tablo
+seçildi (tek kolon değil): aynı fikir zaman içinde birden fazla sonuç
+üretebilir; birikim `migrations/0060_post_outcomes.sql`.
 
 ## Farklılaşma (neden feedl?)
 
@@ -98,7 +106,8 @@ yüzeyinde webhook/API jargonu kullanma.
 ## Fiyatlandırma (bkz. `pricing/page.tsx` · `components/custom/plan-config.ts`)
 
 - **Free:** 1 board · 1 üye · 50 takipçi · "Powered by feedl" rozeti.
-- **Pro:** Sınırsız board · 10 üye · özel domain · marka kaldırma. Aylık/yıllık.
+- **Pro:** Sınırsız board · 10 üye · özel domain · marka kaldırma · sonuç kaydı
+  (outcome). Aylık/yıllık.
 - Model: **ekip/board başına** sabit ücret (kullanıcı başına değil) + workspace
   kaynak limitleri. (Paddle **live** — aylık $19 / yıllık; ücretsiz plan gerçek.)
 
@@ -183,7 +192,7 @@ Notlar:
 ```bash
 npx tsc --noEmit  # tip kontrolü
 npm run lint      # ESLint
-npx vitest run    # 261 birim testi
+npx vitest run    # 280 birim testi
 npm run build     # üretim derlemesi
 npm run test:e2e  # Playwright + axe erişilebilirlik + auth akışı (çalışan sunucu gerekir)
 ```
@@ -192,7 +201,7 @@ npm run test:e2e  # Playwright + axe erişilebilirlik + auth akışı (çalışa
 
 | Katman | Sonuç | Kapsam |
 | :--- | :--- | :--- |
-| **Birim test** (`npm test`) | ✅ 43 dosya · **261 test geçti** | Saf mantık: renk/WCAG, sayfalama, CSV, şifreleme, rate-limit, Paddle imza+plan türetme, oy doğrulama, post-format, post-search, widget-origins, widget gömme (body-bekleme), workspace-host çözümleme, AI içgörüleri, OpenRouter modelleri, e-posta teslimatı, haftalık digest e-postası + gönderim kararı, api-keys, davet e-postası, widget gönderim modu, free-plan oy limiti, **entegrasyon URL token doğrulaması**, **`getWorkspaceId` önceliği**, **middleware public allowlist'i** |
+| **Birim test** (`npm test`) | ✅ 44 dosya · **280 test geçti** | Saf mantık: renk/WCAG, sayfalama, CSV, şifreleme, rate-limit, Paddle imza+plan türetme, oy doğrulama, post-format, outcome kaydı (gelir ayrıştırma/biçimleme + API şeması), data-export kapsamı/redaksiyonu, post-search, widget-origins, widget gömme (body-bekleme), workspace-host çözümleme, AI içgörüleri, OpenRouter modelleri, e-posta teslimatı, haftalık digest e-postası + gönderim kararı, api-keys, davet e-postası, widget gönderim modu, free-plan oy limiti, **entegrasyon URL token doğrulaması**, **`getWorkspaceId` önceliği**, **middleware public allowlist'i** |
 | **Tenant izolasyonu** | ✅ `resolveWorkspaceByHost` öncelik (custom_domain > subdomain > varsayılan) + hata; `getWorkspaceId` sırası (widget > çerez > host) + modül-global önbellek regresyonu | `tests/lib/tenant-isolation.test.ts`, `tests/lib/workspace-precedence.test.ts` |
 | **Entegrasyon webhook token** | ✅ Zaman-sabit karşılaştırma; yanlış/boş/eksik token → null (handler 403); legacy yol uyarısı tekrarlamaz | `tests/lib/integration-url-token.test.ts` |
 | **Middleware yetki yüzeyi** | ✅ Açık allowlist fail-closed; önek sızması yok (`/api/adminx` kapalı); `/dashboard` + `/onboarding` korunur | `tests/lib/public-paths.test.ts` |
@@ -377,8 +386,8 @@ e2e/               Playwright smoke + axe erişilebilirlik
   - **#1** servise bölme / ölçek (monolit takası) — AI/worker ağırlaşınca.
   - **#11** ikinci tenant'la gerçek çok kiracılı canlı kanıt (sunucu tarafı testler eklendi ve yeşil; eksik olan CANLI kanıt).
   - **Eski global webhook secret'larının emekliliği** (`LINEAR_WEBHOOK_SECRET` vb.). **Karar artık ölçülebilir:** #10 ile legacy yol Sentry'e uyarı basıyor (`area=integrations`); canlıda uyarı gelmiyorsa güvenle emekliye ayrılabilir.
-- **Ürün doğrulaması (saha işi — kod değil):** `docs/FEEDL-ROADMAP.md` milestone çıkış kriterleri (M0–M6) 2026-09-12'de tek tek gözden geçirildi. **7 madde ürün tarafında karşılandığı için `[x]` işaretlendi** (tez + hipotez metni, activation funnel, skor açıklanabilirliği, feature↔müşteri ve feature↔gelir ilişkisi, shipped state/tarih); **20 madde bilinçli olarak açık** bırakıldı (görüşmeler, ödeyen müşteri sayısı, kullanıcı testleri) — bunlar kodla "tamamlandı" yapılamaz.
-  - **Bulunan tek ürün eksiği:** shipped bir fikrin **sonucunu** (metrik/ARR değişimi) kaydeden bir "outcome" alanı/özelliği YOK. Gerçek outcome tracking (M6) bunu gerektiriyor.
+- **Ürün doğrulaması (saha işi — kod değil):** `docs/FEEDL-ROADMAP.md` milestone çıkış kriterleri (M0–M6) 2026-09-12'de tek tek gözden geçirildi. **8 madde ürün tarafında karşılandığı için `[x]` işaretlendi** (tez + hipotez metni, activation funnel, skor açıklanabilirliği, feature↔müşteri ve feature↔gelir ilişkisi, shipped state/tarih, **outcome kaydı**); **19 madde bilinçli olarak açık** bırakıldı (görüşmeler, ödeyen müşteri sayısı, kullanıcı testleri) — bunlar kodla "tamamlandı" yapılamaz.
+  - Denetimde bulunan **tek ürün eksiği kapatıldı:** yayına giren bir fikrin gerçekleşen sonucu artık kaydedilebiliyor (özellik #12). Kalan M6 maddeleri ("en az 3 gerçek outcome tracking başlatıldı", "3 paying customer recurring workflow") hâlâ saha verisi bekliyor.
 - **Acil olmayan (kapandı):** **#13** Sentry `LLM pipeline failure` özel kuralı — gerek yok, kapsam canlı kanıtlı (kural 807520 enabled, `lastTriggered` bugün). Sentry MCP'sinde kural **oluşturan** araç yok; `alerts:write` token'ı yalnız sende olabilir. Ek kural gerekirse `node tools/create-llm-alert.mjs --apply`.
 
 ## Lisans

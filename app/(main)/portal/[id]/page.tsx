@@ -48,6 +48,10 @@ import { getDb } from "@/lib/db";
 import { loadPostImpactContext } from "@/lib/db/revenue-scores";
 import type { PostImpactContext } from "@/lib/db/revenue-scores";
 import { BusinessImpact } from "@/components/custom/business-impact";
+import {
+  PostOutcomes,
+  type PostOutcomeView,
+} from "@/components/custom/post-outcomes";
 import { getWorkspaceId, isShowcaseRequest } from "@/lib/db/workspace";
 import { getPlanLimits } from "@/lib/paddle";
 import {
@@ -58,6 +62,7 @@ import {
   opportunities,
   postFollowers,
   postOpportunities,
+  postOutcomes,
   postStatusHistory,
   postTags,
   postCustomValues,
@@ -164,6 +169,32 @@ export default async function PostDetailPage({
     ]);
     opportunityItems = opportunityRows;
     linkedOpportunityIds = linkRows.map((row) => row.opportunityId);
+  }
+
+  // 2026-09-12 (M6 ürün eksiği): SONUÇ (outcome) kayıtları. Ürün "ne yaptık?"
+  // sorusunu cevaplıyordu; "işe yaradı mı?" cevapsızdı.
+  // Plan kapısı YOK: yazma API'de Pro'ya kapılı, ama kaydedilmiş veriyi GÖRMEK
+  // ve silmek her admine açık (Pro bırakılınca kendi verisine erişememek veri
+  // kilidi tuzağı olurdu).
+  let outcomeItems: PostOutcomeView[] = [];
+  if (isAdmin) {
+    outcomeItems = await getDb()
+      .select({
+        id: postOutcomes.id,
+        outcomeType: postOutcomes.outcomeType,
+        revenueDelta: postOutcomes.revenueDelta,
+        summary: postOutcomes.summary,
+        evidenceUrl: postOutcomes.evidenceUrl,
+        occurredAt: postOutcomes.occurredAt,
+      })
+      .from(postOutcomes)
+      .where(
+        and(
+          eq(postOutcomes.postId, postId),
+          eq(postOutcomes.workspaceId, await getWorkspaceId()),
+        ),
+      )
+      .orderBy(desc(postOutcomes.createdAt));
   }
 
   // Sprint 20: birleşmiş fikir hedefinin başlığını banner'da gösterir.
@@ -571,6 +602,17 @@ export default async function PostDetailPage({
                 isPro={isPro}
               />
             </div>
+          ) : null}
+
+          {/* 2026-09-12 (M6): "işe yaradı mı?" — gerçekleşen sonuç kaydı.
+              İş etkisi kutusu ÖNGÖRÜyü gösterir; bu kutu GERÇEKLEŞENİ. */}
+          {isAdmin ? (
+            <PostOutcomes
+              postId={post.id}
+              initial={outcomeItems}
+              isPro={isPro}
+              postStatus={post.status}
+            />
           ) : null}
 
           {isAdmin ? (

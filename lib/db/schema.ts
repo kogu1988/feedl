@@ -1156,6 +1156,53 @@ export const postOpportunities = pgTable(
 export type PostOpportunity = typeof postOpportunities.$inferSelect;
 export type NewPostOpportunity = typeof postOpportunities.$inferInsert;
 
+// 2026-09-12 (M6 ürün eksiği) — OUTCOME KAYDI. Yayınlanan bir fikrin
+// GERÇEKLEŞEN sonucu (genişleme, elde tutma, verimlilik...) burada tutulur.
+//
+// Neden ayrı tablo: sonuç tek seferlik değildir — aynı fikir zaman içinde
+// BİRDEN FAZLA sonuç üretebilir (H10: "historical outcome data moat" tam
+// olarak bu birikimdir; tek kolonla bu geçmiş kaybolurdu).
+//
+// Neden `workspace_id` ayrıca tutulur: `post_id` üzerinden de scope'lanabilirdi,
+// ama gelir verisi taşıyan tablolarda (companies/opportunities) tenant kolonu
+// doğrudan duruyor — tek filtreyi unutan bir sorgu sızıntıya dönüşmesin.
+export const postOutcomes = pgTable(
+  "post_outcomes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    postId: uuid("post_id")
+      .notNull()
+      .references(() => posts.id, { onDelete: "cascade" }),
+    // expansion | retention | efficiency | acquisition | other
+    outcomeType: varchar("outcome_type", { length: 30 }).notNull(),
+    // Gerçekleşen gelir etkisi. `companies.mrr` ve `opportunities.deal_value`
+    // ile AYNI birim/ölçek (numeric(12,2) — kuruş değil) ki karışıklık olmasın.
+    // Negatif olabilir: bir iş churn'e yol açtıysa da kaydedilir.
+    revenueDelta: numeric("revenue_delta", { precision: 12, scale: 2 }),
+    summary: text("summary").notNull(),
+    // Kanıt linki (dashboard, müşteri e-postası, PR...) — "neden inanıyoruz?".
+    evidenceUrl: text("evidence_url"),
+    // Sonucun GERÇEKLEŞTİĞİ tarih (kaydın oluşturulma tarihi ayrıdır).
+    occurredAt: date("occurred_at"),
+    recordedBy: text("recorded_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("post_outcomes_post_idx").on(table.postId),
+    index("post_outcomes_workspace_idx").on(table.workspaceId),
+  ],
+);
+
+export type PostOutcome = typeof postOutcomes.$inferSelect;
+export type NewPostOutcome = typeof postOutcomes.$inferInsert;
+
 // Sprint 42 (PM raporu §8.5): Admin'in fikirlere eklediği özel alanlar.
 // Sprint 21 taksonomi kararına dokunmaz: postType = kategori, tags = serbest
 // etiket kalır; custom fields ayrı, admin tanımlı bir katmandır.

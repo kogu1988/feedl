@@ -21,7 +21,9 @@
 //         **gelir skoru & raporu** (`/dashboard/revenue` + dashboard skor
 //         sütunu) ve **onun girdisi: şirket MRR'ı + fırsatlar**
 //         (`/api/admin/companies` POST/PATCH'te mrr > 0,
-//         `/api/admin/opportunities*` tamamen), API key + webhook, CSV
+//         `/api/admin/opportunities*` tamamen), **sonuç (outcome) kaydı**
+//         (`/api/admin/post-outcomes` POST — yayına giren işin gerçekleşen
+//         etkisi; okuma/silme serbest), API key + webhook, CSV
 //         içe/dışa, marka kaldırma + özel alan adı, sınırsız board/takipçi +
 //         10 üye.
 //  NOT: Şirket ve ÜYE yönetimi Free KALIR — `loadCustomerCounts`

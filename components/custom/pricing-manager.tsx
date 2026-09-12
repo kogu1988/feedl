@@ -46,6 +46,10 @@ const proFeatures = [
   "Gizli (private) board'lar",
   "API + webhook erişimi",
   "Gelir skoru & raporu (MRR + fırsatlar)",
+  // 2026-09-12 (M6): yayına giren bir fikrin GERÇEKLEŞEN sonucu (tür + gelir
+  // etkisi + kanıt). Gelir skorunun geçmişe dönük girdisi olduğu için Pro;
+  // kaydedilmiş veriyi okuma/silme her admine açık.
+  "Sonuç kaydı (yayına giren işin gerçek etkisi)",
 ];
 
 function FeatureList({ items }: { items: string[] }) {
