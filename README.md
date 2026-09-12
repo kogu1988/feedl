@@ -183,7 +183,7 @@ Notlar:
 ```bash
 npx tsc --noEmit  # tip kontrolü
 npm run lint      # ESLint
-npx vitest run    # 215 birim testi
+npx vitest run    # 261 birim testi
 npm run build     # üretim derlemesi
 npm run test:e2e  # Playwright + axe erişilebilirlik + auth akışı (çalışan sunucu gerekir)
 ```
@@ -192,15 +192,15 @@ npm run test:e2e  # Playwright + axe erişilebilirlik + auth akışı (çalışa
 
 | Katman | Sonuç | Kapsam |
 | :--- | :--- | :--- |
-| **Birim test** (`npm test`) | ✅ 38 dosya · **215 test geçti** | Saf mantık: renk/WCAG, sayfalama, CSV, şifreleme, rate-limit, Paddle imza+plan türetme, oy doğrulama, post-format, post-search, widget-origins, widget gömme (body-bekleme), workspace-host çözümleme, AI içgörüleri, OpenRouter modelleri, e-posta teslimatı, haftalık digest e-postası + gönderim kararı, api-keys, davet e-postası, widget gönderim modu, free-plan oy limiti, **entegrasyon URL token doğrulaması**, **`getWorkspaceId` önceliği**, **middleware public allowlist'i** |
+| **Birim test** (`npm test`) | ✅ 43 dosya · **261 test geçti** | Saf mantık: renk/WCAG, sayfalama, CSV, şifreleme, rate-limit, Paddle imza+plan türetme, oy doğrulama, post-format, post-search, widget-origins, widget gömme (body-bekleme), workspace-host çözümleme, AI içgörüleri, OpenRouter modelleri, e-posta teslimatı, haftalık digest e-postası + gönderim kararı, api-keys, davet e-postası, widget gönderim modu, free-plan oy limiti, **entegrasyon URL token doğrulaması**, **`getWorkspaceId` önceliği**, **middleware public allowlist'i** |
 | **Tenant izolasyonu** | ✅ `resolveWorkspaceByHost` öncelik (custom_domain > subdomain > varsayılan) + hata; `getWorkspaceId` sırası (widget > çerez > host) + modül-global önbellek regresyonu | `tests/lib/tenant-isolation.test.ts`, `tests/lib/workspace-precedence.test.ts` |
 | **Entegrasyon webhook token** | ✅ Zaman-sabit karşılaştırma; yanlış/boş/eksik token → null (handler 403); legacy yol uyarısı tekrarlamaz | `tests/lib/integration-url-token.test.ts` |
 | **Middleware yetki yüzeyi** | ✅ Açık allowlist fail-closed; önek sızması yok (`/api/adminx` kapalı); `/dashboard` + `/onboarding` korunur | `tests/lib/public-paths.test.ts` |
 | **Paddle plan türetme** | ✅ `derivePlanFromStatus` (trialing/active→pro; canceled/past_due/dunned→free; unknown→null) | `tests/lib/paddle-plans.test.ts` |
 | **Merge/unmerge karar mantığı** | ✅ Şema doğrulama (uuid, self-merge) + reason→HTTP eşleme | `tests/lib/post-merge.test.ts` |
 | **Entegrasyon secret şifreleme** | ✅ `saveIntegration` + Linear connect `encryptSecret` (AES-256-GCM); okuma `decryptSecret` (düz eski satırlar backward-compat) | `tests/lib/encrypt.test.ts` |
-| **E2E smoke** (`test:e2e`) | ✅ CI'da koşar (`e2e` job'u; `DATABASE_URL` secret'ı gerekir, yoksa yeşil no-op). Landing testi host-aware — CI'da `NEXT_PUBLIC_APP_URL=localhost` olduğu için GERÇEK landing doğrulanır | Ana yüzeyler + public API yüzeyi (OpenAPI, v1 401 gate) + axe a11y |
-| **E2E auth akışı** | ⚠️ Clerk test env + seed gerekir; yoksa otomatik atlanır | Admin dashboard erişimi + portal fikir oluşturma |
+| **E2E smoke** (`test:e2e`) | ✅ CI'da GERÇEKTEN koşar (`e2e` job'u, `DATABASE_URL` secret'ı tanımlı): **23 passed / 3 skipped**. Landing testi host-aware — CI'da `NEXT_PUBLIC_APP_URL=localhost` olduğu için GERÇEK landing doğrulanır | Ana yüzeyler + public API yüzeyi (OpenAPI, v1 401 gate) + axe a11y |
+| **E2E auth akışı** | ⚠️ Gerçek Clerk test env + seed gerekir; yoksa otomatik atlanır (3 skip). **CI'daki sahte Clerk anahtarı bilinçli olarak `pk_live_`'dir** ve formatı geçerlidir: dev (`pk_test_`) anahtarı middleware'i her istekte dev-browser handshake'ine zorlar, sahte instance 400 döner ve sayfa gövdesi Clerk JSON'u olarak kalır; `pk_live_` yolu handshake yapmaz. Sebep `ci.yml`'de ayrıntılı yazılı | Admin dashboard erişimi + portal fikir oluşturma |
 
 > **Doğrulananlar (2026-09-07):** · `workspace_integrations` secret'ları `encryptSecret` ile şifreli (Linear/Jira/Slack/Zendesk/Intercom) ✓ · Public API **idempotency** (`withIdempotency`, `Idempotency-Key`) + **OpenAPI** (`/api/v1/openapi`) ✓ · `robots.txt`/`sitemap.xml` App Router route handler (`app/robots.txt/route.ts`) ✓. Mimari: kimlik Clerk, tenant/iş verisi Neon (Clerk Organization senkronu bilinçli YAPILMADI — karar 2026-09-07).
 
@@ -369,8 +369,10 @@ e2e/               Playwright smoke + axe erişilebilirlik
 - **Faz 2 (bitti):** e2e için CI job + test seed (#8). Landing a11y ihlalleri (16) yakalanıp düzeltildi — host-aware test sayesinde mümkün oldu.
 - **Ürün revizyonu (bitti, 2026-09-12):** `docs/frontend_plan.md` P0 + P1 — iş etkisi katmanı (#22 sızıntı düzeltmesi, #23 görünürlük/açıklanabilirlik), roadmap bağlamı, gelir bazlı sıralama (#24) ve dashboard'da gelir etkisi özeti (#25). `docs/frontend_plan.md` P2 (CSV müşteri import, CRM/Salesforce/HubSpot/Stripe) ve "DO NOT BUILD" listesi bilinçli olarak yapılmadı.
 - **Faz 2 — kalan:**
-  - **Senin aksiyonun:** GitHub'a `DATABASE_URL` repository secret'ı ekle → CI'daki `e2e` job'u yeşil no-op'tan gerçek koşuya döner. **Ayrı bir Neon branch kullan** (seed yazıyor, üretimi göstermesin).
-  - **#20** custom domain TXT akışının canlı uçtan uca testi (DNS'ini bizim yönettiğimiz bir alan gerekir; `test.feedl.app` rezerve, kullanılamaz).
+  - **#20** custom domain TXT akışının canlı uçtan uca testi (DNS'ini bizim yönettiğimiz bir alan gerekir; `test.feedl.app` rezerve, kullanılamaz). Kullanıcı kararı: **başka bir alanla sonra** test edilecek.
+  - **Uptime monitörü — kullanıcının aksiyonu:** `https://feedl.app/api/health` (200; DB'yi de kontrol eder, `{"status":"ok","db":"ok"}`). Status page **gerekmiyor** (ödeyen müşteri hacmi büyüyünce yeniden bakılacak).
+  - **Workspace silme akışının canlı provası:** varsayılan `feedl` workspace'i tasarım gereği silinemez (host çözümlemesi ona düşer); akış ikincil bir workspace'te denenebilir.
+- **Kapananlar (2026-09-12, denetim):** ~~CI `DATABASE_URL` secret'ı~~ → eklendi (ayrı Neon branch) ve `e2e` job'u gerçek koşuya döndü; ~~GDPR self-servis~~ → `GET /api/admin/data-export` (owner-only JSON, sırlar maskeli) + `DELETE /api/admin/workspace` (owner-only, slug onaylı, varsayılan workspace ve etkin Pro abonelik engelli) eklendi ve gerçek DB'de doğrulandı.
 - **Faz 3 (sonra):**
   - **#1** servise bölme / ölçek (monolit takası) — AI/worker ağırlaşınca.
   - **#11** ikinci tenant'la gerçek çok kiracılı canlı kanıt (sunucu tarafı testler eklendi ve yeşil; eksik olan CANLI kanıt).
