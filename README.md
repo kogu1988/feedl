@@ -357,9 +357,20 @@ e2e/               Playwright smoke + axe erişilebilirlik
 | 21 | Clerk `createRouteMatcher` DEPRECATED (v8'de kalkacak); gerekçesi tam da bu repoda 3 kez bug üreten sınıf: "path matching … leave protected resources reachable". Savunma derinliği eklendi (`dashboard/layout.tsx` → `auth.protect()`). **TAMAMEN KALDIRILDI (2026-09-12):** matcher yerine açık allowlist `lib/auth/public-paths.ts` (`isPublicPath`, **fail-closed**: listede yoksa korunur; önek eşleşmesi segment sınırında — `/api/adminx` açılmaz) + `tests/lib/public-paths.test.ts` (8). 6 namespace'in ALT rotaları tek tek denetlendi: her handler kendi auth'unu yapıyor (metod başına auth çağrısı sayıldı, eksiği yok). Namespace'ler allowlist'e alındı çünkü middleware `protect()`'i bu API'leri **Clerk 404'üne** çeviriyordu. Canlı kanıt (yerel `next start`, eski vs yeni middleware): `/api/admin/members` ve `/api/admin/webhooks` eski halde **404 text/html**, yeni halde **403 application/json**; `/dashboard` 404'ü (yerel Clerk sign-in yapılandırması) her iki sürümde AYNI → değişiklik korunan sayfa davranışını bozmadı | Bağımlılık | 3 | 3 | 2 | 24 |
 
 ### Fazlı (feature ile paralel) iyileştirme planı
-- **Faz 1 (bu hafta, küçük):** README/mimari doğruluğu (#9), orta ve düşük borçların kapatılması — kod/içerik düzeltmeleri zaten commit'li. `tsc`/`vitest` (189) yeşil.
-- **Faz 2 (bu çeyrek):** e2e için CI env + test seed (#8 — **bitti**, `DATABASE_URL` secret'ı eklenince koşar), custom domain için gerçek DNS uçtan uca denemesi (#20 — farklı bir alanla, DNS'i bizde olan).
-- **Faz 3 (sonra):** Servise bölme / ölçek (#1 takas), ikinci tenant'la gerçek çok kiracılı kanıt (#11 — testler eklendi, canlı ikinci tenant kanıtı hâlâ bekliyor), eski global webhook secret'larının (`LINEAR_WEBHOOK_SECRET` vb.) emekliye ayrılması — per-workspace `?ws=&t=` yolu varken global secret tek sızıntı noktası. **Karar artık ölçülebilir:** #10 ile legacy yol Sentry'e uyarı basıyor (`area=integrations`); canlıda uyarı gelmiyorsa global secret'lar güvenle emekliye ayrılabilir.
+
+> **Açık kalan işler (sonra tek tek) — tek liste.** Aşağıdakilerin hepsi kapatılmadı;
+> 2026-09-12 itibarıyla durumları:
+
+- **Faz 1 (bitti):** README/mimari doğruluğu (#9), orta ve düşük borçların kapatılması. `tsc` + `lint` + `vitest` (**215**) + `build` + e2e yeşil.
+- **Faz 2 (bitti):** e2e için CI job + test seed (#8). Landing a11y ihlalleri (16) yakalanıp düzeltildi — host-aware test sayesinde mümkün oldu.
+- **Faz 2 — kalan:**
+  - **Senin aksiyonun:** GitHub'a `DATABASE_URL` repository secret'ı ekle → CI'daki `e2e` job'u yeşil no-op'tan gerçek koşuya döner. **Ayrı bir Neon branch kullan** (seed yazıyor, üretimi göstermesin).
+  - **#20** custom domain TXT akışının canlı uçtan uca testi (DNS'ini bizim yönettiğimiz bir alan gerekir; `test.feedl.app` rezerve, kullanılamaz).
+- **Faz 3 (sonra):**
+  - **#1** servise bölme / ölçek (monolit takası) — AI/worker ağırlaşınca.
+  - **#11** ikinci tenant'la gerçek çok kiracılı canlı kanıt (sunucu tarafı testler eklendi ve yeşil; eksik olan CANLI kanıt).
+  - **Eski global webhook secret'larının emekliliği** (`LINEAR_WEBHOOK_SECRET` vb.). **Karar artık ölçülebilir:** #10 ile legacy yol Sentry'e uyarı basıyor (`area=integrations`); canlıda uyarı gelmiyorsa güvenle emekliye ayrılabilir.
+- **Acil olmayan (bilinçli ertelendi):** **#13** Sentry `LLM pipeline failure` özel kuralı — uyarı zaten çalışıyor (mevcut kural 807520 canlı provada tetiklendi). Ek kural yalnızca sağlamlaştırma; `node tools/create-llm-alert.mjs --apply` ile açılabilir.
 
 ## Lisans
 
