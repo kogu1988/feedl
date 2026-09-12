@@ -8,7 +8,7 @@ import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { workspaces } from "@/lib/db/schema";
-import { planFromString } from "@/lib/paddle";
+import { effectivePlanKey } from "@/lib/paddle";
 import {
   domainVerificationRecordName,
   domainVerificationRecordValue,
@@ -230,15 +230,19 @@ export async function PATCH(req: Request) {
     const workspaceId = await getWorkspaceId();
 
     // Sprint 63x — custom domain PRO özelliği. Free workspace custom domain
-    // ayarlayamaz (yalnızca boşaltabilir/kaldırabilir). Plan, workspaces.plan
-    // sütunundan türetilir (tek gerçek: lib/paddle planFromString).
+    // ayarlayamaz (yalnızca boşaltabilir/kaldırabilir). Plan çözümü tek
+    // kaynaktan: lib/paddle effectivePlanKey (dunning grace dahil, denetim K3).
     if (parsed.data.customDomain !== undefined && parsed.data.customDomain !== null) {
       const [row] = await getDb()
-        .select({ plan: workspaces.plan })
+        .select({
+          plan: workspaces.plan,
+          paddleSubscriptionStatus: workspaces.paddleSubscriptionStatus,
+          paddleStatusChangedAt: workspaces.paddleStatusChangedAt,
+        })
         .from(workspaces)
         .where(eq(workspaces.id, workspaceId))
         .limit(1);
-      if (planFromString(row?.plan) !== "pro") {
+      if (effectivePlanKey(row ?? {}) !== "pro") {
         return NextResponse.json(
           { success: false, error: "Custom domain yalnızca Pro planda. Pro'ya yükselt." },
           { status: 403 },

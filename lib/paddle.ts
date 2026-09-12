@@ -54,6 +54,47 @@ export function derivePlanFromStatus(
   return null;
 }
 
+// 2026-09-12 (denetim K3) — DUNNING GRACE.
+//
+// `derivePlanFromStatus` ödeme sorununu (`past_due`/`dunned`) ANINDA `free`
+// yapıyordu: kartı geçmeyen müşteri, Paddle daha yeniden denemeye fırsat
+// bulamadan Pro'yu kaybediyordu — entegrasyonları durur, custom domain düşer,
+// private board'ları görünmez olur. Sektör standardı birkaç günlük grace'tir.
+export const DUNNING_GRACE_DAYS = 7;
+
+// Erişimi hemen kesmeyen ödeme-sorunu durumları (grace başlatır).
+export function isDunningStatus(status: string | null | undefined): boolean {
+  return status === "past_due" || status === "dunned";
+}
+
+// ETKİN plan — tüm Pro kapıları BUNU kullanmalı (tek kaynak).
+//
+// Grace okuma anında hesaplanır: penceresi dolduğunda Paddle hiçbir olay
+// göndermez, dolayısıyla yalnız saklanan `plan` alanına bakmak "süre bitti"
+// anını yakalayamaz (ve bunun için ayrı bir cron'a bağımlı kalmak istemiyoruz).
+//
+// Kural: saklanan plan pro ise pro (Paddle zaten senkronlar). Aksi hâlde ödeme
+// sorunu YENİ başladıysa grace boyunca pro kalır, süre dolunca free'ye düşer.
+// Zaman damgası yoksa güvenli taraf: free.
+export function effectivePlanKey(
+  row: {
+    plan?: string | null;
+    paddleSubscriptionStatus?: string | null;
+    paddleStatusChangedAt?: Date | string | null;
+  },
+  now: Date = new Date(),
+): PlanKey {
+  if (planFromString(row.plan) === "pro") return "pro";
+  if (!isDunningStatus(row.paddleSubscriptionStatus)) return "free";
+  const startedAt = row.paddleStatusChangedAt
+    ? new Date(row.paddleStatusChangedAt)
+    : null;
+  if (!startedAt || Number.isNaN(startedAt.getTime())) return "free";
+  return now.getTime() - startedAt.getTime() < DUNNING_GRACE_DAYS * 24 * 60 * 60 * 1000
+    ? "pro"
+    : "free";
+}
+
 // Workspace'te güncel limitler (plan'a göre; DB'de saklanan limit alanlarını
 // PLANS ile birleştirir). plan free ise PLANS.free, pro ise PLANS.pro.
 import { getWorkspaceId } from "@/lib/db/workspace";
@@ -66,12 +107,16 @@ import { workspaces } from "@/lib/db/schema";
 // (plan limitleri sık sorulur; sayfa içinde kopya sorguyu önler).
 const fetchPlanLimits = cache(async () => {
   const [row] = await getDb()
-    .select({ plan: workspaces.plan })
+    .select({
+      plan: workspaces.plan,
+      paddleSubscriptionStatus: workspaces.paddleSubscriptionStatus,
+      paddleStatusChangedAt: workspaces.paddleStatusChangedAt,
+    })
     .from(workspaces)
     .where(eq(workspaces.id, await getWorkspaceId()))
     .limit(1);
-  const key = planFromString(row?.plan);
-  return PLANS[key];
+  // Dunning grace dahil (denetim K3) — tüm Pro kapılarının tek kaynağı.
+  return PLANS[effectivePlanKey(row ?? {})];
 });
 
 export async function getPlanLimits() {

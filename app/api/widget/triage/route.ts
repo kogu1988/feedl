@@ -8,7 +8,7 @@ import { getWorkspaceId, resolveWorkspaceIdFromSlug } from "@/lib/db/workspace";
 import { classifyWidgetMessage } from "@/lib/ai/analysis";
 import { getDefaultBoardId } from "@/lib/db/board";
 import { widgetTriages, posts, workspaces } from "@/lib/db/schema";
-import { planFromString } from "@/lib/paddle";
+import { effectivePlanKey } from "@/lib/paddle";
 import { getWidgetSession } from "@/lib/widget/jwt";
 import { isOriginAllowed } from "@/lib/widget/origins";
 import { requestOrigin } from "@/lib/widget/http";
@@ -43,11 +43,16 @@ export async function POST(req: NextRequest) {
       (await resolveWorkspaceIdFromSlug(req.nextUrl.searchParams.get("ws"))) ??
       (await getWorkspaceId());
     const [wsRow] = await getDb()
-      .select({ plan: workspaces.plan })
+      .select({
+        plan: workspaces.plan,
+        paddleSubscriptionStatus: workspaces.paddleSubscriptionStatus,
+        paddleStatusChangedAt: workspaces.paddleStatusChangedAt,
+      })
       .from(workspaces)
       .where(eq(workspaces.id, workspaceId))
       .limit(1);
-    if (planFromString(wsRow?.plan) !== "pro") {
+    // Dunning grace dahil (denetim K3) — Pro kapısı tek kaynaktan.
+    if (effectivePlanKey(wsRow ?? {}) !== "pro") {
       return NextResponse.json(
         {
           success: false,

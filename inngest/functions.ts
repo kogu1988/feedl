@@ -1,7 +1,10 @@
-import { and, asc, count, desc, eq, gte, inArray, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, inArray, or, sql } from "drizzle-orm";
 import { NonRetriableError } from "inngest";
 
-import { planFromString } from "@/lib/paddle";
+import {
+  DUNNING_GRACE_DAYS,
+  effectivePlanKey,
+} from "@/lib/paddle";
 
 import { analyzeIdea, compareIdeas, normalizeTags } from "@/lib/ai/analysis";
 import { buildLearnedContext } from "@/lib/ai/prompts";
@@ -931,11 +934,16 @@ export const corpusInsights = inngest.createFunction(
       // event bile maliyet doğurmaz; cache'e "pro gerekir" notu yazılır.
       const planKey = await step.run("check-plan", async () => {
         const [row] = await db
-          .select({ plan: workspaces.plan })
+          .select({
+            plan: workspaces.plan,
+            paddleSubscriptionStatus: workspaces.paddleSubscriptionStatus,
+            paddleStatusChangedAt: workspaces.paddleStatusChangedAt,
+          })
           .from(workspaces)
           .where(eq(workspaces.id, workspaceId))
           .limit(1);
-        return planFromString(row?.plan);
+        // Dunning grace dahil (denetim K3).
+        return effectivePlanKey(row ?? {});
       });
       if (planKey !== "pro") {
         await step.run("store-pro-required", async () => {
@@ -1065,17 +1073,35 @@ export const weeklyDigest = inngest.createFunction(
     triggers: { cron: "0 6 * * 1" },
   },
   async ({ step }) => {
-    const candidates = await step.run("load-pro-workspaces", async () =>
-      getDb()
+    const candidates = await step.run("load-pro-workspaces", async () => {
+      // 2026-09-12 (denetim K3) — dunning grace'i SQL'de de uygula. Saklanan
+      // `plan` alanı ödeme sorununda 'free'ye çekildiği için yalnız
+      // `plan='pro'` filtrelemek GRACE'TEKİ müşteriyi dışarıda bırakırdı:
+      // Pro erişimi devam ederken haftalık özeti kesilirdi. Grace kuralı
+      // `effectivePlanKey` ile aynı: plan pro VEYA (ödeme sorunu + pencere içi).
+      const graceCutoff = new Date(
+        Date.now() - DUNNING_GRACE_DAYS * 24 * 60 * 60 * 1000,
+      );
+      return getDb()
         .select({
           id: workspaces.id,
           name: workspaces.name,
           plan: workspaces.plan,
+          paddleSubscriptionStatus: workspaces.paddleSubscriptionStatus,
+          paddleStatusChangedAt: workspaces.paddleStatusChangedAt,
           lastSentAt: workspaces.digestLastSentAt,
         })
         .from(workspaces)
-        .where(eq(workspaces.plan, "pro")),
-    );
+        .where(
+          or(
+            eq(workspaces.plan, "pro"),
+            and(
+              inArray(workspaces.paddleSubscriptionStatus, ["past_due", "dunned"]),
+              gte(workspaces.paddleStatusChangedAt, graceCutoff),
+            ),
+          ),
+        );
+    });
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://feedl.app";
     const summary: { workspaceId: string; status: string }[] = [];
@@ -1112,7 +1138,7 @@ export const weeklyDigest = inngest.createFunction(
           ...new Map(team.map((member) => [member.email, member])).values(),
         ];
 
-        const plan = planFromString(ws.plan);
+        const plan = effectivePlanKey(ws, now);
         const newPostCount = Number(newPosts);
         if (
           !shouldSendDigest({

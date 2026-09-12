@@ -133,25 +133,37 @@ export async function POST(req: Request) {
       if (workspaceId) {
         const plan = derivePlanFromStatus(subscriptionStatus);
         if (plan) {
+          // Mevcut satır: hem Pro'ya geçiş tespiti (bayat içgörü cache'i)
+          // hem dunning grace için durum değişim anı gerekir (denetim K3).
+          const [current] = await getDb()
+            .select({
+              plan: workspaces.plan,
+              paddleSubscriptionStatus: workspaces.paddleSubscriptionStatus,
+            })
+            .from(workspaces)
+            .where(eq(workspaces.id, workspaceId))
+            .limit(1);
+
           // Plan Pro'ya YÜKSELDİYSE bayat içgörü cache'ini temizle: free
           // dönemde kilitli/boş kalan cache, Pro sayfada gerçek içgörü
           // sanılıp gösterilmesin (yaşandı: sayfada hem "Pro plan özelliğidir"
           // metni hem "Yenile" butonu görünüyordu). Yalnız GEÇİŞTE temizlenir;
           // her yenileme webhook'u meşru cache'i silmez.
-          let resetInsights = false;
-          if (plan === "pro") {
-            const [current] = await getDb()
-              .select({ plan: workspaces.plan })
-              .from(workspaces)
-              .where(eq(workspaces.id, workspaceId))
-              .limit(1);
-            resetInsights = current?.plan !== "pro";
-          }
+          const resetInsights = plan === "pro" && current?.plan !== "pro";
+
+          // Durum GERÇEKTEN değiştiyse zaman damgasını yaz: grace bu andan
+          // hesaplanır ve her webhook damgayı sıfırlamamalı (aksi halde sorun
+          // sürdükçe grace hiç bitmezdi — tekrar denemeler yeni olay üretir).
+          const nextStatus = subscriptionStatus || null;
+          const statusChanged =
+            current?.paddleSubscriptionStatus !== nextStatus;
+
           await getDb()
             .update(workspaces)
             .set({
               plan,
-              paddleSubscriptionStatus: subscriptionStatus || null,
+              paddleSubscriptionStatus: nextStatus,
+              ...(statusChanged ? { paddleStatusChangedAt: new Date() } : {}),
               ...(plan === "pro" ? { paddleSubscriptionId: subscriptionId } : {}),
               ...(customerId ? { paddleCustomerId: customerId } : {}),
               ...(resetInsights

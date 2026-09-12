@@ -227,6 +227,12 @@ export const workspaces = pgTable("workspaces", {
   // canceled/past_due/paused/dunned/expired. Billing sayfası gerçek durumu
   // gösterir; ödeme gecikmesi uyarısı için kullanılır.
   paddleSubscriptionStatus: varchar("paddle_subscription_status", { length: 30 }),
+  // 2026-09-12 (denetim K3) — abonelik durumunun SON DEĞİŞTİĞİ an. Dunning
+  // grace penceresi buradan hesaplanır: ödeme sorunu (past_due/dunned) yeni
+  // başladıysa Pro korunur, süre dolunca düşer. Bkz. lib/paddle effectivePlanKey.
+  paddleStatusChangedAt: timestamp("paddle_status_changed_at", {
+    withTimezone: true,
+  }),
   trackedUserLimit: integer("tracked_user_limit").notNull().default(50),
   boardLimit: integer("board_limit").notNull().default(1),
   memberLimit: integer("member_limit").notNull().default(1),
