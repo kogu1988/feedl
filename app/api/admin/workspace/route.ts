@@ -15,7 +15,11 @@ import {
   effectivePlanKey,
   effectivePlanKeyForWorkspace,
 } from "@/lib/paddle";
-import { detachDomainFromProject } from "@/lib/vercel-domains";
+import {
+  detachDomainFromProject,
+  getDomainDnsRecommendation,
+  type DomainDnsRecommendation,
+} from "@/lib/vercel-domains";
 import {
   domainVerificationRecordName,
   domainVerificationRecordValue,
@@ -260,6 +264,10 @@ export async function PATCH(req: Request) {
     // teklik + sahiplik doğrulaması (TXT token) yönetilir.
     let domainVerification: DomainVerificationInfo | null = null;
     let previousDomain: string | null = null;
+    // Arayüzün DOĞRU kaydı göstermesi için (apex → A kaydı, subdomain → CNAME)
+    // ve hedefin Vercel'in gerçek önerisi olması için öneri kayıtla birlikte
+    // döner. Apex desteği 2026-09-12'de eklendi.
+    let domainDns: DomainDnsRecommendation | null = null;
     if (parsed.data.customDomain !== undefined) {
       const applied = await applyCustomDomainChange(
         workspaceId,
@@ -275,6 +283,9 @@ export async function PATCH(req: Request) {
       domainVerification = applied.verification;
 
       previousDomain = applied.previousDomain;
+      if (parsed.data.customDomain) {
+        domainDns = await getDomainDnsRecommendation(parsed.data.customDomain);
+      }
     }
 
     if (parsed.data.name !== undefined) set.name = parsed.data.name;
@@ -342,7 +353,7 @@ export async function PATCH(req: Request) {
     // kullanıcının kendi workspace'i için üretilir; sızıntı değildir).
     return NextResponse.json({
       success: true,
-      data: { ...updated, domainVerification },
+      data: { ...updated, domainVerification, domainDns },
     });
   } catch (err) {
     console.error(

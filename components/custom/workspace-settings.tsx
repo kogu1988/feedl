@@ -3,7 +3,10 @@
 import { useRef, useState } from "react";
 import { AlertCircleIcon, BadgeCheckIcon, Loader2Icon } from "lucide-react";
 
-import { CUSTOM_DOMAIN_CNAME_TARGET } from "@/lib/dns-records";
+import {
+  CUSTOM_DOMAIN_APEX_IPV4,
+  CUSTOM_DOMAIN_CNAME_TARGET,
+} from "@/lib/dns-records";
 
 import { normalizeHex } from "@/lib/color";
 
@@ -40,6 +43,16 @@ interface DomainVerificationView {
   verifiedAt: string | Date | null;
 }
 
+// API'nin döndürdüğü trafik kaydı önerisi. `fromVercel=false` ise hedef yedek
+// sabittir (token yok / Vercel yanıtı alınamadı). Apex'te CNAME yerine A kaydı
+// istenir.
+interface DomainDnsView {
+  apex: boolean;
+  cname: string | null;
+  ipv4: string[];
+  fromVercel: boolean;
+}
+
 export function WorkspaceSettings({
   initial,
   isPro = false,
@@ -72,6 +85,7 @@ export function WorkspaceSettings({
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [verification, setVerification] = useState<DomainVerificationView | null>(null);
+  const [domainDns, setDomainDns] = useState<DomainDnsView | null>(null);
   const [verifiedAt, setVerifiedAt] = useState<string | Date | null>(
     initial.customDomainVerifiedAt ?? null,
   );
@@ -113,12 +127,15 @@ export function WorkspaceSettings({
         setError(json.error || "Kaydedilemedi. Lütfen tekrar deneyin.");
         return;
       }
-      // Custom domain kaydedildi → doğrulama TXT kaydını göster.
+      // Custom domain kaydedildi → doğrulama TXT kaydını ve trafik kaydı
+      // önerisini (A vs CNAME + hedef) göster.
       const info = (json.data?.domainVerification ?? null) as DomainVerificationView | null;
       setVerification(info);
+      setDomainDns((json.data?.domainDns ?? null) as DomainDnsView | null);
       setVerifiedAt(info?.verifiedAt ?? json.data?.customDomainVerifiedAt ?? null);
       setVerifyError(null);
       setVerifyMessage(null);
+      setVerifyTraffic(null);
       setSaved(true);
     } catch (err) {
       setError(
@@ -210,9 +227,11 @@ export function WorkspaceSettings({
               setCustomDomain(e.target.value);
               // Girdi değişti: gösterilen TXT kaydı/doğrulama artık bayat.
               setVerification(null);
+              setDomainDns(null);
               setVerifiedAt(null);
               setVerifyError(null);
               setVerifyMessage(null);
+              setVerifyTraffic(null);
             }}
             placeholder="Örn: feedback.acme.com"
             maxLength={200}
@@ -275,19 +294,37 @@ export function WorkspaceSettings({
                         </div>
                       </div>
                       <p className="mt-1 font-medium">
-                        {`2) Trafik (CNAME) — istekleri bize yönlendirir`}
+                        {domainDns?.apex
+                          ? "2) Trafik (A kaydı) — kök alan adında CNAME kullanılamaz"
+                          : "2) Trafik (CNAME) — istekleri bize yönlendirir"}
                       </p>
                       <div className="grid gap-1 pl-3 font-mono">
                         <div className="break-all">
                           <span className="text-muted-foreground">Ad: </span>
-                          {verification.domain}
+                          {domainDns?.apex ? "@" : verification.domain}
                         </div>
                         <div className="break-all">
-                          <span className="text-muted-foreground">Hedef: </span>
-                          {CUSTOM_DOMAIN_CNAME_TARGET}
+                          <span className="text-muted-foreground">
+                            {domainDns?.apex ? "Değer: " : "Hedef: "}
+                          </span>
+                          {domainDns?.apex
+                            ? (domainDns.ipv4[0] ?? CUSTOM_DOMAIN_APEX_IPV4)
+                            : (domainDns?.cname ?? CUSTOM_DOMAIN_CNAME_TARGET)}
+                        </div>
+                        <div className="break-all">
+                          <span className="text-muted-foreground">Tür: </span>
+                          {domainDns?.apex ? "A" : "CNAME"}
                         </div>
                       </div>
                     </div>
+                    {/* Cloudflare "turuncu bulut" tuzağı: proxy açıkken kayıt
+                        Vercel'e ulaşmaz ve TLS sertifikası verilemez. Destek
+                        yükünü kesen tek satır (2026-09-12). */}
+                    <p className="text-muted-foreground">
+                      Cloudflare kullanıyorsan bu kaydı{" "}
+                      <span className="font-medium">DNS only</span> yap (turuncu
+                      bulut kapalı) — proxy açıkken Vercel sertifika veremez.
+                    </p>
                     <p className="text-muted-foreground">
                       Domainin projeye eklenmesi (trafik tarafı) bizim
                       tarafımızda yapılır; sen yalnız DNS kayıtlarını girersin.

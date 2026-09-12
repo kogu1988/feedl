@@ -1,8 +1,12 @@
 import "server-only";
 
-import { resolveCname } from "node:dns/promises";
+import { resolve4, resolveCname } from "node:dns/promises";
 
-import { CUSTOM_DOMAIN_CNAME_TARGET } from "@/lib/dns-records";
+import {
+  CUSTOM_DOMAIN_APEX_IPV4,
+  CUSTOM_DOMAIN_CNAME_TARGET,
+  isApexDomain,
+} from "@/lib/dns-records";
 
 // 2026-09-12 (kullanıcı sorusu: "bu aslında bizim sorunumuz mu?") — EVET, bu
 // sorunun TRAFİK yarısı bizim tarafımızda yapılır:
@@ -24,6 +28,23 @@ const API = "https://api.vercel.com";
 
 /** Vercel'in müşteriye gösterilecek standart CNAME hedefi (paylaşılan sabit). */
 export { CUSTOM_DOMAIN_CNAME_TARGET };
+
+// Vercel'in apex için kullandığı BİLİNEN A kaydı IP'leri. Eşleştirmede
+// kullanılır (Vercel eski/yeni IP'lerden birini önerebilir); arayüzde
+// gösterilen hedef her zaman Vercel'in `recommendedIPv4` yanıtıdır.
+const VERCEL_APEX_IPV4_KNOWN = ["76.76.21.21", "76.76.21.61", "76.76.21.98"];
+
+// Apex'te CNAME yasak olduğu için A kaydı gerekir; subdomain'de CNAME. Hangi
+// kaydın istendiği alan adından türetilir ve arayüzde gösterilir.
+export interface DomainDnsRecommendation {
+  apex: boolean;
+  /** Subdomain için CNAME hedefi (apex'te null). */
+  cname: string | null;
+  /** Apex için A kaydı hedef(ler)i. */
+  ipv4: string[];
+  /** Vercel yanıtı alınabildi mi (false → yedek sabitler kullanıldı). */
+  fromVercel: boolean;
+}
 
 export function isVercelDomainsConfigured(): boolean {
   return Boolean(process.env.VERCEL_API_TOKEN && process.env.VERCEL_PROJECT_ID);
@@ -127,12 +148,87 @@ export function isVercelDnsTarget(target: string): boolean {
   return /(^|\.)vercel-dns(-\d+)?\.com$/i.test(target.trim());
 }
 
+/** A kaydı hedefi bilinen bir Vercel IP'si mi? (saf; test edilebilir) */
+export function isVercelApexIp(address: string): boolean {
+  return VERCEL_APEX_IPV4_KNOWN.includes(address.trim());
+}
+
+// Müşteriye hangi DNS kaydının gerektiğini söyler. Kesin kaynak Vercel'in
+// `/v6/domains/{domain}/config` yanıtıdır (proje başına özel hedef verebilir);
+// token yoksa veya yanıt alınamazsa apex/subdomain ayrımından türeyen yedek
+// sabitler döner. Bu fonksiyon ARAYÜZ metnini beslediği için asla fırlatmaz.
+export async function getDomainDnsRecommendation(
+  domain: string,
+): Promise<DomainDnsRecommendation> {
+  const apex = isApexDomain(domain);
+  const fallback: DomainDnsRecommendation = apex
+    ? { apex, cname: null, ipv4: [CUSTOM_DOMAIN_APEX_IPV4], fromVercel: false }
+    : {
+        apex,
+        cname: CUSTOM_DOMAIN_CNAME_TARGET,
+        ipv4: [],
+        fromVercel: false,
+      };
+
+  if (!process.env.VERCEL_API_TOKEN) return fallback;
+  const res = await vercelFetch(
+    `/v6/domains/${encodeURIComponent(domain)}/config`,
+  );
+  if (!res.ok) return fallback;
+
+  const json = res.json as {
+    recommendedCNAME?: { value?: string }[];
+    recommendedIPv4?: { value?: string[] }[];
+  } | null;
+  const cname = json?.recommendedCNAME?.[0]?.value?.trim() || null;
+  const ipv4 = json?.recommendedIPv4?.[0]?.value?.filter(Boolean) ?? [];
+  if (!cname && ipv4.length === 0) return fallback;
+
+  return {
+    apex,
+    // Apex'te CNAME gösterilmez (Vercel yine de öneri döndürebilir).
+    cname: apex ? null : cname ?? fallback.cname,
+    ipv4: apex ? (ipv4.length > 0 ? ipv4 : fallback.ipv4) : [],
+    fromVercel: true,
+  };
+}
+
 // CNAME gerçekten bize (Vercel'e) bakıyor mu?
 // Kesin hüküm Vercel'in kendi `verified` alanıdır; bu kontrol hızlı ön elemedir.
 export async function cnamePointsToVercel(domain: string): Promise<boolean> {
   try {
     const targets = await resolveCname(domain);
     return targets.some((target) => isVercelDnsTarget(target));
+  } catch {
+    return false;
+  }
+}
+
+// DNS trafiği bize bakıyor mu? Subdomain'de CNAME, APEX'te A kaydı beklenir
+// (apex'te CNAME standart olarak yasak). Apex desteği 2026-09-12'de eklendi;
+// öncesinde yalnız CNAME kontrol edildiği için apex domain'lerde trafik
+// durumu ASLA "hazır" görünmezdi.
+export async function dnsPointsToVercel(
+  domain: string,
+  recommendation?: DomainDnsRecommendation,
+): Promise<boolean> {
+  const rec = recommendation ?? (await getDomainDnsRecommendation(domain));
+
+  try {
+    const targets = await resolveCname(domain);
+    if (targets.some((target) => isVercelDnsTarget(target))) return true;
+  } catch {
+    /* CNAME yok (apex) ya da çözümlenemedi → A kaydını dene */
+  }
+
+  if (!rec.apex) return false;
+
+  // Apex: A kaydı Vercel'in bilinen IP'lerinden birine bakmalı. Vercel'in
+  // önerisi (varsa) önceliklidir; yine de bilinen IP'ler kabul edilir.
+  const expected = new Set([...rec.ipv4, ...VERCEL_APEX_IPV4_KNOWN]);
+  try {
+    const addresses = await resolve4(domain);
+    return addresses.some((address) => expected.has(address));
   } catch {
     return false;
   }
@@ -145,25 +241,31 @@ export async function ensureDomainTraffic(domain: string): Promise<DomainTraffic
   let attached = false;
   let attachDetail = "";
 
+  // Hangi kaydın gerektiği (A vs CNAME) + gösterilecek hedef.
+  const recommendation = await getDomainDnsRecommendation(domain);
+  const expectedRecord = recommendation.apex
+    ? `A kaydı (ad: @) → ${recommendation.ipv4[0] ?? CUSTOM_DOMAIN_APEX_IPV4}`
+    : `CNAME → ${recommendation.cname ?? CUSTOM_DOMAIN_CNAME_TARGET}`;
+
   if (managed) {
     const attach = await attachDomainToProject(domain);
     attached = attach.ok;
     attachDetail = attach.detail;
   }
 
-  const cnameOk = await cnamePointsToVercel(domain);
+  const dnsOk = await dnsPointsToVercel(domain, recommendation);
   const vercelState = managed
     ? await readProjectDomain(domain)
     : { known: false, verified: false, detail: "" };
 
   if (!managed) {
     return {
-      ok: cnameOk,
+      ok: dnsOk,
       attached: false,
       managed: false,
-      detail: cnameOk
+      detail: dnsOk
         ? "DNS bize bakıyor. (Otomatik bağlama yapılandırılmamış — domain projeye elle eklenmeli.)"
-        : `DNS henüz bize bakmıyor. ${CUSTOM_DOMAIN_CNAME_TARGET} hedefine CNAME ekle (yayılım birkaç dakika sürer).`,
+        : `DNS henüz bize bakmıyor. ${expectedRecord} ekle (yayılım birkaç dakika sürer).`,
     };
   }
 
@@ -175,12 +277,12 @@ export async function ensureDomainTraffic(domain: string): Promise<DomainTraffic
       detail: `Domain projeye eklenemedi: ${attachDetail}`,
     };
   }
-  if (!cnameOk) {
+  if (!dnsOk) {
     return {
       ok: false,
       attached: true,
       managed: true,
-      detail: `Domain projeye bağlı ama DNS henüz bize bakmıyor. ${CUSTOM_DOMAIN_CNAME_TARGET} hedefine CNAME ekle (yayılım birkaç dakika sürer).`,
+      detail: `Domain projeye bağlı ama DNS henüz bize bakmıyor. ${expectedRecord} ekle (yayılım birkaç dakika sürer).`,
     };
   }
   if (!vercelState.verified) {

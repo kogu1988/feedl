@@ -198,7 +198,7 @@ Notlar:
 ```bash
 npx tsc --noEmit  # tip kontrolü
 npm run lint      # ESLint
-npx vitest run    # 322 birim testi
+npx vitest run    # 336 birim testi
 npm run build     # üretim derlemesi
 npm run test:e2e  # Playwright + axe erişilebilirlik + auth akışı (çalışan sunucu gerekir)
 ```
@@ -207,7 +207,7 @@ npm run test:e2e  # Playwright + axe erişilebilirlik + auth akışı (çalışa
 
 | Katman | Sonuç | Kapsam |
 | :--- | :--- | :--- |
-| **Birim test** (`npm test`) | ✅ 49 dosya · **322 test geçti** | Saf mantık: renk/WCAG, sayfalama, CSV, şifreleme, rate-limit, Paddle imza+plan türetme, **hesap düzeyi Pro devralma kararı**, oy doğrulama, post-format, outcome kaydı (gelir ayrıştırma/biçimleme + API şeması), **workspace oluşturma limiti (Free 1 workspace)**, data-export kapsamı/redaksiyonu, post-search, widget-origins, widget gömme (body-bekleme), workspace-host çözümleme, **fail-closed host politikası**, AI içgörüleri, OpenRouter modelleri, e-posta teslimatı, haftalık digest e-postası + gönderim kararı, api-keys, davet e-postası, widget gönderim modu, free-plan oy limiti, **entegrasyon URL token doğrulaması**, **Linear webhook tenant izolasyonu**, **widget self-embed kapıları (host + oturum)**, **`getWorkspaceId` önceliği**, **middleware public allowlist'i** |
+| **Birim test** (`npm test`) | ✅ 49 dosya · **336 test geçti** | Saf mantık: renk/WCAG, sayfalama, CSV, şifreleme, rate-limit, Paddle imza+plan türetme, **hesap düzeyi Pro devralma kararı**, oy doğrulama, post-format, outcome kaydı (gelir ayrıştırma/biçimleme + API şeması), **workspace oluşturma limiti (Free 1 workspace)**, data-export kapsamı/redaksiyonu, post-search, widget-origins, widget gömme (body-bekleme), workspace-host çözümleme, **fail-closed host politikası**, AI içgörüleri, OpenRouter modelleri, e-posta teslimatı, haftalık digest e-postası + gönderim kararı, api-keys, davet e-postası, widget gönderim modu, free-plan oy limiti, **entegrasyon URL token doğrulaması**, **Linear webhook tenant izolasyonu**, **widget self-embed kapıları (host + oturum)**, **`getWorkspaceId` önceliği**, **middleware public allowlist'i** |
 | **Tenant izolasyonu** | ✅ `resolveWorkspaceByHost` öncelik (custom_domain > subdomain > varsayılan) + hata; `getWorkspaceId` sırası (widget > çerez > host) + modül-global önbellek regresyonu; **fail-closed host kapısı**: bilinmeyen alt alan/doğrulanmamış custom domain → null (404), kök host + `*.vercel.app` + loopback → varsayılan | `tests/lib/tenant-isolation.test.ts`, `tests/lib/workspace-precedence.test.ts`, `tests/lib/host-fallback-policy.test.ts`, `e2e/host-isolation.spec.ts` |
 | **Entegrasyon webhook token** | ✅ Zaman-sabit karşılaştırma; yanlış/boş/eksik token → null (handler 403); legacy (token'sız) yol **emekliye ayrıldı** → 403 | `tests/lib/integration-url-token.test.ts`, `tests/lib/linear-webhook-tenant.test.ts` |
 | **Middleware yetki yüzeyi** | ✅ Açık allowlist fail-closed; önek sızması yok (`/api/adminx` kapalı); `/dashboard` + `/onboarding` korunur | `tests/lib/public-paths.test.ts` |
@@ -384,7 +384,7 @@ e2e/               Playwright smoke + axe erişilebilirlik
 - **Faz 2 (bitti):** e2e için CI job + test seed (#8). Landing a11y ihlalleri (16) yakalanıp düzeltildi — host-aware test sayesinde mümkün oldu.
 - **Ürün revizyonu (bitti, 2026-09-12):** `docs/frontend_plan.md` P0 + P1 — iş etkisi katmanı (#22 sızıntı düzeltmesi, #23 görünürlük/açıklanabilirlik), roadmap bağlamı, gelir bazlı sıralama (#24) ve dashboard'da gelir etkisi özeti (#25). `docs/frontend_plan.md` P2 (CSV müşteri import, CRM/Salesforce/HubSpot/Stripe) ve "DO NOT BUILD" listesi bilinçli olarak yapılmadı.
 - **Faz 2 — kalan:**
-  - **#20** custom domain — kod tamam (Vercel API + CNAME talimatı); **iki env değişkeni** (`VERCEL_API_TOKEN`, `VERCEL_PROJECT_ID`) eklenmeli, gerçek domainle uçtan uca provası yapılmalı. Ayrıntı: yukarıdaki #20 satırı.
+  - **#20** custom domain — kod tamam (Vercel API + CNAME/A kaydı talimatı + Cloudflare notu). **`VERCEL_API_TOKEN` + `VERCEL_PROJECT_ID` üretime eklendi (2026-09-12) ve redeploy edildi**; gerçek domainle uçtan uca provası hâlâ yapılmadı. **Apex desteği eklendi:** apex'te CNAME yasak olduğu için A kaydı talimatı gösterilir; hangi kaydın istendiği `lib/dns-records.ts → isApexDomain` + Vercel'in `/v6/domains/{domain}/config` yanıtından gelir (`getDomainDnsRecommendation`), trafik kontrolu apex'te A kaydını da doğrular (`dnsPointsToVercel`) — öncesinde apex'te trafik durumu ASLA "hazır" görünmüyordu. Arayüzde Cloudflare "DNS only" uyarısı var. Ayrıntı: yukarıdaki #20 satırı.
   - **Uptime monitörü:** kullanıcı kararı — **gerekmiyor**, kapatıldı (`/api/health` yine de hazır ve DB'yi kontrol ediyor).
   - **Workspace silme akışının canlı provası:** artık yapılabilir — `/dashboard/workspaces` → workspace satırında **Geç** ile ona geç, sonra "Veri ve gizlilik" → sil. (Varsayılan `feedl` tasarım gereği silinemez; `deneme` silinebilir.) Hâlâ denenmedi.
   - **CSV müşteri import testi:** kullanıcı kararı — **ertelendi** (kod var, gerçek CSV ile koşulmadı).
