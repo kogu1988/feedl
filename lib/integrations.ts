@@ -1,6 +1,7 @@
 import "server-only";
 
-import { randomBytes } from "node:crypto";
+import { randomBytes, timingSafeEqual } from "node:crypto";
+import * as Sentry from "@sentry/nextjs";
 
 import { and, eq } from "drizzle-orm";
 
@@ -25,8 +26,50 @@ export const INTEGRATION_PROVIDERS: IntegrationProvider[] = [
 ];
 
 // Yeni per-workspace token üret (Linear'ın aynı modeli).
+// 24 byte rastgele → 48 hex karakter; tahmin edilemez, URL'ye gömülür.
 export function randomIntegrationToken(): string {
   return randomBytes(24).toString("hex");
+}
+
+// URL token karşılaştırması ZAMAN-SABİT olmalı. Düz `a !== b` erken çıkış yapar
+// ve teorik olarak karakter-karakter zamanlamadan token sızdırır; bu repoda
+// widget JWT'si de `timingSafeEqual` kullanıyor (lib/widget/jwt.ts). HTTP
+// üzerinden pratikte zor olsa da aynı standart burada da uygulanır.
+// Uzunluk farkı `timingSafeEqual`'ı fırlatacağı için önce boyut karşılaştırılır
+// (boyut zaten genel bilgi).
+export function urlTokenMatches(
+  stored: string | null | undefined,
+  provided: string,
+): boolean {
+  if (!stored || !provided) return false;
+  const a = Buffer.from(stored, "utf8");
+  const b = Buffer.from(provided, "utf8");
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
+// Legacy (parametresiz) gelen webhook yolu: per-workspace `?ws=&t=` varken
+// global env secret'a düşmek tek sızıntı noktası bırakır (README Faz 3).
+// Emekliye AYIRMADAN önce canlıda hâlâ kullanılıp kullanılmadığını ölçmek
+// gerekir; bu yüzden yalnızca gözlemlenebilirlik eklenir — davranış değişmez.
+// `warnedLegacy` her provider için tek uyarı basar (log spam'i yok); Sentry
+// tarafında fingerprint ile tek issue'da gruplanır.
+const warnedLegacy = new Set<IntegrationProvider>();
+
+export function warnLegacyInboundWebhook(provider: IntegrationProvider): void {
+  if (warnedLegacy.has(provider)) return;
+  warnedLegacy.add(provider);
+  const message =
+    `[integrations] ${provider} legacy (token'sız) webhook yolu kullanıldı — ` +
+    `per-workspace ?ws=&t= yolu varken global env secret emekliye ayrılmalı.`;
+  console.warn(message);
+  try {
+    Sentry.captureMessage(message, {
+      level: "warning",
+      tags: { area: "integrations", provider },
+    });
+  } catch {
+    /* Sentry yapılandırılmamışsa ana akışı bozma */
+  }
 }
 
 export function appUrl(): string {
@@ -179,7 +222,9 @@ export async function resolveIntegrationByUrlToken(
     )
     .limit(1);
   if (!row) return null;
-  if (!row.urlToken || row.urlToken !== urlToken) {
+  // Token zaman-sabit karşılaştırılır; DB'de token yoksa (`!stored`) asla
+  // eşleşmez (boş token'lı kayıt kapıyı açamaz).
+  if (!urlTokenMatches(row.urlToken, urlToken)) {
     return null;
   }
   // Sprint 63t — şifreli saklanan credential'ları çöz (mevcut düz satırlar

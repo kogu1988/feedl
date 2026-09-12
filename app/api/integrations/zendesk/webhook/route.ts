@@ -6,7 +6,7 @@ import { getWorkspaceId } from "@/lib/db/workspace";
 import { getDefaultBoardId } from "@/lib/db/board";
 import { classifyWidgetMessage } from "@/lib/ai/analysis";
 import { isZendeskConfigured, verifyZendeskToken, zendeskAuthFromHeaders, zendeskTicketText, type ZendeskTicket } from "@/lib/zendesk";
-import { resolveIntegrationByUrlToken } from "@/lib/integrations";
+import { resolveIntegrationByUrlToken, warnLegacyInboundWebhook } from "@/lib/integrations";
 import { posts, users } from "@/lib/db/schema";
 import { toWidgetUserId } from "@/lib/widget/jwt";
 import { postCreatedEventSchema } from "@/lib/validations/events";
@@ -38,6 +38,8 @@ export async function POST(req: NextRequest) {
       }
       integrationSecret = resolved.apiKey ?? resolved.webhookSecret;
       workspaceId = resolved.workspaceId;
+    } else {
+      warnLegacyInboundWebhook("zendesk");
     }
 
     if (!integrationSecret && !isZendeskConfigured()) {

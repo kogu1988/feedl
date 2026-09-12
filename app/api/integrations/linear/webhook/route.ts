@@ -13,6 +13,7 @@ import {
   verifyLinearSignatureWithSecret,
 } from "@/lib/linear";
 import { posts, users, workspaceIntegrations, workspaces } from "@/lib/db/schema";
+import { urlTokenMatches, warnLegacyInboundWebhook } from "@/lib/integrations";
 import { decryptSecret } from "@/lib/encrypt";
 import { toWidgetUserId } from "@/lib/widget/jwt";
 import { postCreatedEventSchema } from "@/lib/validations/events";
@@ -73,7 +74,7 @@ export async function POST(req: NextRequest) {
           { status: 404 },
         );
       }
-      if (!record.urlToken || tokenParam !== record.urlToken) {
+      if (!urlTokenMatches(record.urlToken, tokenParam)) {
         return NextResponse.json(
           { success: false, error: "Geçersiz Linear webhook token." },
           { status: 401 },
@@ -90,6 +91,7 @@ export async function POST(req: NextRequest) {
       resolvedWorkspaceId = record.workspaceId;
     } else {
       // Geriye dönük: global secret + default workspace.
+      warnLegacyInboundWebhook("linear");
       if (!isLinearConfigured()) {
         return NextResponse.json(
           { success: false, error: "Linear yapılandırılmamış (LINEAR_WEBHOOK_SECRET yok)." },

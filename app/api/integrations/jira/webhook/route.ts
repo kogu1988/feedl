@@ -13,7 +13,7 @@ import {
   verifyJiraSignature,
 } from "@/lib/jira";
 import { posts, users } from "@/lib/db/schema";
-import { resolveIntegrationByUrlToken } from "@/lib/integrations";
+import { resolveIntegrationByUrlToken, warnLegacyInboundWebhook } from "@/lib/integrations";
 import { toWidgetUserId } from "@/lib/widget/jwt";
 import { postCreatedEventSchema } from "@/lib/validations/events";
 import { inngest } from "@/inngest/client";
@@ -45,6 +45,8 @@ export async function POST(req: NextRequest) {
       }
       integrationSecret = resolved.apiKey ?? resolved.webhookSecret;
       workspaceId = resolved.workspaceId;
+    } else {
+      warnLegacyInboundWebhook("jira");
     }
 
     if (!integrationSecret && !isJiraConfigured()) {
