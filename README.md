@@ -348,10 +348,11 @@ e2e/               Playwright smoke + axe erişilebilirlik
 | 17 | `ENCRYPTION_KEY` yoksa secret'lar SESSİZCE düz metne düşüyordu (DÜZELTİLDİ: tek seferlik `Sentry.captureMessage`, `area=encrypt`) | Güvenlik | 3 | 3 | 1 | 30 |
 | 18 | Custom domain: biçim doğrulaması yoktu, sahiplik doğrulanmıyordu, unique değildi → hostname squatting (DÜZELTİLDİ: normalize+validasyon, `_feedl.<domain>` TXT doğrulaması, unique index; migration `0056`) | Mimari | 4 | 4 | 3 | 24 |
 | 19 | Paddle webhook: `as` cast'leri, kullanılmayan şema, içi boş `transaction.completed` dalı, bayat yorum (DÜZELTİLDİ: patlamayan zod şeması + ölü kod/ yorum temizliği) | Kod | 2 | 2 | 2 | 16 |
+| 20 | **BEKLİYOR — custom domain TXT akışının canlı uçtan uca testi.** Kod + migration (0056) canlıda; negatif yollar (biçim/rezerve host reddi, "DNS yok" hatası, doğrulanmamış alanın host çözümlemesinde yok sayılması) denenebilir. HAPPY PATH (doğrulandı → portal o adreste) için **DNS'ini bizim yönettiğimiz bir alan** gerekiyor. `test.feedl.app` KULLANILAMAZ: `feedl.app` + alt alanları koda gömülü rezerve (TXT eklenemez; o senaryo zaten slug routing ile `test.feedl.app` → slug `test`). Test: `feedback.<alan>` yaz → panelde çıkan TXT'i ekle (`_feedl.feedback.<alan>` = `feedl-verify=<token>`) → **Doğrula** → portal o alana düşmeli. Sahibi olunmayan bir alanla (ör. `feedback.ornek.com`) yalnız negatif yollar denenir ve test sonrası alan **KALDIRILMALI** (unique index gerçek sahibini bloklar). Yayılım kontrolü: `node:dns` `resolveTxt`. | Operasyon | 2 | 3 | 1 | 25 |
 
 ### Fazlı (feature ile paralel) iyileştirme planı
 - **Faz 1 (bu hafta, küçük):** README/mimari doğruluğu (#9), orta ve düşük borçların kapatılması — kod/içerik düzeltmeleri zaten commit'li. `tsc`/`vitest` (189) yeşil.
-- **Faz 2 (bu çeyrek):** `@paddle/paddle-js` v2 upgrade (#6), Sentry/Clerk deprecation temizliği (#7), e2e için CI env + test seed (#8), custom domain için gerçek DNS uçtan uca denemesi (#18).
+- **Faz 2 (bu çeyrek):** `@paddle/paddle-js` v2 upgrade (#6), Sentry/Clerk deprecation temizliği (#7), e2e için CI env + test seed (#8), custom domain için gerçek DNS uçtan uca denemesi (#20 — farklı bir alanla, DNS'i bizde olan).
 - **Faz 3 (sonra):** Servise bölme / ölçek (#1 takas), ikinci tenant'la gerçek çok kiracılı kanıt (#11), eski global webhook secret'larının (`LINEAR_WEBHOOK_SECRET` vb.) emekliye ayrılması — per-workspace `?ws=&t=` yolu varken global secret tek sızıntı noktası.
 
 ## Lisans
