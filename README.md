@@ -330,7 +330,7 @@ e2e/               Playwright smoke + axe erişilebilirlik
 | 4 | Billing activation `setTimeout(reload)` yarışı (DÜZELTİLDİ: `/api/paddle/status` poll) | Kod | 4 | 3 | 2 | 14 |
 | 5 | Önceden yapılmış çoğaltılmış checkout/nav/rozet (tek kaynaklar oluşturuldu) | Kod | 3 | 3 | 1 | 12 |
 | 6 | `@paddle/paddle-js` v1.6.5 inline frameTarget bozuk → overlay | Bağımlılık | 3 | 3 | 3 | 10 |
-| 7 | Sentry `onRequestError`/global-error uyarısı + Clerk `createRouteMatcher` deprecated | Bağımlılık | 2 | 3 | 2 | 10 |
+| 7 | Sentry `onRequestError` + `global-error` YOKTU → sunucudaki yakalanmayan hatalar Sentry'ye HİÇ düşmüyordu (90 günde uygulamadan tek otomatik olay yok) ve markasız/İngilizce hata sayfası çıkıyordu (DÜZELTİLDİ: `instrumentation.ts` → `onRequestError` + `app/global-error.tsx`, satır içi stille — kök layout yerine geçtiği için Tailwind'e güvenilmez) | Bağımlılık | 3 | 4 | 1 | 35 |
 | 8 | Test: DB-backed/E2E sunucu + seed gerektiriyor; CI push'ta build ama e2e env'siz | Test | 3 | 2 | 3 | 10 |
 | 9 | README/mimari belgelerdeki eskimiş satırlar (Paddle sandbox, 98 test, Canny karşılaştırması) | Dokümantasyon | 2 | 2 | 1 | 8 |
 | 10 | Entegrasyon webhook'ları `?ws=&t=` URL token'a bağlı; token yoksa 403 (Intercom webhook için doğrulanmamış kanal) | Mimari | 2 | 3 | 3 | 8 |
@@ -349,10 +349,11 @@ e2e/               Playwright smoke + axe erişilebilirlik
 | 18 | Custom domain: biçim doğrulaması yoktu, sahiplik doğrulanmıyordu, unique değildi → hostname squatting (DÜZELTİLDİ: normalize+validasyon, `_feedl.<domain>` TXT doğrulaması, unique index; migration `0056`) | Mimari | 4 | 4 | 3 | 24 |
 | 19 | Paddle webhook: `as` cast'leri, kullanılmayan şema, içi boş `transaction.completed` dalı, bayat yorum (DÜZELTİLDİ: patlamayan zod şeması + ölü kod/ yorum temizliği) | Kod | 2 | 2 | 2 | 16 |
 | 20 | **BEKLİYOR — custom domain TXT akışının canlı uçtan uca testi.** Kod + migration (0056) canlıda; negatif yollar (biçim/rezerve host reddi, "DNS yok" hatası, doğrulanmamış alanın host çözümlemesinde yok sayılması) denenebilir. HAPPY PATH (doğrulandı → portal o adreste) için **DNS'ini bizim yönettiğimiz bir alan** gerekiyor. `test.feedl.app` KULLANILAMAZ: `feedl.app` + alt alanları koda gömülü rezerve (TXT eklenemez; o senaryo zaten slug routing ile `test.feedl.app` → slug `test`). Test: `feedback.<alan>` yaz → panelde çıkan TXT'i ekle (`_feedl.feedback.<alan>` = `feedl-verify=<token>`) → **Doğrula** → portal o alana düşmeli. Sahibi olunmayan bir alanla (ör. `feedback.ornek.com`) yalnız negatif yollar denenir ve test sonrası alan **KALDIRILMALI** (unique index gerçek sahibini bloklar). Yayılım kontrolü: `node:dns` `resolveTxt`. | Operasyon | 2 | 3 | 1 | 25 |
+| 21 | Clerk `createRouteMatcher` DEPRECATED (v8'de kalkacak) ve gerekçesi tam da bu repoda 3 kez bug üreten sınıf: "path matching … leave protected resources reachable". Savunma derinliği eklendi (`dashboard/layout.tsx` → `auth.protect()`); `/onboarding` zaten kendi guard'ına sahip, `/api/{admin,comments,corpus-insights,invites,onboarding,votes}` handler'ları da kendi auth'unu yapıyor. **KALAN:** bu 6 namespace'in ALT rotalarını tek tek denetleyip (handler auth'u olmayan bir GET var mı?) middleware matcher'ı kaldırmak — o zaman `createRouteMatcher` tamamen gider. | Bağımlılık | 3 | 3 | 3 | 18 |
 
 ### Fazlı (feature ile paralel) iyileştirme planı
 - **Faz 1 (bu hafta, küçük):** README/mimari doğruluğu (#9), orta ve düşük borçların kapatılması — kod/içerik düzeltmeleri zaten commit'li. `tsc`/`vitest` (189) yeşil.
-- **Faz 2 (bu çeyrek):** `@paddle/paddle-js` v2 upgrade (#6), Sentry/Clerk deprecation temizliği (#7), e2e için CI env + test seed (#8), custom domain için gerçek DNS uçtan uca denemesi (#20 — farklı bir alanla, DNS'i bizde olan).
+- **Faz 2 (bu çeyrek):** `@paddle/paddle-js` v2 upgrade (#6), e2e için CI env + test seed (#8), Clerk `createRouteMatcher`'ın kaldırılması (#21 — alt rota denetimi sonrası), custom domain için gerçek DNS uçtan uca denemesi (#20 — farklı bir alanla, DNS'i bizde olan).
 - **Faz 3 (sonra):** Servise bölme / ölçek (#1 takas), ikinci tenant'la gerçek çok kiracılı kanıt (#11), eski global webhook secret'larının (`LINEAR_WEBHOOK_SECRET` vb.) emekliye ayrılması — per-workspace `?ws=&t=` yolu varken global secret tek sızıntı noktası.
 
 ## Lisans
