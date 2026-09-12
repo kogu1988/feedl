@@ -8,7 +8,7 @@ import {
 // Sprint 63x (B) — tam authed E2E akışı. Yalnız Clerk test env yapılandırılmışsa
 // koşar (isAuthConfigured); aksi halde testler atlanır — CI gizli anahtarsız
 // yeşil kalır. Clerk dev instance "fakes" etkinse ClerkProvider otomatik test
-// kullanıcısıyla oturum açar; DB'de o kullanıcı `scripts/seed-e2e.mjs` ile
+// kullanıcısıyla oturum açar; DB'de o kullanıcı `tools/seed-e2e.mjs` ile
 // admin seed'lenmiş olmalı.
 test.beforeEach(async ({ context }) => {
   test.skip(!isAuthConfigured(), "Clerk test env yok — auth testi atlandı");

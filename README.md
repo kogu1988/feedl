@@ -212,8 +212,9 @@ npm run test:e2e  # Playwright + axe erişilebilirlik + auth akışı (çalışa
 > 2. `/api/webhooks/clerk` webhook'u kurulu olsun — fake kullanıcı girişinde
 >    `user.created` DB'ye gerçek `user_...` ID ile kayıt düşürür.
 > 3. Fake kullanıcının e-postasıyla admin yap:
->    `node scripts/seed-e2e.mjs "test+clerk_test@example.com" feedl`
->    (yerel script — gitignored; e-postayı gerçek fake e-postasıyla değiştir).
+>    `node tools/seed-e2e.mjs "test+clerk_test@example.com" feedl`
+>    (takipli betik — workspace/board eksikse kendisi oluşturur; e-postayı
+>    gerçek fake e-postasıyla değiştir).
 > 4. `npm run test:e2e` (çalışan sunucu + yerel DB).
 
 > Not: Deploy, `main`'e push ile otomatiktir. Vercel Hobby planında kayan

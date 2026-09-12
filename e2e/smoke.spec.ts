@@ -8,8 +8,16 @@ import { expect, test } from "@playwright/test";
 test("landing page loads", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  // Hero CTA'larından biri görünür olmalı.
-  await expect(page.getByRole("button", { name: /Ücretsiz Başla|Canlı Demo/i })).toBeVisible();
+  // `/` HOST'A BAĞLI davranıştır (app/(main)/page.tsx): yalnız feedl kök
+  // host'ta (feedl.app / www.feedl.app / NEXT_PUBLIC_APP_URL host'u) landing
+  // render edilir; subdomain ve custom domain'lerde portal'a yönlenir. CI bu
+  // env'i localhost'a çevirdiği için orada GERÇEK landing doğrulanır; yerelde
+  // (.env.local → feedl.app) portal dalı doğrulanır. İki dal da anlamlı.
+  if (new URL(page.url()).pathname.startsWith("/portal")) {
+    await expect(page.getByText(/Fikir Portalı|Özellik istekleri/i).first()).toBeVisible();
+  } else {
+    await expect(page.getByText(/Ücretsiz Başla|Canlı Demo/i).first()).toBeVisible();
+  }
 });
 
 test("portal loads and shows the board list", async ({ page }) => {

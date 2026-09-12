@@ -32,3 +32,49 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run build
+
+  # 2026-09-12 (kod incelemesi #8) — Playwright E2E artık CI'da.
+  #
+  # Neden koşullu: smoke/a11y spec'leri GERÇEK, seed'li bir veritabanı ister
+  # (`/api/posts`, `/portal` board okur; board yoksa /portal redirect döngüsüne
+  # girer). Auth testleri Clerk test env'i olmadığında KENDİNİ ATLAR
+  # (e2e/auth-helpers.ts → isAuthConfigured), bu yüzden gizli Clerk anahtarı
+  # gerekmez. Tek gereken DATABASE_URL'dir.
+  #
+  # Bu secret tanımlı değilse job YEŞİL ve no-op kalır (ilk adım bilgi notu
+  # basar); tanımlandığında seed + build + e2e koşar. Test için AYRI bir Neon
+  # branch kullanın — seed yazar, üretim DB'sine karşı koşmayın.
+  #
+  # Secret ekleme: GitHub → Settings → Secrets and variables → Actions →
+  # New repository secret → DATABASE_URL.
+  e2e:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_ci_placeholder
+      CLERK_SECRET_KEY: sk_test_ci_placeholder
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      CI: true
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: npm
+      - name: E2E veritabanı yapılandırıldı mı?
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::notice title=E2E atlandı::DATABASE_URL secret'ı tanımlı değil; e2e adımları atlanıyor."
+          else
+            echo "E2E koşacak."
+          fi
+      - if: env.DATABASE_URL != ''
+        run: npm ci
+      - if: env.DATABASE_URL != ''
+        run: node tools/seed-e2e.mjs
+      - if: env.DATABASE_URL != ''
+        run: npx playwright install --with-deps chromium
+      - if: env.DATABASE_URL != ''
+        run: npm run build
+      - if: env.DATABASE_URL != ''
+        run: npm run test:e2e
