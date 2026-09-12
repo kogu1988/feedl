@@ -43,7 +43,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { getRole } from "@/lib/auth/admin";
+import { getRole, isAdminScope } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { loadPostImpactContext } from "@/lib/db/revenue-scores";
 import type { PostImpactContext } from "@/lib/db/revenue-scores";
@@ -99,7 +99,7 @@ export default async function PostDetailPage({
   const showcaseMode = (await isShowcaseRequest()) && !userId;
   let isAdmin = false;
   try {
-    isAdmin = userId ? (await getRole(userId)) === "admin" : false;
+    isAdmin = userId ? isAdminScope(await getRole(userId)) : false;
   } catch {
     isAdmin = false;
   }

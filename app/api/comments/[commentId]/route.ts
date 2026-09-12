@@ -5,7 +5,7 @@ import { auth } from "@clerk/nextjs/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
-import { getRole } from "@/lib/auth/admin";
+import { getRole, isAdminScope } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { comments } from "@/lib/db/schema";
 import { commentDeletedEventSchema } from "@/lib/validations/events";
@@ -37,7 +37,7 @@ async function loadComment(commentId: string) {
 }
 
 // PATCH /api/comments/[commentId] — yalnızca gövde düzenlenir. Yazar veya
-// admin; editedAt işaretlenir (UI "düzenlendi" gösterir).
+// yönetici (`owner`/`manager`); editedAt işaretlenir (UI "düzenlendi" gösterir).
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ commentId: string }> },
@@ -66,7 +66,7 @@ export async function PATCH(
 
     const role = await getRole(userId);
     const isOwner = comment.userId === userId;
-    if (!isOwner && role !== "admin") {
+    if (!isOwner && !isAdminScope(role)) {
       return NextResponse.json(
         { success: false, error: "Bu yorumu düzenleme yetkiniz yok." },
         { status: 403 },
@@ -114,8 +114,8 @@ export async function PATCH(
   }
 }
 
-// DELETE /api/comments/[commentId] — yazar veya admin. Parent silinirse
-// yanıtlar cascade ile gider (schema onDelete).
+// DELETE /api/comments/[commentId] — yazar veya yönetici (`owner`/`manager`).
+// Parent silinirse yanıtlar cascade ile gider (schema onDelete).
 export async function DELETE(
   _req: Request,
   { params }: { params: Promise<{ commentId: string }> },
@@ -144,7 +144,7 @@ export async function DELETE(
 
     const role = await getRole(userId);
     const isOwner = comment.userId === userId;
-    if (!isOwner && role !== "admin") {
+    if (!isOwner && !isAdminScope(role)) {
       return NextResponse.json(
         { success: false, error: "Bu yorumu silme yetkiniz yok." },
         { status: 403 },

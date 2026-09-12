@@ -20,7 +20,7 @@ import {
   WorkflowIcon,
 } from "lucide-react";
 
-import { getRole } from "@/lib/auth/admin";
+import { getNonAdminRedirectTarget } from "@/lib/auth/admin";
 import { getWorkspaceId, isShowcaseRequest } from "@/lib/db/workspace";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -73,18 +73,20 @@ export const viewport = {
 // kullanılmaz — o sütun feedl PLATFORM personelini işaret eder ve workspace
 // yetkisi vermez.
 // Sprint 63 (rev.): onboarding'e YALNIZCA SaaS-funnel signup butonlarının
-// redirectUrl'u ile gidilir; burada admin→dashboard / diğer→portal kalır —
-// portal uç kullanıcısı onboarding'e hiç gönderilmez.
+// redirectUrl'u ile gidilir; burada owner/manager/member→dashboard, üyeliği
+// olmayan→portal kalır — portal uç kullanıcısı onboarding'e hiç gönderilmez.
 export default async function RootPage() {
   const { userId } = await auth();
 
   if (userId) {
+    // Hedef TEK kaynaktan gelir (`getNonAdminRedirectTarget`): owner/manager/
+    // member → /dashboard, üyeliği olmayan → /portal. Burada daha önce elle rol
+    // karşılaştırması vardı ve `owner` unutulmuştu → ürünü satın alan owner
+    // /portal'a düşüyordu (2026-09-12 hatası). Hata durumunda güvenli geri
+    // dönüş korunur: /portal.
     let target = "/portal";
     try {
-      const role = await getRole(userId);
-      if (role === "admin" || role === "team") {
-        target = "/dashboard";
-      }
+      target = await getNonAdminRedirectTarget();
     } catch (err) {
       console.error(
         "Root page role lookup failed:",

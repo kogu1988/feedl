@@ -106,8 +106,8 @@ export default async function PortalPage({
   const showcaseMode = (await isShowcaseRequest()) && !userId;
   let isAdmin = false;
   try {
-    const { getRole } = await import("@/lib/auth/admin");
-    isAdmin = userId ? (await getRole(userId)) === "admin" : false;
+    const { getRole, isAdminScope } = await import("@/lib/auth/admin");
+    isAdmin = userId ? isAdminScope(await getRole(userId)) : false;
   } catch {
     isAdmin = false;
   }

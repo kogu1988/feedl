@@ -20,6 +20,17 @@ import { getWorkspaceRole } from "@/lib/db/membership";
 
 export type WorkspaceScope = "owner" | "admin" | "team" | "customer" | null;
 
+// Moderasyon kademesi: owner + manager. `"admin"` ham dizesi MANAGER'ı temsil
+// eder, owner'ı DEĞİL — bu yüzden sayfa/API'lerde `role === "admin"` yazmak en
+// üst kademeyi (ürünü satın alan owner'ı) dışarıda bırakır. 2026-09-12'de bu
+// sınıf bug 6 yerde bulundu: landing giriş yönlendirmesi (owner /dashboard
+// yerine /portal'a düşüyordu), portal private-board görünürlüğü (owner kendi
+// gizli board'unu göremiyordu), iç not yazma ve yorum moderasyonu. Ham
+// karşılaştırma YERİNE bu predicate kullanılır.
+export function isAdminScope(role: WorkspaceScope): boolean {
+  return role === "owner" || role === "admin";
+}
+
 // Request-scoped memo (React.cache): aynı userId için aynı istek içinde
 // getRole yalnız BİR kez DB okur (sayfa + alt bileşen/API aynı rolü sorarsa
 // kopya sorgu önlenir). Kalan sorguları her istekte taze tutar (güvenlik).
@@ -52,8 +63,7 @@ export async function getSessionUserId(): Promise<string | null> {
 export async function getAdminUserId(): Promise<string | null> {
   const userId = await getSessionUserId();
   if (!userId) return null;
-  const role = await getRole(userId);
-  return role === "owner" || role === "admin" ? userId : null;
+  return isAdminScope(await getRole(userId)) ? userId : null;
 }
 
 // Yalnız workspace OWNER'ı için userId döner; değilse null. Faturalandırma ve
@@ -95,9 +105,7 @@ export async function getNonAdminRedirectTarget(): Promise<string> {
   const userId = await getSessionUserId();
   if (!userId) return "/portal";
   const role = await getRole(userId);
-  return role === "owner" || role === "admin" || role === "team"
-    ? "/dashboard"
-    : "/portal";
+  return isAdminScope(role) || role === "team" ? "/dashboard" : "/portal";
 }
 
 // PLATFORM personeli mi (feedl ekibi)? `users.role='admin'` işareti workspace

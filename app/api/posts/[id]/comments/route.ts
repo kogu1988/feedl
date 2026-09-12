@@ -3,7 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
-import { getRole } from "@/lib/auth/admin";
+import { getRole, isAdminScope } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { comments, postFollowers, posts } from "@/lib/db/schema";
@@ -88,7 +88,9 @@ export async function POST(
     }
 
     const role = await getRole(userId);
-    const isInternal = role === "admin" && parsed.data.isInternal;
+    // İç not (internal) moderasyon kademesidir: owner + manager. `role === "admin"`
+    // owner'ı dışarıda bırakıyordu (2026-09-12).
+    const isInternal = isAdminScope(role) && parsed.data.isInternal;
 
     // Sprint 24: yanıt hedefi doğrulaması — parent aynı fikirde olmalı ve
     // TEK SEVİYE thread (parent'ın da parentId'si olamaz).
