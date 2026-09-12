@@ -25,6 +25,7 @@ import { getWorkspaceId, isShowcaseRequest } from "@/lib/db/workspace";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { HeroDemoCard } from "@/components/custom/hero-demo-card";
+import { FeedlWidgetScript } from "@/components/custom/feedl-widget-script";
 import { PricingManager } from "@/components/custom/pricing-manager";
 import { PLAN_POSITIONING } from "@/lib/plan-copy";
 import { generateCanonical, ogImage } from "@/lib/seo";
@@ -428,19 +429,9 @@ export default async function RootPage() {
       </section>
 
       {/* Sprint 63y — dogfood: feedl widget'ı kendi landing'ine embed.
-          feedl.app self-origin (her zaman izinli), feedl workspace'ine
-          (seed slug) hedeflenir — canlıda widget JWT + iframe + oylama
-          akışını gerçekten test etmek için. Satış landing'inde
-          salt-okunur listeyi değil, tam etkileşimi açar (jetonsuz). */}
-      <script
-        src="https://feedl.app/widget.js"
-        data-feedl-url="https://feedl.app"
-        data-feedl-workspace="feedl"
-        data-button-text="Geri bildirim"
-        data-accent="#ff5c35"
-        data-theme="auto"
-        async
-      />
+          Ortak bileşen: host kapısı + workspace/renk çözümü onun İÇİNDE
+          (müşteri domain'inde ya da yanlış host'ta render edilmez). */}
+      <FeedlWidgetScript />
     </main>
   );
 }

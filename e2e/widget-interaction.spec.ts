@@ -93,4 +93,26 @@ test.describe("widget etkileşimi", () => {
     await page.keyboard.press("Escape");
     await expect(vfLayer).toBeHidden();
   });
+
+  // Yüzey politikası (dogfood): feedl'in kendi host'unda landing + roadmap +
+  // changelog widget'ı taşır; /portal TAŞIMAZ — o sayfa zaten geri bildirim
+  // panosunun kendisi, orada widget "feedl içinde feedl paneli" (iç içe iframe)
+  // olurdu. Kapı bileşenin içinde olduğu için müşteri host'larında hiçbiri
+  // render edilmez; o negatif yol burada test EDİLEMİYOR (Host başlığı
+  // Chromium'da değiştirilemiyor) — güvence `feedl-widget-script.tsx` içindeki
+  // `isShowcaseRequest()` kapısıdır.
+  test("self-embed yalnız beklenen yüzeylerde", async ({ page }) => {
+    for (const route of ["/", "/roadmap", "/changelog"]) {
+      await page.goto(route);
+      await expect(
+        page.locator('script[src$="/widget.js"]'),
+        `${route} widget script'i taşımalı`,
+      ).toHaveCount(1);
+    }
+    await page.goto("/portal");
+    await expect(
+      page.locator('script[src$="/widget.js"]'),
+      "/portal widget script'i TAŞIMAMALI",
+    ).toHaveCount(0);
+  });
 });

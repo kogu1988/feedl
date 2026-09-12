@@ -12,6 +12,7 @@ import { IdeaCard } from "@/components/custom/idea-card";
 import { cn } from "@/lib/utils";
 import { getDb } from "@/lib/db";
 import { PoweredByFeedl } from "@/components/custom/powered-by-feedl";
+import { FeedlWidgetScript } from "@/components/custom/feedl-widget-script";
 import { getWorkspaceId, isShowcaseRequest } from "@/lib/db/workspace";
 import { generateCanonical } from "@/lib/seo";
 import { unstable_cache } from "next/cache";
@@ -170,6 +171,10 @@ export default async function ChangelogPage() {
         )}
       </div>
       <PoweredByFeedl />
+      {/* Duyuruları okuyan ziyaretçi eksik gördüğü şeyi isteyebilsin.
+          Host kapısı bileşenin içinde: yalnız feedl kök host'unda render eder
+          (müşteri subdomain/custom domain'lerinde ASLA). */}
+      <FeedlWidgetScript />
     </main>
   );
 }

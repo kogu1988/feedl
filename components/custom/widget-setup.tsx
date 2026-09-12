@@ -5,6 +5,7 @@ import { CheckIcon, CopyIcon, KeyRoundIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { WIDGET_BRAND_ACCENT } from "@/lib/widget/embed";
 
 // Sprint 32: dashboard/widget sayfasının etkileşimli bölümü — test jetonu
 // üretir (POST /api/admin/widget-token) ve embed snippet'ini jetonla
@@ -20,8 +21,8 @@ import { Input } from "@/components/ui/input";
 // İşaret rengi (data-mark-color) İSTİSNADIR: görsel geri bildirimde ekran
 // görüntüsüne eklenen vurgu halkasının rengidir, kamuya açık markalama
 // değildir — görünürlük ayarı olduğu için TÜM planlarda ayarlanabilir.
-const WIDGET_BRAND_ACCENT = "#ff5c35";
-
+// (Marka aksanı + renk kuralı `lib/widget/embed.ts`'te tek kaynaktır; feedl'in
+// kendi yüzeylerindeki self-embed de aynı kuralı kullanır.)
 export function WidgetSetup({
   baseUrl,
   isPro,
