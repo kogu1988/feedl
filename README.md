@@ -377,6 +377,8 @@ e2e/               Playwright smoke + axe erişilebilirlik
   - **#1** servise bölme / ölçek (monolit takası) — AI/worker ağırlaşınca.
   - **#11** ikinci tenant'la gerçek çok kiracılı canlı kanıt (sunucu tarafı testler eklendi ve yeşil; eksik olan CANLI kanıt).
   - **Eski global webhook secret'larının emekliliği** (`LINEAR_WEBHOOK_SECRET` vb.). **Karar artık ölçülebilir:** #10 ile legacy yol Sentry'e uyarı basıyor (`area=integrations`); canlıda uyarı gelmiyorsa güvenle emekliye ayrılabilir.
+- **Ürün doğrulaması (saha işi — kod değil):** `docs/FEEDL-ROADMAP.md` milestone çıkış kriterleri (M0–M6) 2026-09-12'de tek tek gözden geçirildi. **7 madde ürün tarafında karşılandığı için `[x]` işaretlendi** (tez + hipotez metni, activation funnel, skor açıklanabilirliği, feature↔müşteri ve feature↔gelir ilişkisi, shipped state/tarih); **20 madde bilinçli olarak açık** bırakıldı (görüşmeler, ödeyen müşteri sayısı, kullanıcı testleri) — bunlar kodla "tamamlandı" yapılamaz.
+  - **Bulunan tek ürün eksiği:** shipped bir fikrin **sonucunu** (metrik/ARR değişimi) kaydeden bir "outcome" alanı/özelliği YOK. Gerçek outcome tracking (M6) bunu gerektiriyor.
 - **Acil olmayan (kapandı):** **#13** Sentry `LLM pipeline failure` özel kuralı — gerek yok, kapsam canlı kanıtlı (kural 807520 enabled, `lastTriggered` bugün). Sentry MCP'sinde kural **oluşturan** araç yok; `alerts:write` token'ı yalnız sende olabilir. Ek kural gerekirse `node tools/create-llm-alert.mjs --apply`.
 
 ## Lisans

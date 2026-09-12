@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Loader2Icon, PencilIcon, PlusIcon, TrashIcon } from "lucide-react";
 
+import { useConfirm } from "@/components/custom/confirm-dialog";
 import { Notice } from "@/components/custom/notice";
 import { Button } from "@/components/ui/button";
 import {
@@ -52,6 +53,8 @@ export function BoardsManager({
   const [saving, setSaving] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Yıkıcı onaylar uygulama içi diyalogla sorulur (window.confirm değil).
+  const { confirm, dialog } = useConfirm();
 
   const isDefault = (b: BoardView) => b.slug === "genel";
 
@@ -123,14 +126,16 @@ export function BoardsManager({
     }
   }
 
-  async function remove(b: BoardView) {
-    if (
-      !window.confirm(
-        `"${b.name}" board'u silinecek. Bu board'daki fikirler bağsız kalır. Emin misin?`,
-      )
-    ) {
-      return;
-    }
+  function remove(b: BoardView) {
+    confirm({
+      title: `"${b.name}" board'u silinsin mi?`,
+      description: "Bu board'daki fikirler bağsız kalır. İşlem geri alınamaz.",
+      confirmLabel: "Board'u sil",
+      onConfirm: () => void performRemove(b),
+    });
+  }
+
+  async function performRemove(b: BoardView) {
     setBusyId(b.id);
     try {
       const res = await fetch(`/api/admin/boards?id=${b.id}`, {
@@ -301,6 +306,7 @@ export function BoardsManager({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {dialog}
     </div>
   );
 }

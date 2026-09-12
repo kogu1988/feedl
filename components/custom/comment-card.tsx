@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Loader2Icon, PencilIcon, ReplyIcon, Trash2Icon } from "lucide-react";
 
 import { CommentForm } from "@/components/custom/comment-form";
+import { useConfirm } from "@/components/custom/confirm-dialog";
 import { MarkdownContent } from "@/components/custom/markdown-content";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -44,6 +45,8 @@ export function CommentCard({
   const [draft, setDraft] = useState(comment.body);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Yıkıcı onaylar uygulama içi diyalogla sorulur (window.confirm değil).
+  const { confirm, dialog } = useConfirm();
   const router = useRouter();
 
   const canManage =
@@ -73,14 +76,16 @@ export function CommentCard({
     }
   };
 
-  const remove = async () => {
-    if (
-      !window.confirm(
-        "Bu yorum silinsin mi? Yanıtları da silinir, işlem geri alınamaz.",
-      )
-    ) {
-      return;
-    }
+  const remove = () => {
+    confirm({
+      title: "Bu yorum silinsin mi?",
+      description: "Yanıtları da silinir. İşlem geri alınamaz.",
+      confirmLabel: "Yorumu sil",
+      onConfirm: () => void performRemove(),
+    });
+  };
+
+  const performRemove = async () => {
     setError(null);
     setBusy(true);
     try {
@@ -214,6 +219,7 @@ export function CommentCard({
           </div>
         ) : null}
       </CardContent>
+      {dialog}
     </Card>
   );
 }

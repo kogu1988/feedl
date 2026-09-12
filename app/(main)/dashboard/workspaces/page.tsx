@@ -63,36 +63,19 @@ export default async function WorkspacesPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Workspace&apos;ler</h1>
         <p className="mt-2 text-muted-foreground">
-          Mevcut workspace&apos;in yapılandırmasını düzenle ve tüm
-          workspace&apos;lerin listesini gör. Her workspace kendi
-          subdomain&apos;inde izole çalışır — örn. acme.feedl.app.
+          Workspace&apos;lerini gör ve yeni bir tane oluştur; mevcut
+          workspace&apos;in yapılandırmasını aşağıda düzenle. Her workspace
+          kendi subdomain&apos;inde izole çalışır — örn. acme.feedl.app.
         </p>
       </div>
 
-      {workspaceInfo ? (
-        <div className="mt-8">
-          <WorkspaceSettings
-            initial={{
-              ...workspaceInfo,
-              // Şema varchar → union normalize (geçersizse signup varsayılanı).
-              widgetSubmissionMode:
-                workspaceInfo.widgetSubmissionMode === "anonymous" ||
-                workspaceInfo.widgetSubmissionMode === "email" ||
-                workspaceInfo.widgetSubmissionMode === "signup"
-                  ? workspaceInfo.widgetSubmissionMode
-                  : "signup",
-            }}
-            isPro={planFromString(workspaceInfo.plan) === "pro"}
-          />
-          <WorkspaceDataPrivacy slug={workspaceInfo.slug} isOwner={isOwner} />
-        </div>
-      ) : wsLoadError ? (
-        <p className="mt-6 text-sm text-destructive">
-          Workspace ayarları yüklenemedi. Lütfen sayfayı yenile.
-        </p>
-      ) : null}
-
-      <div className="mt-10">
+      {/* 1) Liste + TEK "yeni workspace" girişi.
+          2026-09-12 (kullanıcı): daha önce liste sayfanın EN SONUNDAYDI ve
+          "yeni workspace" butonu oraya gömülüyordu; sayfanın üstündeki
+          "Workspace adı" formu da yeni workspace ekliyormuş gibi görünüyordu.
+          Artık nesne (workspace'ler) en üstte, ayarlar ondan sonra ve net bir
+          başlıkla ayrılmış durumda. */}
+      <div className="mt-8">
         {loadError ? (
           <p className="text-sm text-destructive">
             Workspace&apos;ler yüklenemedi. Lütfen sayfayı yenile.
@@ -101,6 +84,47 @@ export default async function WorkspacesPage() {
           <WorkspacesManager initial={items} />
         )}
       </div>
+
+      {/* 2) Mevcut workspace'in ayarları — ekleme değil, DÜZENLEME. */}
+      {workspaceInfo ? (
+        <section className="mt-10" aria-labelledby="mevcut-workspace-basligi">
+          <h2
+            id="mevcut-workspace-basligi"
+            className="text-lg font-semibold tracking-tight"
+          >
+            Mevcut workspace ayarları
+          </h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {workspaceInfo.name} (
+            <code className="font-mono">{workspaceInfo.slug}</code>) workspace&apos;ini
+            düzenle.
+          </p>
+          <div className="mt-4">
+            <WorkspaceSettings
+              initial={{
+                ...workspaceInfo,
+                // Şema varchar → union normalize (geçersizse signup varsayılanı).
+                widgetSubmissionMode:
+                  workspaceInfo.widgetSubmissionMode === "anonymous" ||
+                  workspaceInfo.widgetSubmissionMode === "email" ||
+                  workspaceInfo.widgetSubmissionMode === "signup"
+                    ? workspaceInfo.widgetSubmissionMode
+                    : "signup",
+              }}
+              isPro={planFromString(workspaceInfo.plan) === "pro"}
+            />
+          </div>
+        </section>
+      ) : wsLoadError ? (
+        <p className="mt-6 text-sm text-destructive">
+          Workspace ayarları yüklenemedi. Lütfen sayfayı yenile.
+        </p>
+      ) : null}
+
+      {/* 3) Veri ve gizlilik (owner-only işlemler). */}
+      {workspaceInfo ? (
+        <WorkspaceDataPrivacy slug={workspaceInfo.slug} isOwner={isOwner} />
+      ) : null}
     </main>
   );
 }

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Loader2Icon, MailIcon, TrashIcon, UserPlusIcon } from "lucide-react";
 
+import { useConfirm } from "@/components/custom/confirm-dialog";
 import { Notice } from "@/components/custom/notice";
 import { Button } from "@/components/ui/button";
 import {
@@ -61,6 +62,8 @@ export function MembersManager({
   const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [inviting, setInviting] = useState(false);
+  // Yıkıcı onaylar uygulama içi diyalogla sorulur (window.confirm değil).
+  const { confirm, dialog } = useConfirm();
 
   async function refresh() {
     const res = await fetch("/api/admin/members", { cache: "no-store" });
@@ -143,8 +146,17 @@ export function MembersManager({
     }
   }
 
-  async function remove(userId: string) {
-    if (!window.confirm("Bu üyeyi workspace'ten çıkar? Emin misin?")) return;
+  function remove(userId: string) {
+    confirm({
+      title: "Bu üye workspace'ten çıkarılsın mı?",
+      description:
+        "Üye artık bu workspace'in dashboard'ına ve verilerine erişemez. İşlem geri alınamaz.",
+      confirmLabel: "Üyeyi çıkar",
+      onConfirm: () => void performRemove(userId),
+    });
+  }
+
+  async function performRemove(userId: string) {
     setBusyId(userId);
     setError(null);
     try {
@@ -315,6 +327,7 @@ export function MembersManager({
           </li>
         ))}
       </ul>
+      {dialog}
     </div>
   );
 }

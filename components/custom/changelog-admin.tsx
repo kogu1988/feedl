@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2Icon, MegaphoneIcon, Trash2Icon } from "lucide-react";
 
+import { useConfirm } from "@/components/custom/confirm-dialog";
+
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/custom/empty-state";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -48,6 +50,8 @@ export function ChangelogAdmin({
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  // Yıkıcı onaylar uygulama içi diyalogla sorulur (window.confirm değil).
+  const { confirm, dialog } = useConfirm();
   const router = useRouter();
 
   const togglePost = (id: string, checked: boolean) => {
@@ -122,10 +126,17 @@ export function ChangelogAdmin({
     }
   };
 
-  const remove = async (id: string) => {
-    if (!window.confirm("Bu duyuru silinsin mi?")) {
-      return;
-    }
+  const remove = (id: string) => {
+    confirm({
+      title: "Bu duyuru silinsin mi?",
+      description:
+        "Duyuru portalda yayından kalkar. Bağlı fikirler silinmez. İşlem geri alınamaz.",
+      confirmLabel: "Duyuruyu sil",
+      onConfirm: () => void performRemove(id),
+    });
+  };
+
+  const performRemove = async (id: string) => {
     setError(null);
     setDeletingId(id);
     try {
@@ -295,6 +306,7 @@ export function ChangelogAdmin({
           ))
         )}
       </div>
+      {dialog}
     </div>
   );
 }

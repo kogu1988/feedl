@@ -123,9 +123,9 @@ export function WorkspacesManager({ initial }: { initial: WorkspaceView[] }) {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="ws-name">Workspace adı</Label>
+              <Label htmlFor="ws-create-name">Workspace adı</Label>
               <Input
-                id="ws-name"
+                id="ws-create-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Örn: Acme"
@@ -133,10 +133,10 @@ export function WorkspacesManager({ initial }: { initial: WorkspaceView[] }) {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="ws-slug">Subdomain (slug)</Label>
+              <Label htmlFor="ws-create-slug">Subdomain (slug)</Label>
               <div className="flex items-center gap-1">
                 <Input
-                  id="ws-slug"
+                  id="ws-create-slug"
                   value={slug}
                   onChange={(e) => setSlug(e.target.value)}
                   placeholder="acme"

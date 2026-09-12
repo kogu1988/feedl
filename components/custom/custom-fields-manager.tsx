@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 
 import { Notice } from "@/components/custom/notice";
+import { useConfirm } from "@/components/custom/confirm-dialog";
 import { EmptyState } from "@/components/custom/empty-state";
 
 import { Button } from "@/components/ui/button";
@@ -76,6 +77,8 @@ export function CustomFieldsManager({
   const [saving, setSaving] = useState(false);
   const [inlineError, setInlineError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  // Yıkıcı onaylar uygulama içi diyalogla sorulur (window.confirm değil).
+  const { confirm, dialog } = useConfirm();
 
   async function refresh() {
     const res = await fetch("/api/admin/custom-fields", { cache: "no-store" });
@@ -149,14 +152,17 @@ export function CustomFieldsManager({
     }
   }
 
-  async function remove(field: CustomFieldView) {
-    if (
-      !window.confirm(
-        `"${field.name}" alanı ve tüm değerleri silinecek. Emin misin?`,
-      )
-    ) {
-      return;
-    }
+  function remove(field: CustomFieldView) {
+    confirm({
+      title: `"${field.name}" alanı silinsin mi?`,
+      description:
+        "Bu alana girilmiş TÜM değerler de silinir. İşlem geri alınamaz.",
+      confirmLabel: "Alanı sil",
+      onConfirm: () => void performRemove(field),
+    });
+  }
+
+  async function performRemove(field: CustomFieldView) {
     setBusyId(field.id);
     try {
       const res = await fetch(`/api/admin/custom-fields/${field.id}`, {
@@ -404,6 +410,7 @@ export function CustomFieldsManager({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {dialog}
     </div>
   );
 }

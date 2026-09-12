@@ -12,6 +12,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/custom/empty-state";
+import { useConfirm } from "@/components/custom/confirm-dialog";
 import { ProFeatureLock } from "@/components/custom/pro";
 import {
   Dialog,
@@ -702,14 +703,23 @@ export function CompaniesManager({
   const [editingTitle, setEditingTitle] = useState("");
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
+  // Yıkıcı onaylar uygulama içi diyalogla sorulur (window.confirm değil).
+  const { confirm, dialog } = useConfirm();
 
   const refresh = () => startTransition(() => router.refresh());
   const busy = isPending || busyId !== null;
 
-  const deleteCompany = async (id: string) => {
-    if (!window.confirm("Şirket ve tüm üyeleri silinecek. Emin misin?")) {
-      return;
-    }
+  const deleteCompany = (id: string) => {
+    confirm({
+      title: "Şirket silinsin mi?",
+      description:
+        "Şirketin tüm üyeleri ve fikir bağları silinir. İşlem geri alınamaz.",
+      confirmLabel: "Şirketi sil",
+      onConfirm: () => void performDeleteCompany(id),
+    });
+  };
+
+  const performDeleteCompany = async (id: string) => {
     setError(null);
     setBusyId(id);
     try {
@@ -729,10 +739,16 @@ export function CompaniesManager({
     }
   };
 
-  const deleteOpportunity = async (id: string) => {
-    if (!window.confirm("Fırsat ve fikir bağları silinecek. Emin misin?")) {
-      return;
-    }
+  const deleteOpportunity = (id: string) => {
+    confirm({
+      title: "Fırsat silinsin mi?",
+      description: "Fırsatın fikir bağları silinir. İşlem geri alınamaz.",
+      confirmLabel: "Fırsatı sil",
+      onConfirm: () => void performDeleteOpportunity(id),
+    });
+  };
+
+  const performDeleteOpportunity = async (id: string) => {
     setError(null);
     setBusyId(id);
     try {
@@ -1078,6 +1094,7 @@ export function CompaniesManager({
             })}
         </ul>
       )}
+      {dialog}
     </div>
   );
 }
