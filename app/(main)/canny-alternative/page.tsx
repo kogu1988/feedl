@@ -125,7 +125,9 @@ export default function CannyAlternativePage() {
         <div className="rounded-2xl border bg-card p-6">
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium">Gelir Skoru</p>
-            <Badge className="border-brand/40 bg-brand/10 text-brand">AI + Veri</Badge>
+            <Badge className="border-brand/40 bg-brand/10 text-brand-strong">
+              AI + Veri
+            </Badge>
           </div>
           <p className="mt-4 font-mono text-3xl tabular-nums">4.2</p>
           <p className="mt-2 text-sm text-muted-foreground">

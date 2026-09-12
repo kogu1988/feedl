@@ -360,7 +360,7 @@ export default async function RootPage() {
                 <Badge
                   className={
                     feature.plan === "pro"
-                      ? "border-brand/40 bg-brand/10 text-brand"
+                      ? "border-brand/40 bg-brand/10 text-brand-strong"
                       : "border-emerald-600/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
                   }
                 >

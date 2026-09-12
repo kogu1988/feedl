@@ -10,7 +10,11 @@ import { cn } from "@/lib/utils";
 // kullanılır. Kaynak: integrations-panel / workspace-settings / pricing-manager
 // desenleri tek kaynağa indirildi — kopya "Pro" rozeti ve kilitli kart yazılmaz.
 //
-// Pro rozeti rengi: `bg-brand/10 text-brand border-brand/40` (mercan + WCAG).
+// Pro rozeti rengi: `bg-brand/10 text-brand-strong border-brand/40`. Metin MUTLAKA
+// `text-brand-strong` olmalı: marka tonlu zeminde (`bg-brand/10` → #ffefeb) ham
+// `text-brand` (#ff5c35) yalnız 2.75:1 kontrast verir ve WCAG AA'yı (4.5:1) kırar.
+// `--brand-strong` (#c7360f açık / #ff8c66 koyu) DESIGN.md'deki "açık zeminde
+// metin (AA)" token'ıdır.
 // Yükseltme CTA: `/dashboard/billing`'e giden birincil (size lg) buton.
 
 export function ProBadge({
@@ -23,7 +27,9 @@ export function ProBadge({
   lock?: boolean;
 }) {
   return (
-    <Badge className={cn("border-brand/40 bg-brand/10 text-brand", className)}>
+    <Badge
+      className={cn("border-brand/40 bg-brand/10 text-brand-strong", className)}
+    >
       {lock ? (
         <LockIcon className="mr-0.5 size-3" aria-hidden="true" />
       ) : null}

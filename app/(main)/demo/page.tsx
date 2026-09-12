@@ -90,7 +90,10 @@ export default function DemoPage() {
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                 {surface.description}
               </p>
-              <span className="mt-4 text-sm font-medium text-primary">
+              {/* Marka turuncusu (#ff5c35) beyaz zeminde 3.07:1 kalıyordu ve AA'yı
+                  kırıyordu; `brand-strong` aynı rengin erişilebilir koyu tonudur
+                  (açık tema #c7360f ≈ 5.3:1, koyu tema #ff8c66). */}
+              <span className="mt-4 text-sm font-medium text-brand-strong">
                 Örneği aç →
               </span>
             </div>

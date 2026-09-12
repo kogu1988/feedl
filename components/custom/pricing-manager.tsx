@@ -136,7 +136,10 @@ export function PricingManager({
                 annual ? "bg-primary text-primary-foreground" : "text-muted-foreground",
               )}
             >
-              Yıllık <span className="opacity-70">%20 indirim</span>
+              Yıllık{" "}
+              {/* `opacity-70` kaldırıldı (2026-09-12 a11y): %70 opaklık, aktif
+                  turuncu zeminde metni 3.59:1'e düşürüp AA'yı kırıyordu. */}
+              <span>%20 indirim</span>
             </button>
           </div>
 
