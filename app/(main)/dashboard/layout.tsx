@@ -12,13 +12,14 @@ export default async function DashboardLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   // 2026-09-12 (kod incelemesi #7, SAVUNMA DERİNLİĞİ): /dashboard koruması
-  // şimdiye kadar YALNIZCA middleware'deki createRouteMatcher'a bağlıydı ve o
-  // API deprecated: "Middleware-based auth checks rely on path matching, which
+  // şimdiye kadar YALNIZCA middleware'deki path matcher'a bağlıydı — Clerk'in o
+  // API'si deprecated: "Middleware-based auth checks rely on path matching, which
   // can diverge from how Next.js routes requests and leave protected resources
   // reachable." Bu tam da bu repoda üç kez bug üreten sınıf (paddle,
-  // visual-feedback, unsubscribe). Yetkiyi kaynak seviyesinde de doğrula:
-  // oturum yoksa sign-in'e yönlenir, böylece matcher bir gün yanlış
-  // yapılandırılsa/çıkarılsa bile dashboard açıkta kalmaz.
+  // visual-feedback, unsubscribe). #21 ile matcher, test edilen açık bir
+  // allowlist'e (`lib/auth/public-paths.ts`) taşındı; yine de yetkiyi kaynak
+  // seviyesinde de doğrula: oturum yoksa sign-in'e yönlenir, böylece allowlist
+  // bir gün yanlış yapılandırılsa/çıkarılsa bile dashboard açıkta kalmaz.
   await auth.protect();
 
   // Sprint 63+ (yetki matrisi): sidebar, kullanıcının dashboard kademesine

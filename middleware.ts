@@ -1,98 +1,25 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { clerkMiddleware } from "@clerk/nextjs/server";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-// Public route'lar (standarts.md §1.1):
-// - "/" ve "/portal" sayfa görünümü herkese açık (public read)
-// - GET /api/posts public; POST handler içinde auth zorunlu tutulur
-// - /api/webhooks/* imza doğrulamasıyla public
-// - /api/inngest Inngest Cloud/Dev Server tarafından çağrılır (production'da
+import { isPublicPath } from "@/lib/auth/public-paths";
 
-//   signing key doğrulaması serve() içinde yapılır)
-
-// - /widget sayfası + /api/widget/* widget SDK'sıdır (plan.md Sprint 32):
-//   iframe içinde Clerk oturumu taşınmaz; kimlik feedl'in kendi widget
-//   çerezinden (lib/widget/jwt) handler içinde çözülür
-// Fikir gönderme, oy verme ve admin işlemleri korumalıdır.
-
-const isPublicRoute = createRouteMatcher([
-
-  "/",
-
-  "/sign-in(.*)",
-
-  "/sign-up(.*)",
-
-  "/portal(.*)",
-
-  "/roadmap(.*)",
-
-  // Changelog 2026-09-05'te /portal altından üst seviyeye taşındı —
-  // herkese açık kalır (anonim ziyaretçi abone olabilir).
-  "/changelog(.*)",
-
-  "/invites(.*)",
-
-  // Sprint 49: public fiyatlandırma sayfası (Paddle checkout sandbox/live,
-  // Clerk oturumu gerekmez).
-  "/pricing",
-
-  // SEO: Canny-alternatif karşılaştırma sayfası (public, ticari niyet).
-  "/canny-alternative",
-  // SEO: HowTo kurulum rehberi (public, bilgilendirme).
-  "/how-to-collect-feedback",
-
-  // Sprint 50: public demo/ürün turu sayfası (satış landing'inin "Canlı
-  // Demo" butonu buraya gider; Clerk oturumu gerekmez).
-  "/demo",
-
-  // Sprint 50: yasal/şirket sayfaları (footer) — public, Clerk gerekmez.
-  "/privacy",
-  "/terms",
-  "/refund",
-  "/contact",
-
-  // Sprint 64: SEO dosyaları — search crawler'lar public erişmeli, auth gerekmez.
-  "/robots.txt",
-  "/sitemap.xml",
-
-  "/widget",
-  "/api/posts(.*)",
-
-  // Public API (Sprint 34): kimlik Bearer API key ile handler içinde
-  // doğrulanır (lib/api-keys.ts), Clerk oturumu gerekmez
-  "/api/v1(.*)",
-
-  "/api/widget(.*)",
-  "/api/webhooks(.*)",
-
-  // Sprint 64 / P0-1: Paddle uçları (status/portal/subscription) auth'u KENDİ
-  // handler'ında yapar (getAdminUserId → 401). Middleware'de `protect` etmek
-  // auth'suz istekleri redirect/404'e çevirip bu uçları kırıyordu; diğer API
-  // namespace'leriyle (v1/widget/webhooks) tutarlı hale getirildi.
-  "/api/paddle(.*)",
-  // Faz 2: görsel feedback görsel proxy'i (private Blob) de auth'u handler'da
-  // (getAdminUserId) yapar — aynı nedenle public matcher'da olmalı.
-  "/api/visual-feedback(.*)",
-
-  // Sprint 48o: Slack/Zendesk/Intercom entegrasyon webhook'ları — Slack
-  // kendi imzasıyla çağırır (lib/slack), Clerk oturumu gerekmez.
-  "/api/integrations(.*)",
-
-  "/api/inngest(.*)",
-
-  // Sprint 40: changelog e-posta aboneliği — anonim ziyaretçiler de
-  // abone olabilir; e-posta formatı handler içinde doğrulanır
-  "/api/changelog(.*)",
-
-  // Bildirim e-postalarının altındaki token'lı unsubscribe linki. Alıcı
-  // e-postayı tarayıcısında AÇMADIĞI için oturumu YOKTUR; Clerk `protect`
-  // bu ucu 404'e çeviriyordu ve tüm bildirimlerin (durum/yorum/digest/
-  // changelog) abonelikten çıkma linki kırıktı. Yetki token ile handler'da
-  // doğrulanır (users.unsubscribe_token).
-  "/api/unsubscribe(.*)",
-
-]);
+// Public route'ların TEK kaynağı artık `lib/auth/public-paths.ts`'tir (açık
+// allowlist + birim testleri). 2026-09-12 (teknik borç #21): Clerk'in deprecated
+// `createRouteMatcher`'ı kaldırıldı — gerekçesi tam da bu repoda 3 kez bug
+// üreten sınıftı ("path matching … leave protected resources reachable").
+//
+// Korunan yüzeyler (özette): `/dashboard(.*)`, `/onboarding` (kendi guard'ı da
+// var) ve allowlist'te OLMAYAN her şey — kural fail-closed.
+//
+// İstisnalar ve nedenleri:
+// - `/` + `/portal` + `/roadmap` + `/changelog` herkese açık (public read).
+// - `GET /api/posts` public; POST handler içinde auth zorunlu.
+// - `/api/webhooks/*` imza doğrulamasıyla public.
+// - `/api/inngest` Inngest Cloud/Dev Server çağırır (production'da signing key
+//   doğrulaması `serve()` içinde).
+// - `/widget` + `/api/widget/*` widget SDK'sıdır: iframe Clerk oturumu taşımaz,
+//   kimlik feedl'in kendi widget çerezinden (lib/widget/jwt) handler'da çözülür.
 
 // Sprint 55 (Platformlaşma #3) — board temiz URL: `/portal/:slug` (uuid
 // değil, ayrılmış static değil) → `/portal?board=:slug` REWRITE edilir.
@@ -123,7 +50,7 @@ function portalBoardRewrite(req: NextRequest): NextResponse | null {
 export default clerkMiddleware(async (auth, req: NextRequest) => {
   const rewrite = portalBoardRewrite(req);
   if (rewrite) return rewrite;
-  if (!isPublicRoute(req)) {
+  if (!isPublicPath(req.nextUrl.pathname)) {
     await auth.protect();
   }
 
