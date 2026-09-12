@@ -36,7 +36,7 @@ import { generateCanonical, ogImage } from "@/lib/seo";
 export async function generateMetadata(): Promise<import("next").Metadata> {
   const canonical = await generateCanonical();
   const description =
-    "Müşteri isteklerini topla, AI ile analiz et, gelir skoruyla önceliklendir ve yayınlanınca herkese duyur. Canny'ye ücretsiz, hosted alternatif.";
+    "Müşteri isteklerini topla, AI ile analiz et, gelir skoruyla önceliklendir ve yayınlanınca herkese duyur. Hosted, ücretsiz başla.";
   return {
     description,
     openGraph: {
@@ -203,7 +203,7 @@ export default async function RootPage() {
     {
       title: "CSV İçe / Dışa Aktarma",
       description:
-        "Canny'den veya CSV'den fikirleri taşı; panelini tek tıkla dışa aktar.",
+        "Mevcut fikirlerini CSV ile taşı; panelini tek tıkla dışa aktar.",
       icon: UploadIcon,
       plan: "pro",
     },
@@ -279,9 +279,8 @@ export default async function RootPage() {
             style={{ animationDelay: "60ms" }}
           >
             Fikirleri toplamak, oylamak ve AI ile analiz etmek için tek
-            platform. Canny&apos;nin ücretsiz planına bir alternatif — müşterin
-            hesap açmadan geri bildirim versin, ürününü müşteri sesiyle
-            şekillendir.
+            platform. Hosted ve ücretsiz başlangıç — müşterin hesap açmadan geri
+            bildirim versin, ürününü müşteri sesiyle şekillendir.
           </p>
           <div
             className="hero-rise mt-8 flex flex-wrap items-center gap-3"

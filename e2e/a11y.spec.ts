@@ -16,6 +16,9 @@ const PUBLIC_ROUTES = [
   // 2026-09-12: Free/Pro rozetleri ve plan özetiyle yeniden yapılandırıldı —
   // SEO'ya açık bir yüzey olduğu için a11y taramasına alındı.
   "/how-to-collect-feedback",
+  // 2026-09-12: marka adı taşıyan rota kaldırılıp içerik araç-bağımsız hâle
+  // getirildi (`/alternative`); SEO'ya açık yüzey olduğu için taramaya alındı.
+  "/alternative",
 ];
 
 // Kritik (AA) kural seti — salt bilgi/öneri olanları hariç tut.

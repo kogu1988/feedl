@@ -12,6 +12,17 @@ const nextConfig: NextConfig = {
         destination: "/changelog/:id",
         permanent: false,
       },
+      // 2026-09-12 — Belirli bir rakip aracın adını taşıyan karşılaştırma
+      // sayfası araç-bağımsız hâle getirildi ve rota `/alternative` oldu.
+      // Eski URL 308 ile devredilir: indekslenmiş linkler ve dış bağlantılar
+      // kırılmasın, SEO değeri yeni URL'e taşınsın.
+      // NOT: 308 (kalıcı) — arama motorları eski yolu bırakıp yenisini
+      // indeksler. `/alternative` public-paths allowlist'indedir.
+      {
+        source: "/canny-alternative",
+        destination: "/alternative",
+        permanent: true,
+      },
     ];
   },
 };

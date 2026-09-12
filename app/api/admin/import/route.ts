@@ -5,11 +5,15 @@ import { getPlanLimits } from "@/lib/paddle";
 import { parseCsv } from "@/lib/csv";
 import { importPosts } from "@/lib/db/import";
 
-// Sprint 59/62 (madde — import): CSV/Canny'den feedback importu. Export CSV
-// formatıyla uyumlu; "Başlık" (zorunlu), "Açıklama", "Durum", "Tür", "Etiketler"
-// sütunları kabul edilir. Canny export CSV ise `format=canny` ile gönderilir —
-// Canny sütun adları (name/headline/body/state/category) otomatik eşlenir.
+// Sprint 59/62 (madde — import): CSV içe aktarma. Kendi export CSV formatıyla
+// uyumlu; "Başlık" (zorunlu), "Açıklama", "Durum", "Tür", "Etiketler"
+// sütunları kabul edilir. Başka bir geri bildirim aracının export'u ise
+// `format=other-tool` ile gönderilir — o aracın sütun adları
+// (name/headline/body/state/category) otomatik eşlenir.
 // Aynı başlık workspace'te varsa atlanır (idempotent). AI bulk'ta çalışmaz.
+//
+// 2026-09-12 — Format adı araç-bağımsızdır; belirli bir rakip markanın adı
+// API yüzeyinde ve üründe geçmez (yasal risk).
 
 const MAX_ROWS = 500;
 const MAX_BYTES = 2 * 1024 * 1024; // 2MB
@@ -24,7 +28,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // Sprint 64: CSV/Canny içe aktarma PRO özelliği (kullanıcı onayı). Free
+    // Sprint 64: CSV içe aktarma PRO özelliği (kullanıcı onayı). Free
     // workspace içe aktaramaz; Pro'ya yükselterek kullanır.
     if ((await getPlanLimits()).key !== "pro") {
       return NextResponse.json(
@@ -41,9 +45,9 @@ export async function POST(req: Request) {
         { status: 400 },
       );
     }
-    // format: csv (varsayılan) | canny — kaynak post'ları etiketler.
+    // format: csv (varsayılan) | other-tool — kaynak post'ları etiketler.
     const format = (formData?.get("format") as string | null) ?? "csv";
-    if (format !== "csv" && format !== "canny") {
+    if (format !== "csv" && format !== "other-tool") {
       return NextResponse.json(
         { success: false, error: "Geçersiz format." },
         { status: 400 },
@@ -74,7 +78,7 @@ export async function POST(req: Request) {
     const result = await importPosts(
       headers,
       rows,
-      format === "canny" ? "import:canny" : "import",
+      format === "other-tool" ? "import:other-tool" : "import",
     );
     return NextResponse.json({ success: true, data: result });
   } catch (err) {

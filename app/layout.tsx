@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     template: "%s · feedl",
   },
   description:
-    "Müşteri isteklerini topla, AI ile analiz et, gelir skoruyla önceliklendir ve yayınlanınca herkese duyur. Canny'ye ücretsiz, hosted alternatif.",
+    "Müşteri isteklerini topla, AI ile analiz et, gelir skoruyla önceliklendir ve yayınlanınca herkese duyur. Hosted ve ücretsiz başla.",
   openGraph: {
     type: "website",
     locale: "tr_TR",

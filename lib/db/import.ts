@@ -8,7 +8,7 @@ import { getDefaultBoardId } from "./board";
 import { posts, postTags, tags, users, votes } from "./schema";
 import { statusLabels, typeLabels } from "@/lib/post-format";
 
-// Canny'den gelen oy sayısı: sentetik oy kullanıcıları ile `votes`'a taşınır.
+// Başka araçtan gelen oy sayısı: sentetik oy kullanıcıları ile `votes`'a taşınır.
 // `votes.user_id → users.id NOT NULL` + `unique(user_id, post_id)` olduğu için
 // her oyya benzersiz sentetik kimlik gerekir. Cap, veri şişkinliğini önler.
 const MAX_IMPORT_VOTES_PER_POST = 1000;
@@ -26,8 +26,8 @@ const typeToEnum = Object.fromEntries(
   Object.entries(typeLabels).map(([k, v]) => [v.toLowerCase(), k]),
 );
 
-// Canny CSV statüleri → feedl status enum'u (İngilizce).
-const cannyStatusToEnum: Record<string, string> = {
+// Dış araç CSV statüleri → feedl status enum'u (İngilizce).
+const externalStatusToEnum: Record<string, string> = {
   open: "open",
   "under review": "under-review",
   under_review: "under-review",
@@ -41,9 +41,9 @@ const cannyStatusToEnum: Record<string, string> = {
   archive: "closed",
 };
 
-// Canny CSV başlık takma adları → feedl kanonik alan adı.
-// (İleri import: oy/yazar/yorum sayısı Canny export'undan taşınır.)
-const cannyHeaderAliases: Record<string, string> = {
+// Dış araç CSV başlık takma adları → feedl kanonik alan adı.
+// (İleri import: oy/yazar/yorum sayısı dış export'tan taşınır.)
+const externalHeaderAliases: Record<string, string> = {
   name: "title",
   headline: "title",
   body: "description",
@@ -63,7 +63,7 @@ const cannyHeaderAliases: Record<string, string> = {
   commentCount: "commentCount",
 };
 
-// CSV/Canny başlık takma adları → normalize kanonik alan adı.
+// CSV / dış araç başlık takma adları → normalize kanonik alan adı.
 const headerAliases: Record<string, string> = {
   başlık: "title",
   baslik: "title",
@@ -92,7 +92,7 @@ const headerAliases: Record<string, string> = {
   yorum_sayisi: "commentCount",
   comment_count: "commentCount",
   comments: "commentCount",
-  ...cannyHeaderAliases,
+  ...externalHeaderAliases,
 };
 
 export interface ImportResult {
@@ -131,7 +131,7 @@ export async function importPosts(
     })
     .onConflictDoNothing();
 
-  // Yazar (Canny `author`/`email`) varsa onu oluştur; yoksa import_csv.
+  // Yazar (`author`/`email` sütunu) varsa onu oluştur; yoksa import_csv.
   // Deterministik: email'den türetilmiş id (aynı satır tekrar gelirse aynı user).
   const authorIdx = canonical.indexOf("author");
   const authorEmail = authorIdx >= 0 ? (rows[0]?.[authorIdx] ?? "").trim() : "";
@@ -144,7 +144,7 @@ export async function importPosts(
       .values({
         id: authorId,
         email: authorEmail,
-        name: authorEmail.split("@")[0] || "Canny Author",
+        name: authorEmail.split("@")[0] || "Imported Author",
         role: "customer",
       })
       .onConflictDoNothing();
@@ -191,7 +191,7 @@ export async function importPosts(
     const VALID_STATUSES = ["open", "under-review", "planned", "in-progress", "shipped", "closed"] as const;
     const status =
       statusToEnum[statusRaw] ??
-      cannyStatusToEnum[statusRaw] ??
+      externalStatusToEnum[statusRaw] ??
       ((VALID_STATUSES as readonly string[]).includes(statusRaw)
         ? statusRaw
         : "open");
@@ -200,7 +200,7 @@ export async function importPosts(
       (VALID_TYPES.includes(typeRaw as (typeof VALID_TYPES)[number]) ? (typeRaw as (typeof VALID_TYPES)[number]) : undefined)
     );
 
-    // Oy sayısı (Canny `Votes`/`upvotes`) — en çok oy metriği doğru çıksın.
+    // Oy sayısı (`Votes`/`upvotes` sütunu) — en çok oy metriği doğru çıksın.
     const votesRaw = canonical.indexOf("votes") >= 0
       ? parseInt((row[canonical.indexOf("votes")] ?? "").replace(/\D/g, ""), 10)
       : 0;
@@ -236,7 +236,7 @@ export async function importPosts(
         .returning({ id: posts.id });
       existingTitles.add(titleKey);
 
-      // Canny'den gelen oy sayısı → sentetik oy satırları (portal metrik doğru).
+      // Dış araçtan gelen oy sayısı → sentetik oy satırları (portal metrik doğru).
       if (created?.id && voteCount > 0) {
         await importVotes(created.id, voteCount, db);
       }
@@ -287,17 +287,17 @@ function parseTags(raw: string): string[] {
     .slice(0, 20);
 }
 
-// Canny'den gelen yorum sayısı: body yok (CSV sadece sayı) → gerçek yorum
+// Dış araçtan gelen yorum sayısı: body yok (CSV sadece sayı) → gerçek yorum
 // satırı üretilemez, açıklamanın sonuna aktarım iç notu olarak eklenir.
 function buildDescription(description: string, fallbackTitle: string, commentCount: number): string {
   const base = description || fallbackTitle || "";
   if (commentCount > 0) {
-    return `${base}\n\n> *Canny'den ${commentCount} yorum aktarıldı.*`;
+    return `${base}\n\n> *${commentCount} yorum içe aktarımdan taşındı.*`;
   }
   return base;
 }
 
-// Canny `Votes` sayısını `votes` tablosuna gerçek satırlar olarak taşır.
+// `Votes` sayısını `votes` tablosuna gerçek satırlar olarak taşır.
 // Her oy için benzersiz sentetik kullanıcı (unique(user_id, post_id) gereği).
 // Batch insert ile satır sayısı optimize edilir.
 async function importVotes(
@@ -320,7 +320,7 @@ async function importVotes(
         rows.map((r) => ({
           id: r.userId,
           email: `${r.userId}@feedl.import`,
-          name: "Canny Voter",
+          name: "Imported Voter",
           role: "customer" as const,
         })),
       )

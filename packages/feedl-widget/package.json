@@ -13,7 +13,7 @@
     }
   },
   "sideEffects": false,
-  "keywords": ["feedl", "feedback", "widget", "embed", "canny", "roadmap"],
+  "keywords": ["feedl", "feedback", "widget", "embed", "roadmap", "changelog"],
   "license": "MIT",
   "publishConfig": {
     "access": "public"

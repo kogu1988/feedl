@@ -14,7 +14,7 @@ const PUBLIC_EXACT = new Set([
   "/",
   "/pricing",
   // SEO: ticari niyetli karşılaştırma sayfası + kurulum rehberi.
-  "/canny-alternative",
+  "/alternative",
   "/how-to-collect-feedback",
   // Ürün turu + demo.
   "/demo",

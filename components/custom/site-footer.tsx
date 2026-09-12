@@ -20,9 +20,9 @@ const PRIVATE_APP_PREFIXES = [
 
 // Tek sıra, tek standart: şirket/legal + SEO kaynak linkleri AYNI listede ve
 // AYNI stille (aralarında görsel fark yok). SEO linkleri orphan sayfaları
-// (canny-alternative / how-to-collect-feedback) anonim ziyaretçiye ulaştırır.
+// (alternative / how-to-collect-feedback) anonim ziyaretçiye ulaştırır.
 const footerLinks = [
-  { href: "/canny-alternative", label: "Canny Alternatifi" },
+  { href: "/alternative", label: "Neden feedl" },
   { href: "/how-to-collect-feedback", label: "Geri Bildirim Rehberi" },
   { href: "/contact", label: "İletişim" },
   { href: "/privacy", label: "Gizlilik Politikası" },

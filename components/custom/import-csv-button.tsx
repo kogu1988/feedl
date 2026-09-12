@@ -5,14 +5,18 @@ import { UploadIcon, Loader2Icon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
-// Sprint 59/62 (madde — import): Dashboard'daki "CSV İçe Aktar" + "Canny'den
-// İçe Aktar" butonları. Dosya seç → multipart POST /api/admin/import →
-// sonuç göster. `format=csv` export CSV başlıklarını, `format=canny` Canny
-// export CSV başlıklarını (name/headline/body/state/category) eşler.
+// Sprint 59/62 (madde — import): Dashboard'daki "CSV İçe Aktar" +
+// "Başka araçtan taşı" butonları. Dosya seç → multipart POST /api/admin/import →
+// sonuç göster. `format=csv` bizim export başlıklarını, `format=other-tool`
+// başka bir geri bildirim aracının export başlıklarını
+// (name/headline/body/state/category) eşler.
+//
+// 2026-09-12 — Format adı ve buton metni araç-bağımsızdır; belirli bir rakip
+// markanın adı üründe geçmez (yasal risk).
 export function ImportCsvButton() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
-  const [format, setFormat] = useState<"csv" | "canny">("csv");
+  const [format, setFormat] = useState<"csv" | "other-tool">("csv");
   const [result, setResult] = useState<{
     created: number;
     skippedDuplicates: number;
@@ -20,7 +24,7 @@ export function ImportCsvButton() {
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  function openPicker(f: "csv" | "canny") {
+  function openPicker(f: "csv" | "other-tool") {
     setFormat(f);
     setError(null);
     inputRef.current?.click();
@@ -66,16 +70,17 @@ export function ImportCsvButton() {
         )}
         CSV İçe Aktar
       </Button>
-      <Button variant="outline" onClick={() => openPicker("canny")} disabled={busy}>
-        {busy && format === "canny" ? (
+      <Button variant="outline" onClick={() => openPicker("other-tool")} disabled={busy}>
+        {busy && format === "other-tool" ? (
           <Loader2Icon className="animate-spin" aria-hidden="true" />
         ) : (
           <UploadIcon aria-hidden="true" />
         )}
-        Move from Canny
+        Başka araçtan taşı
       </Button>
       <span className="text-xs text-muted-foreground">
-        Canny export&apos;unu yükle — oy, yorum ve yazar feedl&apos;e taşınır.
+        Başka bir araçtan aldığın CSV&apos;yi yükle — oy, yorum ve yazar
+        feedl&apos;e taşınır.
       </span>
       <input
         ref={inputRef}

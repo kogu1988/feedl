@@ -6,7 +6,7 @@ const PUBLIC_PAGES: Array<{ path: string; priority: string; freq: string }> = [
   { path: "/", priority: "1.0", freq: "weekly" },
   { path: "/pricing", priority: "0.8", freq: "monthly" },
   { path: "/demo", priority: "0.8", freq: "monthly" },
-  { path: "/canny-alternative", priority: "0.7", freq: "monthly" },
+  { path: "/alternative", priority: "0.7", freq: "monthly" },
   { path: "/how-to-collect-feedback", priority: "0.7", freq: "monthly" },
   { path: "/changelog", priority: "0.7", freq: "weekly" },
   { path: "/portal", priority: "0.7", freq: "weekly" },

@@ -3,7 +3,7 @@ import { NextRequest } from "next/server";
 
 // SEO-regresyon: sitemap.xml ve robots.txt App Router route handler'ları.
 // Bunlar SEO için kritik (crawl + indexability) ve yeni SEO sayfaları
-// (canny-alternative / how-to-collect-feedback) sitemap'e alınmalı;
+// (alternative / how-to-collect-feedback) sitemap'e alınmalı;
 // robots, indexlenmemesi gereken yüzeyleri (auth/api/widget) disallow eder.
 import { GET as sitemapGET } from "@/app/sitemap.xml/route";
 import { GET as robotsGET } from "@/app/robots.txt/route";
@@ -20,7 +20,7 @@ describe("sitemap.xml", () => {
     expect(res.status).toBe(200);
     const xml = await res.text();
     expect(xml).toContain("https://feedl.app/");
-    expect(xml).toContain("https://feedl.app/canny-alternative");
+    expect(xml).toContain("https://feedl.app/alternative");
     expect(xml).toContain("https://feedl.app/how-to-collect-feedback");
     expect(xml).toContain("https://feedl.app/roadmap");
     expect(xml).toContain("<loc>"); // urlset formatı

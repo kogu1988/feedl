@@ -5,14 +5,20 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { generateCanonical } from "@/lib/seo";
 
-// SEO: benzersiz title + canonical (root template "%s · feedl" "feedl"i bir kez
-// ekler). Bu sayfa "Canny alternative" ticari niyetini hedefler.
+// 2026-09-12 — Bu sayfa daha önce belirli bir rakip aracın adıyla
+// konumlandırılmıştı (rota dahil). Marka adı geçen karşılaştırma hem yasal
+// risk taşıyor hem de ürünü "X'in yerine geçen araç" olarak tanımlıyordu.
+// Şimdi araç-bağımsız: "alternatif" niyetini korur, rakip adı anmaz.
+// Eski (marka adı taşıyan) rota, next.config.ts'teki kalıcı yönlendirme ile
+// buraya devredilir: indekslenmiş linkler kırılmasın, SEO değeri taşınsın.
+//
+// SEO: benzersiz title + canonical (root template "%s · feedl").
 export async function generateMetadata(): Promise<import("next").Metadata> {
   const canonical = await generateCanonical();
   return {
-    title: "Canny Alternative",
+    title: "Geri bildirim aracı alternatifi",
     description:
-      "Canny yerine feedl: müşteri isteklerini AI ile sınıflandır, gelir skoruyla önceliklendir ve ücretsiz başla. Editör başına değil ekip başına fiyatlandırma.",
+      "Müşteri isteklerini AI ile sınıflandıran, gelir bağlamıyla önceliklendiren hosted geri bildirim platformu. Ücretsiz başla — kullanıcı başına değil ekip başına fiyatlandırma.",
     ...canonical,
   };
 }
@@ -38,12 +44,16 @@ const DIFFERENCES = [
 
 const FAQ = [
   {
-    q: "feedl bir Canny alternatifi midir?",
-    a: "Evet. Feedl, Canny gibi müşteri geri bildirimini toplar, oylar, önceliklendirir ve duyurur; ancak bunu AI sınıflandırma, duygu analizi ve gelir skoruyla birlikte yapar.",
+    q: "feedl mevcut geri bildirim aracımın yerini alır mı?",
+    a: "Evet. Fikir toplama, oylama, önceliklendirme ve duyurma akışının tamamını tek platformda sunar; üzerine AI sınıflandırma, duygu analizi ve gelir bağlamını ekler.",
   },
   {
-    q: "Canny'den farkı nedir?",
-    a: "Feedl her içgörüde AI kullanır (etik, özet, duygu, benzerlik) ve oy + müşteri + fırsat değeriyle gelir skoru üretir. Ayrıca kullanıcı başına değil ekip başına fiyatlandırır.",
+    q: "Diğer araçlardan farkı nedir?",
+    a: "Feedl her içgörüde AI kullanır (etiket, özet, duygu, benzerlik) ve oy + müşteri + fırsat değeriyle gelir skoru üretir. Ayrıca kullanıcı başına değil ekip başına fiyatlandırır.",
+  },
+  {
+    q: "Mevcut verilerimi taşıyabilir miyim?",
+    a: "Evet. CSV içe aktarma ile fikirleri, oyları, yorum sayısını ve yazarları taşıyabilirsin; dışa aktarma da CSV olarak çalışır.",
   },
   {
     q: "Ücretsiz bir plan var mı?",
@@ -55,7 +65,7 @@ const FAQ = [
   },
   {
     q: "Verilerimiz güvende mi?",
-    a: "Feedl Clerk ile kimlik doğrular, Neon Postgres'te veri tutar ve entegrasyon secret'larını şifreler (AES-256-GCM). Data, workspace'e göre izole edilir.",
+    a: "Feedl Clerk ile kimlik doğrular, Neon Postgres'te veri tutar ve entegrasyon secret'larını şifreler (AES-256-GCM). Veri, workspace'e göre izole edilir.",
   },
 ];
 
@@ -68,23 +78,24 @@ function CheckItem({ text }: { text: string }) {
   );
 }
 
-export default function CannyAlternativePage() {
+export default function AlternativePage() {
   const base = process.env.NEXT_PUBLIC_APP_URL ?? "https://feedl.app";
+  const pageTitle = "Geri bildirim aracı alternatifi";
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
       {
         "@type": "WebPage",
-        name: "feedl — Canny Alternative",
+        name: `feedl — ${pageTitle}`,
         description:
-          "Canny yerine feedl: müşteri isteklerini AI ile sınıflandır, gelir skoruyla önceliklendir, ücretsiz başla.",
-        url: `${base}/canny-alternative`,
+          "Müşteri isteklerini AI ile sınıflandır, gelir bağlamıyla önceliklendir, ücretsiz başla.",
+        url: `${base}/alternative`,
       },
       {
         "@type": "BreadcrumbList",
         itemListElement: [
           { "@type": "ListItem", position: 1, name: "Ana sayfa", item: base },
-          { "@type": "ListItem", position: 2, name: "Canny Alternative", item: `${base}/canny-alternative` },
+          { "@type": "ListItem", position: 2, name: pageTitle, item: `${base}/alternative` },
         ],
       },
       {
@@ -109,11 +120,11 @@ export default function CannyAlternativePage() {
       <section className="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-14">
         <div>
           <h1 className="max-w-xl text-3xl font-bold tracking-tight sm:text-4xl">
-            Canny yerine: müşteri isteklerini AI ile, veriyle önceliklendir.
+            Müşteri isteklerini AI ile, veriyle önceliklendir.
           </h1>
           <p className="mt-4 max-w-xl text-lg text-muted-foreground">
-            Canny&apos;ye ücretsiz, hosted bir alternatif — toplama ve oylama
-            akışını AI sınıflandırma, duygu analizi ve gelir skoruyla birleştirir.
+            Hosted bir geri bildirim platformu — toplama ve oylama akışını AI
+            sınıflandırma, duygu analizi ve gelir bağlamıyla birleştirir.
             Kurulum yok, ücretsiz başla.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -141,7 +152,7 @@ export default function CannyAlternativePage() {
       <section className="mt-20 sm:mt-24">
         <h2 className="text-2xl font-bold tracking-tight">Feedl&apos;de ne var</h2>
         <p className="mt-2 max-w-2xl text-muted-foreground">
-          Canny&apos;den bildiğin çekirdek akışın tamamı, fazlasıyla.
+          İhtiyacın olan çekirdek akışın tamamı, fazlasıyla.
         </p>
         <ul className="mt-6 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map((f) => (
@@ -163,7 +174,7 @@ export default function CannyAlternativePage() {
         </div>
       </section>
 
-      {/* Fiyatlandırma özeti */}
+      {/* Fiyatlandırma özeti — /pricing ile AYNI dil (tek kaynak: PLAN_POSITIONING) */}
       <section className="mt-20 sm:mt-24">
         <h2 className="text-2xl font-bold tracking-tight">Basit fiyatlandırma</h2>
         <div className="mt-6 grid gap-6 md:grid-cols-2">
@@ -173,7 +184,7 @@ export default function CannyAlternativePage() {
             <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
               <li>1 board · 1 üye · 50 takipçi</li>
               <li>Fikir + oy + yorum</li>
-              <li>AI etiketleme & tek post özeti</li>
+              <li>AI etiketleme, özet ve tekrar tespiti</li>
               <li>Widget gömülü</li>
             </ul>
           </div>
@@ -184,7 +195,7 @@ export default function CannyAlternativePage() {
               <li>Entegrasyonlar (Slack, Zendesk, Linear, Jira)</li>
               <li>Özel alan adı + marka kaldırma</li>
               <li>API + webhook + public portal</li>
-              <li>Gelir skoru & gelişmiş planlama</li>
+              <li>Gelir skoru & raporu (MRR + fırsatlar)</li>
             </ul>
           </div>
         </div>

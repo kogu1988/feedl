@@ -14,7 +14,7 @@ describe("isPublicPath — public yüzeyler", () => {
     for (const p of [
       "/",
       "/pricing",
-      "/canny-alternative",
+      "/alternative",
       "/how-to-collect-feedback",
       "/demo",
       "/privacy",
