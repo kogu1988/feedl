@@ -61,7 +61,10 @@ beforeEach(() => {
   h.inserts = [];
 });
 
-describe("webhook secret — at-rest şifreleme", () => {
+// `vi.resetModules()` + ağır modül grafiği import'u (admin webhooks route tüm
+// bağımlılıklarını yeniden yükler) bu testi paralel yükte ~5s'ye taşıyabiliyor;
+// varsayılan 5s timeout flake üretiyordu (2026-09-12'de iki kez görüldü).
+describe("webhook secret — at-rest şifreleme", { timeout: 30_000 }, () => {
   it("secret şifreli yazılır, teslimat için düz olarak çözülür", async () => {
     const { POST } = await import("@/app/api/admin/webhooks/route");
     const res = await POST(

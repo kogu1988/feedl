@@ -2,7 +2,6 @@ import { and, asc, count, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import { NonRetriableError } from "inngest";
 
 import {
-  effectivePlanKey,
   effectivePlanKeyForWorkspace,
   resolveAccountPlanKey,
 } from "@/lib/paddle";
@@ -1153,7 +1152,11 @@ export const weeklyDigest = inngest.createFunction(
           ...new Map(team.map((member) => [member.email, member])).values(),
         ];
 
-        const plan = effectivePlanKey(ws, now);
+        // Aday listesi hesap düzeyi kurala göre süzüldü, ama İÇ kontrol de
+        // aynı kaynaktan okumalı: ham `effectivePlanKey(ws)` Free planlı bir
+        // workspace'te (owner'ı Pro olsa bile) "free" der ve özeti sessizce
+        // keserdi (2026-09-12).
+        const plan = await effectivePlanKeyForWorkspace(ws.id);
         const newPostCount = Number(newPosts);
         if (
           !shouldSendDigest({
