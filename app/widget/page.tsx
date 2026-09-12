@@ -1,16 +1,13 @@
 import Link from "next/link";
-import { eq } from "drizzle-orm";
 
 import { WidgetPanel } from "@/components/custom/widget-panel";
-import { getDb } from "@/lib/db";
 import {
   getWorkspaceId,
   resolveWorkspaceIdFromSlug,
   getWorkspaceBrand,
 } from "@/lib/db/workspace";
 import { getWidgetSubmissionSettings } from "@/lib/widget/submission";
-import { planFromString } from "@/lib/paddle";
-import { workspaces } from "@/lib/db/schema";
+import { effectivePlanKeyForWorkspace } from "@/lib/paddle";
 import { getWidgetSession } from "@/lib/widget/jwt";
 
 // Widget sayfası (plan.md Sprint 32): müşteri sitelerine gömülen iframe'in
@@ -56,15 +53,12 @@ export default async function WidgetPage({
   const { mode, anonymousVoting } = await getWidgetSubmissionSettings(workspaceId);
   const canVote = Boolean(session) || (mode === "anonymous" && anonymousVoting);
 
-  // Triage Pro özelliği: free'de "Pro" rozetiyle gösterilir.
+  // Triage Pro özelliği: free'de "Pro" rozetiyle gösterilir. 2026-09-12:
+  // hesap düzeyi Pro dahil (owner'ın başka bir Pro workspace'i varsa bu
+  // workspace de Pro'dur) — ham `workspaces.plan` okumak bunu atlıyordu.
   let isPro = false;
   try {
-    const [wsRow] = await getDb()
-      .select({ plan: workspaces.plan })
-      .from(workspaces)
-      .where(eq(workspaces.id, workspaceId))
-      .limit(1);
-    isPro = planFromString(wsRow?.plan) === "pro";
+    isPro = (await effectivePlanKeyForWorkspace(workspaceId)) === "pro";
   } catch {
     isPro = false;
   }

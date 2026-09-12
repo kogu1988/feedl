@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-import { eq } from "drizzle-orm";
-
 import { getDb } from "@/lib/db";
 import { getWorkspaceId, resolveWorkspaceIdFromSlug } from "@/lib/db/workspace";
 import { classifyWidgetMessage } from "@/lib/ai/analysis";
 import { getDefaultBoardId } from "@/lib/db/board";
-import { widgetTriages, posts, workspaces } from "@/lib/db/schema";
-import { effectivePlanKey } from "@/lib/paddle";
+import { widgetTriages, posts } from "@/lib/db/schema";
+import { effectivePlanKeyForWorkspace } from "@/lib/paddle";
 import { getWidgetSession } from "@/lib/widget/jwt";
 import { isOriginAllowed } from "@/lib/widget/origins";
 import { requestOrigin } from "@/lib/widget/http";
@@ -39,20 +37,14 @@ export async function POST(req: NextRequest) {
     // çerezi (tenant-aware getWorkspaceId) ile çöz. Triage Pro plan özelliği;
     // gate DOĞRU workspace'in planına göre çalışmalı (anonim/read-only iframe
     // dahil).
+    // Triage Pro plan özelliği; gate DOĞRU workspace'in ETKİN planına göre
+    // çalışmalı (anonim/read-only iframe dahil). 2026-09-12: ham
+    // `workspaces.plan` okumak hesap düzeyi Pro'yu atlıyordu (owner'ın başka
+    // bir Pro workspace'i varsa triage yanlışlıkla kilitleniyordu).
     const workspaceId =
       (await resolveWorkspaceIdFromSlug(req.nextUrl.searchParams.get("ws"))) ??
       (await getWorkspaceId());
-    const [wsRow] = await getDb()
-      .select({
-        plan: workspaces.plan,
-        paddleSubscriptionStatus: workspaces.paddleSubscriptionStatus,
-        paddleStatusChangedAt: workspaces.paddleStatusChangedAt,
-      })
-      .from(workspaces)
-      .where(eq(workspaces.id, workspaceId))
-      .limit(1);
-    // Dunning grace dahil (denetim K3) — Pro kapısı tek kaynaktan.
-    if (effectivePlanKey(wsRow ?? {}) !== "pro") {
+    if ((await effectivePlanKeyForWorkspace(workspaceId)) !== "pro") {
       return NextResponse.json(
         {
           success: false,

@@ -134,7 +134,18 @@ export function resolveAccountPlanKey(
 // Request-scoped memo: aynı istek içinde getPlanLimits bir kez DB okur
 // (plan limitleri sık sorulur; sayfa içinde kopya sorguyu önler).
 const fetchPlanLimits = cache(async () => {
-  const workspaceId = await getWorkspaceId();
+  return PLANS[await loadPlanKeyForWorkspace(await getWorkspaceId())];
+});
+
+// Etkin planın çekirdeği (CACHE YOK — Inngest/route handler gibi Next istek
+// bağlamı dışındaki yerlerden de güvenle çağrılır).
+//
+// 2026-09-12: bu fonksiyon `workspaces.plan` HAM okumasının yerini alır.
+// Hesap düzeyi kural (owner'ın başka bir Pro workspace'i) yalnız buradadır;
+// ham kolonu okuyan kapılar kuralı atlar — bu sınıf bug 2026-09-12'de 5 yerde
+// bulundu (custom domain ayarı, widget triage, widget sayfası, AI içgörüleri,
+// haftalık digest). Yeni Pro kapıları BUNU kullanmalıdır.
+async function loadPlanKeyForWorkspace(workspaceId: string): Promise<PlanKey> {
   const [row] = await getDb()
     .select({
       id: workspaces.id,
@@ -148,13 +159,21 @@ const fetchPlanLimits = cache(async () => {
 
   // Dunning grace dahil (denetim K3) — tüm Pro kapılarının tek kaynağı.
   const current: OwnedWorkspacePlanRow = row ?? { id: workspaceId };
-  if (effectivePlanKey(current) === "pro") return PLANS.pro;
+  if (effectivePlanKey(current) === "pro") return "pro";
 
   // Hesap düzeyi Pro: yalnız workspace Free İSE ek sorgu koşar (tek sorgu,
   // owner'ların sahip olduğu tüm workspace'lerin plan satırları).
   const owned = await loadPlanRowsOwnedByWorkspaceOwners(workspaceId);
-  return PLANS[resolveAccountPlanKey(current, owned)];
-});
+  return resolveAccountPlanKey(current, owned);
+}
+
+// Belirli bir workspace için etkin plan (hesap düzeyi kural dahil).
+// Pro kapıları ham `workspaces.plan` yerine bunu kullanır.
+export async function effectivePlanKeyForWorkspace(
+  workspaceId: string,
+): Promise<PlanKey> {
+  return loadPlanKeyForWorkspace(workspaceId);
+}
 
 export async function getPlanLimits() {
   return fetchPlanLimits();

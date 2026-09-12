@@ -11,7 +11,10 @@ import {
   getWorkspaceId,
 } from "@/lib/db/workspace";
 import { workspaces } from "@/lib/db/schema";
-import { effectivePlanKey } from "@/lib/paddle";
+import {
+  effectivePlanKey,
+  effectivePlanKeyForWorkspace,
+} from "@/lib/paddle";
 import { detachDomainFromProject } from "@/lib/vercel-domains";
 import {
   domainVerificationRecordName,
@@ -238,18 +241,11 @@ export async function PATCH(req: Request) {
 
     // Sprint 63x — custom domain PRO özelliği. Free workspace custom domain
     // ayarlayamaz (yalnızca boşaltabilir/kaldırabilir). Plan çözümü tek
-    // kaynaktan: lib/paddle effectivePlanKey (dunning grace dahil, denetim K3).
+    // kaynaktan: `effectivePlanKeyForWorkspace` (dunning grace + hesap düzeyi
+    // Pro dahil). 2026-09-12: ham `workspaces.plan` okumak, owner'ın başka bir
+    // Pro workspace'i olduğunda custom domain'i yanlışlıkla reddediyordu.
     if (parsed.data.customDomain !== undefined && parsed.data.customDomain !== null) {
-      const [row] = await getDb()
-        .select({
-          plan: workspaces.plan,
-          paddleSubscriptionStatus: workspaces.paddleSubscriptionStatus,
-          paddleStatusChangedAt: workspaces.paddleStatusChangedAt,
-        })
-        .from(workspaces)
-        .where(eq(workspaces.id, workspaceId))
-        .limit(1);
-      if (effectivePlanKey(row ?? {}) !== "pro") {
+      if ((await effectivePlanKeyForWorkspace(workspaceId)) !== "pro") {
         return NextResponse.json(
           { success: false, error: "Custom domain yalnızca Pro planda. Pro'ya yükselt." },
           { status: 403 },

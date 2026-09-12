@@ -13,7 +13,7 @@ import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { asc, count } from "drizzle-orm";
 import { boards, workspaces, workspaceMembers, type Workspace } from "@/lib/db/schema";
-import { planFromString } from "@/lib/paddle";
+import { getPlanLimits } from "@/lib/paddle";
 import { loadWorkspaceCreationAllowance } from "@/lib/db/workspace-limits";
 
 // Canlı veri: her istekte DB'den okunur.
@@ -61,6 +61,11 @@ export default async function WorkspacesPage() {
     );
     wsLoadError = true;
   }
+
+  // 2026-09-12: etkin plan `getPlanLimits()`'ten gelir (hesap düzeyi Pro dahil).
+  // Ham `workspaces.plan` okumak, owner'ın başka bir Pro workspace'i varsa
+  // custom domain kilidini yanlışlıkla açık bırakıyordu.
+  const isPro = (await getPlanLimits()).key === "pro";
 
   return (
     <main className="container mx-auto max-w-none p-4 sm:p-8">
@@ -121,7 +126,7 @@ export default async function WorkspacesPage() {
                     ? workspaceInfo.widgetSubmissionMode
                     : "signup",
               }}
-              isPro={planFromString(workspaceInfo.plan) === "pro"}
+              isPro={isPro}
             />
           </div>
         </section>

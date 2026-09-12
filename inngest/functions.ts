@@ -1,9 +1,10 @@
-import { and, asc, count, desc, eq, gte, inArray, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import { NonRetriableError } from "inngest";
 
 import {
-  DUNNING_GRACE_DAYS,
   effectivePlanKey,
+  effectivePlanKeyForWorkspace,
+  resolveAccountPlanKey,
 } from "@/lib/paddle";
 
 import { analyzeIdea, compareIdeas, normalizeTags } from "@/lib/ai/analysis";
@@ -46,6 +47,7 @@ import {
   tags,
   users,
   votes,
+  workspaceMembers,
   workspaces,
 } from "@/lib/db/schema";
 import {
@@ -932,18 +934,11 @@ export const corpusInsights = inngest.createFunction(
       // Sprint 63n — defense-in-depth: workspace artık pro değilse (downgrade
       // veya sırada bekleyen eski event) LLM çağrısı ÜRETME. Kuyrukta kalan bir
       // event bile maliyet doğurmaz; cache'e "pro gerekir" notu yazılır.
+      // 2026-09-12: etkin plan hesap düzeyi kuralı içerir (owner'ın başka bir
+      // Pro workspace'i varsa bu workspace de Pro) — ham `workspaces.plan`
+      // okumak, owner'ın diğer workspace'lerinde içgörüleri yanlışlıkla keserdi.
       const planKey = await step.run("check-plan", async () => {
-        const [row] = await db
-          .select({
-            plan: workspaces.plan,
-            paddleSubscriptionStatus: workspaces.paddleSubscriptionStatus,
-            paddleStatusChangedAt: workspaces.paddleStatusChangedAt,
-          })
-          .from(workspaces)
-          .where(eq(workspaces.id, workspaceId))
-          .limit(1);
-        // Dunning grace dahil (denetim K3).
-        return effectivePlanKey(row ?? {});
+        return effectivePlanKeyForWorkspace(workspaceId);
       });
       if (planKey !== "pro") {
         await step.run("store-pro-required", async () => {
@@ -1074,33 +1069,53 @@ export const weeklyDigest = inngest.createFunction(
   },
   async ({ step }) => {
     const candidates = await step.run("load-pro-workspaces", async () => {
-      // 2026-09-12 (denetim K3) — dunning grace'i SQL'de de uygula. Saklanan
-      // `plan` alanı ödeme sorununda 'free'ye çekildiği için yalnız
-      // `plan='pro'` filtrelemek GRACE'TEKİ müşteriyi dışarıda bırakırdı:
-      // Pro erişimi devam ederken haftalık özeti kesilirdi. Grace kuralı
-      // `effectivePlanKey` ile aynı: plan pro VEYA (ödeme sorunu + pencere içi).
-      const graceCutoff = new Date(
-        Date.now() - DUNNING_GRACE_DAYS * 24 * 60 * 60 * 1000,
-      );
-      return getDb()
-        .select({
-          id: workspaces.id,
-          name: workspaces.name,
-          plan: workspaces.plan,
-          paddleSubscriptionStatus: workspaces.paddleSubscriptionStatus,
-          paddleStatusChangedAt: workspaces.paddleStatusChangedAt,
-          lastSentAt: workspaces.digestLastSentAt,
-        })
-        .from(workspaces)
-        .where(
-          or(
-            eq(workspaces.plan, "pro"),
-            and(
-              inArray(workspaces.paddleSubscriptionStatus, ["past_due", "dunned"]),
-              gte(workspaces.paddleStatusChangedAt, graceCutoff),
-            ),
-          ),
+      // 2026-09-12 — hesap düzeyi Pro dahil: haftalık özet Pro özelliğidir
+      // (`shouldSendDigest`), ve artık "owner'ın başka bir Pro workspace'i
+      // varsa bu workspace de Pro" kuralı geçerli. Kural owner ilişkisi
+      // gerektirdiği için SQL'de tek ifadeyle yazılamaz; workspace tablosu
+      // küçük olduğundan plan satırları + owner eşlemesi çekilip JS'te
+      // değerlendirilir (haftada bir koşan bir iş için ölçüsüz değil).
+      // Dunning grace kuralı `resolveAccountPlanKey`/`effectivePlanKey`
+      // içindedir (denetim K3), burada tekrar yazılmaz.
+      const db = getDb();
+      const now = new Date();
+      const [all, ownerRows] = await Promise.all([
+        db
+          .select({
+            id: workspaces.id,
+            name: workspaces.name,
+            plan: workspaces.plan,
+            paddleSubscriptionStatus: workspaces.paddleSubscriptionStatus,
+            paddleStatusChangedAt: workspaces.paddleStatusChangedAt,
+            lastSentAt: workspaces.digestLastSentAt,
+          })
+          .from(workspaces),
+        db
+          .select({
+            workspaceId: workspaceMembers.workspaceId,
+            userId: workspaceMembers.userId,
+          })
+          .from(workspaceMembers)
+          .where(eq(workspaceMembers.role, "owner")),
+      ]);
+
+      const ownedByUser = new Map<string, string[]>();
+      for (const row of ownerRows) {
+        const list = ownedByUser.get(row.userId);
+        if (list) list.push(row.workspaceId);
+        else ownedByUser.set(row.userId, [row.workspaceId]);
+      }
+
+      return all.filter((ws) => {
+        const ownerIds = ownerRows
+          .filter((row) => row.workspaceId === ws.id)
+          .map((row) => row.userId);
+        const ownedIds = new Set(
+          ownerIds.flatMap((userId) => ownedByUser.get(userId) ?? []),
         );
+        const ownedRows = all.filter((candidate) => ownedIds.has(candidate.id));
+        return resolveAccountPlanKey(ws, ownedRows, now) === "pro";
+      });
     });
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://feedl.app";
