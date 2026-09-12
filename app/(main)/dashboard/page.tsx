@@ -179,19 +179,75 @@ export default async function DashboardPage({
   let onboardingState: Awaited<ReturnType<typeof loadOnboardingState>> | null = null;
 
   try {
-    // Sprint 59 (onboarding): "Başlarken" checklist'inin durumu.
-    onboardingState = await loadOnboardingState();
-    // Sprint 39: istatistikler agregat sorgudan; tablo offset/limit ile
-    // tek sayfa çeker. Durum filtresi artık sunucuda uygulanır — client-
-    // tarafı filtre sayfalanmış listede yanlış sonuç verirdi.
-    const statsData = await loadPostStats(tagFilter);
+    // 2026-09-12 (denetim — TTFB): BAĞIMSIZ yükleyiciler artık PARALEL.
+    //
+    // Önceden 16 `await` sıralıydı; neon-http her sorgu için ayrı HTTP
+    // gidiş-dönüşü yaptığından BOŞ bir veritabanında bile TTFB 0.68–1.12s
+    // ölçülüyordu. Bağımlılık grafiği (koddan çıkarıldı):
+    //   [bağımsız ×12] → countPosts → loadPosts → (customerCounts, revenue)
+    //
+    // `countPosts → loadPosts` bağımlılığı BİLİNÇLİ korunur: tablo offset'i
+    // sayfa clamp'ine (`currentPage = min(requestedPage, totalPages)`) bağlı;
+    // clamp'i kaldırmak aralık dışı sayfada boş liste gösterirdi.
+    //
+    // Semantik korunur: tek `try` içinde ilk hata `loadError = true` yapıp
+    // kalanı atlıyordu; `Promise.all` de ilk hatada reject eder. `getWorkspaceId()`
+    // `React.cache`'li olduğu için eşzamanlı çağrılar TEK okumayı paylaşır —
+    // paralellik ek DB yükü doğurmaz.
+    const [
+      onboardingRes,
+      statsData,
+      totalCountRes,
+      tagOptionsRes,
+      viewsRes,
+      changelogRes,
+      plannerRes,
+      inboxRes,
+      apiKeyRes,
+      webhookRes,
+      boardRes,
+      weeklyRes,
+      topRevenueRes,
+    ] = await Promise.all([
+      loadOnboardingState(),
+      // Sprint 39: istatistikler agregat sorgudan; tablo offset/limit ile tek
+      // sayfa çeker. Durum filtresi sunucuda uygulanır — client-tarafı filtre
+      // sayfalanmış listede yanlış sonuç verirdi.
+      loadPostStats(tagFilter),
+      countDashboardPosts(tagFilter, statusFilter, activeBoard?.id, deviceFilter),
+      loadTagOptions(),
+      loadSavedViews(),
+      loadChangelogData(),
+      loadPlannerData(),
+      loadInboxSuggestions(),
+      loadApiKeys(),
+      loadWebhooks(),
+      listBoards(),
+      loadWeeklyCounts(rangeDays),
+      // Gelir skoru Pro özelliği: Free'de bu sorgu HİÇ koşmaz.
+      isPro ? loadTopRevenuePosts(tagFilter) : Promise.resolve(topRevenuePosts),
+    ]);
+
+    onboardingState = onboardingRes;
     postStats = statsData.stats;
     sentimentCounts = statsData.sentimentCounts;
     topPosts = statsData.topPosts;
-    totalCount = await countDashboardPosts(tagFilter, statusFilter, activeBoard?.id, deviceFilter);
+    topRevenuePosts = topRevenueRes;
+    totalCount = totalCountRes;
     totalPages =
       per === "all" ? 1 : Math.max(1, Math.ceil(totalCount / perSize));
     currentPage = Math.min(requestedPage, totalPages);
+    tagOptions = tagOptionsRes;
+    views = viewsRes;
+    changelogData = changelogRes;
+    plannerData = plannerRes;
+    inboxSuggestions = inboxRes;
+    apiKeyItems = apiKeyRes;
+    webhookItems = webhookRes;
+    boardItems = boardRes;
+    weeklyCounts = weeklyRes;
+
+    // Dalga 2 — `rows`'a bağlı iki yükleyici, birbirinden bağımsız (paralel).
     rows = await loadPosts(
       tagFilter,
       statusFilter,
@@ -201,21 +257,14 @@ export default async function DashboardPage({
       deviceFilter,
       sortFilter,
     );
-    customerCountByPost = await loadCustomerCounts(rows.map((row) => row.id));
-    // Gelir skoru Pro özelliği (2026-09-12): Free'de bağlam HİÇ yüklenmez.
-    if (isPro) {
-      revenueContexts = await loadRevenueContexts(rows.map((row) => row.id));
-      topRevenuePosts = await loadTopRevenuePosts(tagFilter);
-    }
-    tagOptions = await loadTagOptions();
-    views = await loadSavedViews();
-    changelogData = await loadChangelogData();
-    plannerData = await loadPlannerData();
-    inboxSuggestions = await loadInboxSuggestions();
-    apiKeyItems = await loadApiKeys();
-    webhookItems = await loadWebhooks();
-    boardItems = await listBoards();
-    weeklyCounts = await loadWeeklyCounts(rangeDays);
+    const [countsRes, revenueRes] = await Promise.all([
+      loadCustomerCounts(rows.map((row) => row.id)),
+      isPro
+        ? loadRevenueContexts(rows.map((row) => row.id))
+        : Promise.resolve(revenueContexts),
+    ]);
+    customerCountByPost = countsRes;
+    revenueContexts = revenueRes;
   } catch (err) {
     console.error(
       "Dashboard list failed:",
