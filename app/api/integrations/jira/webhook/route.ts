@@ -17,6 +17,7 @@ import { resolveIntegrationByUrlToken } from "@/lib/integrations";
 import { toWidgetUserId } from "@/lib/widget/jwt";
 import { postCreatedEventSchema } from "@/lib/validations/events";
 import { inngest } from "@/inngest/client";
+import { enforceInboundWebhookRateLimit } from "@/lib/rate-limit";
 
 // Sprint 57 (madde 2) — Jira webhook. Automation/Webhook → Issue
 // created/updated → AI triage → feedback oluştur. Doğrulama custom header
@@ -24,6 +25,10 @@ import { inngest } from "@/inngest/client";
 // post edilmez.
 export async function POST(req: NextRequest) {
   try {
+    // Rate limit ÖNCE (2026-09-12 incelemesi: bu uçta hiç limit yoktu).
+    const rateLimited = await enforceInboundWebhookRateLimit(req, "jira");
+    if (rateLimited) return rateLimited;
+
     // Per-workspace context (Sprint 63g): ?ws&t varsa workspace_integrations'tan çöz.
     const { searchParams } = req.nextUrl;
     const wsParam = searchParams.get("ws");

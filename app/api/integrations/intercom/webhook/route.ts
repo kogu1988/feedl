@@ -21,6 +21,7 @@ import { resolveIntegrationByUrlToken } from "@/lib/integrations";
 import { toWidgetUserId } from "@/lib/widget/jwt";
 import { postCreatedEventSchema } from "@/lib/validations/events";
 import { inngest } from "@/inngest/client";
+import { enforceInboundWebhookRateLimit } from "@/lib/rate-limit";
 
 // Sprint 48r — Intercom webhook. Developer Hub Webhooks → konuşma/ticket
 // olayları (`conversation.user.created`, `ticket.created`/`.updated`) →
@@ -29,6 +30,10 @@ import { inngest } from "@/inngest/client";
 // `X-Intercom-Signature` desteklenir.
 export async function POST(req: NextRequest) {
   try {
+    // Rate limit ÖNCE (2026-09-12 incelemesi: bu uçta hiç limit yoktu).
+    const rateLimited = await enforceInboundWebhookRateLimit(req, "intercom");
+    if (rateLimited) return rateLimited;
+
     // Per-workspace context (Sprint 63g): ?ws&t varsa workspace_integrations'tan çöz.
     const { searchParams } = req.nextUrl;
     const wsParam = searchParams.get("ws");

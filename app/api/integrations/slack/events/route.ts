@@ -11,6 +11,7 @@ import { posts, users } from "@/lib/db/schema";
 import { toWidgetUserId } from "@/lib/widget/jwt";
 import { postCreatedEventSchema } from "@/lib/validations/events";
 import { inngest } from "@/inngest/client";
+import { enforceInboundWebhookRateLimit } from "@/lib/rate-limit";
 
 // Sprint 48o — Slack Events API webhook. Slack app bu URL'ye mesaj event'i
 // POST eder; imza doğrulanır, message → AI triage → feedback oluşturulur.
@@ -20,6 +21,10 @@ import { inngest } from "@/inngest/client";
 // dönük uyumlu).
 export async function POST(req: NextRequest) {
   try {
+    // Rate limit ÖNCE (2026-09-12 incelemesi: bu uçta hiç limit yoktu).
+    const rateLimited = await enforceInboundWebhookRateLimit(req, "slack");
+    if (rateLimited) return rateLimited;
+
     // Per-workspace context: ?ws&t varsa workspace_integrations'tan çöz.
     const { searchParams } = req.nextUrl;
     const wsParam = searchParams.get("ws");

@@ -17,10 +17,7 @@ import { decryptSecret } from "@/lib/encrypt";
 import { toWidgetUserId } from "@/lib/widget/jwt";
 import { postCreatedEventSchema } from "@/lib/validations/events";
 import { inngest } from "@/inngest/client";
-
-// Per-workspace webhook'ta workspace id override'ı (host-tabanlı
-// getWorkspaceId webhook'ta çalışmaz; ?ws= slug'ından çözeriz).
-let workspaceIdOverride: string | null = null;
+import { enforceInboundWebhookRateLimit } from "@/lib/rate-limit";
 
 // Sprint 56/58 (madde 2) — Linear webhook. Workspace webhook URL →
 // Issue/Comment/CustomerNeed → AI triage → feedback. Doğrulama
@@ -30,15 +27,37 @@ let workspaceIdOverride: string | null = null;
 // LINEAR_WEBHOOK_SECRET + default workspace (mevcut manuel webhook).
 export async function POST(req: NextRequest) {
   try {
+    // Rate limit ÖNCE: imza/iş kuralı maliyetinden önce flood'u reddet.
+    const rateLimited = await enforceInboundWebhookRateLimit(req, "linear");
+    if (rateLimited) return rateLimited;
+
     const rawBody = await req.text();
     const signature = req.headers.get("x-linear-signature") ?? "";
 
     // Per-workspace çözümleme (Sprint 58).
+    //
+    // DİKKAT: bu değişken İSTEK-LOKAL olmak ZORUNDA. 2026-09-12 kod
+    // incelemesinde modül seviyesinde (`let workspaceIdOverride`) tutulduğu ve
+    // hiçbir yerde sıfırlanmadığı görüldü; serverless'ta warm instance aynı
+    // modülü yeniden kullandığı için değer BİR SONRAKİ isteğe sızıyordu:
+    // `?ws=acme` isteğinden sonra gelen legacy (parametresiz) istek, kendi
+    // default workspace'i yerine acme'nin workspace'ine yazıyordu →
+    // cross-tenant yazma. Fonksiyon-lokal değişken her çağrıda kendi
+    // yığınında yaşar, sızıntı yapısal olarak imkânsız hale gelir.
+    // Regresyon testi: tests/lib/linear-webhook-tenant.test.ts
+    let resolvedWorkspaceId: string | null = null;
+
     const wsParam = req.nextUrl.searchParams.get("ws");
     const tokenParam = req.nextUrl.searchParams.get("t");
     if (wsParam && tokenParam) {
+      // `workspaces.id` ilk sorguda gelir — aynı slug'ı ikinci kez sorgulamaya
+      // gerek yok (eski kodda fazladan bir DB turu vardı).
       const [record] = await getDb()
-        .select({ id: workspaceIntegrations.id, webhookSecret: workspaceIntegrations.webhookSecret, urlToken: workspaceIntegrations.urlToken })
+        .select({
+          webhookSecret: workspaceIntegrations.webhookSecret,
+          urlToken: workspaceIntegrations.urlToken,
+          workspaceId: workspaces.id,
+        })
         .from(workspaceIntegrations)
         .innerJoin(workspaces, eq(workspaces.id, workspaceIntegrations.workspaceId))
         .where(
@@ -68,20 +87,7 @@ export async function POST(req: NextRequest) {
           { status: 401 },
         );
       }
-      // Workspace id'yi query'de taşı (getWorkspaceId host tabanlı — webhook
-      // bunu çözemez). slug→workspace id'yi yeniden bul.
-      const [wsRow] = await getDb()
-        .select({ id: workspaces.id })
-        .from(workspaces)
-        .where(eq(workspaces.slug, wsParam))
-        .limit(1);
-      if (!wsRow) {
-        return NextResponse.json(
-          { success: false, error: "Workspace bulunamadı." },
-          { status: 404 },
-        );
-      }
-      workspaceIdOverride = wsRow.id;
+      resolvedWorkspaceId = record.workspaceId;
     } else {
       // Geriye dönük: global secret + default workspace.
       if (!isLinearConfigured()) {
@@ -123,7 +129,7 @@ export async function POST(req: NextRequest) {
     let createdPostId: string | null = null;
     if (classification === "feedback") {
       // Per-workspace webhook'ta ?ws= slug'ından çözülen id; yoksa host tabanlı default.
-      const workspaceId = workspaceIdOverride ?? (await getWorkspaceId());
+      const workspaceId = resolvedWorkspaceId ?? (await getWorkspaceId());
       // Sprint 48q: aynı Linear Issue/Comment (id) tekrar post edilmesin.
       const sourceRef = data.id ? `linear:${data.id}` : null;
       if (sourceRef) {

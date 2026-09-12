@@ -53,3 +53,27 @@ export async function enforceRateLimit(
   }
   return { allowed: true, rl };
 }
+
+// Gelen (inbound) entegrasyon webhook'ları — Linear/Jira/Zendesk/Slack/Intercom
+// (2026-09-12 kod incelemesi: bu uçlarda HİÇ limit yoktu).
+//
+// Amaç normal sağlayıcı trafiğini kısmak DEĞİL: sağlayıcı IP'si başına geniş
+// bir tavan koymak. Her kabul edilen istek `classifyWidgetMessage` (LLM
+// çağrısı) tetiklediğinden, imza secret'ı sızarsa (ya da eski global secret
+// tahmin edilirse) sınırsız istek doğrudan maliyet amplifikasyonuna dönüşür.
+// Sağlayıcılar 429'da retry eder; tavan gerçek trafiğin çok üstünde seçildi.
+export const INBOUND_WEBHOOK_RATE_LIMIT = { limit: 300, windowSec: 60 } as const;
+
+// Aşıldıysa dönecek 429 yanıtını verir, aşılmadıysa null (akış devam eder).
+// İmza doğrulamasından ÖNCE çağrılır: flood'un en ucuz reddi.
+export async function enforceInboundWebhookRateLimit(
+  req: Request,
+  provider: string,
+): Promise<NextResponse | null> {
+  const rl = await enforceRateLimit(
+    `webhook:${provider}`,
+    clientIpFrom(req),
+    INBOUND_WEBHOOK_RATE_LIMIT,
+  );
+  return rl.allowed ? null : (rl.response ?? null);
+}
