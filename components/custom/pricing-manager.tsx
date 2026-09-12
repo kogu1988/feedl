@@ -26,6 +26,7 @@ import { CheckoutStatusBanner } from "@/components/custom/checkout-status";
 // components/custom/plan-config.ts). Free'de olan bir şey Pro gibi, Free'de
 // olmayan bir şey Free gibi anlatılmaz.
 const freeFeatures = [
+  "1 workspace",
   "1 board · 1 üye · 50 takipçi",
   "Fikir + oy + yorum",
   "AI etiketleme, özet ve tekrar tespiti",
@@ -39,7 +40,7 @@ const freeFeatures = [
 ];
 
 const proFeatures = [
-  "Sınırsız board · 10 üye · sınırsız takipçi",
+  "Sınırsız workspace & board · 10 üye · sınırsız takipçi",
   "Özel alan adı + marka kaldırma",
   "Entegrasyonlar (Slack, Zendesk, Intercom, Jira, Linear)",
   "AI içgörüleri (korpus analizi)",

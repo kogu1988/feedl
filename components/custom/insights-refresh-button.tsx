@@ -1,15 +1,21 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Loader2Icon, RefreshCwIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
 // Sprint 63l — "Yenile" butonu: POST /api/corpus-insights (Inngest arka planda)
-// sonra sayfayı yeniler. 63m: kaynak zorlamayı önlemek — `status === "pending"`
+// sonra içgörüler tazelenir. 63m: kaynak zorlamayı önlemek — `status === "pending"`
 // iken buton DEVRE DIŞI + spinner "AI içgörüleri hazırlanıyor."; ayrıca tıklama
 // sonrası busy (kısa cooldown) ile peşpeşe tıklama engellenir.
+//
+// 2026-09-12 (kullanıcı): `window.location.reload()` ile TAM SAYFA yenileniyordu
+// (beyaz flash, kaydırma konumu kaybı). `router.refresh()` sunucu bileşenlerini
+// yeniden çeker — aynı veri, ama sayfa yenilenmez.
 export function InsightsRefreshButton({ status }: { status: "idle" | "pending" | "done" | "error" }) {
+  const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,8 +33,9 @@ export function InsightsRefreshButton({ status }: { status: "idle" | "pending" |
         setBusy(false);
         return;
       }
-      // Başarılı: sayfayı yenile (server pending/done durumunu gösterir).
-      window.setTimeout(() => window.location.reload(), 400);
+      // Başarılı: sunucu bileşenleri tazele (pending/done durumu sunucudan gelir).
+      router.refresh();
+      setBusy(false);
     } catch {
       setError("Bağlantı hatası.");
       setBusy(false);

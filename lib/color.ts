@@ -48,6 +48,19 @@ export function hexToRgb(hex: string): [number, number, number] | null {
   return [r, g, b];
 }
 
+// "#ff5c35" | "ff5c35" | "FF5C35" → "#ff5c35" (küçük harf, # dahil).
+// Geçersizse null.
+//
+// Neden gerekli: `<input type="color">` YALNIZ `#rrggbb` biçimini kabul eder;
+// başka bir değer verilirse sessizce siyaha düşer. Kullanıcı marka rengini
+// serbest metin olarak yazabildiği için ("# olmadan da olur") gösterilen renk
+// kutusu ile metin arasındaki köprü bu normalize fonksiyonudur.
+export function normalizeHex(hex: string): string | null {
+  const value = hex.trim().replace(/^#/, "");
+  if (!/^[0-9a-fA-F]{6}$/.test(value)) return null;
+  return `#${value.toLowerCase()}`;
+}
+
 // Overlay renk: marka renginin şeffaf (soft/tint) varyantını döner.
 // `alpha` 0-1. Geçersiz marka renginde null. (F3: --brand-soft / --brand-tint.)
 export function brandOverlay(hex: string, alpha: number): string | null {

@@ -12,8 +12,9 @@ import {
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { asc, count } from "drizzle-orm";
-import { boards, workspaces, type Workspace } from "@/lib/db/schema";
+import { boards, workspaces, workspaceMembers, type Workspace } from "@/lib/db/schema";
 import { planFromString } from "@/lib/paddle";
+import { loadWorkspaceCreationAllowance } from "@/lib/db/workspace-limits";
 
 // Canlı veri: her istekte DB'den okunur.
 export const dynamic = "force-dynamic";
@@ -29,13 +30,16 @@ export default async function WorkspacesPage() {
   }
   // Veri indirme/silme yalnız owner'a açıktır (API de aynı kapıyı uygular).
   const isOwner = (await getDashboardScope()) === "owner";
+  // 2026-09-12 (kullanıcı kararı): Free hesap 1 workspace → "Yeni Workspace"
+  // butonu sınıra gelince kapanır (asıl kapı API'de).
+  const workspaceAllowance = await loadWorkspaceCreationAllowance(adminId);
 
   let items: Awaited<ReturnType<typeof loadWorkspaces>> = [];
   let loadError = false;
   let workspaceInfo: Workspace | null = null;
   let wsLoadError = false;
   try {
-    items = await loadWorkspaces();
+    items = await loadWorkspaces(adminId);
   } catch (err) {
     console.error(
       "WorkspacesPage load failed:",
@@ -84,6 +88,7 @@ export default async function WorkspacesPage() {
           <WorkspacesManager
             initial={items}
             activeWorkspaceId={workspaceInfo?.id ?? null}
+            canCreate={workspaceAllowance.allowed}
           />
         )}
       </div>
@@ -134,7 +139,11 @@ export default async function WorkspacesPage() {
   );
 }
 
-async function loadWorkspaces() {
+// 2026-09-12 (kullanıcı): liste artık kullanıcının ÜYE OLDUĞU workspace'lerle
+// sınırlı. Eskiden workspace'lerin tamamı dönüyordu — bir kiracının sahibi
+// başka kiracıların ad/slug/domain bilgisini görüyordu; üstelik liste workspace
+// SEÇİCİSİ olduğu için "erişebildiğin workspace'ler" doğru kapsamdır.
+async function loadWorkspaces(userId: string) {
   const rows = await getDb()
     .select({
       id: workspaces.id,
@@ -145,7 +154,12 @@ async function loadWorkspaces() {
       boardCount: count(boards.id),
     })
     .from(workspaces)
+    .innerJoin(
+      workspaceMembers,
+      eq(workspaceMembers.workspaceId, workspaces.id),
+    )
     .leftJoin(boards, eq(boards.workspaceId, workspaces.id))
+    .where(eq(workspaceMembers.userId, userId))
     .groupBy(workspaces.id)
     .orderBy(asc(workspaces.createdAt));
   return rows.map((row) => ({

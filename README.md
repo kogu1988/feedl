@@ -58,6 +58,8 @@ başlangıç — herkese açık bir topluluk portalı + gelir odaklı öncelikle
    o andan sonra ayarlar/veri/silme işlemleri o workspace'i hedefler. Aktif
    seçim `feedl_active_ws` çerezinde tutulur — bu çerez bir YETKİ BARIYERİ
    değil, yalnız routing ipucudur (yetki her istekte üyelikten doğrulanır).
+   **Free hesap 1 workspace** ile sınırlıdır (Pro'da sınırsız); liste yalnız
+   üye olduğun workspace'leri gösterir.
 8. **Public API + Webhook:** HMAC-SHA256 imzalı olaylar, anahtar erişimi.
 9. **Görsel geri bildirim & teknik bağlam:** Kullanıcı sayfada sorunlu noktayı
 işaretler (pin); cihaz/viewport/tarayıcı/OS otomatik eklenir, ekran görüntüsü
@@ -109,9 +111,9 @@ yüzeyinde webhook/API jargonu kullanma.
 
 ## Fiyatlandırma (bkz. `pricing/page.tsx` · `components/custom/plan-config.ts`)
 
-- **Free:** 1 board · 1 üye · 50 takipçi · "Powered by feedl" rozeti.
-- **Pro:** Sınırsız board · 10 üye · özel domain · marka kaldırma · sonuç kaydı
-  (outcome). Aylık/yıllık.
+- **Free:** 1 workspace · 1 board · 1 üye · 50 takipçi · "Powered by feedl" rozeti.
+- **Pro:** Sınırsız workspace & board · 10 üye · özel domain · marka kaldırma ·
+  sonuç kaydı (outcome). Aylık/yıllık.
 - Model: **ekip/board başına** sabit ücret (kullanıcı başına değil) + workspace
   kaynak limitleri. (Paddle **live** — aylık $19 / yıllık; ücretsiz plan gerçek.)
 
@@ -196,7 +198,7 @@ Notlar:
 ```bash
 npx tsc --noEmit  # tip kontrolü
 npm run lint      # ESLint
-npx vitest run    # 280 birim testi
+npx vitest run    # 285 birim testi
 npm run build     # üretim derlemesi
 npm run test:e2e  # Playwright + axe erişilebilirlik + auth akışı (çalışan sunucu gerekir)
 ```
@@ -205,7 +207,7 @@ npm run test:e2e  # Playwright + axe erişilebilirlik + auth akışı (çalışa
 
 | Katman | Sonuç | Kapsam |
 | :--- | :--- | :--- |
-| **Birim test** (`npm test`) | ✅ 44 dosya · **280 test geçti** | Saf mantık: renk/WCAG, sayfalama, CSV, şifreleme, rate-limit, Paddle imza+plan türetme, oy doğrulama, post-format, outcome kaydı (gelir ayrıştırma/biçimleme + API şeması), data-export kapsamı/redaksiyonu, post-search, widget-origins, widget gömme (body-bekleme), workspace-host çözümleme, AI içgörüleri, OpenRouter modelleri, e-posta teslimatı, haftalık digest e-postası + gönderim kararı, api-keys, davet e-postası, widget gönderim modu, free-plan oy limiti, **entegrasyon URL token doğrulaması**, **`getWorkspaceId` önceliği**, **middleware public allowlist'i** |
+| **Birim test** (`npm test`) | ✅ 45 dosya · **285 test geçti** | Saf mantık: renk/WCAG, sayfalama, CSV, şifreleme, rate-limit, Paddle imza+plan türetme, oy doğrulama, post-format, outcome kaydı (gelir ayrıştırma/biçimleme + API şeması), **workspace oluşturma limiti (Free 1 workspace)**, data-export kapsamı/redaksiyonu, post-search, widget-origins, widget gömme (body-bekleme), workspace-host çözümleme, AI içgörüleri, OpenRouter modelleri, e-posta teslimatı, haftalık digest e-postası + gönderim kararı, api-keys, davet e-postası, widget gönderim modu, free-plan oy limiti, **entegrasyon URL token doğrulaması**, **`getWorkspaceId` önceliği**, **middleware public allowlist'i** |
 | **Tenant izolasyonu** | ✅ `resolveWorkspaceByHost` öncelik (custom_domain > subdomain > varsayılan) + hata; `getWorkspaceId` sırası (widget > çerez > host) + modül-global önbellek regresyonu | `tests/lib/tenant-isolation.test.ts`, `tests/lib/workspace-precedence.test.ts` |
 | **Entegrasyon webhook token** | ✅ Zaman-sabit karşılaştırma; yanlış/boş/eksik token → null (handler 403); legacy yol uyarısı tekrarlamaz | `tests/lib/integration-url-token.test.ts` |
 | **Middleware yetki yüzeyi** | ✅ Açık allowlist fail-closed; önek sızması yok (`/api/adminx` kapalı); `/dashboard` + `/onboarding` korunur | `tests/lib/public-paths.test.ts` |

@@ -13,13 +13,16 @@
 //
 // Denetlenmiş plan matrisi (2026-09-12; KOD üzerinden doğrulandı ve kullanıcı
 // kararlarıyla kapılar eklendi):
-//  Free → 1 board · 1 üye · 50 takipçi; fikir+oy+yorum; AI etiketleme/özet/
-//         tekrar tespiti; yol haritası & changelog; toplu aksiyonlar &
-//         kayıtlı görünümler; widget; "Powered by feedl" rozeti.
-//  Pro  → kodda `requirePro` ile GATE'li: entegrasyonlar, AI içgörüleri
-//         (korpus analizi), **gizli (private) board** (`/api/admin/boards`),
-//         **gelir skoru & raporu** (`/dashboard/revenue` + dashboard skor
-//         sütunu) ve **onun girdisi: şirket MRR'ı + fırsatlar**
+//  Free → **1 workspace** · 1 board · 1 üye · 50 takipçi; fikir+oy+yorum; AI
+//         etiketleme/özet/tekrar tespiti; yol haritası & changelog; toplu
+//         aksiyonlar & kayıtlı görünümler; widget; "Powered by feedl" rozeti.
+//         Workspace sayısı sınırı API'de (`lib/db/workspace-limits.ts`): Free
+//         hesap 1 workspace, çünkü plan limitleri workspace BAŞINA ve aksi
+//         halde sınırsız Free workspace açıp "Pro = sınırsız board" dolanılırdı.
+//  Pro  → kodda `requirePro` ile GATE'li: **sınırsız workspace**, entegrasyonlar,
+//         AI içgörüleri (korpus analizi), **gizli (private) board**
+//         (`/api/admin/boards`), **gelir skoru & raporu** (`/dashboard/revenue`
+//         + dashboard skor sütunu) ve **onun girdisi: şirket MRR'ı + fırsatlar**
 //         (`/api/admin/companies` POST/PATCH'te mrr > 0,
 //         `/api/admin/opportunities*` tamamen), **sonuç (outcome) kaydı**
 //         (`/api/admin/post-outcomes` POST — yayına giren işin gerçekleşen

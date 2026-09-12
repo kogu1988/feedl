@@ -1,12 +1,16 @@
 import "server-only";
 
 import { NextResponse } from "next/server";
-import { asc, eq } from "drizzle-orm";
+import { asc, count, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { boards, workspaces, workspaceMembers } from "@/lib/db/schema";
+import {
+  FREE_WORKSPACE_LIMIT_MESSAGE,
+  loadWorkspaceCreationAllowance,
+} from "@/lib/db/workspace-limits";
 
 // Sprint 48g (madde 8) — çoklu workspace. Ana workspace (feedl) admin'i
 // yeni workspace oluşturur; her workspace kendi boards/posts/üyeleriyle
@@ -54,7 +58,12 @@ function isUniqueViolation(err: unknown): boolean {
   return false;
 }
 
-// GET /api/admin/workspaces — tüm workspace'ler (ana admin; board/üye sayaçları).
+// GET /api/admin/workspaces — kullanıcının ÜYE OLDUĞU workspace'ler.
+//
+// 2026-09-12 (kullanıcı): eskiden workspace'lerin TAMAMI dönüyordu (kullanıcı
+// filtresi yoktu) — yani bir kiracının sahibi, başka kiracıların ad/slug/domain
+// bilgisini görüyordu. Liste aynı zamanda workspace SEÇİCİSİ olduğu için kapsam
+// "erişebildiğin workspace'ler" olmalı.
 export async function GET() {
   try {
     const adminId = await getAdminUserId();
@@ -71,10 +80,24 @@ export async function GET() {
         slug: workspaces.slug,
         customDomain: workspaces.customDomain,
         createdAt: workspaces.createdAt,
+        // Arayüz `WorkspaceView.boardCount` bekler; bu alan eksikken yeni
+        // oluşturulan bir workspace listede "undefined board" gösteriyordu
+        // (2026-09-12 doğrulandı).
+        boardCount: count(boards.id),
       })
       .from(workspaces)
+      .innerJoin(
+        workspaceMembers,
+        eq(workspaceMembers.workspaceId, workspaces.id),
+      )
+      .leftJoin(boards, eq(boards.workspaceId, workspaces.id))
+      .where(eq(workspaceMembers.userId, adminId))
+      .groupBy(workspaces.id)
       .orderBy(asc(workspaces.createdAt));
-    return NextResponse.json({ success: true, data: rows });
+    return NextResponse.json({
+      success: true,
+      data: rows.map((row) => ({ ...row, boardCount: Number(row.boardCount) })),
+    });
   } catch (err) {
     console.error(
       "GET /api/admin/workspaces failed:",
@@ -97,6 +120,18 @@ export async function POST(req: Request) {
         { status: 403 },
       );
     }
+
+    // 2026-09-12 (kullanıcı kararı): Free hesap 1 workspace. Kural ve gerekçe:
+    // lib/db/workspace-limits.ts. Arayüz butonu kapatsa da kapı BURADA —
+    // istemci atlatılsa bile kaçak açılamaz.
+    const allowance = await loadWorkspaceCreationAllowance(adminId);
+    if (!allowance.allowed) {
+      return NextResponse.json(
+        { success: false, error: FREE_WORKSPACE_LIMIT_MESSAGE },
+        { status: 403 },
+      );
+    }
+
     let body: unknown;
     try {
       body = await req.json();

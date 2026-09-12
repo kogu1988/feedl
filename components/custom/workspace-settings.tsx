@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { AlertCircleIcon, BadgeCheckIcon, Loader2Icon } from "lucide-react";
+
+import { normalizeHex } from "@/lib/color";
 
 import { Notice } from "@/components/custom/notice";
 import { ProBadge } from "@/components/custom/pro";
@@ -46,6 +48,17 @@ export function WorkspaceSettings({
   const [name, setName] = useState(initial.name);
   const [customDomain, setCustomDomain] = useState(initial.customDomain ?? "");
   const [brandColor, setBrandColor] = useState(initial.brandColor ?? "#ff5c35");
+  // Renk kutusunun gösterdiği değer: metin geçerli bir hex ise onu, değilse son
+  // GEÇERLİ rengi kullanır. Böylece kullanıcı hex yazarken (henüz geçersizken)
+  // kutu siyaha düşüp titremez. Ref, render sırasında değil handler'da güncellenir.
+  const lastValidColor = useRef(normalizeHex(initial.brandColor ?? "") ?? "#ff5c35");
+  function updateBrandColor(next: string) {
+    setBrandColor(next);
+    const valid = normalizeHex(next);
+    if (valid) lastValidColor.current = valid;
+  }
+  const swatchColor =
+    normalizeHex(brandColor) ?? lastValidColor.current;
   const [logoUrl, setLogoUrl] = useState(initial.logoUrl ?? "");
   const [submissionMode, setSubmissionMode] = useState<
     "anonymous" | "email" | "signup"
@@ -281,16 +294,30 @@ export function WorkspaceSettings({
           <Input
             id="ws-color"
             value={brandColor}
-            onChange={(e) => setBrandColor(e.target.value)}
+            onChange={(e) => updateBrandColor(e.target.value)}
             placeholder="Örn: #ff5c35"
             maxLength={20}
             className="max-w-[180px]"
           />
-          <span
-            className="inline-block size-6 rounded-md border"
-            style={{ backgroundColor: brandColor }}
-            aria-hidden="true"
-          />
+          {/* Tıklanabilir renk kutusu: OS renk seçicisini açar (Chrome'da
+              damlalık da var — sayfadan renk alınabilir); seçilen hex metin
+              alanına yazılır. Kullanıcı hex'i elle yazdığında kutu otomatik
+              güncellenir (`swatchColor` türetilir). Geçersiz ara yazımlarda
+              kutu son GEÇERLİ renkte kalır — aksi halde her tuşta siyaha
+              düşer ve titrerdi. */}
+          <label
+            className="relative inline-flex size-8 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-md border ring-offset-2 focus-within:ring-3 focus-within:ring-ring/50"
+            style={{ backgroundColor: swatchColor }}
+            title="Renk seç"
+          >
+            <input
+              type="color"
+              value={swatchColor}
+              onChange={(e) => updateBrandColor(e.target.value)}
+              aria-label="Marka rengini seç"
+              className="absolute inset-0 size-full cursor-pointer opacity-0"
+            />
+          </label>
         </div>
         <p className="text-xs text-muted-foreground">
           6 haneli hex renk kodu — # ile veya # olmadan yazabilirsin (örn.

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { CheckIcon, Loader2Icon, PlusIcon, GlobeIcon } from "lucide-react";
 
 import { Notice } from "@/components/custom/notice";
+import { ProFeatureLock } from "@/components/custom/pro";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -38,10 +39,13 @@ export interface WorkspaceView {
 export function WorkspacesManager({
   initial,
   activeWorkspaceId,
+  canCreate,
 }: {
   initial: WorkspaceView[];
   // Aktif (üzerinde çalışılan) workspace — listede işaretlenir.
   activeWorkspaceId: string | null;
+  // Free plan 1 workspace ile sınırlıdır (asıl kapı API'de).
+  canCreate: boolean;
 }) {
   const router = useRouter();
   const [items, setItems] = useState<WorkspaceView[]>(initial);
@@ -124,11 +128,23 @@ export function WorkspacesManager({
         <p className="text-xs text-muted-foreground">
           {`${items.length} workspace · "Geç" ile aktif workspace'i seç`}
         </p>
-        <Button onClick={() => setOpen(true)}>
-          <PlusIcon aria-hidden="true" />
-          Yeni Workspace
-        </Button>
+        {canCreate ? (
+          <Button onClick={() => setOpen(true)}>
+            <PlusIcon aria-hidden="true" />
+            Yeni Workspace
+          </Button>
+        ) : null}
       </div>
+
+      {/* 2026-09-12 (kullanıcı kararı): Free hesap tek workspace. Butonu
+          gizlemek yetmez, NEDEN olmadığını ve nasıl açılacağını söyle. */}
+      {!canCreate ? (
+        <ProFeatureLock
+          title="Free plan 1 workspace ile sınırlıdır"
+          description="Her workspace kendi board limitini, üyelerini ve portalını ayrı tutar; bu yüzden ek workspace Pro'dadır."
+          compact
+        />
+      ) : null}
 
       {error && (
         <Notice>

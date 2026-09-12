@@ -1,8 +1,6 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { RefreshCwIcon } from "lucide-react";
 
 // Sprint 61 (corpus AI içgörüleri) — feedback korpusundan üretilen temalar,
 // trendler, hızlı kazanımlar, riskler ve ürün önerisi. LLM çıktısı gösterilir;
@@ -102,18 +100,5 @@ export function CorpusInsights({ data }: { data: CorpusInsightsView }) {
         </Card>
       )}
     </div>
-  );
-}
-
-export function RefreshInsightsButton() {
-  return (
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={() => window.location.reload()}
-    >
-      <RefreshCwIcon aria-hidden="true" />
-      Yenile
-    </Button>
   );
 }

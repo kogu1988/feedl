@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { initializePaddle, type Paddle } from "@paddle/paddle-js";
 
 import { getPlanEnv } from "@/components/custom/plan-config";
@@ -28,11 +29,12 @@ export interface UseCheckoutOptions {
   workspaceId?: string | null;
   workspaceSlug: string;
   // Ödeme tamamlanınca gidilecek yer (girişli kullanıcı → "/dashboard").
-  // Verilmezse mevcut sayfa yenilenir (billing kartındaki davranış).
+  // Verilmezse mevcut sayfa TAZELENİR (soft — tam sayfa yenileme yapılmaz).
   successRedirect?: string;
 }
 
 export function useCheckout(opts: UseCheckoutOptions) {
+  const router = useRouter();
   const [paddle, setPaddle] = useState<Paddle | undefined>();
   const [status, setStatus] = useState<CheckoutStatus>({ tone: "idle", message: "" });
   const completedRef = useRef(false);
@@ -80,12 +82,17 @@ export function useCheckout(opts: UseCheckoutOptions) {
   }, [paddleCustomerId]);
 
   // Aktivasyon tamamlanınca: hedef varsa oraya git (ör. satın alan girişli
-  // kullanıcı dashboard'a), yoksa mevcut sayfayı yenile.
+  // kullanıcı dashboard'a), yoksa mevcut sayfayı TAZELE.
+  //
+  // 2026-09-12 (kullanıcı): burada `window.location.reload()` vardı — ödeme
+  // sonrası tam sayfa yenileme (beyaz flash, kaydırma kaybı). Ödeme sonrası
+  // sunucu durumu değiştiği için veri gerçekten tazelenmeli; ama bunu
+  // `router.refresh()` ile yapmak yeterli.
   function finish(message: string, delayMs: number, redirect?: string) {
     setStatus({ tone: "success", message });
     window.setTimeout(() => {
-      if (redirect) window.location.assign(redirect);
-      else window.location.reload();
+      if (redirect) router.push(redirect);
+      router.refresh();
     }, delayMs);
   }
 
@@ -104,14 +111,14 @@ export function useCheckout(opts: UseCheckoutOptions) {
     const res = await pollProActivation();
     if (res.activated) {
       finish(
-        redirect ? "Pro aktif! Yönetim paneline yönlendiriliyorsun…" : "Pro aktif! Sayfa güncelleniyor…",
+        redirect ? "Pro aktif! Yönetim paneline yönlendiriliyorsun…" : "Pro aktif! Kart tazeleniyor…",
         1200,
         redirect,
       );
     } else {
       // Webhook gecikse bile Paddle onay ekranını kaldırıp güncel durumu göster.
       finish(
-        redirect ? "Ödemeniz alındı. Panele yönlendiriliyorsun…" : "Ödemeniz alındı. Sayfa güncelleniyor…",
+        redirect ? "Ödemeniz alındı. Panele yönlendiriliyorsun…" : "Ödemeniz alındı. Kart tazeleniyor…",
         2500,
         redirect,
       );

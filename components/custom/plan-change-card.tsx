@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { PRO_PLAN } from "@/components/custom/plan-config";
@@ -39,6 +40,7 @@ export function PlanChangeCard({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+  const router = useRouter();
 
   if (!isPro || !subscriptionId) {
     // Yalnızca Pro + aktif abonelik için in-app plan değişikliği anlamlıdır.
@@ -100,12 +102,17 @@ export function PlanChangeCard({
       setInfo("Değişiklik Paddle'da uygulandı, doğrulanıyor…");
       const r = await pollPlanChange(targetPriceId);
       if (r.changed) {
-        setInfo("Plan güncellendi! Sayfa yenileniyor…");
-        window.setTimeout(() => window.location.reload(), 1200);
+        setInfo("Plan güncellendi!");
+        // 2026-09-12 (kullanıcı): `window.location.reload()` ile tam sayfa
+        // yenileniyordu (flash + kaydırma kaybı). Sunucu bileşenlerini tazelemek
+        // yeterli — faturalama kartı yeni dönemi gösterir.
+        router.refresh();
       } else if (r.timeout) {
-        setInfo("Değişiklik kaydedildi. Faturalama dönemi birazdan güncellenir — sayfayı yenileyebilirsin.");
+        setInfo("Değişiklik kaydedildi. Faturalama dönemi birazdan güncellenir.");
+        router.refresh();
       } else {
-        setInfo("Değişiklik kaydedildi; durum doğrulanamadı. Sayfayı yenile.");
+        setInfo("Değişiklik kaydedildi; durum doğrulanamadı.");
+        router.refresh();
       }
     } catch {
       setError("Plan değiştirilemedi.");
