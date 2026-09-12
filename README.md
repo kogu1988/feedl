@@ -336,6 +336,7 @@ e2e/               Playwright smoke + axe erişilebilirlik
 | 10 | Entegrasyon webhook'ları `?ws=&t=` URL token'a bağlı; token yoksa 403 (Intercom webhook için doğrulanmamış kanal) | Mimari | 2 | 3 | 3 | 8 |
 | 11 | Özel `getWorkspaceId` (host/cookie/widget) — tenant izolasyonu tek testle sunucu kanıtı eksik | Mimari | 2 | 3 | 4 | 6 |
 | 12 | Embedding girdisi 4096 token sınırını aşınca TÜM AI zenginleştirmesi düşüyordu (DÜZELTİLDİ: `capEmbeddingInput`, 7000 karakter; 2026-09-12'de canlı provada bulundu) | Kod | 3 | 2 | 1 | 25 |
+| 13 | Sentry `LLM pipeline failure` ÖZEL kuralı henüz kurulmadı — **acil DEĞİL, uyarı zaten çalışıyor** (mevcut "high priority issues" kuralı 807520 canlı provada tetiklendi: FEEDL-4, `culprit POST /api/inngest`). Ek kural yalnızca sağlamlaştırma: `area=llm` kapsamasını açıkça belgeler + önceliği düşmüş tekrarlayan arızaları da yakalar. Kurulum: `node tools/create-llm-alert.mjs --apply` (`alerts:write` scope'lu `SENTRY_API_TOKEN` gerekir) ya da Sentry UI'dan 1 dakikada | Operasyon | 1 | 2 | 1 | 15 |
 
 ### Fazlı (feature ile paralel) iyileştirme planı
 - **Faz 1 (bu hafta, küçük):** README/mimari doğruluğu (#9), orta ve düşük borçların kapatılması — kod/içerik düzeltmeleri zaten commit'li. `tsc`/`vitest` (111) yeşil.
