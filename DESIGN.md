@@ -11,8 +11,8 @@
 
 ## 1. Tasarım İlkesi
 
-- Kategori rakipleri (Canny, Frill, Nolt, Featurebase, UserJot) mavi/mor
-  denizinde — **mercan tek marka aksanı ile ayrışma**.
+- Kategori araçlarının çoğu mavi/mor denizinde — **mercan tek marka
+  aksanı ile ayrışma**.
 - **Tek aksan disiplini:** Mercan markaya aittir; mor, mavi, yeşil vb.
   renkler yalnızca durum/duygu rozetlerinde anlamsal olarak kullanılır.
 - Ton: "geri bildirim = insan sesi". Arayüz metni sade Türkçe, aktif ses,
@@ -156,7 +156,7 @@ Alanlar olur. `layout.tsx` `getDashboardScope()` ile
 - **Portal fikir detayı (2026-09-05):** lg+ iki kolon — solda fikir
   kartı + durum geçmişi + yorumlar, sağda ~340px "Detaylar" yan
   paneli (admin panelleri + herkese açık özel alanlar). Mobilde tek
-  kolon; yan panel alta düşer. Canny/Frill post-detay deseni.
+  kolon; yan panel alta düşer. Yaygın post-detay deseni.
 - **Breadcrumb (2026-09-05, rev. 2):** `components/custom/page-breadcrumb.tsx`
   — alt sayfalarda (`portal/[id]`, `portal/oyladiklarim`, `changelog`,
   `changelog/[id]`, `roadmap`) "Portal / Başlık" biçiminde konum verir;

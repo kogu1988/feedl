@@ -169,11 +169,10 @@
   }
   if (token) sendToken(token);
 
-  // Sprint 48m — Canny Identify tarzı dinamik kimlik: kullanıcı girişi
-  // sonrası ya da veri-attr dışında `feedlWidget.identify({ token })` çağrısıyla
-  // yeni bir kısa ömürlü jeton verilirse oturum yeniden açılır. Bu, anonim
-  // değil gerçek müşteri kimliği taşır (Canny modeli); token yoksa widget
-  // salt-okunur kalır.
+  // Sprint 48m — dinamik kimlik: kullanıcı girişi sonrası ya da veri-attr
+  // dışında `feedlWidget.identify({ token })` çağrısıyla yeni bir kısa ömürlü
+  // jeton verilirse oturum yeniden açılır. Bu, anonim değil gerçek müşteri
+  // kimliği taşır; token yoksa widget salt-okunur kalır.
   var widgetApi = {
     identify: function (options) {
       if (!options || typeof options !== "object") return;
