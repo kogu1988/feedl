@@ -290,14 +290,22 @@ e2e/               Playwright smoke + axe erişilebilirlik
 - **Idempotency + idempotent upsert** (Paddle sub/customer, API key, sourceRef,
   api_idempotency) — retry/tekrar eşlerinde duplike yok.
 - **Vercel Hobby** — kayan ~100 deploy/24s limit; commit biriktirip tek push.
-- **İzleme:** Sentry (DSN), Vercel Analytics; henüz özel alert/kaynak-uyarı yok.
+- **İzleme:** Sentry (DSN) + Vercel Analytics. AI hattı `area=llm` etiketiyle
+  raporlanır (`lib/ai/openrouter.ts` → `reportLlmFailure`): model zinciri tükenirse
+  ya da embedding modeli düşerse Sentry'de issue açılır. Ölçüldü (2026-09-12): yeni
+  bir `area:llm` issue Sentry'de **high priority** olur → mevcut "Send a notification
+  for high priority issues" kuralı (807520) e-posta atar; yani LLM arızası sessiz
+  kalmaz. Ek olarak `area:llm`'e özel, 30 dk throttle'lı bağımsız bir kural için
+  `tools/create-llm-alert.mjs` hazırdır (Vercel'deki `SENTRY_AUTH_TOKEN` yalnız
+  source-map yetkili → 403; kural, `alerts:write` scope'lu `SENTRY_API_TOKEN` ile
+  ya da Sentry UI'dan kurulur). Kanıt betiği: `tools/sentry-llm-smoke.mjs`.
 
 ### Takas analizi & yeniden bakılacaklar
 | Karar | Takas | Yeniden bak |
 |---|---|---|
 | Next.js monolit (API + UI bir arada) | hız/tek repo vs modüler ölçek | AI/worker ağırlaşınca servise böl |
 | Clerk kimlik, Neon iş/tenant verisi | basit, tek kaynak | Clerk Organizasyon senkronu (bilinçli DEĞİL — 2026-09-07) |
-| Ücretsiz OpenRouter model | maliyet 0 vs kalite/flakiness | `LLM_FALLBACK_MODEL`; ücretli modele geçiş |
+| Chat: ücretli küçük modeller (nova-micro + mistral-nemo), embedding: ücretsiz | kararlılık vs ~$0.0001/çağrı | `LLM_MODEL`/`LLM_FALLBACK_MODEL` env; `tools/probe-llm-models.mjs` |
 | Paddle merchant-of-record | vergi basitliği vs marj | canlıya geçildi (live) — tax/fiyat kontrol |
 | `@paddle/paddle-js` v1.6.5 | overlay zorunlu (inline frameTarget bozuk) | v2 upgrade |
 
