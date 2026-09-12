@@ -1,4 +1,4 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, count, eq, inArray } from "drizzle-orm";
 
 import { getDb } from "./index";
 import { getWorkspaceId } from "./workspace";
@@ -7,26 +7,68 @@ import {
   companyMembers,
   opportunities,
   postOpportunities,
+  posts,
   votes,
 } from "./schema";
 
-// Sprint 31: gelir bağlamı (P3.2) — fikir başına iki bileşen döner:
-// 1) oy veren şirketlerin toplam MRR'i (şirket distinct; countDistinct yerine
-//    JS gruplaması — MRR'i tek geçişte toplamak için)
-// 2) fikre bağlı açık fırsatların (open/proposal) dealValue toplamı
-export async function loadRevenueContexts(postIds: string[]): Promise<{
-  mrrByPost: Map<string, number>;
-  opportunityValueByPost: Map<string, number>;
-}> {
-  const empty = {
-    mrrByPost: new Map<string, number>(),
-    opportunityValueByPost: new Map<string, number>(),
-  };
+// Sprint 31 / 2026-09-12 (frontend_plan P0) — İŞ ETKİSİ (business impact)
+// katmanının TEK veri kaynağı. Mevcut model GENİŞLETİLİR, yenisi kurulmaz
+// (frontend_plan §1/§9): "müşteri" = `companies` (+ `company_members` ile
+// kullanıcıya bağlı), gelir = `companies.mrr`, fırsat = `opportunities`.
+//
+// Bir fikir (post) için etki ŞU İKİ YOLDAN gelir:
+//  1) Oyu olan kullanıcıların üyesi olduğu ŞİRKETLER  → müşteri sayısı + MRR
+//     ("kim istiyor ve o müşteri ne kadar değerli")
+//  2) Fikre bağlı AÇIK fırsatlar (open/proposal)      → potansiyel fırsat değeri
+//     (won/lost sayılmaz: kazanılan MRR'de zaten var, kaybedilen vaat taşımaz)
+//
+// ⚠️ TENANT İZOLASYONU (frontend_plan §21) — 2026-09-12'de burada GERÇEK bir
+// sızıntı bulundu: şirket sorguları `companies.workspace_id` ile filtrelenmiyordu.
+// Bir kullanıcı A workspace'indeki bir şirketin üyesi olup B workspace'indeki
+// bir fikre oy verirse, A'nın şirketi ve MRR'i B'nin skoruna sızıyordu.
+// Aşağıdaki iki sorguda da `workspaceId` ZORUNLU filtredir; postIds çağıran
+// tarafından zaten workspace'e ait postlardan gelir, ama kapıyı sorgunun
+// kendisi de tutar (defense-in-depth).
+
+export interface PostImpactContext {
+  // Fikre oy veren kullanıcıların bağlı olduğu DISTINCT şirket sayısı.
+  customerCount: number;
+  // Toplam oy sayısı (TALEP tarafı — §13: talep ile iş etkisi ayrı gösterilir;
+  // şirket üyeliği olmayan oylar da burada sayılır).
+  voteCount: number;
+  // O şirketlerin MRR toplamı (distinct şirket; çok üyeli şirket bir kez).
+  mrrTotal: number;
+  // En az bir etkilenen şirketin MRR'i GİRİLMİŞ mi? `null` = girilmemiş,
+  // `0` = "0 olarak girilmiş". frontend_plan §19: "$0 MRR" ile "veri yok"
+  // aynı şey değildir — bu bayrak ayrımı UI'da korur.
+  mrrKnown: boolean;
+  // Fikre bağlı açık/proposal fırsatların toplam dealValue'su.
+  opportunityValue: number;
+  // En az bir açık fırsat bağlı mı? (değeri 0 olsa bile "bağ var" bilgisi.)
+  opportunityLinked: boolean;
+}
+
+const EMPTY_CONTEXT: PostImpactContext = {
+  customerCount: 0,
+  voteCount: 0,
+  mrrTotal: 0,
+  mrrKnown: false,
+  opportunityValue: 0,
+  opportunityLinked: false,
+};
+
+// Birden çok fikir için etki bağlamı — TEK sorgu turu (N+1 yok, §33).
+export async function loadPostImpactContexts(
+  postIds: string[],
+): Promise<Map<string, PostImpactContext>> {
+  const result = new Map<string, PostImpactContext>();
   if (postIds.length === 0) {
-    return empty;
+    return result;
   }
 
-  const [mrrRows, opportunityRows] = await Promise.all([
+  const workspaceId = await getWorkspaceId();
+
+  const [companyRows, opportunityRows, voteRows] = await Promise.all([
     getDb()
       .select({
         postId: votes.postId,
@@ -36,7 +78,12 @@ export async function loadRevenueContexts(postIds: string[]): Promise<{
       .from(votes)
       .innerJoin(companyMembers, eq(companyMembers.userId, votes.userId))
       .innerJoin(companies, eq(companies.id, companyMembers.companyId))
-      .where(inArray(votes.postId, postIds)),
+      .where(
+        and(
+          inArray(votes.postId, postIds),
+          eq(companies.workspaceId, workspaceId),
+        ),
+      ),
     getDb()
       .select({
         postId: postOpportunities.postId,
@@ -49,44 +96,90 @@ export async function loadRevenueContexts(postIds: string[]): Promise<{
       )
       .where(
         and(
-          eq(opportunities.workspaceId, await getWorkspaceId()),
+          eq(opportunities.workspaceId, workspaceId),
           inArray(postOpportunities.postId, postIds),
-          // won/lost skor dışı: kazanılmış fırsat MRR'de zaten var,
-          // kaybedilen ise artık gelir vaadi taşımıyor.
           inArray(opportunities.stage, ["open", "proposal"]),
         ),
       ),
+    // Talep tarafı: oy sayısı (şirket üyeliği olmayan oylar dahil).
+    getDb()
+      .select({
+        postId: votes.postId,
+        voteCount: count(),
+      })
+      .from(votes)
+      .innerJoin(posts, eq(posts.id, votes.postId))
+      .where(
+        and(
+          inArray(votes.postId, postIds),
+          eq(posts.workspaceId, workspaceId),
+        ),
+      )
+      .groupBy(votes.postId),
   ]);
 
-  const mrrByPost = new Map<string, number>();
-  const seenCompaniesByPost = new Map<string, Set<string>>();
-  for (const row of mrrRows) {
-    const companiesSeen = seenCompaniesByPost.get(row.postId) ?? new Set();
-    if (companiesSeen.has(row.companyId)) {
-      continue;
+  // Şirket distinct: aynı şirketin birden çok üyesi oy verse de MRR BİR kez
+  // sayılır (aksi halde kalabalık bir müşteri, MRR'ini yapay şişirirdi).
+  const seenCompanies = new Map<string, Set<string>>();
+  for (const row of companyRows) {
+    const perPost = result.get(row.postId) ?? { ...EMPTY_CONTEXT };
+    const companiesSeen = seenCompanies.get(row.postId) ?? new Set<string>();
+    if (!companiesSeen.has(row.companyId)) {
+      companiesSeen.add(row.companyId);
+      seenCompanies.set(row.postId, companiesSeen);
+      perPost.customerCount += 1;
+      perPost.mrrTotal += Number(row.mrr ?? 0);
+      // `null` = girilmemiş; `"0"` = 0 olarak girilmiş → "biliniyor".
+      if (row.mrr !== null) perPost.mrrKnown = true;
     }
-    companiesSeen.add(row.companyId);
-    seenCompaniesByPost.set(row.postId, companiesSeen);
-    mrrByPost.set(
-      row.postId,
-      (mrrByPost.get(row.postId) ?? 0) + Number(row.mrr ?? 0),
-    );
+    result.set(row.postId, perPost);
   }
 
-  const opportunityValueByPost = new Map<string, number>();
   for (const row of opportunityRows) {
-    opportunityValueByPost.set(
-      row.postId,
-      (opportunityValueByPost.get(row.postId) ?? 0) +
-        Number(row.dealValue ?? 0),
-    );
+    const perPost = result.get(row.postId) ?? { ...EMPTY_CONTEXT };
+    perPost.opportunityValue += Number(row.dealValue ?? 0);
+    perPost.opportunityLinked = true;
+    result.set(row.postId, perPost);
   }
 
+  for (const row of voteRows) {
+    const perPost = result.get(row.postId) ?? { ...EMPTY_CONTEXT };
+    perPost.voteCount = Number(row.voteCount ?? 0);
+    result.set(row.postId, perPost);
+  }
+
+  return result;
+}
+
+// Tek fikir için kısayol (post detay sayfası).
+export async function loadPostImpactContext(
+  postId: string,
+): Promise<PostImpactContext> {
+  const map = await loadPostImpactContexts([postId]);
+  return map.get(postId) ?? { ...EMPTY_CONTEXT };
+}
+
+// Geriye dönük uyum (dashboard tablosu + CSV export): ESKİ şekil. Yeni tek
+// kaynağın (`loadPostImpactContexts`) üzerine ince adaptördür — iki ayrı
+// sorgu yolu tutulmaz.
+export async function loadRevenueContexts(postIds: string[]): Promise<{
+  mrrByPost: Map<string, number>;
+  opportunityValueByPost: Map<string, number>;
+}> {
+  const contexts = await loadPostImpactContexts(postIds);
+  const mrrByPost = new Map<string, number>();
+  const opportunityValueByPost = new Map<string, number>();
+  for (const [postId, ctx] of contexts) {
+    mrrByPost.set(postId, ctx.mrrTotal);
+    opportunityValueByPost.set(postId, ctx.opportunityValue);
+  }
   return { mrrByPost, opportunityValueByPost };
 }
 
-// Sprint 31 gelir skoru: oy + müşteri ağırlığı + gelir bağlamı. Tüm
-// yüzeyler (dashboard tablosu, CSV) bu tek fonksiyonu kullanır.
+// ── Skor & açıklanabilirlik (frontend_plan §6) ────────────────────────────
+// Mevcut skor algoritması KORUNUR (stabil + test edilmiş; §6 "doğrudan
+// silme"). Değişen şey: skorun YANINDA nedenini gösteren breakdown.
+
 export function computeRevenueScore(input: {
   voteCount: number;
   customerCount: number;
@@ -98,4 +191,72 @@ export function computeRevenueScore(input: {
       10 * input.customerCount +
       (input.mrrTotal + input.openOpportunityValue) / 1000,
   );
+}
+
+export type PrioritySignal = "high" | "medium" | "low" | "none";
+
+// Öncelik sinyali — KARAR DEĞİL, sinyal (frontend_plan §26: "AI karar verici
+// değil, decision support"). Eşikler açık ve açıklanabilir olsun diye skorun
+// kendi bileşenlerine göre değil, doğrudan skora göre tanımlıdır.
+const SIGNAL_HIGH = 50;
+const SIGNAL_MEDIUM = 15;
+
+export function computePrioritySignal(input: {
+  voteCount: number;
+  customerCount: number;
+  mrrTotal: number;
+  openOpportunityValue: number;
+}): PrioritySignal {
+  const hasAnySignal =
+    input.voteCount > 0 ||
+    input.customerCount > 0 ||
+    input.mrrTotal > 0 ||
+    input.openOpportunityValue > 0;
+  if (!hasAnySignal) return "none";
+  const score = computeRevenueScore(input);
+  if (score >= SIGNAL_HIGH) return "high";
+  if (score >= SIGNAL_MEDIUM) return "medium";
+  return "low";
+}
+
+export interface ScoreBreakdownRow {
+  label: string;
+  // Skora katkı (skorun kendi biriminde — yuvarlanmış).
+  contribution: number;
+  // Kullanıcıya gösterilecek ham değer (ör. "12 müşteri", "$4.850").
+  detail: string;
+}
+
+// Skoru bileşenlerine ayır — kullanıcı "bu neden 87?" sorusunun cevabını
+// görsün (§6). Toplam, `computeRevenueScore` ile birebir tutarlıdır.
+export function explainRevenueScore(input: {
+  voteCount: number;
+  customerCount: number;
+  mrrTotal: number;
+  openOpportunityValue: number;
+}): ScoreBreakdownRow[] {
+  const mrrContribution = input.mrrTotal / 1000;
+  const opportunityContribution = input.openOpportunityValue / 1000;
+  return [
+    {
+      label: "Oy",
+      contribution: input.voteCount,
+      detail: `${input.voteCount} oy`,
+    },
+    {
+      label: "Müşteri",
+      contribution: 10 * input.customerCount,
+      detail: `${input.customerCount} müşteri × 10`,
+    },
+    {
+      label: "Müşteri MRR'i",
+      contribution: mrrContribution,
+      detail: `$${input.mrrTotal.toLocaleString("tr-TR")} ÷ 1000`,
+    },
+    {
+      label: "Açık fırsat",
+      contribution: opportunityContribution,
+      detail: `$${input.openOpportunityValue.toLocaleString("tr-TR")} ÷ 1000`,
+    },
+  ];
 }

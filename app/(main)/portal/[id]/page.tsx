@@ -45,8 +45,11 @@ import {
 import { cn } from "@/lib/utils";
 import { getRole } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
-import { loadCustomerCounts } from "@/lib/db/customer-counts";
+import { loadPostImpactContext } from "@/lib/db/revenue-scores";
+import type { PostImpactContext } from "@/lib/db/revenue-scores";
+import { BusinessImpact } from "@/components/custom/business-impact";
 import { getWorkspaceId, isShowcaseRequest } from "@/lib/db/workspace";
+import { getPlanLimits } from "@/lib/paddle";
 import {
   boards,
   comments,
@@ -118,17 +121,29 @@ export default async function PostDetailPage({
     }
   }
 
-  // Sprint 30: kaç şirket istedi (yalnızca admin kutusunda gösterilir).
-  let customerCount = 0;
+  // Sprint 30 / 2026-09-12 (frontend_plan §4-5): İŞ ETKİSİ bağlamı —
+  // etkilenen müşteri, müşteri MRR'i, bağlı açık fırsat değeri. Yalnız admin
+  // kutusunda kullanılır (public tarafta gelir bilgisi GÖSTERİLMEZ, §14).
+  // Tek kaynak: `loadPostImpactContext` (workspace-izole, distinct şirket).
+  let impactContext: PostImpactContext = {
+    customerCount: 0,
+    voteCount: 0,
+    mrrTotal: 0,
+    mrrKnown: false,
+    opportunityValue: 0,
+    opportunityLinked: false,
+  };
   if (isAdmin) {
-    customerCount =
-      (await loadCustomerCounts([post.id]))?.get(post.id) ?? 0;
+    impactContext = await loadPostImpactContext(post.id);
   }
 
   // Sprint 31: fırsat bağlama verileri (yalnızca admin kutusunda kullanılır).
+  // 2026-09-12 (plan matrisi): fırsatlar Pro — Free'de bu sorgular HİÇ koşmaz
+  // ve "Fırsata bağla" kontrolü render EDİLMEZ (API de kapılı).
+  const isPro = (await getPlanLimits()).key === "pro";
   let opportunityItems: LinkableOpportunity[] = [];
   let linkedOpportunityIds: string[] = [];
-  if (isAdmin) {
+  if (isAdmin && isPro) {
     const [opportunityRows, linkRows] = await Promise.all([
       getDb()
         .select({
@@ -546,12 +561,15 @@ export default async function PostDetailPage({
 
           {isAdmin ? (
             <div className="grid gap-2 rounded-md border border-dashed p-3">
-              <p className="text-xs font-medium text-muted-foreground">
-                Müşteri (yalnızca admin)
-              </p>
-              <p className="text-sm tabular-nums">
-                {customerCount} müşteri bu fikre oy verdi
-              </p>
+              {/* 2026-09-12 (frontend_plan §5): yalnız "kaç müşteri oy verdi"
+                  bilgisi yetmiyordu; iş etkisi (müşteri + MRR + fırsat +
+                  öncelik sinyali + skor breakdown'ı) tek kutuda gösterilir.
+                  Veri yoksa uydurma rakam DEĞİL, yönlendirici empty state. */}
+              <BusinessImpact
+                voteCount={post.voteCount}
+                context={impactContext}
+                isPro={isPro}
+              />
             </div>
           ) : null}
 
@@ -574,7 +592,7 @@ export default async function PostDetailPage({
             <MergeControls postId={post.id} mergedInto={mergedInto} />
           ) : null}
 
-          {isAdmin ? (
+          {isAdmin && isPro ? (
             <OpportunityLinkControls
               postId={post.id}
               opportunities={opportunityItems}

@@ -24,6 +24,12 @@ export interface PlannerRow {
   targetDate: string | null; // YYYY-AA-GG
   impact: number | null;
   effort: number | null;
+  // 2026-09-12 (frontend_plan §16, P1-9): "neden bunu yapıyoruz?" bağlamı.
+  // MRR yalnız `mrrKnown` ise gösterilir (Free'de veri yok → doğal olarak gizli).
+  customerCount: number;
+  mrrTotal: number;
+  mrrKnown: boolean;
+  voteCount: number;
 }
 
 export interface AdminOption {
@@ -113,6 +119,23 @@ export function RoadmapPlanner({
                 <div className="mt-0.5">
                   <StatusBadge status={row.status} />
                 </div>
+                {/* "Neden bunu yapıyoruz?" (§16): oy + etkilenen müşteri +
+                    müşteri MRR'i. Veri yoksa sıfır yazmayız, satır hiç çıkmaz. */}
+                {row.voteCount > 0 || row.customerCount > 0 || row.mrrKnown ? (
+                  <p className="mt-1 text-xs text-muted-foreground tabular-nums">
+                    {[
+                      row.voteCount > 0 ? `${row.voteCount} oy` : null,
+                      row.customerCount > 0
+                        ? `${row.customerCount} müşteri`
+                        : null,
+                      row.mrrKnown
+                        ? `$${row.mrrTotal.toLocaleString("tr-TR")} MRR`
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
+                ) : null}
               </TableCell>
               <TableCell>
                 <select

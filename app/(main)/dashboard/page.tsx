@@ -36,6 +36,7 @@ import { listBoards, resolveBoardBySlug } from "@/lib/db/board";
 import { loadCustomerCounts } from "@/lib/db/customer-counts";
 import {
   computeRevenueScore,
+  loadPostImpactContexts,
   loadRevenueContexts,
 } from "@/lib/db/revenue-scores";
 import {
@@ -193,7 +194,10 @@ export default async function DashboardPage({
       deviceFilter,
     );
     customerCountByPost = await loadCustomerCounts(rows.map((row) => row.id));
-    revenueContexts = await loadRevenueContexts(rows.map((row) => row.id));
+    // Gelir skoru Pro özelliği (2026-09-12): Free'de bağlam HİÇ yüklenmez.
+    if (isPro) {
+      revenueContexts = await loadRevenueContexts(rows.map((row) => row.id));
+    }
     tagOptions = await loadTagOptions();
     views = await loadSavedViews();
     changelogData = await loadChangelogData();
@@ -529,13 +533,18 @@ export default async function DashboardPage({
                   createdAtLabel: dateFormatter.format(row.createdAt),
                   voteCount: row.voteCount,
                   customerCount: customerCountByPost.get(row.id) ?? 0,
-                  revenueScore: computeRevenueScore({
-                    voteCount: row.voteCount,
-                    customerCount: customerCountByPost.get(row.id) ?? 0,
-                    mrrTotal: revenueContexts.mrrByPost.get(row.id) ?? 0,
-                    openOpportunityValue:
-                      revenueContexts.opportunityValueByPost.get(row.id) ?? 0,
-                  }),
+                  // 2026-09-12 (plan matrisi): gelir skoru Pro özelliği. Free'de
+                  // skor HESAPLANMAZ (aşağıda revenueContexts da boş kalır) ve
+                  // tablo sütunu kilitli gösterilir (isPro prop'u).
+                  revenueScore: isPro
+                    ? computeRevenueScore({
+                        voteCount: row.voteCount,
+                        customerCount: customerCountByPost.get(row.id) ?? 0,
+                        mrrTotal: revenueContexts.mrrByPost.get(row.id) ?? 0,
+                        openOpportunityValue:
+                          revenueContexts.opportunityValueByPost.get(row.id) ?? 0,
+                      })
+                    : 0,
                 }))}
                 tagOptions={tagOptions.map((option) => ({
                   id: option.id,
@@ -545,6 +554,7 @@ export default async function DashboardPage({
                   id: board.id,
                   name: board.name,
                 }))}
+                isPro={isPro}
               />
             )}
             {!loadError && rows.length > 0 ? (
@@ -885,6 +895,13 @@ async function loadPlannerData() {
     name: member.name ?? member.userId,
   }));
 
+  // 2026-09-12 (frontend_plan §16, P1-9): roadmap "ne yapacağız?" sorusunun
+  // yanında "NEDEN bunu yapıyoruz?" sorusunu da cevaplasın. İş etkisi TEK
+  // ek sorguyla (N+1 yok) planlanan fikirler için çözülür. MRR yalnız
+  // `mrrKnown` ise gösterilir → Free'de zaten veri olmadığı için doğal olarak
+  // gizli kalır (gelir bilgisi public roadmap'te GÖSTERİLMEZ, §14).
+  const impactByPost = await loadPostImpactContexts(rows.map((row) => row.id));
+
   return {
     rows: rows.map((row) => ({
       id: row.id,
@@ -895,6 +912,10 @@ async function loadPlannerData() {
       targetDate: row.targetDate ? row.targetDate.slice(0, 10) : null,
       impact: row.impact,
       effort: row.effort,
+      customerCount: impactByPost.get(row.id)?.customerCount ?? 0,
+      mrrTotal: impactByPost.get(row.id)?.mrrTotal ?? 0,
+      mrrKnown: impactByPost.get(row.id)?.mrrKnown ?? false,
+      voteCount: impactByPost.get(row.id)?.voteCount ?? 0,
     })),
     admins,
   };
