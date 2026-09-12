@@ -53,7 +53,11 @@ başlangıç — herkese açık bir topluluk portalı + gelir odaklı öncelikle
 6. **Entegrasyonlar:** Slack, Zendesk, Intercom, Linear, Jira, Webhook'lar,
    Public API (`/api/v1`) + müşteri sitesine gömülen widget.
 7. **Multi-tenant:** Her workspace kendi subdomain'i (`acme.feedl.app`), kendi
-   markası (logo/renk/domain), kendi board'ları.
+   markası (logo/renk/domain), kendi board'ları. Üyeliği olan kullanıcı
+   dashboard'dan **aktif workspace'i seçer** (`/dashboard/workspaces` → "Geç");
+   o andan sonra ayarlar/veri/silme işlemleri o workspace'i hedefler. Aktif
+   seçim `feedl_active_ws` çerezinde tutulur — bu çerez bir YETKİ BARIYERİ
+   değil, yalnız routing ipucudur (yetki her istekte üyelikten doğrulanır).
 8. **Public API + Webhook:** HMAC-SHA256 imzalı olaylar, anahtar erişimi.
 9. **Görsel geri bildirim & teknik bağlam:** Kullanıcı sayfada sorunlu noktayı
 işaretler (pin); cihaz/viewport/tarayıcı/OS otomatik eklenir, ekran görüntüsü

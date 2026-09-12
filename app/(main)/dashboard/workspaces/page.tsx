@@ -81,7 +81,10 @@ export default async function WorkspacesPage() {
             Workspace&apos;ler yüklenemedi. Lütfen sayfayı yenile.
           </p>
         ) : (
-          <WorkspacesManager initial={items} />
+          <WorkspacesManager
+            initial={items}
+            activeWorkspaceId={workspaceInfo?.id ?? null}
+          />
         )}
       </div>
 
@@ -97,7 +100,9 @@ export default async function WorkspacesPage() {
           <p className="mt-2 text-sm text-muted-foreground">
             {workspaceInfo.name} (
             <code className="font-mono">{workspaceInfo.slug}</code>) workspace&apos;ini
-            düzenle.
+            düzenle. Başka birini düzenlemek veya silmek için yukarıdaki
+            listeden <span className="font-medium text-foreground">Geç</span> ile o
+            workspace&apos;e geç.
           </p>
           <div className="mt-4">
             <WorkspaceSettings
