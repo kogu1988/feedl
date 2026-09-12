@@ -194,6 +194,33 @@ export default async function DashboardPage({
     // kalanı atlıyordu; `Promise.all` de ilk hatada reject eder. `getWorkspaceId()`
     // `React.cache`'li olduğu için eşzamanlı çağrılar TEK okumayı paylaşır —
     // paralellik ek DB yükü doğurmaz.
+    // 2026-09-12 (denetim — TTFB, Aşama 2): SEKMEYE GÖRE yükleme.
+    //
+    // Aşama 1 yalnız zamanlamayı düzeltti; iş miktarı aynıydı — `/dashboard?
+    // section=yayin` bile API anahtarlarını, webhook'ları, planlayıcıyı ve
+    // oyları okuyordu. Gating YALNIZ kullanımının tamamı tek sekmede olan
+    // yükleyicilere uygulanır; kullanım haritası koddan çıkarıldı:
+    //   · onboardingState + inboxSuggestions + topRevenuePosts → Genel Bakış
+    //   · views → Fikirler
+    //   · changelogData → Yayın
+    //   · plannerData → Planlama
+    //   · apiKeyItems + webhookItems → Entegrasyonlar
+    //   · customerCountByPost + revenueContexts → Fikirler
+    //
+    // KOŞULSUZ kalanlar (bölüm dışında da kullanılıyor):
+    //   · `weeklyCounts` → istatistik kartları (bölüm dallarının ÜSTÜNDE)
+    //   · `boardItems`/`tagOptions` → Fikirler VE Entegrasyonlar (CSV içe aktarma)
+    //   · `postStats` → istatistik kartları
+    //
+    // POST LİSTESİ ZİNCİRİ (countPosts → rows → türetilenler) yalnız Fikirler
+    // ve Entegrasyonlar'da kullanılıyor (satır 490/599/603/645, 474-475 ve
+    // sayfalama 648-649). Genel Bakış onu HİÇ kullanmaz → varsayılan görünüm en
+    // ağır sorguyu artık hiç çalıştırmaz.
+    const needsOverview = section === "";
+    const needsIdeas = section === "fikirler";
+    const needsIntegrations = section === "entegrasyon";
+    const needsPostList = needsIdeas || needsIntegrations;
+
     const [
       onboardingRes,
       statsData,
@@ -209,23 +236,27 @@ export default async function DashboardPage({
       weeklyRes,
       topRevenueRes,
     ] = await Promise.all([
-      loadOnboardingState(),
+      needsOverview ? loadOnboardingState() : Promise.resolve(onboardingState),
       // Sprint 39: istatistikler agregat sorgudan; tablo offset/limit ile tek
       // sayfa çeker. Durum filtresi sunucuda uygulanır — client-tarafı filtre
       // sayfalanmış listede yanlış sonuç verirdi.
       loadPostStats(tagFilter),
-      countDashboardPosts(tagFilter, statusFilter, activeBoard?.id, deviceFilter),
+      needsPostList
+        ? countDashboardPosts(tagFilter, statusFilter, activeBoard?.id, deviceFilter)
+        : Promise.resolve(totalCount),
       loadTagOptions(),
-      loadSavedViews(),
-      loadChangelogData(),
-      loadPlannerData(),
-      loadInboxSuggestions(),
-      loadApiKeys(),
-      loadWebhooks(),
+      needsIdeas ? loadSavedViews() : Promise.resolve(views),
+      section === "yayin" ? loadChangelogData() : Promise.resolve(changelogData),
+      section === "planlama" ? loadPlannerData() : Promise.resolve(plannerData),
+      needsOverview ? loadInboxSuggestions() : Promise.resolve(inboxSuggestions),
+      needsIntegrations ? loadApiKeys() : Promise.resolve(apiKeyItems),
+      needsIntegrations ? loadWebhooks() : Promise.resolve(webhookItems),
       listBoards(),
       loadWeeklyCounts(rangeDays),
       // Gelir skoru Pro özelliği: Free'de bu sorgu HİÇ koşmaz.
-      isPro ? loadTopRevenuePosts(tagFilter) : Promise.resolve(topRevenuePosts),
+      isPro && needsOverview
+        ? loadTopRevenuePosts(tagFilter)
+        : Promise.resolve(topRevenuePosts),
     ]);
 
     onboardingState = onboardingRes;
@@ -247,24 +278,31 @@ export default async function DashboardPage({
     boardItems = boardRes;
     weeklyCounts = weeklyRes;
 
-    // Dalga 2 — `rows`'a bağlı iki yükleyici, birbirinden bağımsız (paralel).
-    rows = await loadPosts(
-      tagFilter,
-      statusFilter,
-      perSize,
-      (currentPage - 1) * perSize,
-      activeBoard?.id,
-      deviceFilter,
-      sortFilter,
-    );
-    const [countsRes, revenueRes] = await Promise.all([
-      loadCustomerCounts(rows.map((row) => row.id)),
-      isPro
-        ? loadRevenueContexts(rows.map((row) => row.id))
-        : Promise.resolve(revenueContexts),
-    ]);
-    customerCountByPost = countsRes;
-    revenueContexts = revenueRes;
+    if (needsPostList) {
+      // `countPosts → loadPosts` sıralılığı korunur: tablo offset'i sayfa
+      // clamp'ine bağlı (yukarıdaki `currentPage`).
+      rows = await loadPosts(
+        tagFilter,
+        statusFilter,
+        perSize,
+        (currentPage - 1) * perSize,
+        activeBoard?.id,
+        deviceFilter,
+        sortFilter,
+      );
+      // Dalga 2 — `rows`'a bağlı iki yükleyici, birbirinden bağımsız (paralel).
+      // İkisi de YALNIZ Fikirler'de render edilir.
+      const [countsRes, revenueRes] = await Promise.all([
+        needsIdeas
+          ? loadCustomerCounts(rows.map((row) => row.id))
+          : Promise.resolve(customerCountByPost),
+        isPro && needsIdeas
+          ? loadRevenueContexts(rows.map((row) => row.id))
+          : Promise.resolve(revenueContexts),
+      ]);
+      customerCountByPost = countsRes;
+      revenueContexts = revenueRes;
+    }
   } catch (err) {
     console.error(
       "Dashboard list failed:",
