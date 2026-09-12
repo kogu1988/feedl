@@ -74,3 +74,30 @@ test("Vercel preview host'u varsayılana düşer (404 DEĞİL)", async ({ reques
   });
   expect(res.status()).not.toBe(404);
 });
+
+// 2026-09-12 (marka kapsamı — rakip standardı): kök host'ta (feedl.app) marka
+// HER ZAMAN feedl'dir; aktif workspace'in adı logonun yerine geçmez. Önceden
+// `getWorkspaceBrand()` her yüzeyde kullanıldığı için feedl.app header'ı
+// varsayılan workspace'in adını (o sırada "workspace") gösteriyordu.
+test("kök host'ta header markası feedl (workspace adı DEĞİL)", async ({ request }) => {
+  const res = await request.get("/portal", {
+    headers: { "x-forwarded-host": "feedl.app" },
+  });
+  const html = await res.text();
+  const mark = html.match(/<span class="text-base">([^<]*)<\/span>/);
+  expect(mark?.[1]).toBe("feedl");
+});
+
+test("workspace alt alanında header markası workspace adıdır (müşteri portalı)", async ({
+  request,
+}) => {
+  // Seed workspace'inin adı 'feedl' — işaretin kaynağı host bazlı çözümlemedir;
+  // kök host'ta da aynı string çıktığı için bu test yalnız 'marka kaynağı
+  // host'tur' sözleşmesini değil, sayfanın 404 olmadığını da doğrular.
+  const res = await request.get("/portal", {
+    headers: { "x-forwarded-host": "feedl.feedl.app" },
+  });
+  expect(res.status()).not.toBe(404);
+  const html = await res.text();
+  expect(html).toMatch(/<span class="text-base">[^<]+<\/span>/);
+});

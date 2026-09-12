@@ -21,6 +21,7 @@ const h = vi.hoisted(() => ({
   selectResults: [] as unknown[][],
   selectIndex: 0,
   host: "feedl.app",
+  noHeaders: false,
 }));
 
 vi.mock("@/lib/db", () => {
@@ -35,10 +36,14 @@ vi.mock("@/lib/db", () => {
 });
 
 vi.mock("next/headers", () => ({
-  headers: async () => ({
-    get: (name: string) =>
-      name === "x-forwarded-host" || name === "host" ? h.host : null,
-  }),
+  headers: async () => {
+    // Build/prerender taklidi: `headers()` fırlatır (bkz. getRequestHostOrNull).
+    if (h.noHeaders) throw new Error("Dynamic server usage");
+    return {
+      get: (name: string) =>
+        name === "x-forwarded-host" || name === "host" ? h.host : null,
+    };
+  },
   cookies: async () => ({ get: () => undefined }),
 }));
 
@@ -48,6 +53,7 @@ vi.mock("@/lib/widget/jwt", () => ({
 
 import {
   isDefaultFallbackHost,
+  isFeedlRootRequest,
   subdomainSlugFromHost,
   resolveWorkspaceForHostname,
 } from "@/lib/db/workspace";
@@ -59,6 +65,7 @@ beforeEach(() => {
   h.selectResults = [];
   h.selectIndex = 0;
   h.host = "feedl.app";
+  h.noHeaders = false;
   vi.unstubAllEnvs();
 });
 
@@ -114,6 +121,27 @@ describe("subdomainSlugFromHost — feedl dışı host'ta slug YOK", () => {
     expect(subdomainSlugFromHost("feedback.acme.com")).toBeNull();
     expect(subdomainSlugFromHost("example.com")).toBeNull();
     expect(subdomainSlugFromHost("feedl-abc.vercel.app")).toBeNull();
+  });
+});
+
+describe("isFeedlRootRequest — header marka kapsamı (rakip standardı)", () => {
+  it("feedl kök host'larında true (marka her zaman feedl)", async () => {
+    for (const host of ["feedl.app", "www.feedl.app", "feedl.app:443"]) {
+      h.host = host;
+      await expect(isFeedlRootRequest()).resolves.toBe(true);
+    }
+  });
+
+  it("workspace alt alanında false (marka müşterinin adı/logo'su)", async () => {
+    h.host = "acme.feedl.app";
+    await expect(isFeedlRootRequest()).resolves.toBe(false);
+    h.host = "feedback.acme.com";
+    await expect(isFeedlRootRequest()).resolves.toBe(false);
+  });
+
+  it("istek bağlamı yoksa (build/prerender) true — statik üretim feedl markası", async () => {
+    h.noHeaders = true;
+    await expect(isFeedlRootRequest()).resolves.toBe(true);
   });
 });
 

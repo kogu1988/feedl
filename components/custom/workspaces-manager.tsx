@@ -141,7 +141,7 @@ export function WorkspacesManager({
       {!canCreate ? (
         <ProFeatureLock
           title="Free plan 1 workspace ile sınırlıdır"
-          description="Her workspace kendi board limitini, üyelerini ve portalını ayrı tutar; bu yüzden ek workspace Pro'dadır."
+          description="Ek workspace açmak Pro'ya bağlıdır. Pro'da sahibi olduğun TÜM workspace'ler Pro olur — her biri için ayrı abonelik gerekmez."
           compact
         />
       ) : null}

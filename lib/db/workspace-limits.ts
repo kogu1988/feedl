@@ -1,10 +1,7 @@
 import "server-only";
 
-import { and, eq } from "drizzle-orm";
-
 import { effectivePlanKey } from "@/lib/paddle";
-import { getDb } from "./index";
-import { workspaceMembers, workspaces } from "./schema";
+import { loadOwnedWorkspacePlans } from "./owned-workspaces";
 
 // 2026-09-12 (kullanıcı kararı) — WORKSPACE SAYISI SINIRI.
 //
@@ -44,19 +41,10 @@ export function decideWorkspaceCreation(
 }
 
 // Kullanıcının SAHİP OLDUĞU workspace'ler (limit kararının girdisi).
+// Sorgu tek kaynaktır: `lib/db/owned-workspaces.ts` — aynı satırlar hesap
+// düzeyi Pro çözümlemesinde de kullanılır.
 export async function loadOwnedWorkspaces(userId: string) {
-  return getDb()
-    .select({
-      id: workspaces.id,
-      plan: workspaces.plan,
-      paddleSubscriptionStatus: workspaces.paddleSubscriptionStatus,
-      paddleStatusChangedAt: workspaces.paddleStatusChangedAt,
-    })
-    .from(workspaceMembers)
-    .innerJoin(workspaces, eq(workspaces.id, workspaceMembers.workspaceId))
-    .where(
-      and(eq(workspaceMembers.userId, userId), eq(workspaceMembers.role, "owner")),
-    );
+  return loadOwnedWorkspacePlans(userId);
 }
 
 // API ve arayüzün paylaştığı tek karar noktası.

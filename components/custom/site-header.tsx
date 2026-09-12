@@ -118,7 +118,17 @@ function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function SiteHeader({ brand }: { brand?: { name: string; brandColor: string | null; logoUrl: string | null } }) {
+export function SiteHeader({
+  brand,
+  contextWorkspaceName,
+}: {
+  brand?: { name: string; logoUrl: string | null };
+  // 2026-09-12: kök host'ta (feedl.app) işaret her zaman feedl'dir. Aktif
+  // workspace bağlamı dashboard'da ayrı bir çip olarak gösterilir — Slack/
+  // Linear/Notion/Vercel/Sentry standardı (satıcı markası + workspace bağlamı).
+  // Workspace host'unda (portal) çip YOKTUR; işaretin kendisi müşterinin markası.
+  contextWorkspaceName?: string;
+}) {
   const pathname = usePathname();
   const { isSignedIn } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -126,6 +136,13 @@ export function SiteHeader({ brand }: { brand?: { name: string; brandColor: stri
   // tamamını kullanır — public/admin container ayrımı kalktı.
   const workspaceName = brand?.name ?? "feedl";
   const logoUrl = brand?.logoUrl ?? null;
+  // Workspace bağlamı yalnız dashboard'da ve yalnız işaretten FARKLIYSA
+  // gösterilir (varsayılan `feedl` workspace'inde gereksiz çip olmasın).
+  const showWorkspaceContext =
+    isSignedIn === true &&
+    pathname.startsWith("/dashboard") &&
+    !!contextWorkspaceName &&
+    contextWorkspaceName.trim().toLowerCase() !== workspaceName.trim().toLowerCase();
   // Auth yüzeyinde giriş/kayıt butonları gösterilmez (kendi sayfasına giden
   // ölü link + P1 tekrar). Aksi halde anonimde gösterilir.
   const showAuthTriggers = !isSignedIn && !isAuthSurface(pathname);
@@ -156,6 +173,14 @@ export function SiteHeader({ brand }: { brand?: { name: string; brandColor: stri
             />
             <span className="text-base">{workspaceName}</span>
           </Link>
+          {showWorkspaceContext ? (
+            <span
+              className="hidden min-w-0 items-center gap-1 rounded-md border bg-muted/40 px-2 py-0.5 text-xs font-medium text-muted-foreground sm:inline-flex"
+              title="Aktif workspace"
+            >
+              <span className="truncate">{contextWorkspaceName}</span>
+            </span>
+          ) : null}
           {/* Masaüstü nav (md+); mobilde hamburger içinde. */}
           <nav
             className="hidden min-w-0 items-center gap-0.5 text-sm sm:gap-1 md:flex"

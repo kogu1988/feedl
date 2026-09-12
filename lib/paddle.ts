@@ -1,5 +1,6 @@
 import "server-only";
 
+import { auth } from "@clerk/nextjs/server";
 import { Paddle, Environment } from "@paddle/paddle-node-sdk";
 import { z } from "zod";
 
@@ -102,21 +103,73 @@ import { getDb } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { cache } from "react";
 import { workspaces } from "@/lib/db/schema";
+import {
+  loadOwnedWorkspacePlans,
+  type OwnedWorkspacePlanRow,
+} from "@/lib/db/owned-workspaces";
+
+// 2026-09-12 (kullanıcı kararı — HESAP DÜZEYİ PRO, saf fonksiyon).
+//
+// Kural: SAHİBİ olduğun bir workspace Pro ise, sahibi olduğun TÜM
+// workspace'lerde Pro'sun. Böylece $19'luk tek abonelik, owner olarak açtığın
+// her workspace'i kapsar (kullanıcı beklentisi: "workspace'i açan bensem orada
+// da Pro olmalıyım").
+//
+// Devralma YOK: başkasının workspace'ine `member` olarak eklendiysen, kendi Pro
+// aboneliğin o workspace'e sızmaz (orayı ödeyen owner'dır). `ownsCurrent`
+// kontrolü tam olarak bunu garanti eder.
+export function resolveAccountPlanKey(
+  current: OwnedWorkspacePlanRow,
+  owned: OwnedWorkspacePlanRow[],
+  currentWorkspaceId: string,
+  now: Date = new Date(),
+): PlanKey {
+  if (effectivePlanKey(current, now) === "pro") return "pro";
+  const ownsCurrent = owned.some((ws) => ws.id === currentWorkspaceId);
+  if (!ownsCurrent) return "free";
+  return owned.some((ws) => effectivePlanKey(ws, now) === "pro") ? "pro" : "free";
+}
+
+// Giriş yapmış kullanıcı (varsa). Clerk `auth()` istek dışında (build/prerender,
+// test, cron) fırlatır — plan kapısı bu yüzden güvenle "oturum yok"a düşer.
+async function currentUserIdOrNull(): Promise<string | null> {
+  try {
+    const { userId } = await auth();
+    return userId ?? null;
+  } catch {
+    return null;
+  }
+}
 
 // Request-scoped memo: aynı istek içinde getPlanLimits bir kez DB okur
 // (plan limitleri sık sorulur; sayfa içinde kopya sorguyu önler).
 const fetchPlanLimits = cache(async () => {
+  const workspaceId = await getWorkspaceId();
   const [row] = await getDb()
     .select({
+      id: workspaces.id,
       plan: workspaces.plan,
       paddleSubscriptionStatus: workspaces.paddleSubscriptionStatus,
       paddleStatusChangedAt: workspaces.paddleStatusChangedAt,
     })
     .from(workspaces)
-    .where(eq(workspaces.id, await getWorkspaceId()))
+    .where(eq(workspaces.id, workspaceId))
     .limit(1);
+
   // Dunning grace dahil (denetim K3) — tüm Pro kapılarının tek kaynağı.
-  return PLANS[effectivePlanKey(row ?? {})];
+  const current: OwnedWorkspacePlanRow = row ?? { id: workspaceId };
+  if (effectivePlanKey(current) === "pro") return PLANS.pro;
+
+  // Hesap düzeyi Pro: yalnız kullanıcı workspace'in SAHİBİYSE ve sahip olduğu
+  // bir workspace Pro ise pro'ya yükselt. Anonim ziyaretçide (portal) sorgu
+  // hiç koşmaz.
+  const userId = await currentUserIdOrNull();
+  if (userId) {
+    const owned = await loadOwnedWorkspacePlans(userId);
+    return PLANS[resolveAccountPlanKey(current, owned, workspaceId)];
+  }
+
+  return PLANS.free;
 });
 
 export async function getPlanLimits() {

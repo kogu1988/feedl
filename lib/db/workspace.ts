@@ -235,6 +235,14 @@ export async function resolveWorkspaceForHostname(
   return lookupWorkspaceByHost(host);
 }
 
+// İstek feedl kök host'unda mı? İstek bağlamı YOKSA (build/prerender/test/cron)
+// true döner: statik üretilen sayfalar feedl markasıyla üretilir — workspace
+// markasıyla değil (aksi halde build, aktif workspace'e bağlı kalırdı).
+export async function isFeedlRootRequest(): Promise<boolean> {
+  const host = await getRequestHostOrNull();
+  return host ? isFeedlRootHost(host) : true;
+}
+
 // İsteğin host'u bilinen bir workspace'e çözülüyor mu? (app/(main)/layout.tsx
 // bu kapıyı kullanır; app/not-found.tsx aynı çağrıyla "host yok" varyantını seçer.)
 //

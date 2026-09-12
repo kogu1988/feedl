@@ -10,6 +10,7 @@ import { ThemeProvider } from "@/components/custom/theme-provider";
 import { CanonicalLink } from "@/components/custom/canonical-link";
 import {
   getWorkspaceBrand,
+  isFeedlRootRequest,
   isUnknownHostRequest,
 } from "@/lib/db/workspace";
 import { workspaceBrandStyle } from "@/lib/brand-style";
@@ -43,9 +44,21 @@ export default async function MainLayout({
     notFound();
   }
 
-  // Sprint 48k: workspace markası (subdomain'e göre) üst bara taşınır.
+  // 2026-09-12 (marka kapsamı — rakip standardı):
+  //   Kök host (feedl.app)  → marka HER ZAMAN feedl; workspace paleti uygulanmaz.
+  //                           Pazarlama + kendi portal vitrinimiz bizim kimliğimiz.
+  //   Workspace host'u      → müşterinin adı/logo'su/rengi (portal, roadmap,
+  //                           changelog) — Canny/Featurebase/UserVoice/Fider
+  //                           hep böyle yapar; satıcı yalnızca "Powered by"dır.
+  //   Dashboard             → feedl işareti + aktif workspace bağlamı (chip).
+  // Bu ayrım aynı zamanda bir a11y hatasını da kapatır: workspace marka rengi
+  // (#1e01f9) kök host'un CTA bölümüne uygulanıp kontrastı bozuyordu.
+  const isRootHost = await isFeedlRootRequest();
   const brand = await getWorkspaceBrand();
-  const brandStyle = workspaceBrandStyle(brand.brandColor);
+  const mark = isRootHost
+    ? { name: "feedl", logoUrl: null }
+    : { name: brand.name, logoUrl: brand.logoUrl };
+  const brandStyle = isRootHost ? null : workspaceBrandStyle(brand.brandColor);
   return (
     <ClerkProvider
       localization={trTR}
@@ -60,7 +73,7 @@ export default async function MainLayout({
       <CanonicalLink customDomain={brand.customDomain} />
       {brandStyle ? <style dangerouslySetInnerHTML={{ __html: brandStyle }} /> : null}
       <div className="flex min-h-svh flex-col">
-        <SiteHeader brand={brand} />
+        <SiteHeader brand={mark} contextWorkspaceName={isRootHost ? brand.name : undefined} />
         <div className="flex-1">{children}</div>
         <SiteFooter brand={brand} />
       </div>
