@@ -22,6 +22,11 @@ import { summarize } from "@/lib/post-format";
 
 type Sort = "votes" | "new";
 
+// Araç çubuğu modu — TEK durum: "Fikir ara", "Fikir gönder" ve "Görsel"
+// birbirini dışlar. İki ayrı boolean ile arama + form aynı anda açık kalıp
+// panelde alt alta uzuyordu.
+type PanelMode = "none" | "search" | "form";
+
 interface WidgetPost {
   id: string;
   title: string;
@@ -48,8 +53,9 @@ export function WidgetPanel({
   canVote,
   isPro,
 }: WidgetPanelProps) {
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [formOpen, setFormOpen] = useState(false);
+  const [mode, setMode] = useState<PanelMode>("none");
+  const searchOpen = mode === "search";
+  const formOpen = mode === "form";
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<Sort>("votes");
   const [page, setPage] = useState(1);
@@ -67,6 +73,35 @@ export function WidgetPanel({
   useEffect(() => {
     setEmbedded(window.parent !== window);
   }, []);
+
+  // ESC her aşamada her şeyi iptal eder.
+  //
+  // Odak panel iframe'indeyken host sayfa klavyeyi GÖRMEZ (iframe içi klavye
+  // olayları parent'a kabarcıklanmaz), bu yüzden ESC'yi host'a devrediyoruz —
+  // host `feedl:escape` alınca pin modu/panel/toast dahil hepsini temizler.
+  //
+  // `feedl:reset` host paneli kapatırken gönderilir: açık kalan arama/form
+  // alanı bir sonraki açılışta geri gelmesin.
+  //
+  // Origin doğrulaması YAPILMAZ: widget her müşteri sitesine gömülür ve host
+  // origin'i önceden bilinemez. Bu mesajlar veri taşımaz, yetki vermez —
+  // yalnızca görsel durumu sıfırlar.
+  useEffect(() => {
+    function onMessage(event: MessageEvent) {
+      if (event.data && event.data.type === "feedl:reset") setMode("none");
+    }
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      setMode("none");
+      if (embedded) window.parent.postMessage({ type: "feedl:escape" }, "*");
+    }
+    window.addEventListener("message", onMessage);
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("message", onMessage);
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [embedded]);
 
   const wsParam = ws ? `&ws=${encodeURIComponent(ws)}` : "";
 
@@ -112,8 +147,12 @@ export function WidgetPanel({
     listRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
 
+  function toggleMode(next: PanelMode) {
+    setMode((current) => (current === next ? "none" : next));
+  }
+
   function applySearch() {
-    setSearchOpen(false);
+    setMode("none");
     void load(1, sort, q);
   }
 
@@ -127,7 +166,9 @@ export function WidgetPanel({
   // erişemez). Standalone /widget sayfasında (parent yok) gizlenir.
   function startVisualFeedback() {
     // Host script `feedl:visual-start` mesajını feedl origin'i doğrulayarak
-    // karşılar; panel kapanır ve pin overlay host sayfada açılır.
+    // karşılar; panel kapanır ve pin overlay host sayfada açılır. Görsel işlem
+    // başlarken açık kalan mod (arama/form) iptal edilir.
+    setMode("none");
     window.parent.postMessage({ type: "feedl:visual-start" }, "*");
   }
 
@@ -142,7 +183,7 @@ export function WidgetPanel({
           variant="outline"
           size="sm"
           className="shrink-0 gap-1.5"
-          onClick={() => setSearchOpen((v) => !v)}
+          onClick={() => toggleMode("search")}
           aria-expanded={searchOpen}
         >
           {searchOpen ? (
@@ -157,7 +198,7 @@ export function WidgetPanel({
           variant="outline"
           size="sm"
           className="shrink-0 gap-1.5"
-          onClick={() => setFormOpen((v) => !v)}
+          onClick={() => toggleMode("form")}
           aria-expanded={formOpen}
         >
           <PlusIcon className="size-3.5 max-[359px]:hidden" aria-hidden="true" />

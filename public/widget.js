@@ -365,12 +365,26 @@
   }
   applyChrome();
 
+  // Panel içindeki (iframe) açık modlara sinyal. Panel "Fikir ara"/"Fikir
+  // gönder" alanı açıkken kapanırsa, yeniden açılışta alanlar üst üste binmiş
+  // hâlde geri geliyordu — kapanışta sıfırlıyoruz.
+  function postToPanel(type) {
+    try {
+      if (iframe.contentWindow) {
+        iframe.contentWindow.postMessage({ type: type }, feedlOrigin);
+      }
+    } catch {
+      /* iframe henüz hazır değilse yok say */
+    }
+  }
+
   function openWidget() {
     overlay.hidden = false;
   }
 
   function closeWidget() {
     overlay.hidden = true;
+    postToPanel("feedl:reset");
   }
 
   launcher.addEventListener("click", openWidget);
@@ -378,15 +392,15 @@
   overlay.addEventListener("click", function (event) {
     if (event.target === overlay) closeWidget();
   });
-  document.addEventListener("keydown", function (event) {
-    if (event.key === "Escape" && !overlay.hidden) closeWidget();
-  });
 
   // iframe içi sayfa "feedl:close" gönderirse paneli kapat (yalnızca
-  // feedl origin'inden gelen mesajlar kabul edilir).
+  // feedl origin'inden gelen mesajlar kabul edilir). "feedl:escape" ise
+  // panelde ESC'ye basıldığı anlamına gelir.
   window.addEventListener("message", function (event) {
     if (event.origin !== feedlOrigin) return;
-    if (event.data && event.data.type === "feedl:close") closeWidget();
+    if (!event.data) return;
+    if (event.data.type === "feedl:close") closeWidget();
+    else if (event.data.type === "feedl:escape") cancelAll();
   });
 
   // ---- Faz 2: görsel feedback (host sayfada pin + ekran görüntüsü) ----
@@ -681,7 +695,22 @@
     if (vfForm) { vfForm.remove(); vfForm = null; }
     vfOpenForm(x, y);
   });
+  // ESC TEK yol: her aşamada her şeyi iptal eder — pin modu, pin, ipucu,
+  // görsel form, panel ve panel içindeki açık modlar, görünen toast.
+  //
+  // Neden tek çatı: daha önce İKİ ayrı keydown listener vardı ve her biri
+  // yalnız kendi durumunu temizliyordu; ayrıca odak iframe'deyken host klavye
+  // olayını HİÇ görmez (iframe içi klavye parent'a kabarcıklanmaz). Bu yüzden
+  // panel kendi ESC'sini `feedl:escape` mesajıyla buraya devreder.
+  function cancelAll() {
+    var panelWasOpen = !overlay.hidden;
+    overlay.hidden = true;
+    if (panelWasOpen) postToPanel("feedl:reset");
+    vfCleanup();
+    var toast = document.querySelector(".feedl-vf-toast");
+    if (toast) toast.remove();
+  }
   document.addEventListener("keydown", function (event) {
-    if (event.key === "Escape" && !vfLayer.hidden) vfCleanup();
+    if (event.key === "Escape") cancelAll();
   });
 })();
