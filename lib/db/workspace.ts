@@ -1,4 +1,4 @@
-import { eq, or } from "drizzle-orm";
+import { and, eq, isNotNull, or } from "drizzle-orm";
 import { z } from "zod";
 import { cache } from "react";
 
@@ -102,17 +102,23 @@ export function normalizeDomainForMatch(host: string): string {
 export async function resolveWorkspaceByHost(
   host: string,
 ): Promise<{ id: string; slug: string; name: string }> {
-  // 1) Custom domain eşleşmesi (admin tanımlı, www'li/www'suz yazımlar).
+  // 1) Custom domain eşleşmesi (www'li/www'suz yazımlar). Yalnız TXT kaydıyla
+  // DOĞRULANMIŞ domain'ler dikkate alınır (2026-09-12): aksi halde bir tenant
+  // başkasının hostname'ini yazıp, kurban DNS'ini feedl'e çevirdiğinde onun
+  // trafiğini kendi workspace'i olarak servis edebilirdi (hostname squatting).
   const hostNorm = normalizeDomainForMatch(host);
   const bareHost = hostNorm.startsWith("www.") ? hostNorm.slice(4) : hostNorm;
   const [byCustom] = await getDb()
     .select({ id: workspaces.id, slug: workspaces.slug, name: workspaces.name })
     .from(workspaces)
     .where(
-      or(
-        eq(workspaces.customDomain, hostNorm),
-        eq(workspaces.customDomain, bareHost),
-        eq(workspaces.customDomain, `www.${bareHost}`),
+      and(
+        isNotNull(workspaces.customDomainVerifiedAt),
+        or(
+          eq(workspaces.customDomain, hostNorm),
+          eq(workspaces.customDomain, bareHost),
+          eq(workspaces.customDomain, `www.${bareHost}`),
+        ),
       ),
     )
     .limit(1);

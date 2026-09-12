@@ -4,6 +4,11 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 // ÖNCELİK SIRASI. custom_domain > subdomain > varsayılan. Yanlış sıra,
 // müşterinin custom domain'ini başka bir workspace'e düşürür (veri sızıntısı).
 // getDb mock'lanır — gerçek SQL koşmaz, yalnız sorgu sırası/koşulu doğrulanır.
+//
+// NOT (2026-09-12): custom_domain artık `custom_domain_verified_at IS NOT NULL`
+// koşuluyla eşleniyor (sahiplik doğrulaması — bkz. tests/lib/custom-domain.test.ts
+// ve lib/custom-domain.ts). Mock SQL koşullarını yorumlamadığı için bu kapı
+// burada sınanamaz; aşağıdaki testler ÖNCELİK SIRASINI korur.
 import { resolveWorkspaceByHost } from "@/lib/db/workspace";
 
 type Row = { id: string; slug: string; name: string };

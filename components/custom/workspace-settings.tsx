@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2Icon } from "lucide-react";
+import { AlertCircleIcon, BadgeCheckIcon, Loader2Icon } from "lucide-react";
 
 import { Notice } from "@/components/custom/notice";
 import { ProBadge } from "@/components/custom/pro";
@@ -23,6 +23,17 @@ export interface WorkspaceSettingsView {
   logoUrl: string | null;
   widgetSubmissionMode: "anonymous" | "email" | "signup" | null;
   widgetAnonymousVoting: boolean | null;
+  // 2026-09-12 — custom domain sahiplik doğrulaması. Domain, TXT kaydı
+  // doğrulanana kadar host çözümlemesinde kullanılmaz.
+  customDomainVerifiedAt?: Date | string | null;
+}
+
+// API'nin döndürdüğü TXT kaydı bilgisi.
+interface DomainVerificationView {
+  domain: string;
+  recordName: string;
+  recordValue: string;
+  verifiedAt: string | Date | null;
 }
 
 export function WorkspaceSettings({
@@ -45,6 +56,13 @@ export function WorkspaceSettings({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [verification, setVerification] = useState<DomainVerificationView | null>(null);
+  const [verifiedAt, setVerifiedAt] = useState<string | Date | null>(
+    initial.customDomainVerifiedAt ?? null,
+  );
+  const [verifying, setVerifying] = useState(false);
+  const [verifyError, setVerifyError] = useState<string | null>(null);
+  const [verifyMessage, setVerifyMessage] = useState<string | null>(null);
 
   async function save() {
     setError(null);
@@ -78,6 +96,12 @@ export function WorkspaceSettings({
         setError(json.error || "Kaydedilemedi. Lütfen tekrar deneyin.");
         return;
       }
+      // Custom domain kaydedildi → doğrulama TXT kaydını göster.
+      const info = (json.data?.domainVerification ?? null) as DomainVerificationView | null;
+      setVerification(info);
+      setVerifiedAt(info?.verifiedAt ?? json.data?.customDomainVerifiedAt ?? null);
+      setVerifyError(null);
+      setVerifyMessage(null);
       setSaved(true);
     } catch (err) {
       setError(
@@ -85,6 +109,32 @@ export function WorkspaceSettings({
       );
     } finally {
       setSaving(false);
+    }
+  }
+
+  // DNS TXT kaydını doğrular. Doğrulanana kadar custom domain host
+  // çözümlemesinde KULLANILMAZ (subdomain/default geçerli kalır).
+  async function verifyDomain() {
+    setVerifying(true);
+    setVerifyError(null);
+    setVerifyMessage(null);
+    try {
+      const res = await fetch("/api/admin/workspace/verify-domain", {
+        method: "POST",
+      });
+      const json = await res.json();
+      if (!json.success) {
+        setVerifyError(json.error || "Doğrulanamadı. Lütfen tekrar dene.");
+        return;
+      }
+      setVerifiedAt(json.data?.verifiedAt ?? new Date().toISOString());
+      setVerifyMessage("Alan adı doğrulandı. Portal artık bu adreste yayında.");
+    } catch (err) {
+      setVerifyError(
+        err instanceof Error ? err.message : "Doğrulanamadı. Lütfen tekrar dene.",
+      );
+    } finally {
+      setVerifying(false);
     }
   }
 
@@ -132,7 +182,14 @@ export function WorkspaceSettings({
           <Input
             id="ws-domain"
             value={customDomain}
-            onChange={(e) => setCustomDomain(e.target.value)}
+            onChange={(e) => {
+              setCustomDomain(e.target.value);
+              // Girdi değişti: gösterilen TXT kaydı/doğrulama artık bayat.
+              setVerification(null);
+              setVerifiedAt(null);
+              setVerifyError(null);
+              setVerifyMessage(null);
+            }}
             placeholder="Örn: feedback.acme.com"
             maxLength={200}
           />
@@ -159,10 +216,57 @@ export function WorkspaceSettings({
           </div>
         )}
         {isPro ? (
-          <p className="text-xs text-muted-foreground">
-            Kendi alan adın (http:// veya https:// olmadan yalnızca host).
-            Doğrulama bir sonraki adımda.
-          </p>
+          <div className="grid gap-2">
+            <p className="text-xs text-muted-foreground">
+              Kendi alan adın (http:// veya https:// olmadan yalnızca host).
+              Kaydettikten sonra DNS kaydı burada görünür.
+            </p>
+            {verification ? (
+              <div className="grid gap-2 rounded-md border bg-muted/40 p-3 text-xs">
+                <div className="flex items-center gap-1.5 font-medium">
+                  {verifiedAt ? (
+                    <BadgeCheckIcon className="size-4 text-emerald-600" />
+                  ) : (
+                    <AlertCircleIcon className="size-4 text-amber-600" />
+                  )}
+                  {verifiedAt ? "Alan adı doğrulandı" : "Doğrulama bekliyor"}
+                </div>
+                {!verifiedAt && (
+                  <>
+                    <p className="text-muted-foreground">
+                      Alan adını kullanabilmek için DNS sağlayıcında şu TXT
+                      kaydını oluştur:
+                    </p>
+                    <div className="grid gap-1 font-mono">
+                      <div className="break-all">
+                        <span className="text-muted-foreground">Ad: </span>
+                        {verification.recordName}
+                      </div>
+                      <div className="break-all">
+                        <span className="text-muted-foreground">Değer: </span>
+                        {verification.recordValue}
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      className="mt-1 justify-self-start"
+                      onClick={verifyDomain}
+                      disabled={verifying}
+                    >
+                      {verifying && <Loader2Icon className="size-4 animate-spin" />}
+                      Doğrula
+                    </Button>
+                  </>
+                )}
+              </div>
+            ) : null}
+            {verifyError && (
+              <p className="text-xs text-destructive">{verifyError}</p>
+            )}
+            {verifyMessage && (
+              <p className="text-xs text-emerald-600">{verifyMessage}</p>
+            )}
+          </div>
         ) : (
           <p className="text-xs text-muted-foreground">
             Custom domain yalnızca Pro planda. Pro&apos;ya geçerek kendi

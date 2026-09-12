@@ -9,6 +9,13 @@ import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { workspaces } from "@/lib/db/schema";
 import { planFromString } from "@/lib/paddle";
+import {
+  domainVerificationRecordName,
+  domainVerificationRecordValue,
+  generateDomainVerificationToken,
+  isValidCustomDomain,
+  normalizeCustomDomain,
+} from "@/lib/custom-domain";
 
 // Sprint 48a (madde 8) — workspace ayarları. Tek workspace döneminde
 // ad/marka/custom domain yönetimi; slug subdomain'in kaynağı olarak
@@ -22,7 +29,23 @@ const updateSchema = z.object({
     .max(200)
     .nullable()
     .optional()
-    .transform((value) => (value ? value.replace(/\/$/, "").toLowerCase() : null)),
+    // 2026-09-12: artık normalize + BİÇİM doğrulaması var. Eskiden yalnız
+    // trim/lowercase yapılıyordu; herhangi bir string (path, boşluk, IP,
+    // hatta feedl.app alt alanı) custom domain olarak kaydedilebiliyordu.
+    .transform((value) =>
+      value === undefined
+        ? undefined
+        : value
+          ? normalizeCustomDomain(value)
+          : null,
+    )
+    .refine(
+      (value) => value === undefined || value === null || isValidCustomDomain(value),
+      {
+        message:
+          "Geçerli bir alan adı gir (örn. feedback.acme.com — protokol ve path olmadan). feedl.app alt alan adları kullanılamaz.",
+      },
+    ),
   brandColor: z
     .string()
     .trim()
@@ -70,6 +93,7 @@ export async function GET() {
         logoUrl: workspaces.logoUrl,
         widgetSubmissionMode: workspaces.widgetSubmissionMode,
         widgetAnonymousVoting: workspaces.widgetAnonymousVoting,
+        customDomainVerifiedAt: workspaces.customDomainVerifiedAt,
       })
       .from(workspaces)
       .where(eq(workspaces.id, await getWorkspaceId()))
@@ -93,6 +117,85 @@ export async function GET() {
       { status: 500 },
     );
   }
+}
+
+// Custom domain doğrulama bilgisi — API yanıtı ve arayüz TXT kaydını buradan alır.
+export interface DomainVerificationInfo {
+  domain: string;
+  recordName: string;
+  recordValue: string;
+  verifiedAt: Date | null;
+}
+
+// Custom domain değişikliğini uygular (2026-09-12 kod incelemesi):
+//  • teklik — aynı hostname'i başka bir workspace kaptıysa net 409,
+//  • domain DEĞİŞTİYSE yeni TXT token'ı + doğrulamanın sıfırlanması,
+//  • domain AYNI kaldıysa doğrulamanın korunması (yoksa her kaydetmede
+//    kullanıcı yeniden DNS doğrulaması yapmak zorunda kalırdı).
+// `set` nesnesini yerinde günceller.
+async function applyCustomDomainChange(
+  workspaceId: string,
+  nextDomain: string | null,
+  set: Record<string, unknown>,
+): Promise<
+  { ok: true; verification: DomainVerificationInfo | null } | { ok: false; message: string }
+> {
+  const [current] = await getDb()
+    .select({
+      domain: workspaces.customDomain,
+      token: workspaces.customDomainVerificationToken,
+      verifiedAt: workspaces.customDomainVerifiedAt,
+    })
+    .from(workspaces)
+    .where(eq(workspaces.id, workspaceId))
+    .limit(1);
+
+  if (nextDomain === null) {
+    set.customDomain = null;
+    set.customDomainVerificationToken = null;
+    set.customDomainVerifiedAt = null;
+    return { ok: true, verification: null };
+  }
+
+  if (nextDomain !== current?.domain) {
+    const [taken] = await getDb()
+      .select({ id: workspaces.id })
+      .from(workspaces)
+      .where(eq(workspaces.customDomain, nextDomain))
+      .limit(1);
+    if (taken && taken.id !== workspaceId) {
+      return {
+        ok: false,
+        message: "Bu alan adı başka bir workspace tarafından kullanılıyor.",
+      };
+    }
+    const token = generateDomainVerificationToken();
+    set.customDomain = nextDomain;
+    set.customDomainVerificationToken = token;
+    set.customDomainVerifiedAt = null;
+    return {
+      ok: true,
+      verification: {
+        domain: nextDomain,
+        recordName: domainVerificationRecordName(nextDomain),
+        recordValue: domainVerificationRecordValue(token),
+        verifiedAt: null,
+      },
+    };
+  }
+
+  // Domain aynı: doğrulama korunur. Token yoksa (eski satır) üret ve göster.
+  const token = current?.token ?? generateDomainVerificationToken();
+  if (!current?.token) set.customDomainVerificationToken = token;
+  return {
+    ok: true,
+    verification: {
+      domain: nextDomain,
+      recordName: domainVerificationRecordName(nextDomain),
+      recordValue: domainVerificationRecordValue(token),
+      verifiedAt: current?.verifiedAt ?? null,
+    },
+  };
 }
 
 // PATCH /api/admin/workspace — workspace alanlarını güncelle.
@@ -145,9 +248,26 @@ export async function PATCH(req: Request) {
 
     // En az bir alan güncellenmeli (slug asla değiştirilmez).
     const set: Record<string, unknown> = {};
+
+    // 2026-09-12 — custom domain: biçim `updateSchema`'da doğrulandı; burada
+    // teklik + sahiplik doğrulaması (TXT token) yönetilir.
+    let domainVerification: DomainVerificationInfo | null = null;
+    if (parsed.data.customDomain !== undefined) {
+      const applied = await applyCustomDomainChange(
+        workspaceId,
+        parsed.data.customDomain,
+        set,
+      );
+      if (!applied.ok) {
+        return NextResponse.json(
+          { success: false, error: applied.message },
+          { status: 409 },
+        );
+      }
+      domainVerification = applied.verification;
+    }
+
     if (parsed.data.name !== undefined) set.name = parsed.data.name;
-    if (parsed.data.customDomain !== undefined)
-      set.customDomain = parsed.data.customDomain;
     if (parsed.data.brandColor !== undefined)
       set.brandColor = parsed.data.brandColor;
     if (parsed.data.logoUrl !== undefined) set.logoUrl = parsed.data.logoUrl;
@@ -181,6 +301,7 @@ export async function PATCH(req: Request) {
         logoUrl: workspaces.logoUrl,
         widgetSubmissionMode: workspaces.widgetSubmissionMode,
         widgetAnonymousVoting: workspaces.widgetAnonymousVoting,
+        customDomainVerifiedAt: workspaces.customDomainVerifiedAt,
       });
 
     if (!updated) {
@@ -190,7 +311,12 @@ export async function PATCH(req: Request) {
       );
     }
 
-    return NextResponse.json({ success: true, data: updated });
+    // `domainVerification`: arayüz TXT kaydını gösterebilsin (token zaten
+    // kullanıcının kendi workspace'i için üretilir; sızıntı değildir).
+    return NextResponse.json({
+      success: true,
+      data: { ...updated, domainVerification },
+    });
   } catch (err) {
     console.error(
       "PATCH /api/admin/workspace failed:",

@@ -198,6 +198,21 @@ export const workspaces = pgTable("workspaces", {
   // customDomain: müşterinin kendi domaini (ör. feedback.acme.com);
   // brandColor: kendi portal marka rengi; logoUrl: marka logosu.
   customDomain: varchar("custom_domain", { length: 200 }),
+  // 2026-09-12 kod incelemesi — custom domain SAHİPLİK DOĞRULAMASI.
+  // Önce: herhangi bir workspace owner'ı herhangi bir hostname'i yazabiliyordu
+  // (biçim doğrulaması bile yoktu) ve `resolveWorkspaceByHost` onu subdomain→slug'
+  // dan ÖNCE eşliyordu. Bir tenant `feedback.acme.com`'u kapıp, acme sonradan
+  // DNS'ini feedl'e çevirdiğinde trafiği o tenant'ın workspace'i olarak servis
+  // edilirdi (hostname squatting / marka-veri sızıntısı).
+  // Artık: domain, `_feedl.<domain>` TXT kaydıyla doğrulanana kadar host
+  // çözümlemesinde KULLANILMAZ (bkz. lib/db/workspace.ts +
+  // app/api/admin/workspace/verify-domain).
+  customDomainVerificationToken: varchar("custom_domain_verification_token", {
+    length: 64,
+  }),
+  customDomainVerifiedAt: timestamp("custom_domain_verified_at", {
+    withTimezone: true,
+  }),
   brandColor: varchar("brand_color", { length: 20 }),
   logoUrl: text("logo_url"),
   // Sprint 48h (Faz 5): plan + limitler + Paddle bağlantısı. plan
@@ -244,7 +259,11 @@ export const workspaces = pgTable("workspaces", {
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
-});
+}, (table) => [
+  // Aynı hostname'i iki workspace kapamaz (hostname squatting).
+  // Postgres'te NULL'lar tekil sayılmaz → birden çok boş custom_domain sorun değil.
+  uniqueIndex("workspaces_custom_domain_key").on(table.customDomain),
+]);
 
 // Sprint 64 (Paddle fulfillment) — Paddle customer/subscription aynalama.
 // Paddle canlı webhook'ları (customer.created/updated, subscription.*,
