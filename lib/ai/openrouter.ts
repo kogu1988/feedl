@@ -60,9 +60,25 @@ interface EmbeddingResponse {
   data?: Array<{ embedding?: number[] }>;
 }
 
+// Embedding modeli 4096 TOKEN'da 422 döner ve mesajı "set truncate=END or START
+// to truncate long inputs" der — ancak OpenRouter bu parametreyi DİKKATE ALMAZ
+// (canlı ölçüm 2026-09-12: truncate=END ile de aynı 422). Bu yüzden kırpmayı
+// İSTEMCİ tarafında yapıyoruz: aksi halde uzun bir geri bildirim TÜM AI
+// zenginleştirmesini (özet/triage/etiket/benzerlik/embedding) düşürür.
+// Karakter tavanı en kötü tokenizasyonda (~2 karakter/token) bile 4096 token'ın
+// altında kalır. Ölçümler: tools/probe-embedding-limit.mjs
+// (krş. tools/prove-ai-alert.mjs — bu hata Sentry'de FEEDL-4 olarak doğrulandı)
+export const MAX_EMBEDDING_INPUT_CHARS = 7000;
+
+// Sıra önemli: önce PII maskelenir, SONRA kırpılır. Kırpma önce yapılırsa bir
+// PII kalıbı ortadan kesilip maskelenmeden sağlayıcıya gidebilirdi.
+export function capEmbeddingInput(input: string): string {
+  return input.slice(0, MAX_EMBEDDING_INPUT_CHARS);
+}
+
 /** Tek metni 2048 boyutlu vektöre çevirir (docs/prompts.md §3). */
 export async function embedText(input: string): Promise<number[]> {
-  const safeInput = maskPii(input);
+  const safeInput = capEmbeddingInput(maskPii(input));
   const response = await fetchWithRetry(`${OPENROUTER_BASE_URL}/embeddings`, {
     method: "POST",
     headers: {

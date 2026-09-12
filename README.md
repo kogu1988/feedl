@@ -292,13 +292,22 @@ e2e/               Playwright smoke + axe erişilebilirlik
 - **Vercel Hobby** — kayan ~100 deploy/24s limit; commit biriktirip tek push.
 - **İzleme:** Sentry (DSN) + Vercel Analytics. AI hattı `area=llm` etiketiyle
   raporlanır (`lib/ai/openrouter.ts` → `reportLlmFailure`): model zinciri tükenirse
-  ya da embedding modeli düşerse Sentry'de issue açılır. Ölçüldü (2026-09-12): yeni
-  bir `area:llm` issue Sentry'de **high priority** olur → mevcut "Send a notification
-  for high priority issues" kuralı (807520) e-posta atar; yani LLM arızası sessiz
-  kalmaz. Ek olarak `area:llm`'e özel, 30 dk throttle'lı bağımsız bir kural için
+  ya da embedding modeli düşerse Sentry'de issue açılır.
+  **Uçtan uca kanıtlandı (2026-09-12):** `tools/prove-ai-alert.mjs` ile üretimde
+  tetiklenen arıza Sentry'ye `FEEDL-4` olarak düştü (`culprit: POST /api/inngest`),
+  `issue.priority:high` oldu ve mevcut "Send a notification for high priority
+  issues" kuralı (807520) tetiklendi — e-posta alındı. Yani **uygulama çalışma
+  zamanından yakalama çalışıyor** ve AI arızası sessiz kalmıyor (önceki şüphe:
+  90 günde uygulamadan hiç olay gelmemişti; bunun nedeni arıza olmamasıydı).
+  Ek olarak `area:llm`'e özel, 30 dk throttle'lı bağımsız bir kural için
   `tools/create-llm-alert.mjs` hazırdır (Vercel'deki `SENTRY_AUTH_TOKEN` yalnız
   source-map yetkili → 403; kural, `alerts:write` scope'lu `SENTRY_API_TOKEN` ile
-  ya da Sentry UI'dan kurulur). Kanıt betiği: `tools/sentry-llm-smoke.mjs`.
+  ya da Sentry UI'dan kurulur).
+- **Embedding girdi tavanı (2026-09-12):** embedding modeli **4096 token**'da 422
+  döner ve OpenRouter'ın `truncate` parametresini yok sayar (canlı ölçüm) — bu
+  yüzden uzun bir geri bildirim tüm AI zenginleştirmesini (özet/triage/etiket/
+  benzerlik) düşürüyordu. `capEmbeddingInput` (7000 karakter, PII maskesinden
+  SONRA) ile kırpılır. Ölçüm: `tools/probe-embedding-limit.mjs`.
 
 ### Takas analizi & yeniden bakılacaklar
 | Karar | Takas | Yeniden bak |
@@ -326,6 +335,7 @@ e2e/               Playwright smoke + axe erişilebilirlik
 | 9 | README/mimari belgelerdeki eskimiş satırlar (Paddle sandbox, 98 test, Canny karşılaştırması) | Dokümantasyon | 2 | 2 | 1 | 8 |
 | 10 | Entegrasyon webhook'ları `?ws=&t=` URL token'a bağlı; token yoksa 403 (Intercom webhook için doğrulanmamış kanal) | Mimari | 2 | 3 | 3 | 8 |
 | 11 | Özel `getWorkspaceId` (host/cookie/widget) — tenant izolasyonu tek testle sunucu kanıtı eksik | Mimari | 2 | 3 | 4 | 6 |
+| 12 | Embedding girdisi 4096 token sınırını aşınca TÜM AI zenginleştirmesi düşüyordu (DÜZELTİLDİ: `capEmbeddingInput`, 7000 karakter; 2026-09-12'de canlı provada bulundu) | Kod | 3 | 2 | 1 | 25 |
 
 ### Fazlı (feature ile paralel) iyileştirme planı
 - **Faz 1 (bu hafta, küçük):** README/mimari doğruluğu (#9), orta ve düşük borçların kapatılması — kod/içerik düzeltmeleri zaten commit'li. `tsc`/`vitest` (111) yeşil.

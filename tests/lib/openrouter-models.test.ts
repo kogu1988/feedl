@@ -49,3 +49,29 @@ describe("chatModels", () => {
     expect(chatModels()).toEqual(["mistralai/mistral-nemo"]);
   });
 });
+
+describe("capEmbeddingInput", () => {
+  // 2026-09-12 (FEEDL-4) dersi: embedding modeli 4096 token'da 422 veriyor ve
+  // OpenRouter `truncate` parametresini yok sayıyor. Kırpma olmadan uzun bir
+  // geri bildirim tüm AI zenginleştirmesini düşürüyordu.
+  it("sınırın altındaki girdiyi değiştirmez", async () => {
+    const { capEmbeddingInput } = await import("@/lib/ai/openrouter");
+    expect(capEmbeddingInput("kısa geri bildirim")).toBe("kısa geri bildirim");
+  });
+
+  it("sınırı aşan girdiyi tavana kırpar (422 yerine gömme yapılabilsin)", async () => {
+    const {
+      capEmbeddingInput,
+      MAX_EMBEDDING_INPUT_CHARS,
+    } = await import("@/lib/ai/openrouter");
+    const out = capEmbeddingInput("x".repeat(50_000));
+    expect(out.length).toBe(MAX_EMBEDDING_INPUT_CHARS);
+  });
+
+  it("tavan, modelin 4096 token sınırının altında kalacak kadar küçük", async () => {
+    const { MAX_EMBEDDING_INPUT_CHARS } = await import("@/lib/ai/openrouter");
+    // En kötü ölçülen tokenizasyon ~2 karakter/token'dır (bkz. probe betiği),
+    // bu yüzden 7000 karakter ≈ 3500 token → sınırın altında.
+    expect(MAX_EMBEDDING_INPUT_CHARS).toBeLessThanOrEqual(8000);
+  });
+});
