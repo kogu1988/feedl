@@ -589,11 +589,15 @@ export const notifyCommentCreated = inngest.createFunction(
         throw new NonRetriableError(`Post not found: ${comment.postId}`);
       }
 
-      const [commenter] = await getDb()
-        .select({ name: users.name })
-        .from(users)
-        .where(eq(users.id, comment.userId))
-        .limit(1);
+      // 2026-09-12 (denetim K4): yazarı silinmiş bir yorumun user_id'si NULL
+      // olabilir (içerik korunur, yazar bağlantısı düşer) → sorgu atlanır.
+      const [commenter] = comment.userId
+        ? await getDb()
+            .select({ name: users.name })
+            .from(users)
+            .where(eq(users.id, comment.userId))
+            .limit(1)
+        : [];
 
       const followerRows = await getDb()
         .selectDistinct({

@@ -132,8 +132,12 @@ export async function POST(req: NextRequest) {
     // ait olmalı) — session JWT'ye gömülür, iframe istekleri bunu kullanır.
     const workspaceSlug = await resolveWorkspaceSlug(parsed.data.workspace);
 
-    // posts.userId FK users.id NOT NULL — widget kullanıcısı kayıt edilmeden
-    // fikir/oy yazılamaz. Email yoksa sentezlenir; role asla yükseltilmez.
+    // Widget kullanıcısı kayıt edilir: kimlik (oy/yorum sahipliği ve
+    // email modunda oturum) bu satıra dayanır. NOT: 2026-09-12'den beri
+    // `posts.user_id` nullable (denetim K4 — hesap silindiğinde içerik korunur,
+    // yazar SET NULL); bu kayıt yine de yapılır çünkü oyun/yorumun bir sahibi
+    // olmalı ve aynı kullanıcı tekrar gelince kimliği eşleşmeli.
+    // Email yoksa sentezlenir; role asla yükseltilmez.
     const userId = toWidgetUserId(identity.sub);
     await getDb()
       .insert(users)

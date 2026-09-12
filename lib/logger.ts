@@ -2,8 +2,13 @@ import "server-only";
 
 // Sprint 63w (B1) — yapısal log. Gözlemlenebilirlik: şu an sadece `console.error`
 // vardı; bu, seviyeli + JSON satırlı log üretir (stack/context taşır) ve
-// LOG_LEVEL env'iyle filtrelenir. Sentry gibi bir APM'e (Faz 1) köprü kurar.
+// LOG_LEVEL env'iyle filtrelenir.
 // Kullanım: `log.error("analiz başarısız", { where: "insights", err })`
+//
+// 2026-09-12 (denetim K2) — Sentry köprüsü: `emit` hata seviyesinde
+// `console.error` kullanır ve Sentry `captureConsoleIntegration` bunu olaya
+// çevirir. Yani bu logger'ı kullanmak hatayı otomatik olarak Sentry'ye taşır;
+// ayrıca bir `captureException` çağrısı EKLENMEZ (çift raporlama olurdu).
 
 type LogLevel = "debug" | "info" | "warn" | "error";
 

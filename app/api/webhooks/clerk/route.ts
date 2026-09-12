@@ -152,6 +152,13 @@ export async function POST(req: Request) {
       case "user.deleted": {
         const { id } = evt.data;
         if (id) {
+          // 2026-09-12 (denetim K4) — artık İÇERİK SİLMEZ, ANONİMLEŞTİRİR:
+          // posts.user_id ve comments.user_id FK'ları SET NULL olduğu için
+          // (migration 0057) kullanıcının fikirleri/yorumları KALIR, yazar
+          // bağlantısı düşer. Önceki CASCADE zinciri başka kullanıcıların
+          // oylarını ve yorumlarını da götürüyordu.
+          // Yalnız kullanıcının KENDİ eylemleri (oy, takip, üyelik, davet)
+          // cascade ile temizlenir — bunlar başkasının içeriğini taşımaz.
           await getDb().delete(users).where(eq(users.id, id));
         }
         break;

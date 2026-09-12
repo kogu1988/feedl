@@ -33,9 +33,46 @@ export async function getDefaultBoardId(
     )
     .limit(1);
   if (!row) {
-    throw new Error(
-      `Varsayılan board "${DEFAULT_BOARD_SLUG}" bulunamadı. Migration 0030 uygulanmalı.`,
-    );
+    // 2026-09-12 (denetim K1) — SELF-HEAL. Önceden burada hata fırlatılıyordu:
+    // varsayılan board'u eksik kalmış bir workspace (ör. onboarding sırasında
+    // board insert'i düşmüş bir hesap) HER istekte kalıcı olarak kırılıyordu ve
+    // kurtarma yolu yoktu. Artık eksik board oluşturulur. Yarış durumunda
+    // unique index (workspace_id, slug) devreye girer; çakışırsa satır okunur.
+    const [created] = await getDb()
+      .insert(boards)
+      .values({
+        workspaceId,
+        name: "Genel",
+        slug: DEFAULT_BOARD_SLUG,
+        visibility: "public",
+        sortOrder: 0,
+      })
+      .onConflictDoNothing({ target: [boards.workspaceId, boards.slug] })
+      .returning({ id: boards.id });
+    if (created) {
+      cachedBoardId = created.id;
+      cachedWorkspaceId = workspaceId;
+      return created.id;
+    }
+    // Yarış: paralel bir istek oluşturdu → onun satırını oku.
+    const [again] = await getDb()
+      .select({ id: boards.id })
+      .from(boards)
+      .where(
+        and(
+          eq(boards.workspaceId, workspaceId),
+          eq(boards.slug, DEFAULT_BOARD_SLUG),
+        ),
+      )
+      .limit(1);
+    if (!again) {
+      throw new Error(
+        `Varsayılan board "${DEFAULT_BOARD_SLUG}" oluşturulamadı (workspace ${workspaceId}).`,
+      );
+    }
+    cachedBoardId = again.id;
+    cachedWorkspaceId = workspaceId;
+    return again.id;
   }
   cachedBoardId = row.id;
   cachedWorkspaceId = workspaceId;

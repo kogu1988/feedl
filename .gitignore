@@ -81,3 +81,6 @@ tools/merge-backup-*.json
 
 # contextcheck tool artifacts
 .contextcheck/
+
+# editor (Zed) yerel ayarları
+/.zed/

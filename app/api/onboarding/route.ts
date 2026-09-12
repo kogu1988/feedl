@@ -1,5 +1,6 @@
 import "server-only";
 
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { eq } from "drizzle-orm";
@@ -7,6 +8,7 @@ import { z } from "zod";
 
 import { getDb } from "@/lib/db";
 import { workspaces, boards, workspaceMembers } from "@/lib/db/schema";
+import { PLANS } from "@/lib/paddle";
 
 // Sprint 63 (onboarding wizard) — self-serve ilk workspace oluşturma. Yeni
 // kaydolan kullanıcı (henüz admin değil) kendi workspace + varsayılan board'ını
@@ -113,52 +115,67 @@ export async function POST(req: Request) {
     const brandColor = parsed.data.brandColor ?? null;
 
     try {
-      const [created] = await getDb()
-        .insert(workspaces)
-        .values({
-          name: parsed.data.name,
-          slug: wsSlug,
-          brandColor,
-          // Onboarding her zaman FREE plan ile başlar (Faz 5 kararı). Schema
-          // default'ları zaten free (free: 1 board, 1 üye, 50 takipçi); burada
-          // açıkça yazmak intent'i ve limit kontrolünün tabanını belgeler.
-          plan: "free",
-          memberLimit: 1,
-          boardLimit: 1,
-          trackedUserLimit: 50,
-        })
-        .returning({
-          id: workspaces.id,
-          name: workspaces.name,
-          slug: workspaces.slug,
-          plan: workspaces.plan,
-          memberLimit: workspaces.memberLimit,
-          boardLimit: workspaces.boardLimit,
-          trackedUserLimit: workspaces.trackedUserLimit,
-        });
+      // 2026-09-12 (denetim K1) — ÜÇ YAZMA TEK ATOMİK BATCH'te.
+      //
+      // Önce workspace → board → üyelik AYRI AYRI yazılıyordu. Board insert'i
+      // düşerse (veya istek arada kesilirse) kullanıcıda BOARD'SUZ bir workspace
+      // kalıyordu ve `getDefaultBoardId` varsayılan board'u bulamayınca hata
+      // fırlattığı için o hesabın portalı/widget'ı KALICI olarak kırılıyordu.
+      //
+      // neon-http interaktif transaction desteklemez; `db.batch()` birden çok
+      // ifadeyi TEK transaction'da gönderir. Batch içinde bir ifadenin sonucu
+      // diğerine girdi olamaz (hepsi önceden kurulur), bu yüzden id'ler
+      // ÖNCEDEN üretilir.
+      const workspaceId = randomUUID();
+      const boardId = randomUUID();
 
-      // Sprint 63 (rev., madde limit kontrolü): free tier her zaman 1 board +
-      // 1 owner (üye) oluşturmaya izin verir. Yine de oluşturulan kaynak
-      // sayıları workspace'in kendi limitlerine sığıyor mu doğrula — plan
-      // limiti misconfigure ise (örn. 0) baştan reddet, sessizce aşma.
-      if (created.boardLimit < 1 || created.memberLimit < 1) {
+      // Limit kontrolü artık bir ÖN KOŞUL: eskiden yazdıktan sonra okunup
+      // doğrulanıyordu, yani kötü limitli workspace kalıcı olarak oluşuyordu.
+      // Değerler tek kaynaktan (PLANS) gelir.
+      const free = PLANS.free;
+      if (free.boardLimit < 1 || free.memberLimit < 1) {
         throw new Error(
-          `Board/üye limiti çok düşük (board=${created.boardLimit}, üye=${created.memberLimit}).`,
+          `Free plan limitleri geçersiz (board=${free.boardLimit}, üye=${free.memberLimit}); workspace oluşturulmadı.`,
         );
       }
 
-      // Varsayılan board + owner (aynı workspace). Board sayısı 1 ≤ boardLimit,
-      // üye sayısı 1 ≤ memberLimit (yeni workspace boş başlar).
-      await getDb().insert(boards).values({
-        workspaceId: created.id,
-        name: "Genel",
-        slug: "genel",
-        visibility: "public",
-        sortOrder: 0,
-      });
-      await getDb()
-        .insert(workspaceMembers)
-        .values({ workspaceId: created.id, userId, role: "owner" });
+      const [wsRows] = await getDb().batch([
+        getDb()
+          .insert(workspaces)
+          .values({
+            id: workspaceId,
+            name: parsed.data.name,
+            slug: wsSlug,
+            brandColor,
+            // Onboarding her zaman FREE plan ile başlar (Faz 5 kararı).
+            plan: "free",
+            memberLimit: free.memberLimit,
+            boardLimit: free.boardLimit,
+            trackedUserLimit: free.trackedUserLimit,
+          })
+          .returning({
+            id: workspaces.id,
+            name: workspaces.name,
+            slug: workspaces.slug,
+            plan: workspaces.plan,
+            memberLimit: workspaces.memberLimit,
+            boardLimit: workspaces.boardLimit,
+            trackedUserLimit: workspaces.trackedUserLimit,
+          }),
+        // Varsayılan board: `getDefaultBoardId` "genel" slug'ını ZORUNLU tutar.
+        getDb().insert(boards).values({
+          id: boardId,
+          workspaceId,
+          name: "Genel",
+          slug: "genel",
+          visibility: "public",
+          sortOrder: 0,
+        }),
+        getDb()
+          .insert(workspaceMembers)
+          .values({ workspaceId, userId, role: "owner" }),
+      ]);
+      const created = wsRows[0];
 
       // Aktif workspace çerezi → getWorkspaceId bu workspace'i kullanır.
       const response = NextResponse.json(

@@ -18,7 +18,9 @@ export interface CommentCardData {
   createdAt: Date;
   editedAt: Date | null;
   authorName: string | null;
-  authorUserId: string;
+  // 2026-09-12 (denetim K4): hesabını silen kullanıcıda null olur — içerik
+  // korunur, yazar bağlantısı düşer. UI "Silinmiş kullanıcı" gösterir.
+  authorUserId: string | null;
 }
 
 // Sprint 24: tek yorum kartı — kendi yorumunu düzenle/sil, giriş yapan
@@ -109,7 +111,9 @@ export function CommentCard({
         <div className="flex items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-medium text-foreground">
-              {comment.authorName ?? "Üye"}
+              {comment.authorUserId === null
+                ? "Silinmiş kullanıcı"
+                : (comment.authorName ?? "Üye")}
             </span>
             <span className="text-sm text-muted-foreground">
               {trDateTimeFormatter.format(comment.createdAt)}

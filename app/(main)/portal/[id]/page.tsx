@@ -720,7 +720,10 @@ async function loadComments(postId: string, isAdmin: boolean) {
       authorUserId: comments.userId,
     })
     .from(comments)
-    .innerJoin(users, eq(comments.userId, users.id))
+    // 2026-09-12 (denetim K4): yazarı silinmiş (user_id NULL) yorumlar
+    // KAYBOLMASIN — innerJoin onları sessizce düşürürdü. authorName null gelir,
+    // UI "Silinmiş kullanıcı" gösterir.
+    .leftJoin(users, eq(comments.userId, users.id))
     .where(
       isAdmin
         ? eq(comments.postId, postId)

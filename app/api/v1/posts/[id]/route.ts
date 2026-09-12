@@ -83,7 +83,9 @@ export async function GET(
         createdAt: comments.createdAt,
       })
       .from(comments)
-      .innerJoin(users, eq(users.id, comments.userId))
+      // 2026-09-12 (denetim K4): yazarı silinmiş yorumlar listeden düşmesin
+      // (innerJoin `user_id IS NULL` satırlarını atardı).
+      .leftJoin(users, eq(users.id, comments.userId))
       .where(and(eq(comments.postId, id), eq(comments.isInternal, false)))
       .orderBy(asc(comments.createdAt));
 

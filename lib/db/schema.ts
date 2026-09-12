@@ -85,9 +85,11 @@ export const posts = pgTable(
     boardId: uuid("board_id").references(() => boards.id, {
       onDelete: "set null",
     }),
-    userId: text("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
+    // 2026-09-12 (denetim K4) — hesap silindiğinde fikir KORUNUR, yazar
+    // bağlantısı düşer (`SET NULL`); UI "Silinmiş kullanıcı" gösterir. Önceki
+    // CASCADE, cascade zinciriyle BAŞKA kullanıcıların oylarını ve yorumlarını
+    // da siliyordu. Ayrıntı: migrations/0057.
+    userId: text("user_id").references(() => users.id, { onDelete: "set null" }),
     title: text("title").notNull(),
     description: text("description").notNull(),
     status: postStatusEnum("status").notNull().default("open"),
@@ -458,9 +460,10 @@ export const comments = pgTable(
     postId: uuid("post_id")
       .notNull()
       .references(() => posts.id, { onDelete: "cascade" }),
-    userId: text("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
+    // 2026-09-12 (denetim K4) — hesap silindiğinde yorum KORUNUR (yazar null).
+    // `parent_id` cascade'i kasıtlı olarak DEĞİŞTİRİLMEDİ: yazarın kendi
+    // yorumunu silmesi yanıtlarını da götürür (Sprint 24 tasarım kararı).
+    userId: text("user_id").references(() => users.id, { onDelete: "set null" }),
     body: text("body").notNull(),
     isInternal: boolean("is_internal").notNull().default(false),
     // Sprint 20 merge: yorum taşınması izi (votes.mergedFromPostId ile aynı model).
@@ -1045,7 +1048,12 @@ export const companies = pgTable("companies", {
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
-});
+  },
+  // 2026-09-12 (denetim) — `companies` gelir skoru sıcak yolunda workspace
+  // filtresiyle JOIN ediliyor (revenueScoreOrderSql, loadPostImpactContexts,
+  // loadCustomerCounts); index yoktu → seq scan.
+  (table) => [index("companies_workspace_idx").on(table.workspaceId)],
+);
 
 export type Company = typeof companies.$inferSelect;
 export type NewCompany = typeof companies.$inferInsert;
