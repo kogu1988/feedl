@@ -6,6 +6,7 @@ import { and, eq, sql } from "drizzle-orm";
 
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
+import { decryptSecret } from "@/lib/encrypt";
 import { webhookEndpoints } from "@/lib/db/schema";
 
 // Sprint 34 — webhook teslimatı (analiz raporu P4.2). İmza şeması:
@@ -36,10 +37,16 @@ export interface WebhookEndpointRow {
 }
 
 // Olaya abone, aktif endpoint'ler. events varchar[] @> tek elemanlı dizi.
+//
+// Secret DB'de ŞİFRELİ tutulur (`encryptSecret`, 2026-09-12 incelemesi: eskiden
+// düz metindi). İmzalamak için burada çözülür. Geçiş güvenli: `decryptSecret`
+// şifreli olmayan eski satırları aynen döner. Şifreli ama ÇÖZÜLEMEYEN satır
+// (anahtar değişmiş/bozuk veri) teslim edilmez — aksi halde ciphertext ile
+// imzalanır ve alıcı 401 verir; sessizce yanlış imza üretmek yerine atlanır.
 export async function loadWebhookEndpoints(
   eventName: WebhookEventName,
 ): Promise<WebhookEndpointRow[]> {
-  return getDb()
+  const rows = await getDb()
     .select({
       id: webhookEndpoints.id,
       url: webhookEndpoints.url,
@@ -53,6 +60,17 @@ export async function loadWebhookEndpoints(
         sql`${webhookEndpoints.events} @> ARRAY[${eventName}]::varchar[]`,
       ),
     );
+
+  return rows.flatMap((row) => {
+    const secret = decryptSecret(row.secret);
+    if (!secret) {
+      console.error(
+        `[webhook] endpoint ${row.id}: secret çözülemedi (anahtar değişmiş olabilir) — atlanıyor`,
+      );
+      return [];
+    }
+    return [{ id: row.id, url: row.url, secret }];
+  });
 }
 
 export function signWebhookPayload(secret: string, body: string): string {

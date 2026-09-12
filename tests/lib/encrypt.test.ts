@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Sprint 63t — entegrasyon credential şifreleme (AES-256-GCM) roundtrip + geçiş.
 // lib/encrypt server-only; Node (vitest) ortamında server-only no-op'tur.
@@ -36,5 +36,37 @@ describe("encryptSecret / decryptSecret", () => {
     const { decryptSecret } = await import("@/lib/encrypt");
     expect(decryptSecret("enc:v1:bad")).toBeNull();
     expect(decryptSecret("enc:v1:::" )).toBeNull();
+  });
+});
+
+describe("ENCRYPTION_KEY eksikken sessiz düşüş (2026-09-12 incelemesi)", () => {
+  it("production'da BİR KEZ gürültülü uyarır, düz metne yine düşer", async () => {
+    vi.resetModules();
+    vi.stubEnv("NODE_ENV", "production");
+    delete process.env.ENCRYPTION_KEY;
+    const captureMessage = vi.fn();
+    vi.doMock("@sentry/nextjs", () => ({ captureMessage }));
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    const { encryptSecret, decryptSecret } = await import("@/lib/encrypt");
+
+    // Anahtar yok: değer düz geçer (mevcut davranış korunur)...
+    expect(encryptSecret("plain-value")).toBe("plain-value");
+    expect(decryptSecret("plain-value")).toBe("plain-value");
+    // ...ama artık SESSİZ DEĞİL: Sentry'ye hata gider.
+    expect(captureMessage).toHaveBeenCalledTimes(1);
+    expect(captureMessage.mock.calls[0][1]).toMatchObject({
+      level: "error",
+      tags: { area: "encrypt" },
+    });
+
+    // Aynı süreçte tekrar çağrılırsa spam etmez.
+    encryptSecret("another");
+    decryptSecret("another");
+    expect(captureMessage).toHaveBeenCalledTimes(1);
+
+    errSpy.mockRestore();
+    vi.unstubAllEnvs();
+    vi.doUnmock("@sentry/nextjs");
   });
 });

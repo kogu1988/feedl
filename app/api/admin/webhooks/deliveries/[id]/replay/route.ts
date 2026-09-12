@@ -7,6 +7,7 @@ import { z } from "zod";
 import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
+import { decryptSecret } from "@/lib/encrypt";
 import { webhookDeliveries, webhookEndpoints } from "@/lib/db/schema";
 import {
   deliverWebhook,
@@ -76,9 +77,19 @@ export async function POST(
       );
     }
 
+    // Secret şifreli saklanır (2026-09-12): imzalama için çözülür. Çözülemezse
+    // teslim etme — ciphertext ile imzalamak alıcıda 401 üretir.
+    const secret = decryptSecret(endpoint.secret);
+    if (!secret) {
+      return NextResponse.json(
+        { success: false, error: "Endpoint secret'ı çözülemedi." },
+        { status: 500 },
+      );
+    }
+
     const payload = delivery.payload as unknown;
     await deliverWebhook(
-      { id: endpoint.id, url: endpoint.url, secret: endpoint.secret } as WebhookEndpointRow,
+      { id: endpoint.id, url: endpoint.url, secret } as WebhookEndpointRow,
       delivery.event as WebhookEventName,
       payload,
     );

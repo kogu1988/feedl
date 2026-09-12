@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
+import * as Sentry from "@sentry/nextjs";
 
 // Sprint 63t — workspace entegrasyon gizli bilgileri (api_key, webhook_secret)
 // DÜZ saklanıyordu; bu yardımcı AES-256-GCM ile şifreler. GCM hem gizlilik hem
@@ -22,10 +23,39 @@ function getKey(): Buffer {
   return buf;
 }
 
+// Sessiz düşüşü kapat (2026-09-12 kod incelemesi). ENCRYPTION_KEY
+// production'da eksik/kaldırılmışsa `encryptSecret` SESSİZCE düz metin
+// yazıyordu ve hiçbir uyarı çıkmıyordu — yanlış bir deploy fark edilmeden
+// tüm yeni entegrasyon secret'larını şifresiz bırakabilirdi.
+//
+// `console.error` tek başına yetmez: sunucu konsolu Sentry'ye otomatik akmıyor
+// (log entegrasyonu yapılandırılmadı), bu yüzden açık `captureMessage`
+// kullanılır. Yerel/test ortamında düz metin BEKLENEN davranış olduğu için
+// yalnız production'da raporlanır; `warnedMissingKey` bayrağı her secret
+// işleminde log spam'ini önler (tek uyarı).
+let warnedMissingKey = false;
+
+function warnPlaintextFallback(): void {
+  if (warnedMissingKey) return;
+  warnedMissingKey = true;
+  const message =
+    "ENCRYPTION_KEY tanımsız — entegrasyon secret'ları DÜZ METİN saklanıyor!";
+  console.error(`[encrypt] ${message}`);
+  if (process.env.NODE_ENV !== "production") return;
+  try {
+    Sentry.captureMessage(message, { level: "error", tags: { area: "encrypt" } });
+  } catch {
+    /* Sentry yapılandırılmamışsa ana akışı bozma */
+  }
+}
+
 // Şifreleme anahtarı kurulu mu? (Değilse entegrasyon secret'ı düz saklanır —
-// yerel geliştirme için; production'da kurulmalı.)
+// yerel geliştirme için; production'da kurulmalı.) Uyarı tek yerden, burada
+// verilir: `encryptSecret`/`decryptSecret` ikisi de buradan geçer.
 export function isEncryptionConfigured(): boolean {
-  return KEY_B64.length > 0;
+  const configured = KEY_B64.length > 0;
+  if (!configured) warnPlaintextFallback();
+  return configured;
 }
 
 // Değeri şifrele. Boş / zaten şifreli (enc:v1:) değerler dokunulmadan döner.

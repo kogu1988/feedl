@@ -8,6 +8,7 @@ import { generateWebhookSecret } from "@/lib/api-keys";
 import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
+import { encryptSecret } from "@/lib/encrypt";
 import { webhookEndpoints } from "@/lib/db/schema";
 import { requirePro } from "@/lib/plan";
 import { WEBHOOK_EVENTS } from "@/lib/webhooks/dispatch";
@@ -94,6 +95,9 @@ export async function POST(req: Request) {
       );
     }
 
+    // Secret DB'ye ŞİFRELİ yazılır (2026-09-12 incelemesi: eskiden düz metindi ve
+    // DB dökümü sızarsa saldırgan alıcıya geçerli imzalı sahte event
+    // gönderebilirdi). Kullanıcıya DÜZ hali yalnız bu yanıtta bir kez döner.
     const secret = generateWebhookSecret();
     const [created] = await getDb()
       .insert(webhookEndpoints)
@@ -101,7 +105,7 @@ export async function POST(req: Request) {
         workspaceId: await getWorkspaceId(),
         url: parsed.data.url,
         events: [...parsed.data.events],
-        secret,
+        secret: encryptSecret(secret),
       })
       .returning({ id: webhookEndpoints.id, url: webhookEndpoints.url });
 
