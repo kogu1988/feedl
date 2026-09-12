@@ -101,8 +101,14 @@ export async function enforceLimit(
 
 // Paddle webhook imza doğrulama. Paddle bir `Paddle-Signature` header'ı gönderir
 // (format: ts=<epoch>;h1=<hex>); payload'ın HMAC-SHA256'sı secret ile doğrulanır.
-// Resmi doğrulama SDK `paddle.webhooks.unmarshal` ile yapılır; alt kısımdaki
-// manuel v1 HMAC (verifyPaddleSignature) yedek/yedek olarak korunur.
+//
+// ÜRETİM YOLU `isValidPaddleSignature`'dır (aşağıda, SDK). Bu manuel v1 HMAC
+// implementasyonu bilinçli olarak KORUNUR:
+//  • SDK'ya bağımlı olmayan, saf HMAC'li bir yedek yol (SDK davranışı
+//    değişirse/erişilemezse `verifyPaddleWebhook` buna çevrilebilir),
+//  • testleri mevcut: tests/lib/paddle-signature.test.ts (4 vaka) — yani
+//    "ölü kod" değil, test edilmiş bir yedek. Silmek testli bir güvenlik
+//    yolunu kaldırır (2026-09-12 kod incelemesi kararı: kalsın).
 import { createHmac, timingSafeEqual } from "node:crypto";
 
 export function verifyPaddleSignature(payload: string, signatureHeader: string): boolean {
@@ -177,12 +183,47 @@ export async function fetchCustomerEmail(customerId: string): Promise<string | n
   }
 }
 
-// Webhook event verisi (kullanıcının custom_data ile workspace'i eşleştirir).
-export const paddleSubscriptionSchema = z.object({
-  id: z.string().min(1),
-  status: z.string(),
-  customer_id: z.string().optional(),
+// Paddle webhook `data` gövdesi (2026-09-12 kod incelemesi).
+//
+// Neden katı bir şema DEĞİL: Paddle event tipine göre farklı alanlar gönderir
+// ve parse hatası webhook'u düşürür → `workspaces.plan` senkronu durur
+// (billing'in kritik yolu). Bu yüzden her yaprak `.catch(undefined)` ile
+// yazılır: beklenmeyen tip gelirse alan `undefined` olur, parse ASLA patlamaz.
+// Kazanç: `as string` cast'leri ve `??` zincirleri kaybolur; alanlar tek
+// kaynaktan tiplenir (eski `paddleSubscriptionSchema` kullanılmıyordu — kaldırıldı).
+const optionalString = z.string().optional().catch(undefined);
+
+export const paddleWebhookDataSchema = z.object({
+  id: optionalString,
+  subscription_id: optionalString,
+  status: optionalString,
+  customer_id: optionalString,
+  email: optionalString,
+  price_id: optionalString,
+  product_id: optionalString,
+  customer: z
+    .object({ id: optionalString, email: optionalString })
+    .optional()
+    .catch(undefined),
   items: z
-    .array(z.object({ price: z.object({ id: z.string() }).optional() }))
-    .optional(),
+    .array(
+      z.object({
+        price: z
+          .object({ id: optionalString, product_id: optionalString })
+          .optional()
+          .catch(undefined),
+      }),
+    )
+    .optional()
+    .catch(undefined),
+  custom_data: z
+    .object({ slug: optionalString, workspace_id: optionalString })
+    .optional()
+    .catch(undefined),
+  scheduled_change: z
+    .object({ action: optionalString, effective_at: optionalString })
+    .optional()
+    .catch(undefined),
 });
+
+export type PaddleWebhookData = z.infer<typeof paddleWebhookDataSchema>;

@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 // Sprint 63i (test derinleştirme) — Paddle plan türetme + limitler (saf).
-import { derivePlanFromStatus, PLANS, planFromString } from "@/lib/paddle";
+import {
+  derivePlanFromStatus,
+  paddleWebhookDataSchema,
+  PLANS,
+  planFromString,
+} from "@/lib/paddle";
 
 describe("planFromString", () => {
   it("maps 'pro' to pro", () => {
@@ -70,5 +75,46 @@ describe("derivePlanFromStatus", () => {
     expect(derivePlanFromStatus("past_due")).toBe("free");
     expect(derivePlanFromStatus("dunned")).toBe("free");
     expect(derivePlanFromStatus("expired")).toBe("free");
+  });
+});
+
+describe("paddleWebhookDataSchema (2026-09-12 incelemesi)", () => {
+  // EN ÖNEMLİ özellik: parse ASLA patlamaz. Webhook'un reddedilmesi plan
+  // senkronunu durdurur (billing'in kritik yolu), bu yüzden şema katı değil —
+  // her yaprak `.catch(undefined)` taşır.
+  it("çöp/eksik payload'da patlamaz", () => {
+    const garbage = [
+      {},
+      { id: 123, status: null, items: "nope" },
+      { customer: [], custom_data: 5, items: [{ price: { id: 7 } }] },
+    ];
+    for (const payload of garbage) {
+      expect(paddleWebhookDataSchema.safeParse(payload).success).toBe(true);
+    }
+  });
+
+  it("beklenen alanları tipli çıkarır", () => {
+    const parsed = paddleWebhookDataSchema.parse({
+      id: "sub_1",
+      status: "active",
+      customer: { id: "ctm_1", email: "a@b.c" },
+      items: [{ price: { id: "pri_1", product_id: "pro_1" } }],
+      custom_data: { slug: "acme", workspace_id: "ws-1" },
+      scheduled_change: { action: "cancel", effective_at: "2026-10-01T00:00:00Z" },
+    });
+    expect(parsed.id).toBe("sub_1");
+    expect(parsed.customer?.email).toBe("a@b.c");
+    expect(parsed.items?.[0]?.price?.id).toBe("pri_1");
+    expect(parsed.custom_data?.workspace_id).toBe("ws-1");
+    expect(parsed.scheduled_change?.effective_at).toBe("2026-10-01T00:00:00Z");
+  });
+
+  it("yanlış tipli alanı undefined yapar (parse yine başarılı)", () => {
+    const parsed = paddleWebhookDataSchema.parse({
+      status: 42,
+      items: [{ price: "x" }],
+    });
+    expect(parsed.status).toBeUndefined();
+    expect(parsed.items?.[0]?.price).toBeUndefined();
   });
 });

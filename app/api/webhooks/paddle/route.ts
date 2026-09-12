@@ -5,12 +5,22 @@ import { eq } from "drizzle-orm";
 
 import { getDb } from "@/lib/db";
 import { workspaces } from "@/lib/db/schema";
-import { PADDLE_ENV, derivePlanFromStatus, verifyPaddleWebhook, fetchCustomerEmail } from "@/lib/paddle";
+import {
+  PADDLE_ENV,
+  derivePlanFromStatus,
+  verifyPaddleWebhook,
+  fetchCustomerEmail,
+  paddleWebhookDataSchema,
+  type PaddleWebhookData,
+} from "@/lib/paddle";
 import { upsertCustomer, upsertSubscription } from "@/lib/db/paddle-fulfillment";
 
-// Sprint 48h/64 — Paddle webhook. SDK `webhooks.unmarshal` ile imza doğrulanır
-// (raw body, JSON.parse ÖNCEDEN YAPILMAZ). subscription.activated/canceled →
-// plan senkron + `customers`/`subscriptions` aynalanır (idempotent upsert).
+// Sprint 48h/64 — Paddle webhook. İmza SDK `isSignatureValid` (HMAC) ile
+// doğrulanır; ardından raw body LENIENT parse edilir. SDK `unmarshal` (imza +
+// katı event constructor) gerçek Paddle payload'larını bazen `.map` şema
+// hatasıyla reddettiği için bilinçli olarak KULLANILMAZ — güven sınırı imzadır
+// (bkz. lib/paddle.ts). `subscription.activated/canceled` → plan senkron +
+// `customers`/`subscriptions` aynalanır (idempotent upsert).
 // Workspace eşleştirme `custom_data.workspace_id` (immutable UUID) üzerinden
 // yapılır; eski checkout'lar için `custom_data.slug` fallback kalır. Diğer
 // tipler güvenle yoksayılır. Guardrail: canlı entity silinmez; yalnız upsert.
@@ -71,38 +81,23 @@ export async function POST(req: Request) {
     }
     const { eventType, data } = verified;
 
-    const customData =
-      (data.custom_data as { slug?: string; workspace_id?: string } | undefined) ?? {};
-    const slug = customData.slug ?? "";
-    const rawWorkspaceId = customData.workspace_id ?? "";
-    const subscriptionStatus = (data.status as string | undefined) ?? "";
-    const subscriptionId =
-      (data.id as string | undefined) ?? (data.subscription_id as string | undefined) ?? "";
-    const customer = (data.customer as Record<string, unknown> | undefined) ?? {};
-    const customerId =
-      (data.customer_id as string | undefined) ??
-      (customer.id as string | undefined) ??
-      "";
-    let email =
-      (data.email as string | undefined) ??
-      (customer.email as string | undefined) ??
-      "";
-    const itemPrice = ((data.items as Array<Record<string, unknown>> | undefined)?.[0]?.price as
-      | Record<string, unknown>
-      | undefined) ?? {};
-    const priceId =
-      (itemPrice.id as string | undefined) ??
-      (data.price_id as string | undefined) ??
-      "";
-    const productId =
-      (itemPrice.product_id as string | undefined) ??
-      (data.product_id as string | undefined) ??
-      "";
-    const scheduledChange = (data.scheduled_change as Record<string, unknown> | undefined) ?? {};
-    const scheduledChangeAction =
-      (scheduledChange.action as string | undefined) ?? null;
-    const scheduledChangeAt = (scheduledChange.effective_at as string | undefined)
-      ? new Date(scheduledChange.effective_at as string)
+    // Şema parse'ı ASLA patlamaz (her yaprak `.catch(undefined)`) → beklenmeyen
+    // bir Paddle payload'ı webhook'u düşürmez. Alanlar artık cast'siz ve tipli.
+    const parsedData = paddleWebhookDataSchema.safeParse(data);
+    const d: PaddleWebhookData = parsedData.success ? parsedData.data : {};
+
+    const slug = d.custom_data?.slug ?? "";
+    const rawWorkspaceId = d.custom_data?.workspace_id ?? "";
+    const subscriptionStatus = d.status ?? "";
+    const subscriptionId = d.id ?? d.subscription_id ?? "";
+    const customerId = d.customer_id ?? d.customer?.id ?? "";
+    let email = d.email ?? d.customer?.email ?? "";
+    const itemPrice = d.items?.[0]?.price;
+    const priceId = itemPrice?.id ?? d.price_id ?? "";
+    const productId = itemPrice?.product_id ?? d.product_id ?? "";
+    const scheduledChangeAction = d.scheduled_change?.action ?? null;
+    const scheduledChangeAt = d.scheduled_change?.effective_at
+      ? new Date(d.scheduled_change.effective_at)
       : null;
 
     const workspaceId = await resolveWorkspaceId({
@@ -180,11 +175,10 @@ export async function POST(req: Request) {
       }
     }
 
-    // 3) transaction.completed — aynala (fulfillment kaydı; plan webhook'ta zaten).
-    if (eventType === "transaction.completed" && data.id) {
-      // transaction'ın subscription'ı yoksa ek kayıt gerekmez; customer varsa
-      // customer tablosunu güncelle (idempotent üstteki yol).
-    }
+    // 3) `transaction.completed` bilinçli olarak İŞLENMEZ: plan senkronu zaten
+    //    `subscription.*` webhook'unda yapılır, müşteri kaydı `customer.*` ve
+    //    abonelik upsert'i ile aynalanır. (2026-09-12: içi boş bir `if` bloğu
+    //    kaldırıldı — davranış aynı, niyet açık.)
 
     return NextResponse.json({ success: true, data: { eventType } });
   } catch (err) {
