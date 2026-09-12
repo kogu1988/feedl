@@ -42,10 +42,16 @@ export function isFeedlRootHost(host: string): boolean {
     .replace(/^https?:\/\//, "")
     .split(":")[0]
     .toLowerCase();
+  // Gelen host PORT içerebilir (localhost:3000) — host karşılaştırması porta
+  // duyarsız olmalı. 2026-09-12: bu eksik olduğu için NEXT_PUBLIC_APP_URL
+  // `http://localhost:3000` iken bile root host tanınmıyordu; `/` landing
+  // yerine /portal'a yönleniyordu ve landing e2e'de hiç test EDİLEMİYORDU.
+  // Üretimde host'larda port yok → davranış değişmez.
+  const bare = host.trim().toLowerCase().replace(/:\d+$/, "");
   return (
-    host === "feedl.app" ||
-    host === "www.feedl.app" ||
-    (appHost ? host === appHost : false)
+    bare === "feedl.app" ||
+    bare === "www.feedl.app" ||
+    (appHost ? bare === appHost : false)
   );
 }
 
