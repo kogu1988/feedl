@@ -91,3 +91,14 @@ test("widget page loads (tenant-aware shell)", async ({ page }) => {
   await page.goto("/widget");
   await expect(page.locator("body")).toBeVisible();
 });
+
+// Uptime monitörünün vuracağı uç (denetim #8). Public allowlist'te olduğu da
+// bu testle dolaylı doğrulanır: middleware listede olmayan yolu KORUR, o zaman
+// monitör 200 yerine Clerk 404'ü görürdü.
+test("health endpoint reports DB reachability", async ({ request }) => {
+  const res = await request.get("/api/health");
+  expect(res.status()).toBe(200);
+  const json = await res.json();
+  expect(json.status).toBe("ok");
+  expect(json.db).toBe("ok");
+});

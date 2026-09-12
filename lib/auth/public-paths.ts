@@ -28,6 +28,9 @@ const PUBLIC_EXACT = new Set([
   "/sitemap.xml",
   // Widget SDK'sının iframe kabuğu (Clerk oturumu taşımaz).
   "/widget",
+  // Uptime monitörü (2026-09-12): Clerk oturumu taşıyamaz, süreç+DB
+  // sağlığını bildirir. Gövdesi kasıtlı olarak içsiz (bkz. app/api/health).
+  "/api/health",
 ]);
 
 // Alt yolları da kapsayan önekler. `isPublicPath` bunları segment sınırında

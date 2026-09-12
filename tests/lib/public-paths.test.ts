@@ -24,6 +24,8 @@ describe("isPublicPath — public yüzeyler", () => {
       "/robots.txt",
       "/sitemap.xml",
       "/widget",
+      // Uptime monitörü: Clerk oturumu taşıyamaz (2026-09-12, denetim #8).
+      "/api/health",
     ]) {
       expect(isPublicPath(p), p).toBe(true);
     }
@@ -114,6 +116,9 @@ describe("isPublicPath — FAIL-CLOSED (listede yoksa korunur)", () => {
       "/pricing-page",
       "/demos",
       "/changelogs",
+      // Sağlık ucunun BENZERİ açılmamalı (önek sızması).
+      "/api/healthz",
+      "/health",
     ]) {
       expect(isPublicPath(p), p).toBe(false);
     }
