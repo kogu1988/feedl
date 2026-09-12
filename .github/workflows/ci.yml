@@ -17,9 +17,21 @@ jobs:
     # Build, gerçek servislere bağlanmadan çalışır: tüm okumalar lazy
     # (fonksiyon içinde). Yalnız Clerk build anında publishable key ister —
     # placeholder yeterli, gizli anahtar kullanılmaz.
+    #
+    # 2026-09-12 — CI publishable key'i İKİ koşulu birlikte sağlamalı:
+    #  1) FORMAT geçerli: Clerk `parsePublishableKey` `key.split('_').length === 3`
+    #     bekler, base64 parçasını decode edip `$` ile biten bir host bulmalı.
+    #     (`pk_test_ci_placeholder` bunu geçmez → middleware her istekte hata atar,
+    #     server ayağa kalkmaz, e2e webServer 120s'de timeout olur.)
+    #  2) `pk_live_` OLMALI: dev instance anahtarı (`pk_test_`) middleware'i her
+    #     istekte "dev browser handshake"ine zorlar; tarayıcı
+    #     `<frontendApi>/v1/client/handshake`'e gider ve sahte instance 400
+    #     döndüğü için sayfa gövdesi Clerk JSON'u olarak kalır (h1 yok).
+    #     Production instance yolu handshake yapmaz → public sayfalar normal render.
+    # Aşağıdaki anahtar, `placeholder.clerk.accounts.dev$`'in base64'üdür.
     env:
-      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_ci_placeholder
-      CLERK_SECRET_KEY: sk_test_ci_placeholder
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_live_cGxhY2Vob2xkZXIuY2xlcmsuYWNjb3VudHMuZGV2JA
+      CLERK_SECRET_KEY: sk_live_ci_placeholder
       DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
       NEXT_PUBLIC_APP_URL: http://localhost:3000
     steps:
@@ -51,8 +63,9 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_ci_placeholder
-      CLERK_SECRET_KEY: sk_test_ci_placeholder
+      # Format geçerli, instance SAHTE — `pk_live_` bilinçli (yukarıdaki nota bakın).
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_live_cGxhY2Vob2xkZXIuY2xlcmsuYWNjb3VudHMuZGV2JA
+      CLERK_SECRET_KEY: sk_live_ci_placeholder
       NEXT_PUBLIC_APP_URL: http://localhost:3000
       CI: true
     steps:

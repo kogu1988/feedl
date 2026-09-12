@@ -10,10 +10,15 @@ import type { BrowserContext } from "@playwright/test";
 // `npm run build` / smoke CI'ı gizli anahtar olmadan da yeşil kalır.
 
 export function isAuthConfigured(): boolean {
-  return Boolean(
-    process.env.CLERK_SECRET_KEY &&
-      process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
-  );
+  const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? "";
+  const secretKey = process.env.CLERK_SECRET_KEY ?? "";
+  if (!publishableKey || !secretKey) return false;
+  // CI, server'ın ayağa kalkabilmesi için FORMAT geçerli ama SAHTE bir
+  // publishable key kullanır (bkz. .github/workflows/ci.yml). Bu anahtarla
+  // `clerkSetup()` gerçek bir Clerk örneğine ulaşamaz; auth testleri anlamsız
+  // şekilde koşup kırmızı olur. Placeholder secret key ile bu testleri atla.
+  if (secretKey.includes("placeholder")) return false;
+  return true;
 }
 
 // Bir browser context'i Clerk test token'ıyla yapılandırır (bot koruması
