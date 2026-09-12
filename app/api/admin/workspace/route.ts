@@ -12,6 +12,7 @@ import {
 } from "@/lib/db/workspace";
 import { workspaces } from "@/lib/db/schema";
 import { effectivePlanKey } from "@/lib/paddle";
+import { detachDomainFromProject } from "@/lib/vercel-domains";
 import {
   domainVerificationRecordName,
   domainVerificationRecordValue,
@@ -141,7 +142,8 @@ async function applyCustomDomainChange(
   nextDomain: string | null,
   set: Record<string, unknown>,
 ): Promise<
-  { ok: true; verification: DomainVerificationInfo | null } | { ok: false; message: string }
+  | { ok: true; verification: DomainVerificationInfo | null; previousDomain: string | null }
+  | { ok: false; message: string }
 > {
   const [current] = await getDb()
     .select({
@@ -157,7 +159,7 @@ async function applyCustomDomainChange(
     set.customDomain = null;
     set.customDomainVerificationToken = null;
     set.customDomainVerifiedAt = null;
-    return { ok: true, verification: null };
+    return { ok: true, verification: null, previousDomain: current?.domain ?? null };
   }
 
   if (nextDomain !== current?.domain) {
@@ -178,6 +180,7 @@ async function applyCustomDomainChange(
     set.customDomainVerifiedAt = null;
     return {
       ok: true,
+      previousDomain: current?.domain ?? null,
       verification: {
         domain: nextDomain,
         recordName: domainVerificationRecordName(nextDomain),
@@ -192,6 +195,7 @@ async function applyCustomDomainChange(
   if (!current?.token) set.customDomainVerificationToken = token;
   return {
     ok: true,
+    previousDomain: current?.domain ?? null,
     verification: {
       domain: nextDomain,
       recordName: domainVerificationRecordName(nextDomain),
@@ -259,6 +263,7 @@ export async function PATCH(req: Request) {
     // 2026-09-12 — custom domain: biçim `updateSchema`'da doğrulandı; burada
     // teklik + sahiplik doğrulaması (TXT token) yönetilir.
     let domainVerification: DomainVerificationInfo | null = null;
+    let previousDomain: string | null = null;
     if (parsed.data.customDomain !== undefined) {
       const applied = await applyCustomDomainChange(
         workspaceId,
@@ -272,6 +277,8 @@ export async function PATCH(req: Request) {
         );
       }
       domainVerification = applied.verification;
+
+      previousDomain = applied.previousDomain;
     }
 
     if (parsed.data.name !== undefined) set.name = parsed.data.name;
@@ -316,6 +323,23 @@ export async function PATCH(req: Request) {
         { success: false, error: "Workspace bulunamadı." },
         { status: 404 },
       );
+    }
+
+    // Trafik hijyeni (2026-09-12): eski domain artık bu workspace'e ait değilse
+    // Vercel projesinden de düşürülür. Aksi halde eski adres bizim uygulamamıza
+    // gelmeye devam eder ve host çözümlemesi VARSAYILAN workspace'e düştüğünden
+    // müşterinin eski alan adı feedl portalını servis ederdi. Best-effort:
+    // temizlik başarısız olsa da kaydetme akışı bozulmaz (uyarı loglanır).
+    if (previousDomain && previousDomain !== updated.customDomain) {
+      try {
+        await detachDomainFromProject(previousDomain);
+      } catch (cleanupErr) {
+        console.error(
+          "eski custom domain Vercel'den düşürülemedi:",
+          previousDomain,
+          cleanupErr instanceof Error ? cleanupErr.message : cleanupErr,
+        );
+      }
     }
 
     // `domainVerification`: arayüz TXT kaydını gösterebilsin (token zaten

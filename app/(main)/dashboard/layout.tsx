@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 
 import { AppSidebar } from "@/components/custom/app-sidebar";
 import { getDashboardScope } from "@/lib/auth/admin";
+import { feedlBrandResetStyle } from "@/lib/brand-style";
 
 // Sprint 51 (Batch 2): admin kabuk — yalnız /dashboard altında solda
 // daralabilir slate sidebar; public yüzeyler (portal, yol haritası,
@@ -27,6 +28,17 @@ export default async function DashboardLayout({
   const scope = await getDashboardScope();
   return (
     <div className="flex w-full flex-col md:flex-row">
+      {/* 2026-09-12 (kullanıcı): workspace marka rengi `:root`'a yazıldığı için
+          dashboard'u da boyuyordu. Müşteri rengi yalnız DIŞARI AÇILAN yüzeylerde
+          (portal/roadmap/changelog/post detayı/widget/e-posta) geçerlidir;
+          dashboard feedl'in kendi ürün yüzeyidir.
+          Bu segment kendi paletini yayınladığı için (doküman sırası sonra gelir)
+          üstteki workspace değerlerini GEÇERSİZ kılar. Layout segmenti sayfa
+          gezinmesinde yeniden render edildiği için istemci tarafı geçişlerde de
+          doğru çalışır (pathname'e bakan bir çözüm istemci gezinmesinde eskirdi). */}
+      <style
+        dangerouslySetInnerHTML={{ __html: feedlBrandResetStyle() }}
+      />
       <AppSidebar scope={scope} />
       <div className="min-w-0 flex-1">{children}</div>
     </div>

@@ -3,6 +3,8 @@
 import { useRef, useState } from "react";
 import { AlertCircleIcon, BadgeCheckIcon, Loader2Icon } from "lucide-react";
 
+import { CUSTOM_DOMAIN_CNAME_TARGET } from "@/lib/dns-records";
+
 import { normalizeHex } from "@/lib/color";
 
 import { Notice } from "@/components/custom/notice";
@@ -76,6 +78,8 @@ export function WorkspaceSettings({
   const [verifying, setVerifying] = useState(false);
   const [verifyError, setVerifyError] = useState<string | null>(null);
   const [verifyMessage, setVerifyMessage] = useState<string | null>(null);
+  // Trafik (CNAME + Vercel) durumu — sahiplikten AYRI raporlanır.
+  const [verifyTraffic, setVerifyTraffic] = useState<string | null>(null);
 
   async function save() {
     setError(null);
@@ -141,7 +145,14 @@ export function WorkspaceSettings({
         return;
       }
       setVerifiedAt(json.data?.verifiedAt ?? new Date().toISOString());
-      setVerifyMessage("Alan adı doğrulandı. Portal artık bu adreste yayında.");
+      setVerifyMessage("Sahiplik doğrulandı.");
+      // Trafik yarısı: CNAME bize bakmıyorsa/domain projeye eklenmediyse
+      // sahiplik yine de doğrulanmıştır — kullanıcıyı hata gibi korkutmadan
+      // ne yapması gerektiğini söyleriz.
+      const traffic = json.data?.traffic as
+        | { ok?: boolean; detail?: string }
+        | undefined;
+      setVerifyTraffic(traffic?.detail ?? null);
     } catch (err) {
       setVerifyError(
         err instanceof Error ? err.message : "Doğrulanamadı. Lütfen tekrar dene.",
@@ -247,19 +258,40 @@ export function WorkspaceSettings({
                 {!verifiedAt && (
                   <>
                     <p className="text-muted-foreground">
-                      Alan adını kullanabilmek için DNS sağlayıcında şu TXT
-                      kaydını oluştur:
+                      {`Alan adının bu workspace'e düşmesi için DNS sağlayıcında İKİ kayıt gerekir:`}
                     </p>
-                    <div className="grid gap-1 font-mono">
-                      <div className="break-all">
-                        <span className="text-muted-foreground">Ad: </span>
-                        {verification.recordName}
+                    <div className="grid gap-1">
+                      <p className="font-medium">
+                        1) Sahiplik (TXT) — alan adı senin mi?
+                      </p>
+                      <div className="grid gap-1 pl-3 font-mono">
+                        <div className="break-all">
+                          <span className="text-muted-foreground">Ad: </span>
+                          {verification.recordName}
+                        </div>
+                        <div className="break-all">
+                          <span className="text-muted-foreground">Değer: </span>
+                          {verification.recordValue}
+                        </div>
                       </div>
-                      <div className="break-all">
-                        <span className="text-muted-foreground">Değer: </span>
-                        {verification.recordValue}
+                      <p className="mt-1 font-medium">
+                        {`2) Trafik (CNAME) — istekleri bize yönlendirir`}
+                      </p>
+                      <div className="grid gap-1 pl-3 font-mono">
+                        <div className="break-all">
+                          <span className="text-muted-foreground">Ad: </span>
+                          {verification.domain}
+                        </div>
+                        <div className="break-all">
+                          <span className="text-muted-foreground">Hedef: </span>
+                          {CUSTOM_DOMAIN_CNAME_TARGET}
+                        </div>
                       </div>
                     </div>
+                    <p className="text-muted-foreground">
+                      Domainin projeye eklenmesi (trafik tarafı) bizim
+                      tarafımızda yapılır; sen yalnız DNS kayıtlarını girersin.
+                    </p>
                     <Button
                       size="sm"
                       className="mt-1 justify-self-start"
@@ -275,6 +307,9 @@ export function WorkspaceSettings({
             ) : null}
             {verifyError && (
               <p className="text-xs text-destructive">{verifyError}</p>
+            )}
+            {verifyTraffic && (
+              <p className="text-xs text-muted-foreground">{verifyTraffic}</p>
             )}
             {verifyMessage && (
               <p className="text-xs text-emerald-600">{verifyMessage}</p>

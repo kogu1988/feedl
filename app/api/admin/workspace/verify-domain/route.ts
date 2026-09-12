@@ -12,6 +12,7 @@ import {
   domainVerificationRecordName,
   domainVerificationRecordValue,
 } from "@/lib/custom-domain";
+import { ensureDomainTraffic } from "@/lib/vercel-domains";
 
 // 2026-09-12 kod incelemesi — custom domain SAHİPLİK DOĞRULAMASI (DNS TXT).
 //
@@ -99,9 +100,21 @@ export async function POST() {
       .set({ customDomainVerifiedAt: verifiedAt, updatedAt: verifiedAt })
       .where(eq(workspaces.id, workspaceId));
 
+    // 2026-09-12 (kullanıcı): "SAHİPLİK" yeterli değil — domainin TRAFİK alması
+    // için (a) müşterinin CNAME'i bize bakmalı, (b) domain Vercel projesine
+    // eklenmiş olmalı. (b) bizim işimiz; burada idempotent olarak yapılır.
+    // `custom_domain_verified_at` yalnız SAHİPLİĞİ temsil etmeye devam eder
+    // (host çözümlemesi buna bakar); trafik durumu ayrı raporlanır ve DNS
+    // yayılımı geciktiğinde sahiplik doğrulamasını bloklamaz.
+    const traffic = await ensureDomainTraffic(ws.domain);
+
     return NextResponse.json({
       success: true,
-      data: { domain: ws.domain, verifiedAt: verifiedAt.toISOString() },
+      data: {
+        domain: ws.domain,
+        verifiedAt: verifiedAt.toISOString(),
+        traffic,
+      },
     });
   } catch (err) {
     console.error(
