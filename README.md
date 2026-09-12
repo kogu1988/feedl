@@ -152,6 +152,32 @@ npm run dev                 # http://localhost:3000
 
 Gizli değerler yalnız `.env.local`'de — repo'ya yazılmaz.
 
+### Vercel ortamları (Production / Preview / Development)
+
+Preview ortamı **fonksiyonel olarak tamdır** (kimlik, DB, Paddle, AI, e-posta,
+Upstash, Sentry, widget, `ENCRYPTION_KEY`). Anahtar başına tip TUTARLI tutulur
+(`vercel env ls` ile denetlenebilir) — aynı anahtarın bir ortamda Secret,
+başkasında Config olması "needs attention" uyarısı üretir.
+
+Preview'a **bilinçli olarak eklenmeyenler**: inbound webhook sırları
+(`PADDLE_/CLERK_/RESEND_/LINEAR_/ZENDESK_/SLACK_` + `JIRA_*`, `INTERCOM_*`).
+Preview deploy'larına hiç uğramazlar; sırları gereksiz yere başka bir ortama
+yaymak doğru değildir.
+
+Notlar:
+- Preview'daki `DATABASE_URL` **üretim veritabanını** gösterir (izole bir Neon
+  branch'i değil). Güçlü izolasyon istersen Preview için ayrı bir Neon branch
+  oluşturup `DATABASE_URL`'i ona çevir.
+- Preview'ın `ENCRYPTION_KEY`'i **üretimden farklı** (preview'a özel üretildi):
+  Preview üretim entegrasyon sırlarını çözemez — entegrasyon özelliği zaten
+  Preview'da kullanılamaz (connector kimlikleri de orada yok).
+- `vercel env pull` (varsayılan Development) artık `DATABASE_URL` ve
+  `CLERK_SECRET_KEY` için `[SENSITIVE]` yazar (ikisi de Secret) — gerçek
+  değerler `.env.local`'de zaten mevcut.
+- `INTERCOM_WEBHOOK_SECRET` **hiçbir ortamda yok ve gerekmiyor**: Intercom
+  webhook'ları imza başlığı göndermez, birincil doğrulama `INTERCOM_APP_ID`
+  eşleşmesidir (secret yalnız opsiyonel alternatif).
+
 ## Doğrulama
 
 ```bash
