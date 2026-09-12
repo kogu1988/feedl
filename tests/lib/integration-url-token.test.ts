@@ -31,11 +31,7 @@ vi.mock("@/lib/encrypt", () => ({
   isEncryptionConfigured: () => true,
 }));
 
-import {
-  resolveIntegrationByUrlToken,
-  urlTokenMatches,
-  warnLegacyInboundWebhook,
-} from "@/lib/integrations";
+import { resolveIntegrationByUrlToken, urlTokenMatches } from "@/lib/integrations";
 
 beforeEach(() => {
   h.selectResults = [];
@@ -109,15 +105,5 @@ describe("resolveIntegrationByUrlToken", () => {
     // DB sorgusu provider'a göre filtreler; yanlış provider'da satır gelmez.
     h.selectResults = [[]];
     expect(await resolveIntegrationByUrlToken("zendesk", "acme", "tok-abc")).toBeNull();
-  });
-});
-
-describe("warnLegacyInboundWebhook", () => {
-  it("uyarı basar ve aynı provider için TEKRARLAMAZ (log spam'i yok)", () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    warnLegacyInboundWebhook("slack");
-    warnLegacyInboundWebhook("slack");
-    expect(warn).toHaveBeenCalledTimes(1);
-    expect(warn.mock.calls[0][0]).toContain("slack");
   });
 });

@@ -5,8 +5,8 @@ import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { getDefaultBoardId } from "@/lib/db/board";
 import { classifyWidgetMessage } from "@/lib/ai/analysis";
-import { isSlackConfigured, parseSlackMessage, verifySlackSignature } from "@/lib/slack";
-import { resolveIntegrationByUrlToken, warnLegacyInboundWebhook } from "@/lib/integrations";
+import { parseSlackMessage, verifySlackSignature } from "@/lib/slack";
+import { resolveIntegrationByUrlToken } from "@/lib/integrations";
 import { posts, users } from "@/lib/db/schema";
 import { toWidgetUserId } from "@/lib/widget/jwt";
 import { postCreatedEventSchema } from "@/lib/validations/events";
@@ -15,10 +15,10 @@ import { enforceInboundWebhookRateLimit } from "@/lib/rate-limit";
 
 // Sprint 48o — Slack Events API webhook. Slack app bu URL'ye mesaj event'i
 // POST eder; imza doğrulanır, message → AI triage → feedback oluşturulur.
-// Sprint 63g: per-workspace (indexac) — webhook URL ?ws=<slug>&t=<urlToken>
-// taşıyorsa ilgili workspace'in signing secret'ı workspace_integrations'dan
-// çözülür; yoksa env (SLACK_SIGNING_SECRET) + host bazlı workspace (geriye
-// dönük uyumlu).
+// Sprint 63g: per-workspace — webhook URL `?ws=<slug>&t=<urlToken>` taşır ve
+// ilgili workspace'in signing secret'ı workspace_integrations'dan çözülür.
+// `?ws&t` ZORUNLUDUR; token'sız (legacy/env) yol 2026-09-12 (Faz 3) emekliye
+// ayrıldı — gerekçe ve ölçüm: app/api/integrations/intercom/webhook/route.ts.
 export async function POST(req: NextRequest) {
   try {
     // Rate limit ÖNCE (2026-09-12 incelemesi: bu uçta hiç limit yoktu).
@@ -42,13 +42,11 @@ export async function POST(req: NextRequest) {
       integrationSecret = resolved.webhookSecret;
       workspaceId = resolved.workspaceId;
     } else {
-      warnLegacyInboundWebhook("slack");
-    }
-
-    if (!integrationSecret && !isSlackConfigured()) {
+      // 2026-09-12 (Faz 3): legacy (parametresiz) yol EMEKLİYE AYRILDI —
+      // gerekçe ve ölçüm: app/api/integrations/intercom/webhook/route.ts.
       return NextResponse.json(
-        { success: false, error: "Slack yapılandırılmamış (SLACK_SIGNING_SECRET yok)." },
-        { status: 503 },
+        { success: false, error: "Webhook adresinde ?ws=&t= parametreleri gerekli." },
+        { status: 403 },
       );
     }
 

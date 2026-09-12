@@ -19,18 +19,10 @@ export function verifyLinearSignatureWithSecret(
   return safeEqual(value, expected);
 }
 
-// Global env secret (LINEAR_WEBHOOK_SECRET) ile imza doğrula — geriye dönük
-// tek-workspace manuel webhook yolu.
-export function verifyLinearSignature(
-  rawBody: string,
-  signatureHeader: string,
-): boolean {
-  return verifyLinearSignatureWithSecret(
-    rawBody,
-    signatureHeader,
-    process.env.LINEAR_WEBHOOK_SECRET,
-  );
-}
+// Global env secret (LINEAR_WEBHOOK_SECRET) ile imza doğrulama 2026-09-12
+// (Faz 3) kaldırıldı — imza artık her zaman workspace_integrations'taki
+// per-workspace secret ile `verifyLinearSignatureWithSecret` üzerinden
+// doğrulanır.
 
 function safeEqual(a: string, b: string): boolean {
   try {
@@ -85,8 +77,4 @@ export function linearDataText(
   const title = (data.title ?? "").trim().slice(0, 140);
   const body = (data.description ?? data.body ?? "").trim().slice(0, 4000);
   return { title: title || "Linear konu", body: body || title };
-}
-
-export function isLinearConfigured(): boolean {
-  return Boolean(process.env.LINEAR_WEBHOOK_SECRET);
 }

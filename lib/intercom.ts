@@ -220,10 +220,6 @@ export function intercomIdentity(item: IntercomItem): string {
   );
 }
 
-export function isIntercomConfigured(): boolean {
-  return Boolean(process.env.INTERCOM_APP_ID);
-}
-
 // Müşteri contact bilgisi: webhook'tan `contacts[].id` gelir ama e-posta/
 // telefon yoktur. `INTERCOM_ACCESS_TOKEN` ile Intercom API'den gerçek bilgi
 // çekilir (enrichment). PII: ağ isteği başarısız olursa graceful şekilde null

@@ -11,13 +11,12 @@ import {
   intercomIdentity,
   intercomItemText,
   intercomSourceRef,
-  isIntercomConfigured,
   isIntercomTokenConfigured,
   parseIntercomPayload,
   verifyIntercomWebhook,
 } from "@/lib/intercom";
 import { posts, users } from "@/lib/db/schema";
-import { resolveIntegrationByUrlToken, warnLegacyInboundWebhook } from "@/lib/integrations";
+import { resolveIntegrationByUrlToken } from "@/lib/integrations";
 import { toWidgetUserId } from "@/lib/widget/jwt";
 import { postCreatedEventSchema } from "@/lib/validations/events";
 import { inngest } from "@/inngest/client";
@@ -53,13 +52,13 @@ export async function POST(req: NextRequest) {
       integrationSecret = resolved.webhookSecret;
       workspaceId = resolved.workspaceId;
     } else {
-      warnLegacyInboundWebhook("intercom");
-    }
-
-    if (!integrationAppId && !isIntercomConfigured()) {
+      // 2026-09-12 (Faz 3): LEGACY YOL EMEKLİYE AYRILDI. Parametresiz istek
+      // global env secret + varsayılan workspace'e düşüyordu (tek sızıntı
+      // noktası). Emeklilik kararı ÖLÇÜLEREK verildi: 90 günde Sentry'de
+      // `area=integrations` uyarısı YOK ve bağlı entegrasyon sayısı 0.
       return NextResponse.json(
-        { success: false, error: "Intercom yapılandırılmamış (INTERCOM_APP_ID yok)." },
-        { status: 503 },
+        { success: false, error: "Webhook adresinde ?ws=&t= parametreleri gerekli." },
+        { status: 403 },
       );
     }
 

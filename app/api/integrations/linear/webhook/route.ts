@@ -6,14 +6,12 @@ import { getWorkspaceId } from "@/lib/db/workspace";
 import { getDefaultBoardId } from "@/lib/db/board";
 import { classifyWidgetMessage } from "@/lib/ai/analysis";
 import {
-  isLinearConfigured,
   linearDataText,
   parseLinearPayload,
-  verifyLinearSignature,
   verifyLinearSignatureWithSecret,
 } from "@/lib/linear";
 import { posts, users, workspaceIntegrations, workspaces } from "@/lib/db/schema";
-import { urlTokenMatches, warnLegacyInboundWebhook } from "@/lib/integrations";
+import { urlTokenMatches } from "@/lib/integrations";
 import { decryptSecret } from "@/lib/encrypt";
 import { toWidgetUserId } from "@/lib/widget/jwt";
 import { postCreatedEventSchema } from "@/lib/validations/events";
@@ -24,8 +22,9 @@ import { enforceInboundWebhookRateLimit } from "@/lib/rate-limit";
 // Issue/Comment/CustomerNeed → AI triage → feedback. Doğrulama
 // `X-Linear-Signature` (gövde HMAC-SHA256).
 // Per-workspace: URL `?ws=<slug>&t=<token>` → workspace kaydındaki secret ile
-// doğrular ve o workspace'e işler. Geriye dönük: `?ws=` yoksa global
-// LINEAR_WEBHOOK_SECRET + default workspace (mevcut manuel webhook).
+// doğrular ve o workspace'e işler. `?ws=&t=` ZORUNLUDUR; token'sız (legacy)
+// yol 2026-09-12 (Faz 3) emekliye ayrıldı — gerekçe ve ölçüm:
+// app/api/integrations/intercom/webhook/route.ts.
 export async function POST(req: NextRequest) {
   try {
     // Rate limit ÖNCE: imza/iş kuralı maliyetinden önce flood'u reddet.
@@ -41,70 +40,61 @@ export async function POST(req: NextRequest) {
     // incelemesinde modül seviyesinde (`let workspaceIdOverride`) tutulduğu ve
     // hiçbir yerde sıfırlanmadığı görüldü; serverless'ta warm instance aynı
     // modülü yeniden kullandığı için değer BİR SONRAKİ isteğe sızıyordu:
-    // `?ws=acme` isteğinden sonra gelen legacy (parametresiz) istek, kendi
-    // default workspace'i yerine acme'nin workspace'ine yazıyordu →
-    // cross-tenant yazma. Fonksiyon-lokal değişken her çağrıda kendi
-    // yığınında yaşar, sızıntı yapısal olarak imkânsız hale gelir.
+    // `?ws=acme` isteğinden sonra gelen parametresiz istek, kendi workspace'i
+    // yerine acme'nin workspace'ine yazıyordu → cross-tenant yazma. Legacy
+    // (parametresiz) yol artık 403 ile reddedilse de fonksiyon-lokal kalması
+    // şarttır: iki farklı workspace'e giden ardışık istekler yine interleave
+    // olabilir. Fonksiyon-lokal değişken her çağrıda kendi yığınında yaşar,
+    // sızıntı yapısal olarak imkânsız hale gelir.
     // Regresyon testi: tests/lib/linear-webhook-tenant.test.ts
     let resolvedWorkspaceId: string | null = null;
 
     const wsParam = req.nextUrl.searchParams.get("ws");
     const tokenParam = req.nextUrl.searchParams.get("t");
-    if (wsParam && tokenParam) {
-      // `workspaces.id` ilk sorguda gelir — aynı slug'ı ikinci kez sorgulamaya
-      // gerek yok (eski kodda fazladan bir DB turu vardı).
-      const [record] = await getDb()
-        .select({
-          webhookSecret: workspaceIntegrations.webhookSecret,
-          urlToken: workspaceIntegrations.urlToken,
-          workspaceId: workspaces.id,
-        })
-        .from(workspaceIntegrations)
-        .innerJoin(workspaces, eq(workspaces.id, workspaceIntegrations.workspaceId))
-        .where(
-          and(
-            eq(workspaceIntegrations.provider, "linear"),
-            eq(workspaces.slug, wsParam),
-          ),
-        )
-        .limit(1);
-      if (!record) {
-        return NextResponse.json(
-          { success: false, error: "Linear entegrasyonu bulunamadı." },
-          { status: 404 },
-        );
-      }
-      if (!urlTokenMatches(record.urlToken, tokenParam)) {
-        return NextResponse.json(
-          { success: false, error: "Geçersiz Linear webhook token." },
-          { status: 401 },
-        );
-      }
-      // Sprint 63t — webhookSecret şifreli saklanır; imza doğrulama için çözülür.
-      const webhookSecret = decryptSecret(record.webhookSecret);
-      if (!webhookSecret || !verifyLinearSignatureWithSecret(rawBody, signature, webhookSecret)) {
-        return NextResponse.json(
-          { success: false, error: "Geçersiz Linear imzası." },
-          { status: 401 },
-        );
-      }
-      resolvedWorkspaceId = record.workspaceId;
-    } else {
-      // Geriye dönük: global secret + default workspace.
-      warnLegacyInboundWebhook("linear");
-      if (!isLinearConfigured()) {
-        return NextResponse.json(
-          { success: false, error: "Linear yapılandırılmamış (LINEAR_WEBHOOK_SECRET yok)." },
-          { status: 503 },
-        );
-      }
-      if (!verifyLinearSignature(rawBody, signature)) {
-        return NextResponse.json(
-          { success: false, error: "Geçersiz Linear imzası." },
-          { status: 401 },
-        );
-      }
+    if (!wsParam || !tokenParam) {
+      return NextResponse.json(
+        { success: false, error: "Webhook adresinde ?ws=&t= parametreleri gerekli." },
+        { status: 403 },
+      );
     }
+    // `workspaces.id` ilk sorguda gelir — aynı slug'ı ikinci kez sorgulamaya
+    // gerek yok (eski kodda fazladan bir DB turu vardı).
+    const [record] = await getDb()
+      .select({
+        webhookSecret: workspaceIntegrations.webhookSecret,
+        urlToken: workspaceIntegrations.urlToken,
+        workspaceId: workspaces.id,
+      })
+      .from(workspaceIntegrations)
+      .innerJoin(workspaces, eq(workspaces.id, workspaceIntegrations.workspaceId))
+      .where(
+        and(
+          eq(workspaceIntegrations.provider, "linear"),
+          eq(workspaces.slug, wsParam),
+        ),
+      )
+      .limit(1);
+    if (!record) {
+      return NextResponse.json(
+        { success: false, error: "Linear entegrasyonu bulunamadı." },
+        { status: 404 },
+      );
+    }
+    if (!urlTokenMatches(record.urlToken, tokenParam)) {
+      return NextResponse.json(
+        { success: false, error: "Geçersiz Linear webhook token." },
+        { status: 401 },
+      );
+    }
+    // Sprint 63t — webhookSecret şifreli saklanır; imza doğrulama için çözülür.
+    const webhookSecret = decryptSecret(record.webhookSecret);
+    if (!webhookSecret || !verifyLinearSignatureWithSecret(rawBody, signature, webhookSecret)) {
+      return NextResponse.json(
+        { success: false, error: "Geçersiz Linear imzası." },
+        { status: 401 },
+      );
+    }
+    resolvedWorkspaceId = record.workspaceId;
 
     let payload: unknown;
     try {

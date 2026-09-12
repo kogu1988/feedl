@@ -56,7 +56,3 @@ export function zendeskTicketText(
   const title = subject.slice(0, 140) || "Zendesk destek talebi";
   return { title, body };
 }
-
-export function isZendeskConfigured(): boolean {
-  return Boolean(process.env.ZENDESK_WEBHOOK_SECRET);
-}

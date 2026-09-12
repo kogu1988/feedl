@@ -64,8 +64,3 @@ export function parseSlackMessage(payload: Record<string, unknown>): SlackIncomi
     eventTs: typeof event.ts === "string" ? event.ts : null,
   };
 }
-
-// Slack app credentials yapılandırılmış mı?
-export function isSlackConfigured(): boolean {
-  return Boolean(process.env.SLACK_SIGNING_SECRET);
-}

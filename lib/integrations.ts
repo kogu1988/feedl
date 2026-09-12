@@ -1,7 +1,6 @@
 import "server-only";
 
 import { randomBytes, timingSafeEqual } from "node:crypto";
-import * as Sentry from "@sentry/nextjs";
 
 import { and, eq } from "drizzle-orm";
 
@@ -47,30 +46,12 @@ export function urlTokenMatches(
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-// Legacy (parametresiz) gelen webhook yolu: per-workspace `?ws=&t=` varken
-// global env secret'a düşmek tek sızıntı noktası bırakır (README Faz 3).
-// Emekliye AYIRMADAN önce canlıda hâlâ kullanılıp kullanılmadığını ölçmek
-// gerekir; bu yüzden yalnızca gözlemlenebilirlik eklenir — davranış değişmez.
-// `warnedLegacy` her provider için tek uyarı basar (log spam'i yok); Sentry
-// tarafında fingerprint ile tek issue'da gruplanır.
-const warnedLegacy = new Set<IntegrationProvider>();
-
-export function warnLegacyInboundWebhook(provider: IntegrationProvider): void {
-  if (warnedLegacy.has(provider)) return;
-  warnedLegacy.add(provider);
-  const message =
-    `[integrations] ${provider} legacy (token'sız) webhook yolu kullanıldı — ` +
-    `per-workspace ?ws=&t= yolu varken global env secret emekliye ayrılmalı.`;
-  console.warn(message);
-  try {
-    Sentry.captureMessage(message, {
-      level: "warning",
-      tags: { area: "integrations", provider },
-    });
-  } catch {
-    /* Sentry yapılandırılmamışsa ana akışı bozma */
-  }
-}
+// Legacy (parametresiz) gelen webhook yolu ve global env secret fallback'i
+// 2026-09-12 (Faz 3) itibarıyla EMEKLİYE AYRILDI. Emeklilik kararı ölçülerek
+// verildi: 90 günde Sentry'de `area=integrations` uyarısı yok ve bağlı
+// entegrasyon sayısı 0. Tüm handler'lar artık `?ws=&t=` parametrelerini
+// ZORUNLU tutar; eksikse 403 döner. Bu sayede global secret'a düşen tek
+// sızıntı noktası ortadan kalktı.
 
 export function appUrl(): string {
   return process.env.NEXT_PUBLIC_APP_URL ?? "https://feedl.app";

@@ -5,17 +5,15 @@ import { NextRequest } from "next/server";
 //
 // Eski kod `workspaceIdOverride`'ı MODÜL seviyesinde tutuyor ve hiçbir yerde
 // sıfırlamıyordu. Serverless'ta warm instance aynı modülü yeniden kullandığı
-// için değer bir sonraki isteğe sızıyordu. En tehlikeli senaryo:
+// için değer bir sonraki isteğe sızıyordu: `?ws=acme` isteğinden sonra gelen
+// parametresiz istek kendi workspace'i yerine acme'nin workspace'ine yazıyordu
+// → cross-tenant yazma. Düzeltme: değişken fonksiyon-lokal
+// (`resolvedWorkspaceId`).
 //
-//   İstek 1: /api/integrations/linear/webhook?ws=acme&t=<token>
-//            → workspaceIdOverride = <acme id>   (ve DÖNÜŞTE SIFIRLANMIYOR)
-//   İstek 2: /api/integrations/linear/webhook        (legacy, ?ws= yok)
-//            → workspaceIdOverride ?? getWorkspaceId()
-//            → acme'nin id'si  ❌  (kendi default workspace'i olmalıydı)
-//
-// Sonuç: bir müşterinin Linear feedback'i başka bir workspace'e yazılıyordu.
-// Bu test AYNI modül örneğinde ardışık iki istek yapar ve izolasyonu kanıtlar.
-// Düzeltme: değişken fonksiyon-lokal (`resolvedWorkspaceId`).
+// 2026-09-12 (Faz 3): legacy (parametresiz) yol tamamen emekliye ayrıldı ve
+// artık 403 döner. Fonksiyon-lokal garantisi yine de kritik: aynı warm
+// instance'a düşen iki farklı workspace isteği interleave olabilir. Bu dosya
+// hem 403 emekliliğini hem de ardışık isteklerde tenant izolasyonunu kanıtlar.
 
 const h = vi.hoisted(() => ({
   selectResults: [] as unknown[][],
@@ -58,10 +56,8 @@ vi.mock("@/lib/ai/analysis", () => ({
   classifyWidgetMessage: vi.fn(async () => ({ classification: "feedback" })),
 }));
 vi.mock("@/lib/linear", () => ({
-  isLinearConfigured: () => true,
   parseLinearPayload: () => ({ type: "Issue", data: { id: "lin-1" } }),
   linearDataText: () => ({ title: "T", body: "B" }),
-  verifyLinearSignature: () => true,
   verifyLinearSignatureWithSecret: () => true,
 }));
 vi.mock("@/lib/encrypt", () => ({
@@ -95,13 +91,15 @@ beforeEach(() => {
 });
 
 describe("POST /api/integrations/linear/webhook — tenant izolasyonu", () => {
-  it("legacy istek, önceki per-workspace isteğin workspace'ini DEVRALMAZ", async () => {
+  it("ardışık iki per-workspace isteği birbirinin workspace'ini DEVRALMAZ", async () => {
     h.selectResults = [
       // İstek 1 — entegrasyon kaydı (acme) + workspace id aynı sorguda gelir.
       [{ webhookSecret: "enc", urlToken: "tok", workspaceId: "ws-acme" }],
       // İstek 1 — duplicate kontrolü: kayıt yok.
       [],
-      // İstek 2 (legacy) — duplicate kontrolü: kayıt yok.
+      // İstek 2 — entegrasyon kaydı (beta).
+      [{ webhookSecret: "enc", urlToken: "tok", workspaceId: "ws-beta" }],
+      // İstek 2 — duplicate kontrolü: kayıt yok.
       [],
     ];
 
@@ -109,35 +107,38 @@ describe("POST /api/integrations/linear/webhook — tenant izolasyonu", () => {
       post("https://feedl.app/api/integrations/linear/webhook?ws=acme&t=tok"),
     );
     const second = await POST(
-      post("https://feedl.app/api/integrations/linear/webhook"),
+      post("https://feedl.app/api/integrations/linear/webhook?ws=beta&t=tok"),
     );
 
     expect(first.status).toBe(200);
     expect(second.status).toBe(200);
     expect(h.postValues).toHaveLength(2);
-    // İstek 1 doğru tenant'a yazmalı...
+    // Her istek yalnızca kendi çözdüğü tenant'a yazmalı.
     expect(h.postValues[0].workspaceId).toBe("ws-acme");
-    // ...istek 2 ise KENDİ default workspace'ine (eski kodda "ws-acme" olurdu).
-    expect(h.postValues[1].workspaceId).toBe("ws-default");
+    expect(h.postValues[1].workspaceId).toBe("ws-beta");
   });
 
-  it("ters sıra da güvenli: legacy'den sonra gelen per-workspace isteği doğru tenant'a yazar", async () => {
+  it("ters sıra da güvenli (izolasyon sıradan bağımsız)", async () => {
     h.selectResults = [
-      // İstek 1 (legacy) — duplicate kontrolü.
+      [{ webhookSecret: "enc", urlToken: "tok", workspaceId: "ws-beta" }],
       [],
-      // İstek 2 — entegrasyon kaydı (acme).
       [{ webhookSecret: "enc", urlToken: "tok", workspaceId: "ws-acme" }],
-      // İstek 2 — duplicate kontrolü.
       [],
     ];
 
-    await POST(post("https://feedl.app/api/integrations/linear/webhook"));
+    await POST(post("https://feedl.app/api/integrations/linear/webhook?ws=beta&t=tok"));
     await POST(
       post("https://feedl.app/api/integrations/linear/webhook?ws=acme&t=tok"),
     );
 
-    expect(h.postValues[0].workspaceId).toBe("ws-default");
+    expect(h.postValues[0].workspaceId).toBe("ws-beta");
     expect(h.postValues[1].workspaceId).toBe("ws-acme");
+  });
+
+  it("parametresiz (legacy) istek 403 döner ve hiçbir şey yazılmaz", async () => {
+    const res = await POST(post("https://feedl.app/api/integrations/linear/webhook"));
+    expect(res.status).toBe(403);
+    expect(h.postValues).toHaveLength(0);
   });
 
   it("per-workspace kaydı yoksa 404 döner ve post yazılmaz", async () => {

@@ -6,14 +6,13 @@ import { getWorkspaceId } from "@/lib/db/workspace";
 import { getDefaultBoardId } from "@/lib/db/board";
 import { classifyWidgetMessage } from "@/lib/ai/analysis";
 import {
-  isJiraConfigured,
   jiraIdentity,
   jiraTicketText,
   parseJiraPayload,
   verifyJiraSignature,
 } from "@/lib/jira";
 import { posts, users } from "@/lib/db/schema";
-import { resolveIntegrationByUrlToken, warnLegacyInboundWebhook } from "@/lib/integrations";
+import { resolveIntegrationByUrlToken } from "@/lib/integrations";
 import { toWidgetUserId } from "@/lib/widget/jwt";
 import { postCreatedEventSchema } from "@/lib/validations/events";
 import { inngest } from "@/inngest/client";
@@ -21,37 +20,38 @@ import { enforceInboundWebhookRateLimit } from "@/lib/rate-limit";
 
 // Sprint 57 (madde 2) — Jira webhook. Automation/Webhook → Issue
 // created/updated → AI triage → feedback oluştur. Doğrulama custom header
-// JIRA_WEBHOOK_SECRET (Linear gibi HMAC-SHA256). Idempotency: aynı ticket tekrar
-// post edilmez.
+// (per-workspace imza anahtarı). Idempotency: aynı ticket tekrar post edilmez.
 export async function POST(req: NextRequest) {
   try {
     // Rate limit ÖNCE (2026-09-12 incelemesi: bu uçta hiç limit yoktu).
     const rateLimited = await enforceInboundWebhookRateLimit(req, "jira");
     if (rateLimited) return rateLimited;
 
-    // Per-workspace context (Sprint 63g): ?ws&t varsa workspace_integrations'tan çöz.
+    // Per-workspace context (Sprint 63g): `?ws&t` ZORUNLU. Legacy (token'sız)
+    // yol 2026-09-12 (Faz 3) emekliye ayrıldı — gerekçe ve ölçüm:
+    // app/api/integrations/intercom/webhook/route.ts.
     const { searchParams } = req.nextUrl;
     const wsParam = searchParams.get("ws");
     const tokenParam = searchParams.get("t");
-    let integrationSecret: string | null = null;
-    let workspaceId: string | null = null;
-    if (wsParam && tokenParam) {
-      const resolved = await resolveIntegrationByUrlToken("jira", wsParam, tokenParam);
-      if (!resolved) {
-        return NextResponse.json(
-          { success: false, error: "Geçersiz Jira webhook token." },
-          { status: 403 },
-        );
-      }
-      integrationSecret = resolved.apiKey ?? resolved.webhookSecret;
-      workspaceId = resolved.workspaceId;
-    } else {
-      warnLegacyInboundWebhook("jira");
-    }
-
-    if (!integrationSecret && !isJiraConfigured()) {
+    if (!wsParam || !tokenParam) {
       return NextResponse.json(
-        { success: false, error: "Jira yapılandırılmamış (JIRA_WEBHOOK_SECRET yok)." },
+        { success: false, error: "Webhook adresinde ?ws=&t= parametreleri gerekli." },
+        { status: 403 },
+      );
+    }
+    const resolved = await resolveIntegrationByUrlToken("jira", wsParam, tokenParam);
+    if (!resolved) {
+      return NextResponse.json(
+        { success: false, error: "Geçersiz Jira webhook token." },
+        { status: 403 },
+      );
+    }
+    const integrationSecret: string | null = resolved.apiKey ?? resolved.webhookSecret;
+    const workspaceId: string | null = resolved.workspaceId;
+
+    if (!integrationSecret) {
+      return NextResponse.json(
+        { success: false, error: "Jira entegrasyonunda imza anahtarı tanımlı değil." },
         { status: 503 },
       );
     }

@@ -5,8 +5,8 @@ import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { getDefaultBoardId } from "@/lib/db/board";
 import { classifyWidgetMessage } from "@/lib/ai/analysis";
-import { isZendeskConfigured, verifyZendeskToken, zendeskAuthFromHeaders, zendeskTicketText, type ZendeskTicket } from "@/lib/zendesk";
-import { resolveIntegrationByUrlToken, warnLegacyInboundWebhook } from "@/lib/integrations";
+import { verifyZendeskToken, zendeskAuthFromHeaders, zendeskTicketText, type ZendeskTicket } from "@/lib/zendesk";
+import { resolveIntegrationByUrlToken } from "@/lib/integrations";
 import { posts, users } from "@/lib/db/schema";
 import { toWidgetUserId } from "@/lib/widget/jwt";
 import { postCreatedEventSchema } from "@/lib/validations/events";
@@ -22,29 +22,31 @@ export async function POST(req: NextRequest) {
     const rateLimited = await enforceInboundWebhookRateLimit(req, "zendesk");
     if (rateLimited) return rateLimited;
 
-    // Per-workspace context (Sprint 63g): ?ws&t varsa workspace_integrations'tan çöz.
+    // Per-workspace context (Sprint 63g): `?ws&t` ZORUNLU. Legacy (token'sız)
+    // yol 2026-09-12 (Faz 3) emekliye ayrıldı — gerekçe ve ölçüm:
+    // app/api/integrations/intercom/webhook/route.ts.
     const { searchParams } = req.nextUrl;
     const wsParam = searchParams.get("ws");
     const tokenParam = searchParams.get("t");
-    let integrationSecret: string | null = null;
-    let workspaceId: string | null = null;
-    if (wsParam && tokenParam) {
-      const resolved = await resolveIntegrationByUrlToken("zendesk", wsParam, tokenParam);
-      if (!resolved) {
-        return NextResponse.json(
-          { success: false, error: "Geçersiz Zendesk webhook token." },
-          { status: 403 },
-        );
-      }
-      integrationSecret = resolved.apiKey ?? resolved.webhookSecret;
-      workspaceId = resolved.workspaceId;
-    } else {
-      warnLegacyInboundWebhook("zendesk");
-    }
-
-    if (!integrationSecret && !isZendeskConfigured()) {
+    if (!wsParam || !tokenParam) {
       return NextResponse.json(
-        { success: false, error: "Zendesk yapılandırılmamış (ZENDESK_WEBHOOK_SECRET yok)." },
+        { success: false, error: "Webhook adresinde ?ws=&t= parametreleri gerekli." },
+        { status: 403 },
+      );
+    }
+    const resolved = await resolveIntegrationByUrlToken("zendesk", wsParam, tokenParam);
+    if (!resolved) {
+      return NextResponse.json(
+        { success: false, error: "Geçersiz Zendesk webhook token." },
+        { status: 403 },
+      );
+    }
+    const integrationSecret: string | null = resolved.apiKey ?? resolved.webhookSecret;
+    const workspaceId: string | null = resolved.workspaceId;
+
+    if (!integrationSecret) {
+      return NextResponse.json(
+        { success: false, error: "Zendesk entegrasyonunda token tanımlı değil." },
         { status: 503 },
       );
     }
