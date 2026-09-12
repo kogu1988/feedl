@@ -198,7 +198,7 @@ Notlar:
 ```bash
 npx tsc --noEmit  # tip kontrolü
 npm run lint      # ESLint
-npx vitest run    # 315 birim testi
+npx vitest run    # 322 birim testi
 npm run build     # üretim derlemesi
 npm run test:e2e  # Playwright + axe erişilebilirlik + auth akışı (çalışan sunucu gerekir)
 ```
@@ -207,7 +207,7 @@ npm run test:e2e  # Playwright + axe erişilebilirlik + auth akışı (çalışa
 
 | Katman | Sonuç | Kapsam |
 | :--- | :--- | :--- |
-| **Birim test** (`npm test`) | ✅ 48 dosya · **315 test geçti** | Saf mantık: renk/WCAG, sayfalama, CSV, şifreleme, rate-limit, Paddle imza+plan türetme, **hesap düzeyi Pro devralma kararı**, oy doğrulama, post-format, outcome kaydı (gelir ayrıştırma/biçimleme + API şeması), **workspace oluşturma limiti (Free 1 workspace)**, data-export kapsamı/redaksiyonu, post-search, widget-origins, widget gömme (body-bekleme), workspace-host çözümleme, **fail-closed host politikası**, AI içgörüleri, OpenRouter modelleri, e-posta teslimatı, haftalık digest e-postası + gönderim kararı, api-keys, davet e-postası, widget gönderim modu, free-plan oy limiti, **entegrasyon URL token doğrulaması**, **Linear webhook tenant izolasyonu**, **`getWorkspaceId` önceliği**, **middleware public allowlist'i** |
+| **Birim test** (`npm test`) | ✅ 49 dosya · **322 test geçti** | Saf mantık: renk/WCAG, sayfalama, CSV, şifreleme, rate-limit, Paddle imza+plan türetme, **hesap düzeyi Pro devralma kararı**, oy doğrulama, post-format, outcome kaydı (gelir ayrıştırma/biçimleme + API şeması), **workspace oluşturma limiti (Free 1 workspace)**, data-export kapsamı/redaksiyonu, post-search, widget-origins, widget gömme (body-bekleme), workspace-host çözümleme, **fail-closed host politikası**, AI içgörüleri, OpenRouter modelleri, e-posta teslimatı, haftalık digest e-postası + gönderim kararı, api-keys, davet e-postası, widget gönderim modu, free-plan oy limiti, **entegrasyon URL token doğrulaması**, **Linear webhook tenant izolasyonu**, **widget self-embed kapıları (host + oturum)**, **`getWorkspaceId` önceliği**, **middleware public allowlist'i** |
 | **Tenant izolasyonu** | ✅ `resolveWorkspaceByHost` öncelik (custom_domain > subdomain > varsayılan) + hata; `getWorkspaceId` sırası (widget > çerez > host) + modül-global önbellek regresyonu; **fail-closed host kapısı**: bilinmeyen alt alan/doğrulanmamış custom domain → null (404), kök host + `*.vercel.app` + loopback → varsayılan | `tests/lib/tenant-isolation.test.ts`, `tests/lib/workspace-precedence.test.ts`, `tests/lib/host-fallback-policy.test.ts`, `e2e/host-isolation.spec.ts` |
 | **Entegrasyon webhook token** | ✅ Zaman-sabit karşılaştırma; yanlış/boş/eksik token → null (handler 403); legacy (token'sız) yol **emekliye ayrıldı** → 403 | `tests/lib/integration-url-token.test.ts`, `tests/lib/linear-webhook-tenant.test.ts` |
 | **Middleware yetki yüzeyi** | ✅ Açık allowlist fail-closed; önek sızması yok (`/api/adminx` kapalı); `/dashboard` + `/onboarding` korunur | `tests/lib/public-paths.test.ts` |
