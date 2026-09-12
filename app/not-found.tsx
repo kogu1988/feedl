@@ -1,5 +1,5 @@
 import { NotFoundView } from "@/components/custom/not-found-view";
-import { resolveWorkspaceForCurrentHost } from "@/lib/db/workspace";
+import { isUnknownHostRequest } from "@/lib/db/workspace";
 
 // Eşleşmeyen URL'ler VE bilinmeyen host'lar (fail-closed kapı: (main)/layout.tsx
 // `notFound()` çağırır → buraya düşer, çünkü (main) layout'un kendisi hata
@@ -9,13 +9,7 @@ import { resolveWorkspaceForCurrentHost } from "@/lib/db/workspace";
 // 404'e gideceği için kullanıcıyı kök siteye (mutlak) yönlendiren varyant
 // gösterilir.
 export default async function NotFound() {
-  let hostUnknown = false;
-  try {
-    hostUnknown = (await resolveWorkspaceForCurrentHost()) === null;
-  } catch {
-    // DB erişilemezse 404'ü 500'e çevirmeyelim — genel görünüme düş.
-    hostUnknown = false;
-  }
+  const hostUnknown = await isUnknownHostRequest();
 
   return (
     <main className="container mx-auto max-w-none p-4 sm:p-8">

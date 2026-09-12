@@ -10,7 +10,7 @@ import { ThemeProvider } from "@/components/custom/theme-provider";
 import { CanonicalLink } from "@/components/custom/canonical-link";
 import {
   getWorkspaceBrand,
-  resolveWorkspaceForCurrentHost,
+  isUnknownHostRequest,
 } from "@/lib/db/workspace";
 import { workspaceBrandStyle } from "@/lib/brand-style";
 
@@ -37,8 +37,9 @@ export default async function MainLayout({
   // Bu kapı BİLEREK layout'ta ve getWorkspaceId'in DIŞINDA: `getWorkspaceId`
   // çağrılarının çoğu `try { ... } catch {}` içinde (ör. changelog/page.tsx) ve
   // `notFound()` oradan fırlarsa sessizce yutulur, kırık sayfa render edilirdi.
-  const hostWorkspace = await resolveWorkspaceForCurrentHost();
-  if (!hostWorkspace) {
+  // Kapı istek bağlamı yoksa (build/prerender) uygulanmaz — statik üretim
+  // DB'ye muhtaç olmasın (bkz. isUnknownHostRequest).
+  if (await isUnknownHostRequest()) {
     notFound();
   }
 

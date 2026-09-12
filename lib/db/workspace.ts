@@ -51,7 +51,9 @@ export function isFeedlRootHost(host: string): boolean {
   // `http://localhost:3000` iken bile root host tanınmıyordu; `/` landing
   // yerine /portal'a yönleniyordu ve landing e2e'de hiç test EDİLEMİYORDU.
   // Üretimde host'larda port yok → davranış değişmez.
-  const bare = host.trim().toLowerCase().replace(/:\d+$/, "");
+  // Ayrıca host bir URL olarak gelebilir (getRequestHost env'e düştüğünde
+  // `https://feedl.app`) — şema/path normalize edilir.
+  const bare = normalizeDomainForMatch(host);
   return (
     bare === "feedl.app" ||
     bare === "www.feedl.app" ||
@@ -110,17 +112,25 @@ export function isDefaultFallbackHost(host: string): boolean {
 }
 
 // İsteğin host'unu çöz (middleware'de değil, server context'te).
+// NOT: build/prerender sırasında `headers()` bir DynamicServerError fırlatır;
+// bu yakalanır ve `NEXT_PUBLIC_APP_URL`e düşer. Bu yüzden kanal (statik)
+// sayfalar statik kalmaya devam eder — istek bağlamı gerektiren kapılar
+// `getRequestHostOrNull` kullanmalıdır.
 async function getRequestHost(): Promise<string> {
+  return (
+    (await getRequestHostOrNull()) ??
+    (process.env.NEXT_PUBLIC_APP_URL ?? "https://feedl.app")
+  );
+}
+
+// GERÇEK istek host'u; istek bağlamı yoksa (build/prerender, test, cron) null.
+async function getRequestHostOrNull(): Promise<string | null> {
   try {
     const h = await headers();
-    return (
-      h.get("x-forwarded-host") ??
-      h.get("host") ??
-      (process.env.NEXT_PUBLIC_APP_URL ?? "https://feedl.app")
-    );
+    return h.get("x-forwarded-host") ?? h.get("host") ?? null;
   } catch {
-    // headers() yalnızca server context'te; dışarıda (test/CLI) fallback.
-    return (process.env.NEXT_PUBLIC_APP_URL ?? "https://feedl.app");
+    // headers() yalnızca server context'te; dışarıda (build/test/CLI) null.
+    return null;
   }
 }
 
@@ -133,6 +143,8 @@ export function normalizeDomainForMatch(host: string): string {
   return host
     .trim()
     .toLowerCase()
+    .replace(/^[a-z][a-z0-9+.-]*:\/\//, "")
+    .replace(/\/.*$/, "")
     .replace(/:\d+$/, "")
     .replace(/\.$/, "");
 }
@@ -225,8 +237,21 @@ export async function resolveWorkspaceForHostname(
 
 // İsteğin host'u bilinen bir workspace'e çözülüyor mu? (app/(main)/layout.tsx
 // bu kapıyı kullanır; app/not-found.tsx aynı çağrıyla "host yok" varyantını seçer.)
-export async function resolveWorkspaceForCurrentHost(): Promise<ResolvedWorkspace | null> {
-  return resolveWorkspaceForHostname(await getRequestHost());
+//
+// İki fail-open durumu BİLEREK var:
+//  1) Gerçek istek host'u yoksa (build/prerender, test, cron) kapı UYGULANMAZ.
+//     Aksi halde statik üretim DB'ye muhtaç hale gelir ve `npm run build`
+//     DATABASE_URL olmadan kırılır (2026-09-12: tam olarak bu oldu).
+//  2) DB hatasında kapı uygulanmaz — altyapı arızası sayfa sunmayı
+//     engellememeli (mevcut davranışa düşer).
+export async function isUnknownHostRequest(): Promise<boolean> {
+  const host = await getRequestHostOrNull();
+  if (!host) return false;
+  try {
+    return (await resolveWorkspaceForHostname(host)) === null;
+  } catch {
+    return false;
+  }
 }
 
 // Sprint 63p — widget tenant-aware: `?ws=<slug>` param'sından workspace id
