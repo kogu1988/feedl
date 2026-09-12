@@ -81,6 +81,23 @@ zorunlu. Paylaşılan gizli anahtar: `FEEDL_WIDGET_SECRET`.
 Kullanıcı girişi sonrası yeni jetonla kimliği yeniler. Widget henüz yüklenmediyse
 jeton kuyruğa alınır ve `widget.js` yüklenince yeniden oynatılır.
 
+### `window.feedlWidget.destroy()`
+
+Widget'ı ve tüm izlerini (launcher, panel, iframe, stiller, zamanlayıcılar,
+`MutationObserver`) kaldırır. Tek sayfa uygulamalarında route değişince
+çağırın — aksi halde balon `document.body`'de kalır. Aynı sayfada sonrasında
+`init()` çağrılırsa temiz kurulum yapılır (idempotans bayrağı sıfırlanır).
+
+```js
+// Örnek: yalnız bazı rotalarda göster; çıkışta temizle
+router.afterEach((to) => {
+  if (!to.meta.feedback) window.feedlWidget?.destroy?.();
+});
+```
+
+Yeniden göstermek için betiği tekrar yüklemek yeterlidir (`destroy()` idempotans
+bayrağını sıfırlar, yani yeni bir `<script>` temiz kurulum yapar).
+
 ## Lisans
 
 MIT

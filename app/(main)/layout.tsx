@@ -8,6 +8,8 @@ import { SiteHeader } from "@/components/custom/site-header";
 import { SiteFooter } from "@/components/custom/site-footer";
 import { ThemeProvider } from "@/components/custom/theme-provider";
 import { CanonicalLink } from "@/components/custom/canonical-link";
+import { FeedlWidgetEmbed } from "@/components/custom/feedl-widget-embed";
+import { resolveFeedlSelfEmbed } from "@/components/custom/feedl-widget-self-embed";
 import {
   getWorkspaceBrand,
   isFeedlRootRequest,
@@ -55,6 +57,11 @@ export default async function MainLayout({
   // (#1e01f9) kök host'un CTA bölümüne uygulanıp kontrastı bozuyordu.
   const isRootHost = await isFeedlRootRequest();
   const brand = await getWorkspaceBrand();
+  // Self-embed yapılandırması: host + oturum kapıları çözücünün İÇİNDE
+  // (lib/widget/embed.ts'te yüzey listesi). Yüzeye göre kurulum/söküm
+  // client tarafında; burada yalnız bir kez çözülür ve layout yaşadığı sürece
+  // sabit kalır (layout client gezinmede yeniden render edilmez).
+  const selfEmbed = await resolveFeedlSelfEmbed();
   const mark = isRootHost
     ? { name: "feedl", logoUrl: null }
     : { name: brand.name, logoUrl: brand.logoUrl };
@@ -80,6 +87,7 @@ export default async function MainLayout({
             host'ta workspace adını (ve kullanılmayan brandColor'ı) sızdırıyordu. */}
         <SiteFooter brand={mark} />
       </div>
+      <FeedlWidgetEmbed config={selfEmbed} />
       </ThemeProvider>
     </ClerkProvider>
   );

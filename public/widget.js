@@ -182,10 +182,17 @@
         sendToken(nextToken);
       }
     },
+    // SPA dostu söküm (2026-09-12): widget'ı ve tüm izlerini kaldırır, idempotans
+    // bayrağını sıfırlar → yeni bir `<script>` ile yeniden kurulabilir. Next.js
+    // client-side gezinmesinde route değişince React yalnız script etiketini
+    // kaldırırdı; düğümler `document.body`'de kaldığı için balon "hayalet"
+    // olarak kalıyordu.
+    destroy: destroy,
   };
   if (!window.feedlWidget) window.feedlWidget = widgetApi;
   else {
     window.feedlWidget.identify = widgetApi.identify;
+    window.feedlWidget.destroy = widgetApi.destroy;
   }
 
   // @feedl/widget npm yükleyicisi, widget.js yüklenmeden önce identify
@@ -249,6 +256,14 @@
   var pendingMounts = [];
   var mountsFlushed = false;
 
+  // Sökümde çalıştırılacak temizlik adımları (observer, timer, listener'lar).
+  // `destroy()` bunları tek tek çalıştırır — aksi halde bir SPA gezinmesinden
+  // sonra zamanlayıcı/observer widget'ı geri getirmeye çalışırdı.
+  var teardownSteps = [];
+  function onTeardown(fn) {
+    teardownSteps.push(fn);
+  }
+
   function appendPending() {
     if (!document.body) return;
     for (var i = 0; i < pendingMounts.length; i++) {
@@ -256,16 +271,38 @@
     }
   }
 
+  var removalObserver = null;
+
+  // Geri bağlama penceresi: React `<body>`'yi hidrasyon sırasında sahiplenip
+  // düğümü silerse kurtarır. Pencere KAPANDIKTAN sonra bir silme kasıtlıdır
+  // (SPA route değişimi, ya da bizim `destroy()`'umuz) → geri KOYMAYIZ; yoksa
+  // widget sayfa değişse de "hayalet balon" olarak kalırdı.
+  var HYDRATION_GUARD_MS = 10000;
+
   function watchRemoval() {
     if (typeof MutationObserver === "undefined" || !document.body) return;
-    new MutationObserver(function () {
+    removalObserver = new MutationObserver(function () {
       for (var i = 0; i < pendingMounts.length; i++) {
         if (!pendingMounts[i].isConnected) {
           appendPending();
           return;
         }
       }
-    }).observe(document.body, { childList: true });
+    });
+    removalObserver.observe(document.body, { childList: true });
+    var guardTimer = setTimeout(function () {
+      if (removalObserver) {
+        removalObserver.disconnect();
+        removalObserver = null;
+      }
+    }, HYDRATION_GUARD_MS);
+    onTeardown(function () {
+      clearTimeout(guardTimer);
+      if (removalObserver) {
+        removalObserver.disconnect();
+        removalObserver = null;
+      }
+    });
   }
 
   function flushMounts() {
@@ -294,10 +331,18 @@
     }
     function ready() {
       if (document.readyState === "complete") viaIdle();
-      else window.addEventListener("load", viaIdle, { once: true });
+      else {
+        window.addEventListener("load", viaIdle, { once: true });
+        onTeardown(function () {
+          window.removeEventListener("load", viaIdle);
+        });
+      }
       // Emniyet supabı: `load` takılırsa (asılı kaynak) widget sonsuza kadar
       // beklemesin. Erken bağlanma olursa 2. katman toparlar.
-      setTimeout(flushMounts, 8000);
+      var safetyTimer = setTimeout(flushMounts, 8000);
+      onTeardown(function () {
+        clearTimeout(safetyTimer);
+      });
     }
     if (document.body) ready();
     else document.addEventListener("DOMContentLoaded", ready, { once: true });
@@ -359,8 +404,14 @@
     var onPrefChange = function () { applyChrome(); };
     if (prefersDark.addEventListener) {
       prefersDark.addEventListener("change", onPrefChange);
+      onTeardown(function () {
+        prefersDark.removeEventListener("change", onPrefChange);
+      });
     } else if (prefersDark.addListener) {
       prefersDark.addListener(onPrefChange);
+      onTeardown(function () {
+        prefersDark.removeListener(onPrefChange);
+      });
     }
   }
   applyChrome();
@@ -710,7 +761,51 @@
     var toast = document.querySelector(".feedl-vf-toast");
     if (toast) toast.remove();
   }
-  document.addEventListener("keydown", function (event) {
+  function onKeydown(event) {
     if (event.key === "Escape") cancelAll();
+  }
+  document.addEventListener("keydown", onKeydown);
+  onTeardown(function () {
+    document.removeEventListener("keydown", onKeydown);
   });
+
+  // ── destroy(): widget'ı ve TÜM izlerini kaldır ──────────────────────────
+  //
+  // Sıra önemli: önce zamanlayıcı/observer/listener'lar (yoksa sökümden sonra
+  // düğümleri geri getirmeye çalışırlar), sonra DOM ve style etiketleri.
+  // `__feedlWidgetLoaded` sıfırlanır → script yeniden eklenirse temiz kurulum.
+  function destroy() {
+    for (var i = 0; i < teardownSteps.length; i++) {
+      try {
+        teardownSteps[i]();
+      } catch {
+        /* tek adımın hatası sökümün kalanını engellemesin */
+      }
+    }
+    teardownSteps = [];
+    if (removalObserver) {
+      removalObserver.disconnect();
+      removalObserver = null;
+    }
+
+    for (var j = 0; j < pendingMounts.length; j++) {
+      if (pendingMounts[j] && pendingMounts[j].remove) pendingMounts[j].remove();
+    }
+    pendingMounts = [];
+
+    // Güvence: body'ye doğrudan eklenmiş (pendingMounts dışı) parçalar — pin,
+    // toast, görsel form, vurgu halkası, kapanmamış panel.
+    var leftovers = document.querySelectorAll(
+      ".feedl-widget-launcher,.feedl-widget-overlay,.feedl-widget-panel,.feedl-widget-close," +
+        ".feedl-widget-iframe,.feedl-vf-layer,.feedl-vf-hint,.feedl-vf-pin," +
+        ".feedl-vf-mark,.feedl-vf-form,.feedl-vf-toast",
+    );
+    for (var k = 0; k < leftovers.length; k++) leftovers[k].remove();
+
+    if (style && style.parentNode) style.parentNode.removeChild(style);
+    if (vfStyle && vfStyle.parentNode) vfStyle.parentNode.removeChild(vfStyle);
+
+    mountsFlushed = false;
+    window.__feedlWidgetLoaded = false;
+  }
 })();

@@ -25,7 +25,6 @@ import { getWorkspaceId, isShowcaseRequest } from "@/lib/db/workspace";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { HeroDemoCard } from "@/components/custom/hero-demo-card";
-import { FeedlWidgetScript } from "@/components/custom/feedl-widget-script";
 import { PricingManager } from "@/components/custom/pricing-manager";
 import { PLAN_POSITIONING } from "@/lib/plan-copy";
 import { generateCanonical, ogImage } from "@/lib/seo";
@@ -428,10 +427,8 @@ export default async function RootPage() {
         </div>
       </section>
 
-      {/* Sprint 63y — dogfood: feedl widget'ı kendi landing'ine embed.
-          Ortak bileşen: host kapısı + workspace/renk çözümü onun İÇİNDE
-          (müşteri domain'inde ya da yanlış host'ta render edilmez). */}
-      <FeedlWidgetScript />
+      {/* Self-embed artık (main) layout'ta tek yerden yönetilir (yüzey listesi:
+          lib/widget/embed.ts). */}
     </main>
   );
 }

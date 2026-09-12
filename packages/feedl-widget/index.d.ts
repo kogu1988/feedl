@@ -39,6 +39,13 @@ export interface FeedlWidgetAPI {
    * (yaygın geri bildirim aracı `identify` karşılığı). Token yoksa widget salt-okunur kalır.
    */
   identify(options: { token?: string; jwt?: string; value?: string }): void;
+
+  /**
+   * Widget'ı ve tüm izlerini (launcher, panel, iframe, stiller, observer'lar)
+   * kaldır. Tek sayfa uygulamalarında route değişince çağrılması önerilir;
+   * aynı sayfada yeniden `init()` edilirse temiz kurulum yapılır.
+   */
+  destroy(): void;
 }
 
 /** `window.feedlWidget`'a erişim (genel tip genişletmesi). */

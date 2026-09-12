@@ -94,25 +94,46 @@ test.describe("widget etkileşimi", () => {
     await expect(vfLayer).toBeHidden();
   });
 
-  // Yüzey politikası (dogfood): feedl'in kendi host'unda landing + roadmap +
-  // changelog widget'ı taşır; /portal TAŞIMAZ — o sayfa zaten geri bildirim
-  // panosunun kendisi, orada widget "feedl içinde feedl paneli" (iç içe iframe)
-  // olurdu. Kapı bileşenin içinde olduğu için müşteri host'larında hiçbiri
-  // render edilmez; o negatif yol burada test EDİLEMİYOR (Host başlığı
-  // Chromium'da değiştirilemiyor) — güvence `feedl-widget-script.tsx` içindeki
-  // `isShowcaseRequest()` kapısıdır.
-  test("self-embed yalnız beklenen yüzeylerde", async ({ page }) => {
+  // Yüzey politikası (dogfood): feedl'in kendi host'unda yalnız landing +
+  // roadmap + changelog widget'ı taşır; `/portal` ve `/dashboard*` TAŞIMAZ —
+  // portal zaten geri bildirim panosunun kendisi (widget "feedl içinde feedl"
+  // iç içe iframe olurdu), dashboard ise operatör yüzeyidir. Ayrıca girişli
+  // workspace üyesi widget'ı GÖRMEZ (operatör, geri bildirim kaynağı değil) —
+  // o kapı sunucuda (`feedl-widget-self-embed.tsx` → `getTeamUserId`) olduğu
+  // için anonim testte görünmez; müşteri host'u negatifi de aynı şekilde
+  // (`isShowcaseRequest`) sunucuda ve burada test EDİLEMEZ (Host başlığı
+  // Chromium'da değiştirilemiyor).
+  //
+  // 2026-09-12 (canlı hata): widget düğümleri `document.body`'de React'in
+  // DIŞINDA yaşadığı için client gezinmede hayalet balon kalıyordu; aşağıdaki
+  // testler o regresyonu ve izinli yüzeyler arası gezinmede titreme olmamasını
+  // kilitler.
+  test("self-embed yalnız beklenen yüzeylerde; çıkışta hayalet balon kalmaz", async ({
+    page,
+  }) => {
     for (const route of ["/", "/roadmap", "/changelog"]) {
       await page.goto(route);
       await expect(
-        page.locator('script[src$="/widget.js"]'),
-        `${route} widget script'i taşımalı`,
-      ).toHaveCount(1);
+        page.locator(".feedl-widget-launcher"),
+        `${route} widget'ı taşımalı`,
+      ).toBeVisible({ timeout: 15_000 });
     }
-    await page.goto("/portal");
-    await expect(
-      page.locator('script[src$="/widget.js"]'),
-      "/portal widget script'i TAŞIMAMALI",
-    ).toHaveCount(0);
+
+    // İZİNLİ yüzeyler arası CLIENT gezinme: widget yerinde kalmalı (sökülüp
+    // yeniden kurulursa iframe her gezinmede yeniden yüklenir = titreme).
+    await page.goto("/roadmap");
+    await expect(page.locator(".feedl-widget-launcher")).toBeVisible({ timeout: 15_000 });
+    await page
+      .locator("header nav")
+      .getByRole("link", { name: "Güncellemeler" })
+      .click();
+    await expect(page).toHaveURL(/\/changelog/);
+    await expect(page.locator(".feedl-widget-launcher")).toBeVisible();
+
+    // İZİNLİ yüzeyden ÇIKIŞ: hayalet balon ve script kalmamalı.
+    await page.locator("header nav").getByRole("link", { name: "Portal" }).click();
+    await expect(page).toHaveURL(/\/portal/);
+    await expect(page.locator(".feedl-widget-launcher")).toHaveCount(0);
+    await expect(page.locator('script[src$="/widget.js"]')).toHaveCount(0);
   });
 });

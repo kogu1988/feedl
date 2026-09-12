@@ -1,7 +1,6 @@
 import { and, countDistinct, desc, eq, inArray, isNull, or } from "drizzle-orm";
 
 import { PageBreadcrumb } from "@/components/custom/page-breadcrumb";
-import { FeedlWidgetScript } from "@/components/custom/feedl-widget-script";
 import { Notice } from "@/components/custom/notice";
 import { PoweredByFeedl } from "@/components/custom/powered-by-feedl";
 import { RoadmapColumns } from "@/components/custom/roadmap-columns";
@@ -102,10 +101,7 @@ export default async function RoadmapPage() {
         <RoadmapColumns columns={columns} posts={rows} isAdmin={isAdmin} />
       )}
       <PoweredByFeedl />
-      {/* Yol haritasına bakan ziyaretçi "bu yok, isteyeyim" diyebilsin.
-          Host kapısı bileşenin içinde: yalnız feedl kök host'unda render eder
-          (müşteri subdomain/custom domain'lerinde ASLA). */}
-      <FeedlWidgetScript />
+      {/* Self-embed artık (main) layout'ta tek yerden yönetilir. */}
     </main>
   );
 }
