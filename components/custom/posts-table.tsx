@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Loader2Icon, TagIcon } from "lucide-react";
 
 import { KeywordChips } from "@/components/custom/keyword-chips";
+import { ProBadge } from "@/components/custom/pro";
 import { SentimentBadge } from "@/components/custom/sentiment-badge";
 import { TypeBadge } from "@/components/custom/type-badge";
 import { Button } from "@/components/ui/button";
@@ -62,10 +63,15 @@ export function PostsTable({
   rows,
   tagOptions,
   boardOptions = [],
+  isPro = true,
 }: {
   rows: PostsTableRow[];
   tagOptions: BulkTagOption[];
   boardOptions?: BoardSelectOption[];
+  // 2026-09-12 (plan matrisi): gelir skoru Pro özelliği. Free'de sütun sayı
+  // yerine Pro rozeti gösterir (dashboard/page.tsx isPro geçer). Varsayılan
+  // `true` — mevcut çağrılar ve testler etkilenmez.
+  isPro?: boolean;
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [note, setNote] = useState("");
@@ -220,9 +226,13 @@ export function PostsTable({
             </TableHead>
             <TableHead
               className="w-[80px] text-center"
-              title="Skor = Oy + 10×Müşteri + (MRR + Açık Fırsat)/1000"
+              title={
+                isPro
+                  ? "Skor = Oy + 10×Müşteri + (MRR + Açık Fırsat)/1000"
+                  : "Gelir skoru Pro planda"
+              }
             >
-              Skor
+              {isPro ? "Skor" : <ProBadge className="mx-auto" />}
             </TableHead>
             <TableHead>Başlık</TableHead>
             <TableHead className="w-[200px]">AI</TableHead>
@@ -250,9 +260,17 @@ export function PostsTable({
               </TableCell>
               <TableCell
                 className="text-center font-medium tabular-nums"
-                title="Skor = Oy + 10×Müşteri + (MRR + Açık Fırsat)/1000"
+                title={
+                  isPro
+                    ? "Skor = Oy + 10×Müşteri + (MRR + Açık Fırsat)/1000"
+                    : "Gelir skoru Pro planda"
+                }
               >
-                {post.revenueScore}
+                {isPro ? (
+                  post.revenueScore
+                ) : (
+                  <span className="text-muted-foreground">—</span>
+                )}
               </TableCell>
               <TableCell>
                 <div className="max-w-[320px] truncate font-medium">

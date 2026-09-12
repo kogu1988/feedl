@@ -8,10 +8,15 @@ import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { companies, opportunities } from "@/lib/db/schema";
+import { requirePro } from "@/lib/plan";
 
 // Sprint 31 — satış fırsatı yönetimi (P3.2). Fırsatlar şirkete bağlı;
 // şirket silinince cascade gider. Fikirle bağı links route'undan kurulur.
 // Gelir skoru yalnızca açık aşamaları (open/proposal) sayar.
+//
+// 2026-09-12 (plan matrisi, kullanıcı kararı): fırsatlar TAMAMEN Pro'dur —
+// varlık sebebi gelir skorunu beslemek, o da Pro. Tüm metotlar kapıya alındı
+// (okuma dahil: Pro'nun veri kümesi; ekran zaten kilit gösteriyor).
 
 const stageSchema = z.enum(["open", "proposal", "won", "lost"]);
 
@@ -44,6 +49,10 @@ export async function GET() {
         { status: 403 },
       );
     }
+
+    // Fırsatlar Pro (2026-09-12) — tüm metotlar kapılı.
+    const proErr = await requirePro();
+    if (proErr) return proErr;
 
     const rows = await getDb()
       .select({
@@ -164,6 +173,14 @@ export async function PATCH(req: Request) {
       );
     }
 
+    // Fırsatlar Pro (2026-09-12) — tüm metotlar kapılı.
+    const proErrPatch = await requirePro();
+    if (proErrPatch) return proErrPatch;
+
+    // Fırsatlar Pro (2026-09-12) — tüm metotlar kapılı.
+    const proErrPost = await requirePro();
+    if (proErrPost) return proErrPost;
+
     const [updated] = await getDb()
       .update(opportunities)
       .set({
@@ -209,6 +226,10 @@ export async function DELETE(req: Request) {
         { status: 403 },
       );
     }
+
+    // Fırsatlar Pro (2026-09-12) — tüm metotlar kapılı.
+    const proErrDelete = await requirePro();
+    if (proErrDelete) return proErrDelete;
 
     const rawId = new URL(req.url).searchParams.get("id") ?? "";
     const parsed = z.string().uuid().safeParse(rawId);

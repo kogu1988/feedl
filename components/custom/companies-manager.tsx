@@ -12,6 +12,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/custom/empty-state";
+import { ProFeatureLock } from "@/components/custom/pro";
 import {
   Dialog,
   DialogContent,
@@ -85,10 +86,14 @@ function CompanyFormDialog({
   mode,
   company,
   onSuccess,
+  isPro,
 }: {
   mode: "create" | "edit";
   company?: CompanyView;
   onSuccess: () => void;
+  // 2026-09-12 (plan matrisi): MRR girişi Pro. Free'de alan kapalı ve
+  // gönderime HİÇ eklenmez (mevcut MRR korunur — silinmez).
+  isPro: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -135,7 +140,10 @@ function CompanyFormDialog({
           ...(mode === "edit" && company ? { id: company.id } : {}),
           name: trimmedName,
           domain: domain.trim() || undefined,
-          mrr: mrrValue,
+          // Free'de MRR alanı yok sayılır: alan hiç gönderilmez, PATCH mevcut
+          // değeri KORUR (silmez). Kapı zaten yalnız pozitif MRR yazımını
+          // engeller (app/api/admin/companies/route.ts).
+          ...(isPro ? { mrr: mrrValue } : {}),
           status,
           renewalDate: renewalDate || undefined,
           segment: segment.trim() || undefined,
@@ -239,7 +247,13 @@ function CompanyFormDialog({
               value={mrr}
               onChange={(event) => setMrr(event.target.value)}
               placeholder="0"
+              disabled={!isPro}
             />
+            {!isPro ? (
+              <p className="text-xs text-muted-foreground">
+                MRR bağlamı Pro planda girilir; gelir skorunu besler.
+              </p>
+            ) : null}
           </div>
           <div className="grid gap-2">
             <label htmlFor={`company-status-${mode}`} className="text-sm font-medium">
@@ -673,10 +687,14 @@ export function CompaniesManager({
   items,
   userOptions,
   opportunities,
+  isPro,
 }: {
   items: CompanyView[];
   userOptions: UserOption[];
   opportunities: OpportunityView[];
+  // 2026-09-12 (plan matrisi): MRR + fırsatlar Pro. Şirket/üye yönetimi Free
+  // (üyelerin oyları dashboard'daki "Müşteri" sayacını besler).
+  isPro: boolean;
 }) {
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -784,7 +802,7 @@ export function CompaniesManager({
           {items.length} şirket — üyelerin oyları, dashboard&apos;da
           &quot;müşteri&quot; sayacını besler.
         </p>
-        <CompanyFormDialog mode="create" onSuccess={refresh} />
+        <CompanyFormDialog mode="create" onSuccess={refresh} isPro={isPro} />
       </div>
 
       {error ? (
@@ -845,17 +863,20 @@ export function CompaniesManager({
                     mode="edit"
                     company={company}
                     onSuccess={refresh}
+                    isPro={isPro}
                   />
                   <AddMemberDialog
                     company={company}
                     userOptions={userOptions}
                     onSuccess={refresh}
                   />
-                  <OpportunityFormDialog
-                    mode="create"
-                    company={company}
-                    onSuccess={refresh}
-                  />
+                  {isPro ? (
+                    <OpportunityFormDialog
+                      mode="create"
+                      company={company}
+                      onSuccess={refresh}
+                    />
+                  ) : null}
                   <Button
                     variant="ghost"
                     size="sm"
@@ -882,10 +903,11 @@ export function CompaniesManager({
                 </p>
               ) : null}
 
-              <div className="mt-3">
-                <p className="text-xs font-medium text-muted-foreground">
-                  Fırsatlar
-                </p>
+              {isPro ? (
+                <div className="mt-3">
+                  <p className="text-xs font-medium text-muted-foreground">
+                    Fırsatlar
+                  </p>
                 {companyOpportunities.length === 0 ? (
                   <p className="mt-1.5 text-xs text-muted-foreground">
                     Bu şirkete henüz fırsat eklenmedi.
@@ -953,8 +975,19 @@ export function CompaniesManager({
                       </li>
                     ))}
                   </ul>
-                )}
-              </div>
+                  )}
+                </div>
+              ) : (
+                /* Free: fırsatlar Pro (2026-09-12). Liste ve "Fırsat Ekle"
+                   kontrolü hiç render edilmez; API de kapılı. */
+                <div className="mt-3 max-w-sm">
+                  <ProFeatureLock
+                    compact
+                    title="Fırsatlar Pro planda"
+                    description="Açık fırsat değerini fikre bağla; gelir skoru bu veriyle hesaplanır."
+                  />
+                </div>
+              )}
 
               {company.members.length === 0 ? (
                 <p className="mt-3 text-xs text-muted-foreground">

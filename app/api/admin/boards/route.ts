@@ -10,6 +10,7 @@ import { getDefaultBoardId } from "@/lib/db/board";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { boards } from "@/lib/db/schema";
 import { enforceLimit } from "@/lib/paddle";
+import { requirePro } from "@/lib/plan";
 
 // Sprint 48b (madde 8) — board yönetimi. Varsayılan "genel" board
 // silinemez (tüm mevcut fikirler ona bağlı); diğerleri ekle/düzenle/sil.
@@ -124,6 +125,13 @@ export async function POST(req: Request) {
       );
     }
     const workspaceId = await getWorkspaceId();
+    // 2026-09-12 (plan matrisi): private board'lar Pro özelliğidir. Karar
+    // kullanıcı onaylı — /pricing ve landing bunu zaten Pro olarak pazarlıyordu,
+    // ama kodda kapı yoktu (Free de gizli board açabiliyordu).
+    if (parsed.data.visibility === "private") {
+      const proErr = await requirePro();
+      if (proErr) return proErr;
+    }
     // Sprint 48i: plan board limiti — aşılırsa reddet.
     const [boardCountRow] = await getDb()
       .select({ value: count(boards.id) })
@@ -231,6 +239,18 @@ export async function PATCH(req: Request) {
         { success: false, error: "Board bulunamadı." },
         { status: 404 },
       );
+    }
+    // 2026-09-12 (plan matrisi): private'a ÇEVİRMEK Pro gerektirir. Kapı yalnız
+    // transition'a bakar: kapı eklenmeden önce Free bir workspace'te
+    // oluşmuş olabilecek gizli board'ın adı düzenlenirken 403 yememeli
+    // (visibility zaten 'private' gelir ve değişmiyordur). Yani Free bir
+    // workspace yeni bir gizli board KAZANAMAZ, ama elindekini kaybetmez.
+    if (
+      update.data.visibility === "private" &&
+      current.visibility !== "private"
+    ) {
+      const proErr = await requirePro();
+      if (proErr) return proErr;
     }
     const defaultBoardId = await getDefaultBoardId();
     if (current.id === defaultBoardId && update.data.visibility === "private") {

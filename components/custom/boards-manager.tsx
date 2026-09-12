@@ -32,7 +32,16 @@ export interface BoardView {
 const selectClassName =
   "h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm";
 
-export function BoardsManager({ initial }: { initial: BoardView[] }) {
+export function BoardsManager({
+  initial,
+  isPro,
+}: {
+  initial: BoardView[];
+  // 2026-09-12 (plan matrisi): private board'lar Pro özelliğidir. Free'de
+  // seçenek kapatılır ve neden kapalı olduğu yazılır (API de koşulsuz kapı
+  // koyar — burası yalnız kullanıcıya doğru şeyi göstermek için).
+  isPro: boolean;
+}) {
   const [boards, setBoards] = useState<BoardView[]>(initial);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<BoardView | null>(null);
@@ -264,8 +273,15 @@ export function BoardsManager({ initial }: { initial: BoardView[] }) {
                 }
               >
                 <option value="public">Herkese açık</option>
-                <option value="private">Gizli (yalnızca yönetici)</option>
+                <option value="private" disabled={!isPro}>
+                  Gizli (yalnızca yönetici){!isPro ? " — Pro" : ""}
+                </option>
               </select>
+              {!isPro ? (
+                <p className="text-xs text-muted-foreground">
+                  Gizli board&apos;lar Pro planda açılır.
+                </p>
+              ) : null}
             </div>
           </div>
           <DialogFooter>

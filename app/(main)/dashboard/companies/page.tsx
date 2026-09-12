@@ -11,6 +11,7 @@ import { Notice } from "@/components/custom/notice";
 import { getTeamUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
+import { getPlanLimits } from "@/lib/paddle";
 import {
   companies,
   companyMembers,
@@ -34,6 +35,12 @@ export default async function CompaniesPage() {
   let userOptions: UserOption[] = [];
   let opportunityItems: OpportunityView[] = [];
   let loadError = false;
+
+  // 2026-09-12 (plan matrisi, kullanıcı kararı): MRR girişi ve fırsatlar Pro.
+  // Şirket + ÜYE yönetimi Free KALIR (üyelerin oyları dashboard'daki
+  // "Müşteri" sayacını besler). Free'de fırsat sorgusu HİÇ koşmaz (boşuna DB
+  // işi + Pro verisi çekilmez) ve ekranda kilit gösterilir.
+  const isPro = (await getPlanLimits()).key === "pro";
 
   try {
     const [companyRows, memberRows, userRows, opportunityRows] =
@@ -59,19 +66,32 @@ export default async function CompaniesPage() {
           .select({ id: users.id, name: users.name, email: users.email })
           .from(users)
           .orderBy(asc(users.name)),
-        getDb()
-          .select({
-            id: opportunities.id,
-            companyId: opportunities.companyId,
-            title: opportunities.title,
-            dealValue: opportunities.dealValue,
-            stage: opportunities.stage,
-            expectedCloseDate: opportunities.expectedCloseDate,
-            notes: opportunities.notes,
-          })
-          .from(opportunities)
-          .where(eq(opportunities.workspaceId, await getWorkspaceId()))
-          .orderBy(desc(opportunities.createdAt)),
+        // Fırsatlar Pro — Free'de sorgu hiç koşmaz.
+        isPro
+          ? getDb()
+              .select({
+                id: opportunities.id,
+                companyId: opportunities.companyId,
+                title: opportunities.title,
+                dealValue: opportunities.dealValue,
+                stage: opportunities.stage,
+                expectedCloseDate: opportunities.expectedCloseDate,
+                notes: opportunities.notes,
+              })
+              .from(opportunities)
+              .where(eq(opportunities.workspaceId, await getWorkspaceId()))
+              .orderBy(desc(opportunities.createdAt))
+          : Promise.resolve(
+              [] as Array<{
+                id: string;
+                companyId: string;
+                title: string;
+                dealValue: string | null;
+                stage: string;
+                expectedCloseDate: string | null;
+                notes: string | null;
+              }>,
+            ),
       ]);
 
     const membersByCompany = new Map<string, CompanyView["members"]>();
@@ -139,6 +159,7 @@ export default async function CompaniesPage() {
             items={items}
             userOptions={userOptions}
             opportunities={opportunityItems}
+            isPro={isPro}
           />
         )}
       </div>

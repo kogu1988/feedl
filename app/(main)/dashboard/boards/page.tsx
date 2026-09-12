@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { BoardsManager } from "@/components/custom/boards-manager";
 import { getTeamUserId } from "@/lib/auth/admin";
 import { listBoards } from "@/lib/db/board";
+import { getPlanLimits } from "@/lib/paddle";
 
 // Canlı veri: her istekte DB'den okunur.
 export const dynamic = "force-dynamic";
@@ -26,6 +27,9 @@ export default async function BoardsPage() {
     loadError = true;
   }
 
+  // 2026-09-12 (plan matrisi): gizli board'lar Pro özelliği.
+  const isPro = (await getPlanLimits()).key === "pro";
+
   return (
     <main className="container mx-auto max-w-none p-4 sm:p-8">
       <div>
@@ -40,7 +44,7 @@ export default async function BoardsPage() {
           Board&apos;lar yüklenemedi. Lütfen sayfayı yenile.
         </p>
       ) : (
-        <BoardsManager initial={initial} />
+        <BoardsManager initial={initial} isPro={isPro} />
       )}
     </main>
   );

@@ -7,10 +7,15 @@ import { z } from "zod";
 import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { postOpportunities } from "@/lib/db/schema";
+import { requirePro } from "@/lib/plan";
 
 // Sprint 31 — fikir ↔ fırsat bağlama (P3.2). Bağ, gelir skorunu besler;
 // fikir veya fırsat silinince cascade kaldırılır. Unique constraint
 // sayesinde çift bağlama idempotenttir.
+//
+// 2026-09-12 (plan matrisi): bağ da fırsatlar gibi Pro'dur — tek işlevi gelir
+// skorunu beslemek. Portal fikir detayındaki "Fırsata bağla" kontrolü de
+// Free'de hiç render edilmez (app/(main)/portal/[id]/page.tsx).
 
 const linkInputSchema = z.object({
   postId: z.string().uuid(),
@@ -45,6 +50,11 @@ export async function POST(req: Request) {
         { status: 400 },
       );
     }
+
+    // Bağ Pro (2026-09-12, plan matrisi): fırsatlar gibi bağın da tek işlevi
+    // gelir skorunu beslemek.
+    const proErr = await requirePro();
+    if (proErr) return proErr;
 
     await getDb()
       .insert(postOpportunities)
@@ -89,6 +99,10 @@ export async function DELETE(req: Request) {
         { status: 400 },
       );
     }
+
+    // Bağ Pro (2026-09-12, plan matrisi) — kaldırma da kapılı.
+    const proErrDelete = await requirePro();
+    if (proErrDelete) return proErrDelete;
 
     const [deleted] = await getDb()
       .delete(postOpportunities)

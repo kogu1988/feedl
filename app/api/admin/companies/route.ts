@@ -8,9 +8,17 @@ import { getAdminUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { companies, companyMembers, users } from "@/lib/db/schema";
+import { requirePro } from "@/lib/plan";
 
 // Sprint 30 — müşteri şirket yönetimi (P3.1). Üyeler cascade silinir;
 // şirketin fikirlerle bağı Sprint 31'de opportunities üzerinden gelir.
+//
+// 2026-09-12 (plan matrisi, kullanıcı kararı) — MRR bağlamı Pro:
+//   • Şirket + ÜYE yönetimi FREE kalır: `loadCustomerCounts` dashboard'daki
+//     "Müşteri" sayacını company_members üzerinden hesaplar (countDistinct
+//     companyId) — tüm ekranı kapatmak Free'nin mevcut değerini kırpardı.
+//   • MRR GİRİŞİ (> 0) Pro'dur: tek kullanımı gelir skorunu beslemek, o da Pro.
+//   • Fırsatlar (opportunities) tamamen Pro (bkz. opportunities/route.ts).
 
 const companyStatusEnum = z.enum(["active", "at_risk", "churned"]);
 
@@ -141,6 +149,13 @@ export async function POST(req: Request) {
       );
     }
 
+    // MRR girme Pro (2026-09-12): 0/null "gelir bilgisi yok" demektir, kapıyı
+    // açmaz; pozitif MRR gelir skorunu beslediği için Pro ister.
+    if (parsed.data.mrr != null && parsed.data.mrr > 0) {
+      const proErr = await requirePro();
+      if (proErr) return proErr;
+    }
+
     const [created] = await getDb()
       .insert(companies)
       .values({
@@ -202,12 +217,25 @@ export async function PATCH(req: Request) {
       );
     }
 
+    // MRR girme Pro (2026-09-12) — POST ile aynı kural: pozitif MRR Pro ister,
+    // 0/null serbest ("gelir bilgisi yok" anlamına gelir).
+    if (parsed.data.mrr != null && parsed.data.mrr > 0) {
+      const proErr = await requirePro();
+      if (proErr) return proErr;
+    }
+
     const [updated] = await getDb()
       .update(companies)
       .set({
         name: parsed.data.name,
         domain: parsed.data.domain,
-        mrr: parsed.data.mrr == null ? null : String(parsed.data.mrr),
+        // MRR KISMİ güncellenir (2026-09-12): alan hiç gönderilmediyse mevcut
+        // değer KORUNUR. Free workspace eski bir MRR taşıyorsa, adını
+        // düzenlemek verisini SİLMEZ; sadece yeni bir pozitif MRR yazamaz
+        // (yukarıdaki `requirePro` kapısı).
+        ...(parsed.data.mrr !== undefined
+          ? { mrr: parsed.data.mrr == null ? null : String(parsed.data.mrr) }
+          : {}),
         status: parsed.data.status,
         renewalDate: parsed.data.renewalDate ?? null,
         segment: parsed.data.segment,
