@@ -31,7 +31,11 @@ const ACTIVE_WS_COOKIE = "feedl_active_ws";
 // erişmediği için burada çözüm yapılmaz — middleware auth/yönlendirme yapar.
 import { headers } from "next/headers";
 
-const DEFAULT_WORKSPACE_SLUG = "feedl";
+// Bilinmeyen host'ların düştüğü varsayılan workspace. SİLİNEMEZ: host → workspace
+// çözümlemesi (`resolveWorkspaceByHost`) bu satır yoksa hata verir, yani
+// varsayılan workspace'i silmek feedl.app'in kendisini 500'e düşürür. Silme
+// API'si bu slug'ı reddeder (bkz. app/api/admin/workspace/route.ts DELETE).
+export const DEFAULT_WORKSPACE_SLUG = "feedl";
 const workspaceIdSchema = z.uuid();
 
 // `feedl.app` kök/alt alan adları ve NEXT_PUBLIC_APP_URL — bunların dışında

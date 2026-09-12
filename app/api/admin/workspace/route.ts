@@ -4,9 +4,12 @@ import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
-import { getAdminUserId } from "@/lib/auth/admin";
+import { getAdminUserId, getOwnerUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
-import { getWorkspaceId } from "@/lib/db/workspace";
+import {
+  DEFAULT_WORKSPACE_SLUG,
+  getWorkspaceId,
+} from "@/lib/db/workspace";
 import { workspaces } from "@/lib/db/schema";
 import { effectivePlanKey } from "@/lib/paddle";
 import {
@@ -328,6 +331,135 @@ export async function PATCH(req: Request) {
     );
     return NextResponse.json(
       { success: false, error: "Workspace güncellenemedi. Lütfen tekrar deneyin." },
+      { status: 500 },
+    );
+  }
+}
+
+// DELETE /api/admin/workspace — workspace'i ve TÜM verisini kalıcı olarak sil
+// (denetim #8b; GDPR/KVKK silme hakkı).
+//
+// Yetki: OWNER-ONLY (geri dönüşü olmayan işlem).
+// Onay: gövdede `confirm` = workspace slug'ı birebir eşleşmeli. Yanlışlıkla
+// tetiklenmeye karşı arayüz "slug'ı yaz" ister; API de aynı kuralı uygular
+// (arayüz atlatılsa bile kaza ile silme imkânsız).
+//
+// İki SERT engel vardır:
+//  1) Varsayılan workspace (`feedl`) silinemez — host→workspace çözümlemesi bu
+//     satıra düşer; silinirse feedl.app'in tamamı 500 olur.
+//  2) Etkin Pro abonelik varsa silinemez — aksi halde Paddle aboneliği
+//     workspace'siz kalır ve müşteri, ürünü olmayan bir şey için ödeme yapmaya
+//     devam eder. Önce /dashboard/billing üzerinden iptal edilmelidir.
+//
+// Silme tek satırdır: şemadaki tüm workspace-kapsamlı tablolar
+// `onDelete: "cascade"` taşıdığından alt kayıtlar DB tarafından temizlenir.
+const deleteSchema = z.object({
+  confirm: z.string().trim().min(1, "Onay için workspace adresi (slug) gerekli."),
+});
+
+// Onboarding bu çerezi set eder (app/api/onboarding/route.ts) — silinen
+// workspace'e işaret etmesin diye burada temizlenir.
+const ACTIVE_WS_COOKIE = "feedl_active_ws";
+
+export async function DELETE(req: Request) {
+  try {
+    const ownerId = await getOwnerUserId();
+    if (!ownerId) {
+      return NextResponse.json(
+        { success: false, error: "Bu işlem için workspace sahibi (owner) yetkisi gerekir." },
+        { status: 403 },
+      );
+    }
+
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json(
+        { success: false, error: "Geçersiz istek gövdesi." },
+        { status: 400 },
+      );
+    }
+    const parsed = deleteSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { success: false, error: parsed.error.issues[0]?.message ?? "Onay bilgisi geçersiz." },
+        { status: 400 },
+      );
+    }
+
+    const workspaceId = await getWorkspaceId();
+    const [row] = await getDb()
+      .select({
+        id: workspaces.id,
+        slug: workspaces.slug,
+        plan: workspaces.plan,
+        paddleSubscriptionStatus: workspaces.paddleSubscriptionStatus,
+        paddleStatusChangedAt: workspaces.paddleStatusChangedAt,
+      })
+      .from(workspaces)
+      .where(eq(workspaces.id, workspaceId))
+      .limit(1);
+
+    if (!row) {
+      return NextResponse.json(
+        { success: false, error: "Workspace bulunamadı." },
+        { status: 404 },
+      );
+    }
+
+    if (row.slug === DEFAULT_WORKSPACE_SLUG) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Varsayılan workspace silinemez; feedl.app bu workspace'e bağlıdır. Bunun yerine verilerini temizlememizi isteyebilirsin.",
+        },
+        { status: 409 },
+      );
+    }
+
+    if (parsed.data.confirm !== row.slug) {
+      return NextResponse.json(
+        { success: false, error: "Onay adresi workspace adresiyle eşleşmiyor." },
+        { status: 400 },
+      );
+    }
+
+    if (effectivePlanKey(row) === "pro") {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Etkin bir Pro abonelik var. Önce /dashboard/billing sayfasından aboneliği iptal et, sonra workspace'i sil.",
+        },
+        { status: 409 },
+      );
+    }
+
+    await getDb().delete(workspaces).where(eq(workspaces.id, workspaceId));
+
+    // Aktif workspace çerezi artık var olmayan bir slug'ı gösteriyor olabilir;
+    // temizlenmezse bir sonraki istek onu arar, bulamaz ve host'a düşer
+    // (doğru davranış ama gereksiz bir sorgu).
+    const response = NextResponse.json({
+      success: true,
+      data: { deletedWorkspaceId: row.id, slug: row.slug },
+    });
+    response.cookies.delete(ACTIVE_WS_COOKIE);
+
+    console.warn(
+      `[workspace-delete] slug=${row.slug} id=${row.id} by=${ownerId}`,
+    );
+
+    return response;
+  } catch (err) {
+    console.error(
+      "DELETE /api/admin/workspace failed:",
+      err instanceof Error ? err.message : err,
+    );
+    return NextResponse.json(
+      { success: false, error: "Workspace silinemedi. Lütfen tekrar deneyin." },
       { status: 500 },
     );
   }

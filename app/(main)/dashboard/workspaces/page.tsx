@@ -3,7 +3,12 @@ import { eq } from "drizzle-orm";
 
 import { WorkspacesManager } from "@/components/custom/workspaces-manager";
 import { WorkspaceSettings } from "@/components/custom/workspace-settings";
-import { getAdminUserId, getNonAdminRedirectTarget } from "@/lib/auth/admin";
+import { WorkspaceDataPrivacy } from "@/components/custom/workspace-data-privacy";
+import {
+  getAdminUserId,
+  getDashboardScope,
+  getNonAdminRedirectTarget,
+} from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { asc, count } from "drizzle-orm";
@@ -22,6 +27,8 @@ export default async function WorkspacesPage() {
   if (!adminId) {
     redirect(await getNonAdminRedirectTarget());
   }
+  // Veri indirme/silme yalnız owner'a açıktır (API de aynı kapıyı uygular).
+  const isOwner = (await getDashboardScope()) === "owner";
 
   let items: Awaited<ReturnType<typeof loadWorkspaces>> = [];
   let loadError = false;
@@ -77,6 +84,7 @@ export default async function WorkspacesPage() {
             }}
             isPro={planFromString(workspaceInfo.plan) === "pro"}
           />
+          <WorkspaceDataPrivacy slug={workspaceInfo.slug} isOwner={isOwner} />
         </div>
       ) : wsLoadError ? (
         <p className="mt-6 text-sm text-destructive">
