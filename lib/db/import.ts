@@ -1,5 +1,6 @@
 import "server-only";
 
+import { randomUUID } from "node:crypto";
 import { and, eq } from "drizzle-orm";
 
 import { getDb } from "./index";
@@ -162,6 +163,44 @@ export async function importPosts(
   const result: ImportResult = { created: 0, skippedDuplicates: 0, errors: [] };
   const db = getDb();
 
+  // 2026-09-12 (denetim — import): ETİKET ÖNBELLEĞİ.
+  //
+  // Önceden her satırın her etiketi için bir `select` atılıyordu; 200 satır ×
+  // 3 etiket = 600 gereksiz gidiş-dönüş. Artık workspace'in etiketleri TEK
+  // sorguyla çekilir ve yeni oluşturulanlar haritaya eklenir.
+  const tagMap = new Map<string, string>();
+  for (const t of await db
+    .select({ id: tags.id, name: tags.name })
+    .from(tags)
+    .where(eq(tags.workspaceId, workspaceId))) {
+    tagMap.set(t.name, t.id);
+  }
+
+  // Etiket id'sini garanti eder (haritadan ya da yeni oluşturarak). Yeni etiket
+  // başına 1 yazma; yarış durumunda (paralel import) `onConflictDoNothing`
+  // boş döner ve mevcut satır okunur — böylece post_tags FK'si kırılmaz.
+  async function ensureTagId(label: string): Promise<string | null> {
+    const cached = tagMap.get(label);
+    if (cached) return cached;
+    const id = randomUUID();
+    const [ins] = await db
+      .insert(tags)
+      .values({ id, workspaceId, name: label })
+      .onConflictDoNothing()
+      .returning({ id: tags.id });
+    if (ins?.id) {
+      tagMap.set(label, ins.id);
+      return ins.id;
+    }
+    const [found] = await db
+      .select({ id: tags.id })
+      .from(tags)
+      .where(and(eq(tags.workspaceId, workspaceId), eq(tags.name, label)))
+      .limit(1);
+    if (found?.id) tagMap.set(label, found.id);
+    return found?.id ?? null;
+  }
+
   for (const [rowIdx, row] of rows.entries()) {
     const rawTitle = (row[titleIdx] ?? "").trim();
     if (!rawTitle) {
@@ -221,9 +260,26 @@ export async function importPosts(
       : importUserId;
 
     try {
-      const [created] = await db
-        .insert(posts)
-        .values({
+      // 2026-09-12 (denetim — import): SATIR BAŞINA TEK BATCH (atomik).
+      //
+      // Önceden post → oy'lar → (etiket başına select+insert+post_tag) ayrı
+      // gidiş-dönüşlerdi: 200 satırlık bir CSV binlerce seri HTTP isteği
+      // demekti ve satırın ORTASINDA bir hata olursa post kalır, etiketleri
+      // kalmazdı (kısmi satır). Artık satırın tüm yazmaları tek transaction'da:
+      //   [post, oy kullanıcıları, oylar, post_tags...]
+      // Id'ler önceden üretildiği için batch içinde sonuç bağımlılığı yok.
+      // Satır-bazlı hata toleransı KORUNUR (tasarım: 98/100 içe aktar, 2'yi
+      // raporla) — batch yalnız O SATIRI atomik yapar, tüm importu değil.
+      const postId = randomUUID();
+      const tagIds: string[] = [];
+      for (const raw of parseTags(tagsRaw)) {
+        const tagId = await ensureTagId(raw.toLowerCase());
+        if (tagId) tagIds.push(tagId);
+      }
+
+      const batch = [
+        db.insert(posts).values({
+          id: postId,
           workspaceId,
           boardId,
           userId: rowAuthorId,
@@ -232,41 +288,20 @@ export async function importPosts(
           status: status as (typeof VALID_STATUSES)[number],
           postType: postType ?? null,
           source,
-        })
-        .returning({ id: posts.id });
+        }),
+        ...voteStatements(postId, voteCount, db),
+        ...(tagIds.length > 0
+          ? [
+              db
+                .insert(postTags)
+                .values(tagIds.map((tagId) => ({ postId, tagId })))
+                .onConflictDoNothing(),
+            ]
+          : []),
+      ];
+      // Drizzle `batch` en az bir ifade ister; ilk eleman her zaman post'tur.
+      await db.batch(batch as [typeof batch[0], ...typeof batch]);
       existingTitles.add(titleKey);
-
-      // Dış araçtan gelen oy sayısı → sentetik oy satırları (portal metrik doğru).
-      if (created?.id && voteCount > 0) {
-        await importVotes(created.id, voteCount, db);
-      }
-
-      // Etiketler: "#etiket1 #etiket2" veya "etiket1, etiket2" formatı.
-      for (const raw of parseTags(tagsRaw)) {
-        if (!created?.id) break;
-        const label = raw.toLowerCase();
-        // Tag varsa id al, yoksa oluştur.
-        const [found] = await db
-          .select({ id: tags.id })
-          .from(tags)
-          .where(and(eq(tags.workspaceId, workspaceId), eq(tags.name, label)))
-          .limit(1);
-        let tagId = found?.id;
-        if (!tagId) {
-          const [ins] = await db
-            .insert(tags)
-            .values({ workspaceId, name: label })
-            .returning({ id: tags.id });
-          tagId = ins?.id;
-        }
-        if (tagId) {
-          await db
-            .insert(postTags)
-            .values({ postId: created.id, tagId })
-            .onConflictDoNothing();
-        }
-      }
-
       result.created += 1;
     } catch (err) {
       result.errors.push(
@@ -299,22 +334,23 @@ function buildDescription(description: string, fallbackTitle: string, commentCou
 
 // `Votes` sayısını `votes` tablosuna gerçek satırlar olarak taşır.
 // Her oy için benzersiz sentetik kullanıcı (unique(user_id, post_id) gereği).
-// Batch insert ile satır sayısı optimize edilir.
-async function importVotes(
+//
+// 2026-09-12 (denetim — import): fonksiyon ARTIK YAZMAZ, batch'e konacak
+// ifadeleri ÜRETİR. Böylece oy yazmaları da satırın tek transaction'ına girer
+// (eskiden ayrı gidiş-dönüşlerdi ve satır ortasında kopabiliyordu).
+function voteStatements(
   postId: string,
   count: number,
   db: ReturnType<typeof getDb>,
-): Promise<void> {
-  const BATCH = 100;
-  for (let start = 0; start < count; start += BATCH) {
-    const end = Math.min(start + BATCH, count);
-    const rows = [];
-    for (let i = start; i < end; i++) {
-      const uid = `import_vote_${postId}_${i}`;
-      rows.push({ userId: uid, postId });
-    }
-    // Kullanıcıları upsert (tek tek insert — kullanıcı sayısı votes kadar).
-    await db
+) {
+  const capped = Math.min(Math.max(count, 0), MAX_IMPORT_VOTES_PER_POST);
+  if (capped === 0) return [];
+  const rows = [];
+  for (let i = 0; i < capped; i++) {
+    rows.push({ userId: `import_vote_${postId}_${i}`, postId });
+  }
+  return [
+    db
       .insert(users)
       .values(
         rows.map((r) => ({
@@ -324,10 +360,7 @@ async function importVotes(
           role: "customer" as const,
         })),
       )
-      .onConflictDoNothing();
-    await db
-      .insert(votes)
-      .values(rows)
-      .onConflictDoNothing();
-  }
+      .onConflictDoNothing(),
+    db.insert(votes).values(rows).onConflictDoNothing(),
+  ];
 }
