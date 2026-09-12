@@ -3,8 +3,16 @@
 // Sprint 52 (Faz 5) — plan fiyat yapılandırmasının TEK kaynağı. Hem
 // dashboard/billing-manager hem public pricing-manager buradan okur —
 // fiyat/price-id/period tutarlılığı ve sandbox↔live karışması önlenir.
-// Değerler env'den gelir (PUBLIC olduğundan client erişebilir); canlıya
-// geçişte aynı env'lere production değerleri yazılır.
+// Değerler env'den gelir (PUBLIC olduğundan client erişebilir);
+// 2026-09-12 itibarıyla canlı (live) tahsilat aktiftir — env'ler üretim
+// Paddle değerlerini taşır.
+
+// 2026-09-12 (Free/Pro dil birliği) — planın KONUMLANDIRMA metinleri burada
+// DEĞİL, `lib/plan-copy.ts` içindedir. Nedeni: bu dosya `"use client"` taşır,
+// ve bir client modülünden düz VERİ import eden server component o değeri
+// `undefined` olarak görür (client reference proxy'si). Landing /pricing gibi
+// server sayfaları bu yüzden `@/lib/plan-copy` okur. Denetlenmiş plan matrisi
+// ve açık kalan uyumsuzluk notu da orada tutulur.
 
 export type PlanEnv = "sandbox" | "live";
 
@@ -18,7 +26,7 @@ export const PRO_PLAN = {
   monthlyPrice: "$19",
   yearlyMonthlyPrice: "$15",
   yearlyTotal: "$180",
-  // Paddle price ID'leri (sandbox = mevcut, canlı = production env).
+  // Paddle price ID'leri env'den gelir (canlı/production değerleri).
   monthlyPriceId: process.env.NEXT_PUBLIC_PADDLE_PRO_MONTHLY_PRICE_ID ?? "",
   yearlyPriceId: process.env.NEXT_PUBLIC_PADDLE_PRO_YEARLY_PRICE_ID ?? "",
 } as const;

@@ -3,9 +3,10 @@ import "server-only";
 import { Paddle, Environment } from "@paddle/paddle-node-sdk";
 import { z } from "zod";
 
-// Sprint 48h (Faz 5) — Paddle entegrasyonu. Sandbox/live SDK client + plan
-// tanımları + imza doğrulama. Fiyatlar Paddle sandbox'ta feedl_ önekli
-// oluşturuldu (kullanıcı onayıyla $19/ay, $15/ay yıllık).
+// Sprint 48h (Faz 5) — Paddle entegrasyonu. Environment seçimi (sandbox/live)
+// + plan tanımları + imza doğrulama. Fiyatlar Paddle'da `feedl_` önekli
+// oluşturuldu ($19/ay, $15/ay yıllık) ve 2026-09-12 itibarıyla CANLI (live)
+// ortamda aktiftir; ortam `PADDLE_ENV` ile seçilir (varsayılan live).
 
 export const PADDLE_ENV = process.env.PADDLE_ENV === "sandbox" ? "sandbox" : "live";
 

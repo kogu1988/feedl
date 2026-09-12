@@ -12,20 +12,30 @@ import { useCheckout } from "@/components/custom/use-checkout";
 import { CheckoutStatusBanner } from "@/components/custom/checkout-status";
 
 // Sprint 49/52 (Faz 5) — public /pricing. Free vs Pro karşılaştırma tablosu;
-// "Pro'ya Geç" Paddle.js sandbox/live overlay checkout'u açar (webhook
-// provisioning'dan sorumludur). Slug workspace'te satırı ile eşleştirilir.
-// Kullanıcı kararı: canlı tahsilata geçilmedi — sandbox'ta hazır bekler.
+// "Pro'ya Geç" Paddle.js overlay checkout'u açar (webhook provisioning'dan
+// sorumludur). Slug workspace'te satırı ile eşleştirilir.
+// 2026-09-12: canlı (live) tahsilat AKTİF — 2026-09-12'de gerçek bir Pro satın
+// alımıyla uçtan uca doğrulandı. (Eski yorum "canlıya geçilmedi, sandbox'ta
+// hazır bekler" diyordu; gerçeklikle uyuşmuyordu.)
 // Aylık/yıllık switch Pro kartının içindedir, varsayılan YILLIK; yıllıkta
 // PRO_PLAN.yearlyMonthlyPrice, aylıkta PRO_PLAN.monthlyPrice. Butonlar kart
 // içi altta aynı hizada (flex-col + mt-auto), hepsi Button komponenti.
 
+// Free/PRO listeleri /pricing'in GERÇEK plan matrisini anlatır ve landing'deki
+// özellik kartlarıyla aynı dili kullanır (bkz. PLAN_POSITIONING,
+// components/custom/plan-config.ts). Free'de olan bir şey Pro gibi, Free'de
+// olmayan bir şey Free gibi anlatılmaz.
 const freeFeatures = [
   "1 board · 1 üye · 50 takipçi",
   "Fikir + oy + yorum",
-  "AI etiketleme & tek post özeti",
+  "AI etiketleme, özet ve tekrar tespiti",
   "Yol haritası & changelog",
+  // 2026-09-12 (kullanıcı kararı): toplu aksiyonlar ve kayıtlı görünümler
+  // PRO değil FREE'dir — kodda plan kapısı yoktu ve Free'de kalması istendi.
+  // (Landing'deki "İş Akışı & Görünümler" kartı da Free'ye taşındı.)
+  "Toplu aksiyonlar & kayıtlı görünümler",
   "Widget gömülü (kendi sitende)",
-  "\"Powered by feedl\" rozeti",
+  '"Powered by feedl" rozeti',
 ];
 
 const proFeatures = [
@@ -33,10 +43,9 @@ const proFeatures = [
   "Özel alan adı + marka kaldırma",
   "Entegrasyonlar (Slack, Zendesk, Intercom, Jira, Linear)",
   "AI içgörüleri (korpus analizi)",
-  "Private board'lar",
+  "Gizli (private) board'lar",
   "API + webhook erişimi",
-  "Gelişmiş planlama & gelir skoru",
-  "Toplu aksiyonlar & kayıtlı görünümler",
+  "Gelir skoru & raporu (MRR + fırsatlar)",
 ];
 
 function FeatureList({ items }: { items: string[] }) {
@@ -67,8 +76,13 @@ export function PricingManager({
 }) {
   // Varsayılan: yıllık seçili.
   const [annual, setAnnual] = useState(true);
-  // Sprint 64: Paddle OVERLAY (default) — v1.6.5 INLINE stabil değil
-  // (frameTarget string→"appendChild" undefined, element→JSON circular).
+  // Sprint 64: Paddle OVERLAY (default) — projede INLINE denendi ve iki
+  // girdi biçiminde de patladı (frameTarget string → "appendChild" undefined;
+  // element → JSON circular). Not: bu bir "v1.6.5 inline desteklemiyor" hükmü
+  // DEĞİL — Paddle dokümanı inline'ı destekliyor ve tipler frameTarget'ı
+  // içeriyor (2026-09-12'de doğrulandı); elimizdeki kanıt yalnızca denediğimiz
+  // iki çağrı biçiminin çalışmadığı. Overlay canlıda çalışıyor; inline'a geçiş
+  // gerçek kartla canlı doğrulama gerektiren ayrı bir iştir (README #6).
   const { openCheckout, status } = useCheckout({
     paddleCustomerId,
     workspaceId,

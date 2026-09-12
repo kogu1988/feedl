@@ -6,7 +6,17 @@ import { expect, test } from "@playwright/test";
 // `test:e2e` parçasıdır; `npm run test:e2e` (çalışan sunucu gerekir) ile koşar.
 // Sonuç: regresyonları yakalar — yeni eklenen bir bileşen a11y'yi bozarsa kırar.
 
-const PUBLIC_ROUTES = ["/", "/portal", "/roadmap", "/changelog", "/pricing", "/demo"];
+const PUBLIC_ROUTES = [
+  "/",
+  "/portal",
+  "/roadmap",
+  "/changelog",
+  "/pricing",
+  "/demo",
+  // 2026-09-12: Free/Pro rozetleri ve plan özetiyle yeniden yapılandırıldı —
+  // SEO'ya açık bir yüzey olduğu için a11y taramasına alındı.
+  "/how-to-collect-feedback",
+];
 
 // Kritik (AA) kural seti — salt bilgi/öneri olanları hariç tut.
 const CRITICAL_RULES = [

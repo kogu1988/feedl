@@ -38,6 +38,23 @@ export function ProBadge({
   );
 }
 
+// Free rozeti — ProBadge'in nötr eşi. Free/Pro karşılaştırması yapan yüzeylerde
+// (rehber, plan karşılaştırması) iki rozet birlikte kullanılır ki etiket dili
+// tek yerden gelsin. Nötr stil DESIGN.md'deki "nötr rozet" desenidir.
+export function FreeBadge({
+  className,
+  label = "Free",
+}: {
+  className?: string;
+  label?: string;
+}) {
+  return (
+    <Badge className={cn("border-border bg-muted text-muted-foreground", className)}>
+      {label}
+    </Badge>
+  );
+}
+
 // Kilitli bir Pro özelliği için standart görünüm: üstte rozet, kısa açıklama ve
 // "Pro'ya Yükselt" butonu. `compact` ise yer kazanır (widget/sohbet için) ama
 // YİNE DE neyin yükseltileceğini söyleyen kısa bir açıklama gösterir — kullanıcı

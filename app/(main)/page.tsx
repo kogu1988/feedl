@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { HeroDemoCard } from "@/components/custom/hero-demo-card";
 import { PricingManager } from "@/components/custom/pricing-manager";
+import { PLAN_POSITIONING } from "@/lib/plan-copy";
 import { generateCanonical, ogImage } from "@/lib/seo";
 
 // Landing SEO — root layout'un title template'i + metadataBase'ine dayanır;
@@ -131,11 +132,15 @@ export default async function RootPage() {
   ];
 
   // Sprint 63r: Free özellikler önce, Pro özellikler sonra (net hiyerarşi).
+  // 2026-09-12 (Free/Pro dil birliği): metinler /pricing'teki gerçek plan
+  // içeriğiyle hizalandı — Free'de olmayan bir şey Free gibi, Free'de olan bir
+  // şey de Pro gibi anlatılmaz. Kanonik konumlandırma: PLAN_POSITIONING
+  // (components/custom/plan-config.ts).
   const features = [
     {
       title: "AI Autopilot",
       description:
-        "Her fikir otomatik özetlenir, etiketlenir ve benzer isteklerle eşleştirilir. Kopyalarla uğraşmazsın.",
+        "Her fikri otomatik etiketler, özetler ve tekrarları işaretler. Kopyalarla uğraşmazsın.",
       icon: SparklesIcon,
       plan: "free",
     },
@@ -154,17 +159,24 @@ export default async function RootPage() {
       plan: "free",
     },
     {
-      title: "Ekip & Rol Yönetimi",
+      title: "Çalışma Alanı & Roller",
       description:
-        "Sahip, yönetici, katkıcı ve üye rolleriyle ekibin doğru kişiyi doğru işe yönlendirir; iç notlar gizli kalır.",
+        "Çalışma alanını kur, sahip/yönetici/üye rolleriyle çalış. Tek kişilik Free workspace ile başla; ekip üyelerini Pro'da ekle.",
       icon: UsersIcon,
       plan: "free",
     },
     {
       title: "Güvenlik & Gizlilik",
       description:
-        "Rol bazlı erişim, anahtar ile doğrulanmış API ve iç notların müşteriye sızmaması.",
+        "Rol bazlı erişim ve özel iç notlarla müşteri ve ekip verilerini ayrı tut.",
       icon: ShieldCheckIcon,
+      plan: "free",
+    },
+    {
+      title: "İş Akışı & Görünümler",
+      description:
+        "Kayıtlı filtreler, toplu aksiyonlar ve sayfalama ile kalabalık panoları yönet.",
+      icon: WorkflowIcon,
       plan: "free",
     },
     {
@@ -214,13 +226,6 @@ export default async function RootPage() {
       description:
         "Oy, müşteri ve fırsat değerini birleştirerek hangi özelliğin en çok getireceğini önceliklendir.",
       icon: BarChart3Icon,
-      plan: "pro",
-    },
-    {
-      title: "İş Akışı & Görünümler",
-      description:
-        "Kayıtlı filtreler, toplu aksiyonlar ve sunucu tarafı sayfalama ile kalabalık panoları yönet.",
-      icon: WorkflowIcon,
       plan: "pro",
     },
   ];
@@ -381,9 +386,12 @@ export default async function RootPage() {
           <h2 className="text-2xl font-bold tracking-tight">
             Hangi plan sana uygun?
           </h2>
+          {/* 2026-09-12 (Free/Pro dil birliği): Pro'nun "neden para ödeyeyim?"
+              cevabı tek cümlede — özellik listesinden önce konumlandırma.
+              Kanonik kaynak: PLAN_POSITIONING (plan-config.ts). */}
           <p className="mt-3 text-muted-foreground">
-            Küçük ekipte ücretsiz başla; büyüdükçe Pro&apos;ya geç. Her plan
-            kullanıcı başına değil, ekip başına fiyatlandırılır.
+            {PLAN_POSITIONING.free} {PLAN_POSITIONING.pro} Her plan kullanıcı
+            başına değil, ekip başına fiyatlandırılır.
           </p>
         </div>
 

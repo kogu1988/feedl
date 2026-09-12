@@ -17,6 +17,13 @@ test("landing page loads", async ({ page }) => {
     await expect(page.getByText(/Fikir Portalı|Özellik istekleri/i).first()).toBeVisible();
   } else {
     await expect(page.getByText(/Ücretsiz Başla|Canlı Demo/i).first()).toBeVisible();
+    // 2026-09-12 REGRESYON: plan konumlandırması `lib/plan-copy.ts`'ten gelir.
+    // Bir ara `"use client"` taşıyan plan-config.ts'ten import edildiği için
+    // server component'te `undefined` oluyordu ve landing'e BOŞ (`<!-- -->`)
+    // düşüyordu; build/tsc bunu YAKALAMAZ, yalnız render edilmiş HTML gösterir.
+    await expect(
+      page.getByText(/Free geri bildirimi toplar/i),
+    ).toBeVisible();
   }
 });
 

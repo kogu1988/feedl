@@ -44,10 +44,10 @@ export default function RefundPage() {
           <h2 className="text-lg font-semibold">2. Yasal Haklar Saklıdır</h2>
           <p className="mt-2 text-muted-foreground">
             Bu İade Politikası hiçbir şekilde tüketicilerin yürürlükteki zorunlu yasal haklarını
-            ortadan kaldırmaz veya sınırlandırmaz. Özellikle tüketici koruma mevzuatının zorunlu
-            iade veya cayma hakkı verdiği durumlarda ilgili yasal hak uygulanır. Paddle&apos;ın
-            güncel politikasında Türkiye&apos;deki tüketiciler için bazı dijital içerik ve hizmet
-            sözleşmelerinde 14 günlük yasal cayma hakkı öngörülmektedir.
+            ortadan kaldırmaz veya sınırlandırmaz. Tüketici koruma mevzuatının zorunlu iade veya
+            cayma hakkı verdiği durumlarda ilgili yasal hak uygulanır. Uygulanabilir tüketici
+            mevzuatı ile Paddle&apos;ın güncel Buyer Terms ve Refund Policy hükümleri, geçerli
+            olduğu ölçüde bu politika ile birlikte değerlendirilir.
           </p>
         </section>
 
@@ -76,12 +76,21 @@ export default function RefundPage() {
         <section>
           <h2 className="text-lg font-semibold">5. Yasal Cayma Hakkı</h2>
           <p className="mt-2 text-muted-foreground">
-            Uygulanabilir tüketici mevzuatına göre cayma hakkınız varsa bu hakkı ilgili yasal süre
-            içinde kullanabilirsiniz. Paddle&apos;ın güncel Refund Policy&apos;sinde Türkiye ve
-            belirli diğer ülkelerdeki tüketiciler için bazı dijital hizmet işlemlerinde 14 günlük
-            süre öngörülmektedir. Dijital hizmetin kullanımına başlanması, bazı ülkelerde tüketicinin
-            açık onayı ve ilgili yasal şartların karşılanması halinde cayma hakkını etkileyebilir.
-            Hiçbir hüküm, tüketici mevzuatının zorunlu hükümlerini geçersiz kılmaz.
+            Uygulanabilir tüketici mevzuatı ve Paddle&apos;ın güncel Buyer Terms / Refund Policy
+            hükümleri uyarınca cayma hakkınız varsa bu hakkı ilgili yasal süre içinde
+            kullanabilirsiniz. Cayma hakkının kapsamı, süresi ve istisnaları (ör. dijital hizmetin
+            kullanımına başlanması ve tüketicinin açık onayı) bulunduğunuz ülkenin mevzuatına ve
+            Paddle&apos;ın güncel politikasına göre belirlenir. Ülkeye özgü güncel ayrıntılar için
+            Paddle dokümantasyonunu esas almanızı öneririz; bu sayfada ülke bazlı süre taahhüdü
+            verilmez. Hiçbir hüküm, tüketici mevzuatının zorunlu hükümlerini geçersiz kılmaz.
+          </p>
+          <p className="mt-2 text-muted-foreground">
+            <strong>Ücretsiz deneme ≠ cayma hakkı ≠ iade süresi.</strong> Bunlar üç ayrı
+            kavramdır: (i) ücretsiz deneme, satın alma sırasında belirtilen süre boyunca ücret
+            alınmadan kullanımı ifade eder; (ii) yasal cayma hakkı, ödenen bedele ilişkin olarak
+            mevzuatın tanıdığı haktır; (iii) iade süresi (§11), onaylanan bir iadenin ödeme
+            yöntemine dönüş süresidir. Ücretsiz deneme süresi, cayma hakkı süresi olarak
+            yorumlanmamalıdır.
           </p>
         </section>
 

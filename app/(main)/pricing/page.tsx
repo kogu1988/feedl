@@ -2,12 +2,14 @@ import { eq } from "drizzle-orm";
 import { auth } from "@clerk/nextjs/server";
 
 import { PricingManager } from "@/components/custom/pricing-manager";
+import { PLAN_POSITIONING } from "@/lib/plan-copy";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { workspaces } from "@/lib/db/schema";
 import { generateCanonical } from "@/lib/seo";
 
-// Public /pricing — plan karşılaştırma + Paddle checkout (sandbox/live).
+// Public /pricing — plan karşılaştırma + Paddle checkout (canlı/live; ortam
+// PADDLE_ENV ile seçilir).
 // Slug Paddle webhook'unda workspace'i eşleştirmek için customData'ya geçilir.
 // Çalışma alanı bulunamazsa seed slug'a geri düşülür (tek-workspace MVP).
 export const dynamic = "force-dynamic";
@@ -56,8 +58,8 @@ export default async function PricingPage() {
           Geri bildirimi ürüne dönüştürmek için fiyatlandırma
         </h1>
         <p className="mt-3 max-w-xl text-muted-foreground">
-          Her ölçekte ekip için basit, kullanıcı başına değil ekip başına
-          fiyatlandırma. Ücretsiz başlayın, büyüdüğünüzde Pro&apos;ya geçin.
+          {PLAN_POSITIONING.free} {PLAN_POSITIONING.pro} Her ölçekte ekip için
+          basit, kullanıcı başına değil ekip başına fiyatlandırma.
         </p>
       </div>
 
