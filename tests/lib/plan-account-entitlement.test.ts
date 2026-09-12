@@ -8,9 +8,12 @@ import { describe, expect, it } from "vitest";
 // karşılaşıyordu ("CSV İndir · Pro"). Oysa ek workspace açmak zaten Pro
 // hakkıdır; içinde Pro'yu kilitlemek kendi içinde çelişkiliydi.
 //
-// Kural: SAHİBİ olduğun bir workspace Pro ise, sahibi olduğun TÜM
-// workspace'lerde Pro'sun. Başkasının workspace'ine `member` olarak
-// eklendiysen kendi Pro'n DEVRALINMAZ — orayı ödeyen onun owner'ıdır.
+// Kural: bu workspace'in OWNER'larından birinin sahip olduğu BAŞKA bir
+// workspace Pro ise bu workspace de Pro'dur.
+//
+// DEVRALMA YOK: başkasının workspace'ine `member` olarak eklendiysen kendi
+// Pro'n oraya işlemez — kararı o workspace'in OWNER'ı verir. Kural "viewer"
+// yerine "owner" üzerinden kurulduğu için public sayfalar Clerk oturumu sormaz.
 import { resolveAccountPlanKey, type PlanKey } from "@/lib/paddle";
 
 type Row = {
@@ -27,40 +30,39 @@ const currentPro: Row = { id: "ws-current", plan: "pro" };
 const otherPro: Row = { id: "ws-other", plan: "pro" };
 const otherFree: Row = { id: "ws-other", plan: "free" };
 
-function resolve(
-  current: Row,
-  owned: Row[],
-  currentId = current.id,
-): PlanKey {
-  return resolveAccountPlanKey(current, owned, currentId, NOW);
+function resolve(current: Row, ownedByOwners: Row[]): PlanKey {
+  return resolveAccountPlanKey(current, ownedByOwners, NOW);
 }
 
-describe("resolveAccountPlanKey — hesap düzeyi Pro", () => {
+describe("resolveAccountPlanKey — hesap düzeyi Pro (owner tabanlı)", () => {
   it("aktif workspace Pro ise Pro (mevcut davranış korunur)", () => {
     expect(resolve(currentPro, [currentPro])).toBe("pro");
   });
 
-  it("owner olduğum BAŞKA bir workspace Pro ise bu workspace de Pro olur", () => {
+  it("owner'ın BAŞKA bir Pro workspace'i varsa bu workspace de Pro olur", () => {
     // Kullanıcının asıl şikâyeti: yeni açtığı workspace'te Pro kilitleri.
     expect(resolve(currentFree, [currentFree, otherPro])).toBe("pro");
   });
 
-  it("sahibi olduğum hiçbir workspace Pro değilse Free", () => {
+  it("owner'ın yalnız bu (Free) workspace'i varsa Free", () => {
+    expect(resolve(currentFree, [currentFree])).toBe("free");
     expect(resolve(currentFree, [currentFree, otherFree])).toBe("free");
   });
 
-  it("DEVRALMA YOK: member olduğum workspace'te kendi Pro'm işlemez", () => {
-    // current, owned listesinde YOK → başkasının workspace'indeyim.
-    expect(resolve(currentFree, [otherPro], "ws-baskasi")).toBe("free");
+  it("DEVRALMA YOK: member olduğum workspace'in owner'ı Pro değilse Free", () => {
+    // Ben (Pro sahibi) başkasının workspace'ine member'ım. Bu workspace'in
+    // owner'ının sahip olduğu tek workspace bu Free olan → Free. Benim kendi
+    // Pro workspace'im bu listeye GİRMEZ (owner ben değilim).
+    expect(resolve(currentFree, [currentFree])).toBe("free");
   });
 
   it("member olduğum workspace'in kendisi Pro ise Pro (onun owner'ı ödedi)", () => {
     const memberView: Row = { id: "ws-baskasi", plan: "pro" };
-    expect(resolve(memberView, [otherPro], "ws-baskasi")).toBe("pro");
+    expect(resolve(memberView, [memberView])).toBe("pro");
   });
 
-  it("dunning grace sahibi olduğum Pro workspace'te korunur", () => {
-    const dunning = {
+  it("owner'ın diğer workspace'i dunning grace içindeyse Pro", () => {
+    const dunning: Row = {
       id: "ws-other",
       plan: "free",
       paddleSubscriptionStatus: "past_due",
@@ -69,8 +71,8 @@ describe("resolveAccountPlanKey — hesap düzeyi Pro", () => {
     expect(resolve(currentFree, [currentFree, dunning])).toBe("pro");
   });
 
-  it("dunning grace dolmuşsa Free'ye düşer", () => {
-    const dunning = {
+  it("owner'ın diğer workspace'inde grace dolmuşsa Free", () => {
+    const dunning: Row = {
       id: "ws-other",
       plan: "free",
       paddleSubscriptionStatus: "past_due",
@@ -80,8 +82,10 @@ describe("resolveAccountPlanKey — hesap düzeyi Pro", () => {
   });
 
   it("aktif workspace'in kendi satırı yoksa Free'ye güvenli düşer", () => {
-    expect(
-      resolveAccountPlanKey({ id: "ws-bilinmeyen" }, [currentFree], "ws-bilinmeyen", NOW),
-    ).toBe("free");
+    expect(resolve({ id: "ws-bilinmeyen" }, [currentFree])).toBe("free");
+  });
+
+  it("owner listesi boşsa (yetim workspace) Free", () => {
+    expect(resolve(currentFree, [])).toBe("free");
   });
 });

@@ -75,7 +75,10 @@ export default async function MainLayout({
       <div className="flex min-h-svh flex-col">
         <SiteHeader brand={mark} contextWorkspaceName={isRootHost ? brand.name : undefined} />
         <div className="flex-1">{children}</div>
-        <SiteFooter brand={brand} />
+        {/* Footer da aynı kurala bağlı: kök host'ta feedl markası, workspace
+            host'unda müşterinin adı/logo'su. `brand`'ı doğrudan geçmek kök
+            host'ta workspace adını (ve kullanılmayan brandColor'ı) sızdırıyordu. */}
+        <SiteFooter brand={mark} />
       </div>
       </ThemeProvider>
     </ClerkProvider>

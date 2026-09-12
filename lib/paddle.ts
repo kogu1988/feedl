@@ -1,6 +1,5 @@
 import "server-only";
 
-import { auth } from "@clerk/nextjs/server";
 import { Paddle, Environment } from "@paddle/paddle-node-sdk";
 import { z } from "zod";
 
@@ -104,41 +103,32 @@ import { eq } from "drizzle-orm";
 import { cache } from "react";
 import { workspaces } from "@/lib/db/schema";
 import {
-  loadOwnedWorkspacePlans,
+  loadPlanRowsOwnedByWorkspaceOwners,
   type OwnedWorkspacePlanRow,
 } from "@/lib/db/owned-workspaces";
 
 // 2026-09-12 (kullanıcı kararı — HESAP DÜZEYİ PRO, saf fonksiyon).
 //
-// Kural: SAHİBİ olduğun bir workspace Pro ise, sahibi olduğun TÜM
-// workspace'lerde Pro'sun. Böylece $19'luk tek abonelik, owner olarak açtığın
-// her workspace'i kapsar (kullanıcı beklentisi: "workspace'i açan bensem orada
-// da Pro olmalıyım").
+// Kural: bu workspace'in OWNER'larından birinin sahip olduğu BAŞKA bir
+// workspace Pro ise, bu workspace de Pro'dur. Yani $19'luk tek abonelik, o
+// kullanıcının owner olarak açtığı her workspace'i kapsar (kullanıcı
+// beklentisi: "workspace'i açan bensem orada da Pro olmalıyım").
 //
-// Devralma YOK: başkasının workspace'ine `member` olarak eklendiysen, kendi Pro
-// aboneliğin o workspace'e sızmaz (orayı ödeyen owner'dır). `ownsCurrent`
-// kontrolü tam olarak bunu garanti eder.
+// DEVRALMA YOK: başkasının workspace'ine `member` olarak eklendiysen kendi
+// Pro'n oraya işlemez — o workspace'in OWNER'ı kim ise kararı o verir. Kural
+// "viewer" değil "owner" üzerinden kurulduğu için public sayfalar Clerk
+// oturumu sormak zorunda kalmaz (anonim ziyaretçide ek sorgu da yok).
 export function resolveAccountPlanKey(
   current: OwnedWorkspacePlanRow,
-  owned: OwnedWorkspacePlanRow[],
-  currentWorkspaceId: string,
+  ownedByCurrentWorkspaceOwners: OwnedWorkspacePlanRow[],
   now: Date = new Date(),
 ): PlanKey {
   if (effectivePlanKey(current, now) === "pro") return "pro";
-  const ownsCurrent = owned.some((ws) => ws.id === currentWorkspaceId);
-  if (!ownsCurrent) return "free";
-  return owned.some((ws) => effectivePlanKey(ws, now) === "pro") ? "pro" : "free";
-}
-
-// Giriş yapmış kullanıcı (varsa). Clerk `auth()` istek dışında (build/prerender,
-// test, cron) fırlatır — plan kapısı bu yüzden güvenle "oturum yok"a düşer.
-async function currentUserIdOrNull(): Promise<string | null> {
-  try {
-    const { userId } = await auth();
-    return userId ?? null;
-  } catch {
-    return null;
-  }
+  return ownedByCurrentWorkspaceOwners.some(
+    (ws) => ws.id !== current.id && effectivePlanKey(ws, now) === "pro",
+  )
+    ? "pro"
+    : "free";
 }
 
 // Request-scoped memo: aynı istek içinde getPlanLimits bir kez DB okur
@@ -160,16 +150,10 @@ const fetchPlanLimits = cache(async () => {
   const current: OwnedWorkspacePlanRow = row ?? { id: workspaceId };
   if (effectivePlanKey(current) === "pro") return PLANS.pro;
 
-  // Hesap düzeyi Pro: yalnız kullanıcı workspace'in SAHİBİYSE ve sahip olduğu
-  // bir workspace Pro ise pro'ya yükselt. Anonim ziyaretçide (portal) sorgu
-  // hiç koşmaz.
-  const userId = await currentUserIdOrNull();
-  if (userId) {
-    const owned = await loadOwnedWorkspacePlans(userId);
-    return PLANS[resolveAccountPlanKey(current, owned, workspaceId)];
-  }
-
-  return PLANS.free;
+  // Hesap düzeyi Pro: yalnız workspace Free İSE ek sorgu koşar (tek sorgu,
+  // owner'ların sahip olduğu tüm workspace'lerin plan satırları).
+  const owned = await loadPlanRowsOwnedByWorkspaceOwners(workspaceId);
+  return PLANS[resolveAccountPlanKey(current, owned)];
 });
 
 export async function getPlanLimits() {
