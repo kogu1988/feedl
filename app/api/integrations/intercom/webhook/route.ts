@@ -51,6 +51,14 @@ export async function POST(req: NextRequest) {
       integrationAppId = resolved.apiKey;
       integrationSecret = resolved.webhookSecret;
       workspaceId = resolved.workspaceId;
+      // Env'e düşen legacy fallback'i kapat: per-workspace kayıtta ne app_id ne
+      // de imza anahtarı varsa doğrulama global env'e düşmemeli.
+      if (!integrationAppId && !integrationSecret) {
+        return NextResponse.json(
+          { success: false, error: "Intercom entegrasyonunda app_id/imza anahtarı tanımlı değil." },
+          { status: 503 },
+        );
+      }
     } else {
       // 2026-09-12 (Faz 3): LEGACY YOL EMEKLİYE AYRILDI. Parametresiz istek
       // global env secret + varsayılan workspace'e düşüyordu (tek sızıntı

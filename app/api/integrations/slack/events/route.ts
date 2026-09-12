@@ -41,6 +41,14 @@ export async function POST(req: NextRequest) {
       }
       integrationSecret = resolved.webhookSecret;
       workspaceId = resolved.workspaceId;
+      // Env'e düşen legacy fallback'i kapat: per-workspace kaydında imza
+      // anahtarı yoksa doğrulama global SLACK_SIGNING_SECRET'e düşmemeli.
+      if (!integrationSecret) {
+        return NextResponse.json(
+          { success: false, error: "Slack entegrasyonunda imza anahtarı tanımlı değil." },
+          { status: 503 },
+        );
+      }
     } else {
       // 2026-09-12 (Faz 3): legacy (parametresiz) yol EMEKLİYE AYRILDI —
       // gerekçe ve ölçüm: app/api/integrations/intercom/webhook/route.ts.
