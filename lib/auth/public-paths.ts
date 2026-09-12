@@ -18,6 +18,9 @@ const PUBLIC_EXACT = new Set([
   "/how-to-collect-feedback",
   // Ürün turu + demo.
   "/demo",
+  // Ürün-dışı araştırma anketi (Tally tam sayfa gömme). Kök host'a kapılı ve
+  // noindex; yine de Clerk oturumu sormaz (bkz. app/(main)/survey/page.tsx).
+  "/survey",
   // Yasal/şirket sayfaları (footer).
   "/privacy",
   "/terms",

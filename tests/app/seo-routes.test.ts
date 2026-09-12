@@ -39,6 +39,8 @@ describe("sitemap.xml", () => {
     expect(xml).toContain("https://feedl.app/how-to-collect-feedback");
     expect(xml).toContain("https://feedl.app/roadmap");
     expect(xml).toContain("<loc>"); // urlset formatı
+    // Anket sayfası noindex: sitemap'e ASLA girmez.
+    expect(xml).not.toContain("/survey");
     expect(res.headers.get("content-type")).toContain("application/xml");
   });
 
@@ -65,7 +67,7 @@ describe("robots.txt", () => {
     const txt = await res.text();
     expect(txt).toContain("User-agent: *");
     expect(txt).toContain("Allow: /");
-    for (const d of ["/dashboard", "/onboarding", "/sign-in", "/sign-up", "/widget", "/api/"]) {
+    for (const d of ["/dashboard", "/onboarding", "/sign-in", "/sign-up", "/widget", "/survey", "/api/"]) {
       expect(txt).toContain(`Disallow: ${d}`);
     }
   });

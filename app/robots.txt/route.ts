@@ -13,6 +13,7 @@ Disallow: /invites
 Disallow: /sign-in
 Disallow: /sign-up
 Disallow: /widget
+Disallow: /survey
 Disallow: /api/
 
 Sitemap: https://${host}/sitemap.xml

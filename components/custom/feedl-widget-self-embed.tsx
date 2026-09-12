@@ -26,7 +26,7 @@ import {
 //   2) OTURUM KAPISI (2026-09-12, kullanıcı kararı): giriş yapmış workspace
 //      üyesi (owner/manager/member) widget'ı GÖRMEZ. Operatör odur, geri
 //      bildirim kaynağı değildir; widget'tan gönderirse kayıt anonim düşer ve
-//      kendi panosunda karışıklık yaratır. Canny/Featurebase/Intercom da
+//      kendi panosunda karışıklık yaratır. Tanınmış geri bildirim araçları da
 //      "identified internal user → launcher gizle" davranışını uygular.
 //      Anonim ziyaretçi ve üye olmayan girişli müşteri görür.
 export async function resolveFeedlSelfEmbed(): Promise<FeedlSelfEmbedConfig | null> {

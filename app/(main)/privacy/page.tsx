@@ -118,8 +118,9 @@ export default function PrivacyPage() {
           <p className="mt-2 text-muted-foreground">
             Kişisel verileri; kimlik doğrulama, bulut hosting ve altyapı, veritabanı ve
             depolama, AI/ML, e-posta ve bildirim, ödeme ve Merchant of Record sağlayıcısı
-            Paddle, hata izleme ve performans, analitik, güvenlik/rate limiting/fraud
-            prevention ve entegrasyon sağlayıcılarıyla paylaşabiliriz. Ayrıca kanunen zorunlu
+            Paddle, hata izleme ve performans, analitik, form ve anket sağlayıcıları
+            (ör. Tally), güvenlik/rate limiting/fraud prevention ve entegrasyon
+            sağlayıcılarıyla paylaşabiliriz. Ayrıca kanunen zorunlu
             olduğunda, geçerli mahkeme kararı resmi talep veya hukuki süreçte, dolandırıcılık
             güvenlik veya kötüye kullanımı önlemek için, hakların ve güvenliğin korunmasında
             ve şirket birleşmesi, satın alma, yeniden yapılanma veya varlık devri kapsamında

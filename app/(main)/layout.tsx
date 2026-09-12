@@ -50,8 +50,8 @@ export default async function MainLayout({
   //   Kök host (feedl.app)  → marka HER ZAMAN feedl; workspace paleti uygulanmaz.
   //                           Pazarlama + kendi portal vitrinimiz bizim kimliğimiz.
   //   Workspace host'u      → müşterinin adı/logo'su/rengi (portal, roadmap,
-  //                           changelog) — Canny/Featurebase/UserVoice/Fider
-  //                           hep böyle yapar; satıcı yalnızca "Powered by"dır.
+  //                           changelog) — sektör standardı (benzer araçlar da
+  //                           böyle yapar); satıcı yalnızca "Powered by"dır.
   //   Dashboard             → feedl işareti + aktif workspace bağlamı (chip).
   // Bu ayrım aynı zamanda bir a11y hatasını da kapatır: workspace marka rengi
   // (#1e01f9) kök host'un CTA bölümüne uygulanıp kontrastı bozuyordu.

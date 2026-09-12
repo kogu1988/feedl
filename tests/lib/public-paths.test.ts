@@ -17,6 +17,8 @@ describe("isPublicPath — public yüzeyler", () => {
       "/alternative",
       "/how-to-collect-feedback",
       "/demo",
+      // Ürün-dışı araştırma anketi (kök host'a kapılı + noindex).
+      "/survey",
       "/privacy",
       "/terms",
       "/refund",
