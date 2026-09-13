@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
+    "test:integration": "vitest run tests/integration",
     "test:e2e": "playwright test",
     "vendor:capture": "node tools/vendor-widget-capture.mjs"
   },

@@ -89,5 +89,12 @@ jobs:
         run: npx playwright install --with-deps chromium
       - if: env.DATABASE_URL != ''
         run: npm run build
+      # Sprint 71.1 — DB-backed entegrasyon testleri (gerçek şemaya karşı SQL).
+      # Aynı ayrı Neon branch'ine yazar ve kendi fikstürünü temizler. Build'den
+      # ÖNCE koşar: seed edilmiş şemayı kullanır, uygulamayı ayağa kaldırmaz.
+      - if: env.DATABASE_URL != ''
+        run: npm run test:integration
+        env:
+          TEST_DATABASE_URL: ${{ secrets.DATABASE_URL }}
       - if: env.DATABASE_URL != ''
         run: npm run test:e2e
