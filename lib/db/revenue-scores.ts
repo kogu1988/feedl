@@ -234,6 +234,17 @@ export function computePrioritySignal(input: {
 // Tenant izolasyonu: iç sorguların hepsi `c.workspace_id` / `o.workspace_id`
 // filtresi taşır — başka workspace'in şirketi sıralamaya giremez (§21).
 export function revenueScoreOrderSql(workspaceId: string) {
+  return sql`(${revenueScoreExprSql(workspaceId)}) DESC`;
+}
+
+/**
+ * Gelir skoru ifadesinin SKALER hali (ORDER BY'sız).
+ *
+ * Sprint 71.1: sıralama yardımcısı `DESC` ile bittiği için skaler değer olarak
+ * kullanılamıyordu; DB-backed entegrasyon testinin gerçek skoru OKUYABİLMESİ
+ * için ayrıldı. Formül TEK yerde durur — ikisi ayrışırsa test kırılır.
+ */
+export function revenueScoreExprSql(workspaceId: string) {
   return sql`(
     (SELECT COUNT(*) FROM ${votes} v1 WHERE v1.post_id = ${posts.id})
     + 10 * (
@@ -261,7 +272,7 @@ export function revenueScoreOrderSql(workspaceId: string) {
           AND o.stage IN ('open', 'proposal')
       ), 0)
     ) / 1000.0
-  ) DESC`;
+  )`;
 }
 
 export interface ScoreBreakdownRow {

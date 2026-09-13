@@ -97,11 +97,16 @@ describe.skipIf(!TEST_URL)("DB-backed: gelir skoru kiracı izolasyonu", () => {
 
   it("A'nın skoru B'nin şirket MRR'ini ve fırsat değerini İÇERMEZ", async () => {
     const { getDb } = await import("@/lib/db");
-    const { revenueScoreOrderSql } = await import("@/lib/db/revenue-scores");
+    const { revenueScoreExprSql, revenueScoreOrderSql } = await import(
+      "@/lib/db/revenue-scores"
+    );
     const db = getDb();
 
+    // Skaler ifade ile gerçek SKOR okunur (sıralama yardımcısı `DESC` ile
+    // bittiği için değer olarak kullanılamaz).
+    const expr = revenueScoreExprSql(wsA);
     const result = await db.execute(sql`
-      SELECT id, (${revenueScoreOrderSql(wsA)}) AS score
+      SELECT id, (${expr}) AS score
       FROM posts
       WHERE id IN (${postA}, ${postB})
     `);
@@ -117,5 +122,13 @@ describe.skipIf(!TEST_URL)("DB-backed: gelir skoru kiracı izolasyonu", () => {
     expect(scoreOf(postA)).toBe(13);
     // B'nin fikri A'nın workspace'i için 0 (hiçbir A verisi bağlı değil).
     expect(scoreOf(postB)).toBe(0);
+
+    // Sıralama yardımcısı skalerle AYNI formülü taşımalı: A önce gelmeli.
+    const ordered = await db.execute(sql`
+      SELECT id FROM posts
+      WHERE id IN (${postA}, ${postB})
+      ORDER BY ${revenueScoreOrderSql(wsA)}
+    `);
+    expect(rowsOf(ordered)[0]?.id).toBe(postA);
   });
 });
