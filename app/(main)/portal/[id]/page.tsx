@@ -54,6 +54,7 @@ import {
 } from "@/components/custom/post-outcomes";
 import { getWorkspaceId, isShowcaseRequest } from "@/lib/db/workspace";
 import { getPlanLimits } from "@/lib/paddle";
+import { trackEvent } from "@/lib/analytics/events";
 import {
   boards,
   comments,
@@ -140,6 +141,14 @@ export default async function PostDetailPage({
   };
   if (isAdmin) {
     impactContext = await loadPostImpactContext(post.id);
+    // Sprint 65 — huni: öncelik/gelir skoru görüntülendi. Yalnız admin
+    // bağlamında (gelir bilgisi public tarafta gösterilmez, §14).
+    // workspaceId ÖNCE çözülür: fire-and-forget çağrı yanıt sonrası çalışır,
+    // istek bağlamını orada kaybetmemek için değeri burada sabitliyoruz.
+    void trackEvent("priority_viewed", {
+      workspaceId: await getWorkspaceId(),
+      props: { surface: "post_detail" },
+    });
   }
 
   // Sprint 31: fırsat bağlama verileri (yalnızca admin kutusunda kullanılır).

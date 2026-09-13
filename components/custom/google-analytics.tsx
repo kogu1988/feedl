@@ -17,7 +17,11 @@ export function GoogleAnalytics() {
         {`window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
-gtag('config', '${GA_ID}', { page_path: window.location.pathname });`}
+gtag('config', '${GA_ID}', { page_path: window.location.pathname });
+// Sprint 65 — huninin en üstü (anonim ziyaretçi). Kalıcı kayıt sunucudaki
+// analytics_events tablosundadır; bu olay yalnız GA4 raporunda korelasyon
+afor. Ad-blocker düşürürse huni bundan etkilenmez.
+gtag('event', 'visitor', { page_path: window.location.pathname });`}
       </Script>
     </>
   );

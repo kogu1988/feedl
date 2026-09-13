@@ -9,6 +9,7 @@ import { PlanChangeCard } from "@/components/custom/plan-change-card";
 import { isPro, PRO_PLAN, PRO_TRIAL_DAYS } from "@/components/custom/plan-config";
 import { useCheckout } from "@/components/custom/use-checkout";
 import { CheckoutStatusBanner } from "@/components/custom/checkout-status";
+import { track } from "@/lib/analytics/client";
 
 // Sprint 63k (kullanıcı) — billing iki sütun:
 //  sol: kullanım grafiği (üstte) + mevcut plan + Pro kartı (altta, aylık/yıllık
@@ -96,6 +97,8 @@ export function BillingOverview({
   const proPrice = annual ? PRO_PLAN.yearlyMonthlyPrice : PRO_PLAN.monthlyPrice;
 
   function handleProChange() {
+    // Sprint 65 — huni: Pro'ya geç CTA tıklandı (billing sayfası).
+    track("upgrade_clicked", { surface: "billing", period: annual ? "yearly" : "monthly" });
     openCheckout(annual ? pricing.yearlyPriceId : pricing.monthlyPriceId);
   }
 

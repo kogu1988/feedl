@@ -9,6 +9,7 @@ import { z } from "zod";
 import { getDb } from "@/lib/db";
 import { workspaces, boards, workspaceMembers } from "@/lib/db/schema";
 import { PLANS } from "@/lib/paddle";
+import { trackEvent } from "@/lib/analytics/events";
 
 // Sprint 63 (onboarding wizard) — self-serve ilk workspace oluşturma. Yeni
 // kaydolan kullanıcı (henüz admin değil) kendi workspace + varsayılan board'ını
@@ -176,6 +177,13 @@ export async function POST(req: Request) {
           .values({ workspaceId, userId, role: "owner" }),
       ]);
       const created = wsRows[0];
+
+      // Sprint 65 — huni: workspace oluşturuldu ("activated" değil; aktivasyon
+      // feedback + gelir bağlamı gerektirir, o adımlar ayrı olaylardır).
+      void trackEvent("workspace_created", {
+        workspaceId: created.id,
+        userId,
+      });
 
       // Aktif workspace çerezi → getWorkspaceId bu workspace'i kullanır.
       const response = NextResponse.json(

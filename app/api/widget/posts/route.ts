@@ -18,6 +18,7 @@ import {
   ensureWidgetUser,
   getWidgetSubmissionSettings,
 } from "@/lib/widget/submission";
+import { trackEvent } from "@/lib/analytics/events";
 
 // Widget fikir listesi (plan.md Sprint 32): iframe içindeki kompakt arayüz
 // portal ile aynı arama altyapısını (lib/post-search) kullanır. Birleşmiş
@@ -251,6 +252,14 @@ export async function POST(req: NextRequest) {
         eventErr instanceof Error ? eventErr.message : eventErr,
       );
     }
+
+    // Sprint 65 — huni: geri bildirim eklendi (widget üzerinden). Anonim
+    // gönderimlerde userId IP türevi opak id'dir; PII yazılmaz.
+    void trackEvent("feedback_added", {
+      workspaceId,
+      userId,
+      props: { source: "widget_embed", mode },
+    });
 
     return NextResponse.json({ success: true, data: created }, { status: 201 });
   } catch (err) {

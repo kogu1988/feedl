@@ -11,6 +11,7 @@ import { resolveClientContext } from "@/lib/client-context";
 import { inngest } from "@/inngest/client";
 import { buildPostSearch } from "@/lib/post-search";
 import { enforceRateLimit, clientIpFrom } from "@/lib/rate-limit";
+import { trackEvent } from "@/lib/analytics/events";
 
 // GET /api/posts — herkese açık fikir listesi (en son eklenen en üstte),
 // oy sayılarıyla birlikte. Opsiyonel ?q= ile çok kelimeli, diakritik
@@ -142,6 +143,12 @@ export async function POST(req: Request) {
       boardId = parsed.data.boardId;
     }
 
+    // Sprint 65: workspace bir kez çözülür (Sprint 65 öncesi insert'te tekrar
+    // çağrılıyordu). Analitik olayı da aynı değeri kullanır — fire-and-forget
+    // çağrı yanıt sonrası çalışacağı için `getWorkspaceId()`'i oraya bırakmak
+    // istek bağlamını kaybetme riski taşır.
+    const workspaceId = await getWorkspaceId();
+
     // Faz 1: otomatik teknik bağlam (istemciden veya UA header'ından).
     const ctx = resolveClientContext(
       parsed.data.clientContext,
@@ -151,7 +158,7 @@ export async function POST(req: Request) {
     const [created] = await getDb()
       .insert(posts)
       .values({
-        workspaceId: await getWorkspaceId(),
+        workspaceId,
         userId,
         title: parsed.data.title,
         description: parsed.data.description,
@@ -204,6 +211,13 @@ export async function POST(req: Request) {
         eventErr instanceof Error ? eventErr.message : eventErr,
       );
     }
+
+    // Sprint 65 — huni: geri bildirim eklendi. Aktivasyonun çekirdek adımı.
+    void trackEvent("feedback_added", {
+      workspaceId,
+      userId,
+      props: { source: "portal", has_board: Boolean(parsed.data.boardId) },
+    });
 
     return NextResponse.json({ success: true, data: created }, { status: 201 });
   } catch (err) {

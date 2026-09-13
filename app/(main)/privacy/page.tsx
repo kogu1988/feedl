@@ -150,6 +150,13 @@ export default function PrivacyPage() {
             çerezler veya benzeri teknolojiler için gerekli olduğu durumlarda kullanıcıdan
             izin alınır.
           </p>
+          <p className="mt-2 text-muted-foreground">
+            Feedl ayrıca kendi hizmetinin kullanımını anlamak için birinci taraf ürün
+            analitiği tutar: workspace oluşturma, geri bildirim ekleme, müşteri/gelir
+            bağlamı girme ve plan yükseltme gibi adımlar, hesap ve çalışma alanı
+            kimlikleriyle (e-posta veya ad olmadan) kaydedilir. Bu veriler ürün
+            iyileştirmesi ve aktivasyon analizi amacıyla kullanılır.
+          </p>
         </section>
 
         <section>

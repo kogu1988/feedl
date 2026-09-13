@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { PRO_PLAN, PRO_TRIAL_DAYS } from "@/components/custom/plan-config";
 import { useCheckout } from "@/components/custom/use-checkout";
 import { CheckoutStatusBanner } from "@/components/custom/checkout-status";
+import { track } from "@/lib/analytics/client";
 
 // Sprint 49/52 (Faz 5) — public /pricing. Free vs Pro karşılaştırma tablosu;
 // "Pro'ya Geç" Paddle.js overlay checkout'u açar (webhook provisioning'dan
@@ -96,6 +97,8 @@ export function PricingManager({
   });
 
   function openProCheckout() {
+    // Sprint 65 — huni: Pro'ya geç CTA tıklandı (GA mirror; kalıcı kayıt sunucuda).
+    track("upgrade_clicked", { surface: "pricing", period: annual ? "yearly" : "monthly" });
     openCheckout(annual ? PRO_PLAN.yearlyPriceId : PRO_PLAN.monthlyPriceId);
   }
 

@@ -9,6 +9,7 @@ import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { companies, companyMembers, users } from "@/lib/db/schema";
 import { requirePro } from "@/lib/plan";
+import { trackEvent } from "@/lib/analytics/events";
 
 // Sprint 30 — müşteri şirket yönetimi (P3.1). Üyeler cascade silinir;
 // şirketin fikirlerle bağı Sprint 31'de opportunities üzerinden gelir.
@@ -169,6 +170,14 @@ export async function POST(req: Request) {
         notes: parsed.data.notes,
       })
       .returning({ id: companies.id });
+
+    // Sprint 65 — huni: gelir bağlamı 1/2 (şirket bağlandı). MRR varlığı
+    // bool olarak kaydedilir (tutar DEĞİL — tutar gelir verisidir, ayrı tabloda).
+    void trackEvent("customer_linked", {
+      workspaceId: await getWorkspaceId(),
+      userId: adminId,
+      props: { has_mrr: parsed.data.mrr != null, status: parsed.data.status },
+    });
 
     return NextResponse.json(
       { success: true, data: { id: created.id } },

@@ -4,6 +4,7 @@ import type { WebhookEvent } from "@clerk/nextjs/server";
 import { and, eq, ne, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { users, workspaceMembers } from "@/lib/db/schema";
+import { trackEvent } from "@/lib/analytics/events";
 
 // Clerk -> Neon users tablosu senkronizasyonu.
 // Clerk Dashboard > Webhooks > Endpoint: /api/webhooks/clerk
@@ -89,6 +90,12 @@ export async function POST(req: Request) {
             target: users.id,
             set: { email: primaryEmail, name, updatedAt: new Date() },
           });
+
+        // Sprint 65 — huninin ilk sunucu adımı: hesap açıldı. workspace henüz
+        // yok (onboarding ayrı olay); fire-and-forget, akışı etkilemez.
+        if (evt.type === "user.created") {
+          void trackEvent("signup", { userId: id });
+        }
 
         // Aynı kişi yeni bir Clerk kimliğiyle dönebilir (yeniden kayıt ya da
         // farklı giriş sağlayıcı) → yeni satır "customer" açılır ve kişi

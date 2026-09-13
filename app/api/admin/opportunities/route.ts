@@ -9,6 +9,7 @@ import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { companies, opportunities } from "@/lib/db/schema";
 import { requirePro } from "@/lib/plan";
+import { trackEvent } from "@/lib/analytics/events";
 
 // Sprint 31 — satış fırsatı yönetimi (P3.2). Fırsatlar şirkete bağlı;
 // şirket silinince cascade gider. Fikirle bağı links route'undan kurulur.
@@ -125,6 +126,17 @@ export async function POST(req: Request) {
         notes: parsed.data.notes,
       })
       .returning({ id: opportunities.id });
+
+    // Sprint 65 — huni: gelir bağlamı 2/2 (fırsat/deal value eklendi).
+    // Tutar DEĞİL, "pozitif mi" bool'u kaydedilir (PII/ticari veri minimizasyonu).
+    void trackEvent("revenue_added", {
+      workspaceId: await getWorkspaceId(),
+      userId: adminId,
+      props: {
+        stage: parsed.data.stage ?? "open",
+        has_value: (parsed.data.dealValue ?? 0) > 0,
+      },
+    });
 
     return NextResponse.json(
       { success: true, data: created },

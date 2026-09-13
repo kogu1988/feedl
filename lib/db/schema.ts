@@ -1319,3 +1319,44 @@ export const workspaceIntegrations = pgTable(
 
 export type WorkspaceIntegration = typeof workspaceIntegrations.$inferSelect;
 export type NewWorkspaceIntegration = typeof workspaceIntegrations.$inferInsert;
+
+// Sprint 65 (2026-09-13) — BİRİNCİ TARAF ÜRÜN ANALİTİĞİ (aktivasyon hunisi).
+//
+// Neden kendi tablo (GA4 değil): ad-blocker client olaylarını düşürür, vendor
+// lock ve sorgulanabilirlik sorunu olur, PII kontrolü bizde kalmalı. Ayrıntı +
+// karşılaştırma: `migrations/0062_analytics_events.sql` ve `lib/analytics/events.ts`.
+//
+// PII KURALI (kod tarafında da uygulanır): yalnız `workspace_id`/`user_id`
+// (opak id'ler) + sayısal/bool prop'lar yazılır; e-posta/ad ASLA.
+// `props` bilinçli olarak serbest jsonb'dir — olay başına şema eklemek 36
+// tabloluk şemayı şişirirdi; okuma tarafı dar bir yardımcıdan geçer.
+export const analyticsEvents = pgTable(
+  "analytics_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    // Workspace silinince olayları da gider (GDPR self-servis silme ile tutarlı).
+    workspaceId: uuid("workspace_id").references(() => workspaces.id, {
+      onDelete: "cascade",
+    }),
+    // Kişi silinince olay kalır, bağlantı düşer (0057 anonimleştirme politikası).
+    userId: text("user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    // Huni adımı — geçerli değerler `lib/analytics/events.ts` içindeki union'dır.
+    name: varchar("name", { length: 60 }).notNull(),
+    props: jsonb("props").$type<Record<string, string | number | boolean>>(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("analytics_events_name_created_idx").on(table.name, table.createdAt),
+    index("analytics_events_workspace_created_idx").on(
+      table.workspaceId,
+      table.createdAt,
+    ),
+  ],
+);
+
+export type AnalyticsEvent = typeof analyticsEvents.$inferSelect;
+export type NewAnalyticsEvent = typeof analyticsEvents.$inferInsert;

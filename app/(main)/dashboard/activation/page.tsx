@@ -1,9 +1,11 @@
 import { redirect } from "next/navigation";
 
 import { ActivationFunnel } from "@/components/custom/activation-funnel";
+import { EventFunnel } from "@/components/custom/event-funnel";
 import { Notice } from "@/components/custom/notice";
 import { getTeamUserId } from "@/lib/auth/admin";
 import { loadActivationFunnel } from "@/lib/db/activation";
+import { loadEventFunnel, loadUnknownEventNames } from "@/lib/db/analytics-funnel";
 
 // Canlı veri.
 export const dynamic = "force-dynamic";
@@ -18,8 +20,14 @@ export default async function ActivationPage() {
 
   let data: Awaited<ReturnType<typeof loadActivationFunnel>> | null = null;
   let loadError = false;
+  // Sprint 65 — olay tabanlı huni (birinci taraf ölçüm). Hata olsa bile
+  // derived huni görünmeye devam etsin: iki yükleme bağımsız ele alınır.
+  let eventFunnel: Awaited<ReturnType<typeof loadEventFunnel>> | null = null;
+  let unknownNames: string[] = [];
   try {
     data = await loadActivationFunnel();
+    eventFunnel = await loadEventFunnel(30);
+    unknownNames = await loadUnknownEventNames(30);
   } catch (err) {
     console.error(
       "ActivationPage load failed:",
@@ -43,7 +51,12 @@ export default async function ActivationPage() {
           Aktivasyon verisi yüklenemedi. Lütfen sayfayı yenile.
         </Notice>
       ) : (
-        <ActivationFunnel data={data} />
+        <>
+          <ActivationFunnel data={data} />
+          {eventFunnel ? (
+            <EventFunnel data={{ ...eventFunnel, unknownNames }} />
+          ) : null}
+        </>
       )}
     </main>
   );
