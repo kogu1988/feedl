@@ -80,8 +80,17 @@ export default async function MainLayout({
       <CanonicalLink customDomain={brand.customDomain} />
       {brandStyle ? <style dangerouslySetInnerHTML={{ __html: brandStyle }} /> : null}
       <div className="flex min-h-svh flex-col">
+        {/* WCAG 2.4.1 (Bypass Blocks): sticky üst bardaki nav her sayfada
+            onlarca odak adımı ekliyor. Klavye kullanıcısı bu linkle doğrudan
+            içeriğe atlar. Link normalde `sr-only`; yalnız odaklanınca görünür. */}
+        <a
+          href="#icerik"
+          className="sr-only rounded-md border bg-background px-3 py-2 text-sm font-medium focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:z-50 focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          İçeriğe atla
+        </a>
         <SiteHeader brand={mark} contextWorkspaceName={isRootHost ? brand.name : undefined} />
-        <div className="flex-1">{children}</div>
+        <div id="icerik" className="flex-1">{children}</div>
         {/* Footer da aynı kurala bağlı: kök host'ta feedl markası, workspace
             host'unda müşterinin adı/logo'su. `brand`'ı doğrudan geçmek kök
             host'ta workspace adını (ve kullanılmayan brandColor'ı) sızdırıyordu. */}
