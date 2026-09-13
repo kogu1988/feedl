@@ -10,6 +10,7 @@ import { getDb } from "@/lib/db";
 import { workspaces, boards, workspaceMembers } from "@/lib/db/schema";
 import { PLANS } from "@/lib/paddle";
 import { trackEvent } from "@/lib/analytics/events";
+import { createSampleData } from "@/lib/db/sample-data";
 
 // Sprint 63 (onboarding wizard) — self-serve ilk workspace oluşturma. Yeni
 // kaydolan kullanıcı (henüz admin değil) kendi workspace + varsayılan board'ını
@@ -36,6 +37,9 @@ const createSchema = z.object({
     .regex(colorRegex, "Marka rengi #RRGGBB formatında olmalı.")
     .optional()
     .or(z.string().trim().length(0).transform(() => undefined)),
+  // Sprint 68: "örnek veriyle dene" seçeneği. Varsayılan false → mevcut
+  // davranış hiç değişmez (geriye dönük uyumlu bir EK'dir).
+  sampleData: z.boolean().optional(),
 });
 
 function slugify(input: string): string {
@@ -185,9 +189,24 @@ export async function POST(req: Request) {
         userId,
       });
 
+      // Sprint 68 — örnek veri BEST-EFFORT: workspace zaten oluştu, örnek veri
+      // başarısız olsa bile akış devam etmeli (kritik değil). Örnek satırlar
+      // huniye SIZMAZ (sample-data lib'i trackEvent çağırmaz).
+      let sample: Awaited<ReturnType<typeof createSampleData>> | null = null;
+      if (parsed.data.sampleData) {
+        try {
+          sample = await createSampleData(created.id, boardId, userId);
+        } catch (sampleErr) {
+          console.error(
+            "onboarding sample data failed:",
+            sampleErr instanceof Error ? sampleErr.message : sampleErr,
+          );
+        }
+      }
+
       // Aktif workspace çerezi → getWorkspaceId bu workspace'i kullanır.
       const response = NextResponse.json(
-        { success: true, data: created },
+        { success: true, data: { ...created, sample } },
         { status: 201 },
       );
       response.cookies.set(ACTIVE_WS_COOKIE, created.slug, {

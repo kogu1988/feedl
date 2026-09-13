@@ -37,6 +37,10 @@ export function OnboardingWizard() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [slug, setSlug] = useState<string | null>(null);
+  // Sprint 68 — "örnek veriyle dene". Varsayılan AÇIK: yeni kullanıcı ürünün
+  // asıl değerini (gelir ağırlıklı önceliklendirme) 2 dakikada görsün; veri
+  // her zaman tek tıkla silinebilir. İsteyen boş başlamak için kapatır.
+  const [sample, setSample] = useState(true);
 
   // Canlı önizleme: ad yazıldıkça subdomain ve portal linki güncellenir.
   const previewSlug = slugify(name);
@@ -57,6 +61,7 @@ export function OnboardingWizard() {
           name: name.trim(),
           slug: previewSlug || undefined,
           brandColor: brandColor.trim() || undefined,
+          sampleData: sample,
         }),
       });
       const json = await res.json();
@@ -147,6 +152,23 @@ export function OnboardingWizard() {
             </div>
           </div>
 
+          <div className="flex items-start gap-2 rounded-lg border bg-muted/30 p-3">
+            <input
+              id="ws-sample"
+              type="checkbox"
+              checked={sample}
+              onChange={(e) => setSample(e.target.checked)}
+              className="mt-0.5 size-4 cursor-pointer accent-[var(--brand)]"
+            />
+            <label htmlFor="ws-sample" className="grid gap-0.5 text-sm">
+              <span className="font-medium">Örnek verilerle göster (önerilir)</span>
+              <span className="text-xs text-muted-foreground">
+                Panonu ve gelir skorunu örnek müşterilerle dolu görürsün;
+                istediğin zaman tek tıkla silebilirsin. Kapatırsan boş başlar.
+              </span>
+            </label>
+          </div>
+
           <div className="flex items-center gap-2">
             <Button onClick={createWorkspace} disabled={busy}>
               {busy ? (
@@ -168,7 +190,8 @@ export function OnboardingWizard() {
         <div className="grid gap-4">
           <div className="flex items-center gap-2 rounded-lg border border-emerald-600/40 bg-emerald-600/10 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-300">
             <CheckIcon aria-hidden="true" />
-            Çalışma alanı hazır{slug ? ` (${slug})` : ""}. Aşağıdakilerle devam edebilirsin.
+            Çalışma alanı hazır{slug ? ` (${slug})` : ""}.
+            {sample ? " Örnek veriler panonda." : ""} Aşağıdakilerle devam edebilirsin.
           </div>
 
           <ul className="grid gap-2">

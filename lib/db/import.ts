@@ -102,15 +102,39 @@ export interface ImportResult {
   errors: string[];
 }
 
+// ── Saf yardımcılar (DB'siz, test edilebilir) ──────────────────────────────
+
+/** CSV başlıklarını kanonik alan adlarına çevirir (Türkçe + dış araç takma adları). */
+export function canonicalizeHeaders(headers: string[]): string[] {
+  return headers.map((h) => headerAliases[h.trim().toLowerCase()] ?? "");
+}
+
+/**
+ * Tüm satırlardan benzersiz, e-posta benzeri yazar adreslerini toplar.
+ *
+ * Sprint 68.4: çok yazarlı CSV'de her yazar için kullanıcı açılabilmesi için
+ * ilk satıra bakmak YETMEZ — tüm satırlar taranır. E-posta biçimine uymayan
+ * değerler (ör. "bilinmiyor") atlanır ki boşuna kullanıcı satırı açılmasın.
+ */
+export function collectAuthorEmails(rows: string[][], authorIdx: number): string[] {
+  if (authorIdx < 0) return [];
+  const emails = new Set<string>();
+  for (const row of rows) {
+    const email = (row[authorIdx] ?? "").trim();
+    if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      emails.add(email.toLowerCase());
+    }
+  }
+  return [...emails];
+}
+
 export async function importPosts(
   headers: string[],
   rows: string[][],
   source: string = "import",
 ): Promise<ImportResult> {
   // Başlık sütununu normalize et.
-  const canonical: string[] = headers.map(
-    (h) => headerAliases[h.trim().toLowerCase()] ?? "",
-  );
+  const canonical: string[] = canonicalizeHeaders(headers);
   const titleIdx = canonical.indexOf("title");
   if (titleIdx === -1) {
     return { created: 0, skippedDuplicates: 0, errors: ["CSV'de 'Başlık' sütunu yok."] };
@@ -133,24 +157,30 @@ export async function importPosts(
     .onConflictDoNothing();
 
   // Yazar (`author`/`email` sütunu) varsa onu oluştur; yoksa import_csv.
-  // Deterministik: email'den türetilmiş id (aynı satır tekrar gelirse aynı user).
+  //
+  // 2026-09-13 (Sprint 68.4 — GERÇEK CSV testinde bulunan hata): önceki kod
+  // yalnız `rows[0]`'ın yazarını okuyup TEK kullanıcı açıyordu. Çok yazarlı bir
+  // export'ta (en yaygın biçim) sonraki satırların yazarları HİÇ oluşturulmuyor
+  // ve o fikirlerin tamamı `CSV Import` kullanıcısına atfediliyordu — yazar
+  // bilgisi sessizce kayboluyordu. Artık TÜM satırlardan benzersiz yazarlar
+  // toplanır ve her biri için deterministik bir kullanıcı açılır.
   const authorIdx = canonical.indexOf("author");
-  const authorEmail = authorIdx >= 0 ? (rows[0]?.[authorIdx] ?? "").trim() : "";
   const authorUserIds = new Map<string, string>();
-  if (authorEmail) {
-    const slug = authorEmail.replace(/[^a-z0-9_]/gi, "_").toLowerCase();
-    const authorId = `import_author_${slug.slice(0, 60)}`;
-    await getDb()
-      .insert(users)
-      .values({
-        id: authorId,
-        email: authorEmail,
-        name: authorEmail.split("@")[0] || "Imported Author",
-        role: "customer",
-      })
-      .onConflictDoNothing();
-    // Satır bazlı (her satırın kendi author'u olabilir) — ilk satırdan map.
-    authorUserIds.set(authorEmail.toLowerCase(), authorId);
+  if (authorIdx >= 0) {
+    for (const email of collectAuthorEmails(rows, authorIdx)) {
+      const slug = email.replace(/[^a-z0-9_]/gi, "_").toLowerCase();
+      const authorId = `import_author_${slug.slice(0, 60)}`;
+      await getDb()
+        .insert(users)
+        .values({
+          id: authorId,
+          email,
+          name: email.split("@")[0] || "Imported Author",
+          role: "customer",
+        })
+        .onConflictDoNothing();
+      authorUserIds.set(email, authorId);
+    }
   }
 
   // Mevcut başlıkları topla (idempotent dedupe için).
@@ -253,11 +283,9 @@ export async function importPosts(
     const commentCount = Number.isFinite(commentCountRaw)
       ? Math.max(commentCountRaw, 0)
       : 0;
-    // Yazar (satır bazlı).
-    const rowAuthor = authorIdx >= 0 ? (row[authorIdx] ?? "").trim() : "";
-    const rowAuthorId = rowAuthor
-      ? (authorUserIds.get(rowAuthor.toLowerCase()) ?? authorUserIds.get(authorEmail.toLowerCase()) ?? importUserId)
-      : importUserId;
+    // Yazar (satır bazlı) — eşleşme yoksa import_csv'ye düşer.
+    const rowAuthor = authorIdx >= 0 ? (row[authorIdx] ?? "").trim().toLowerCase() : "";
+    const rowAuthorId = rowAuthor ? (authorUserIds.get(rowAuthor) ?? importUserId) : importUserId;
 
     try {
       // 2026-09-12 (denetim — import): SATIR BAŞINA TEK BATCH (atomik).

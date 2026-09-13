@@ -152,6 +152,10 @@ export const posts = pgTable(
     searchVector: tsvector("search_vector").generatedAlwaysAs(
       sql`to_tsvector('turkish', coalesce(title, '') || ' ' || coalesce(description, ''))`,
     ),
+    // Sprint 68: onboarding'de üretilen ÖRNEK veri işareti. Gerçek veriden
+    // ayrılır, tek komutla silinir ve huni/metriklere sızmaz. Varsayılan false
+    // → mevcut satırların tamamı gerçek veridir (geriye dönük uyumlu).
+    isSample: boolean("is_sample").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -1048,6 +1052,8 @@ export const companies = pgTable("companies", {
   renewalDate: date("renewal_date"),
   segment: varchar("segment", { length: 40 }),
   notes: text("notes"),
+  // Sprint 68: onboarding örnek verisi işareti (bkz. posts.isSample).
+  isSample: boolean("is_sample").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -1113,6 +1119,8 @@ export const opportunities = pgTable(
     stage: varchar("stage", { length: 20 }).notNull().default("open"),
     expectedCloseDate: date("expected_close_date"),
     notes: text("notes"),
+    // Sprint 68: onboarding örnek verisi işareti (bkz. posts.isSample).
+    isSample: boolean("is_sample").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

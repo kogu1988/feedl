@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { DownloadIcon, Loader2Icon, TriangleAlertIcon } from "lucide-react";
 
@@ -34,6 +34,44 @@ export function WorkspaceDataPrivacy({
   const [confirmText, setConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Sprint 68 — onboarding'de üretilmiş ÖRNEK veri var mı? Varsa silme kartı
+  // gösterilir. Sorgu yalnız bir kez (mount) yapılır.
+  const [samplePresent, setSamplePresent] = useState(false);
+  const [removingSample, setRemovingSample] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/admin/sample-data")
+      .then((r) => r.json())
+      .then((j) => {
+        if (active && j?.success) setSamplePresent(Boolean(j.data?.present));
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  async function removeSample() {
+    setError(null);
+    setRemovingSample(true);
+    try {
+      const res = await fetch("/api/admin/sample-data", { method: "DELETE" });
+      const json = await res.json();
+      if (!json.success) {
+        setError(json.error || "Örnek veriler silinemedi.");
+        return;
+      }
+      setSamplePresent(false);
+      router.refresh();
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Örnek veriler silinemedi.",
+      );
+    } finally {
+      setRemovingSample(false);
+    }
+  }
 
   function download() {
     setError(null);
@@ -162,6 +200,32 @@ export function WorkspaceDataPrivacy({
           </CardContent>
         </Card>
       </div>
+
+      {/* Sprint 68 — yalnız onboarding örnek verisi varsa görünür. Gerçek
+          veriye dokunmaz; kullanıcı "temiz sayfayla" devam edebilsin. */}
+      {samplePresent && (
+        <Card className="mt-4">
+          <CardHeader>
+            <CardTitle className="text-base">Örnek veriler</CardTitle>
+            <CardDescription>
+              Kurulumda eklenen örnek fikirler, müşteriler ve fırsatlar. Gerçek
+              verilerine dokunulmaz — yalnızca örnekler kaldırılır.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              variant="outline"
+              onClick={removeSample}
+              disabled={removingSample}
+            >
+              {removingSample && (
+                <Loader2Icon className="animate-spin" aria-hidden="true" />
+              )}
+              Örnek verileri kaldır
+            </Button>
+          </CardContent>
+        </Card>
+      )}
     </section>
   );
 }
