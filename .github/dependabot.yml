@@ -21,3 +21,28 @@ updates:
       - dependency-name: "@react-native/*"
       - dependency-name: "@solana/*"
       - dependency-name: "@solana-mobile/*"
+      # React sürümleri PROJEDE TAM SABİTTİR (19.2.8; react ve react-dom aynı
+      # sürümde tutulur — SKILL.md "pinned exactly" kuralı) çünkü Next 15.5
+      # hattı buna göre doğrulanmıştır. Major/minor önerileri Next ile
+      # uyumsuzluğa yol açabilir; yalnız patch açık kalır.
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "@types/react"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "@types/react-dom"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      # eslint-config-next MAJOR'ı Next.js major'ına bağlıdır: 16.x, Next 16
+      # ister. Next 15.5'te alınamaz (CI kırmızı kalıyordu). Patch/minor açık.
+      - dependency-name: "eslint-config-next"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "next"
+        update-types: ["version-update:semver-major"]
+      # vite 8 rolldown'a geçti; platforma özel native binding npm'in bilinen
+      # optional-dependency hatasıyla (npm/cli#4828) Windows'ta KURULMAZ ve
+      # yerel `vitest` "Cannot find native binding" ile hiç başlamaz. CI (Linux)
+      # yeşil kalıyordu, yani yeşil CI bu kırılmayı GİZLEDİ (2026-09-13'te
+      # yaşandı ve vite 6.4.3'e geri dönüldü). Vite major'ı açık kalmasın.
+      - dependency-name: "vite"
+        update-types: ["version-update:semver-major"]

@@ -67,6 +67,14 @@ tools/merge-backup-*.json
 # Not (2026-09-05): /tests ve /migrations kullanıcı onayıyla repo'ya GERİ ALINDI
 # (Claude #2/#3 — CI'ın anlamlı olması). /docs, /scripts, .agents/skills ve
 # agent üretimi raporlar yerel kalır.
+#
+# NEDEN /docs ANA REPO'DA TUTULMAZ (2026-09-13, sprint 67 — netleştirme):
+# `main`'e her push Vercel'de 1 production deploy tetikler ve Hobby planı
+# ~100 deploy/24s ile sınırlıdır (docs/standarts.md §6.1). Planlama belgeleri
+# sık güncellendiği için bunları ana repo'ya koymak deploy bütçesini yakar.
+# Çözüm: belgeler AYRI bir private repo'da (feedl-docs) versiyonlanır — bu ne
+# deploy tetikler ne anlamlılığı azaltır, ama kurumsal hafızayı yedekler.
+# /docs'u buraya geri EKLEMEYİN; yedek için feedl-docs repo'suna bakın.
 /scripts
 /docs
 /.agents/skills/feedl

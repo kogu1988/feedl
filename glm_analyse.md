@@ -424,8 +424,10 @@ private `feedl-docs` reposu.
 
 Üç yerde belge ile gerçek ayrışmış:
 
-1. **`README.md` — Dependabot iddiası.** Metinde "0 açık Dependabot PR" geçiyor;
-   gerçek **5 açık PR** (2'si kırmızı). Güvenlik uyarısı kısmı doğru (0).
+1. ~~`README.md` — Dependabot iddiası.~~ **DÜZELTME (2026-09-13, sprint 67 sırasında doğrulandı):**
+   README'de Dependabot PR sayısına dair HİÇBİR iddia yok (`grep -in dependabot README.md` →
+   boş). Rapordaki "0 açık PR" ifadesi bu belgenin §2.4 özet tablosuna aittir, README'ye
+   değil. Yani burada düzeltilecek bir doküman kayması YOKTU; ilk tespit hatalıydı.
 
 2. **🔴 `.agents/skills/feedl/SKILL.md` — marka adı hâlâ duruyor.** Kullanıcı açıkça
    *"canny adı geçmesin, bu yasal soruna neden olabilir"* demişti ve kod/README
