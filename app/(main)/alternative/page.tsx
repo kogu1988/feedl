@@ -199,11 +199,6 @@ export default function AlternativePage() {
             </ul>
           </div>
         </div>
-        <p className="mt-6 max-w-2xl text-sm text-muted-foreground">
-          Güncel fiyatlar ve plan karşılaştırması{" "}
-          <Link href="/#pricing" className="underline underline-offset-2 hover:text-primary">ana sayfada</Link>
-          .
-        </p>
       </section>
 
       {/* SSS (FAQPage schema'nın kaynağı) */}
