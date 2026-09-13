@@ -1,12 +1,12 @@
 // 2026-09-12 (Free/Pro dil birliği) — plan konumlandırmasının ve plan
-// matrisinin TEK kaynağı. Landing, /pricing ve rehberler aynı cümleleri
+// matrisinin TEK kaynağı. Ana sayfa ve rehberler aynı cümleleri
 // kullanır; farklı yüzeylerin aynı ürün gerçekliğini farklı anlatması
 // ("üç farklı ürün tanımı") önlenir.
 //
 // NEDEN `plan-config.ts` İÇİNDE DEĞİL: o dosya `"use client"` taşıyor. Bir
 // client modülünden düz VERİ import edildiğinde server component tarafında
 // değer undefined gelir (client reference proxy'si) — 2026-09-12'de bu tam
-// olarak oldu: landing ve /pricing'de konumlandırma cümlesi HTML'e BOŞ
+// olarak oldu: ana sayfada konumlandırma cümlesi HTML'e BOŞ
 // (`<!-- -->`) düştü. `"use client"` YOKSA hem server hem client tarafta
 // normal sabit olarak okunur. Fiyat/price-id gibi client gerektiren değerler
 // `plan-config.ts`'te kalır.

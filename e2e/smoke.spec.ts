@@ -27,6 +27,14 @@ test("landing page loads", async ({ page }) => {
   }
 });
 
+// 2026-09-13 — `/pricing` sayfası kaldırıldı; eski yolun hâlâ ana sayfaya
+// yönlendirdiği garanti edilir (indekslenmiş bağlantılar 404'e düşmesin).
+test("/pricing ana sayfaya kalıcı olarak yönlendirir", async ({ request }) => {
+  const res = await request.get("/pricing", { maxRedirects: 0 });
+  expect([301, 308]).toContain(res.status());
+  expect(res.headers()["location"] ?? "").toMatch(/#pricing$/);
+});
+
 test("portal loads and shows the board list", async ({ page }) => {
   await page.goto("/portal");
   // Sayfa h1 + en az bir fikir kartı veya boş durum görünür.

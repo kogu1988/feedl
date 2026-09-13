@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 // Sprint 36: üst bar site kabuğunun parçası — marka işareti ve aktif sayfa
 // durumu eklendi. usePathname client gerektirdiği için layout'tan buraya
 // taşındı; ClerkProvider (main) layout'unda kalır.
-// Sprint 50: nav satış (/, /demo, /pricing) ve ürün (/portal*, /roadmap*,
+// Sprint 50: nav satış (/, /demo, /alternative) ve ürün (/portal*, /roadmap*,
 // /dashboard*) yüzeylerine göre değişir. Satış sayfalarında portal/yol
 // haritası/güncellemeler çıkar; yerine Demo + Fiyat. Ürün sayfalarında
 // mevcut ürün nav'ı kalır.
@@ -21,13 +21,13 @@ import { cn } from "@/lib/utils";
 // nav artık hem yüzeye hem OTURUMA göre değişir.
 //   Giriş yapmış kullanıcı (admin/team/member = ürünü kullanıyor) → her yerde
 //     tam ürün nav'ı: Portal + Yol Haritası + Güncellemeler (owner her şeyi görür).
-//   Anonim ziyaretçi → satış/marka (/, /demo, /pricing, /contact, legal) →
+//   Anonim ziyaretçi → satış/marka (/, /demo, /alternative, /contact, legal) →
 //     Demo + Fiyatlandırma; auth/işlem (/sign-in, /sign-up, /onboarding,
 //     /invites) → nav YOK; public topluluk (portal/roadmap/changelog) →
 //     Portal + Yol + Güncellemeler.
 // Not: "/" satış eşleşmesi EXACT olmalı (startsWith("/") her path'e uyar —
 // /portal'da Demo/Fiyat görünmesi bug'ı 2026-09-06'da düzeltildi).
-const SALES_PREFIXES = ["/demo", "/pricing", "/contact", "/privacy", "/terms"];
+const SALES_PREFIXES = ["/demo", "/contact", "/privacy", "/terms"];
 const SALES_EXACT = ["/"];
 const AUTH_APP_PREFIXES = ["/sign-in", "/sign-up", "/onboarding", "/invites"];
 

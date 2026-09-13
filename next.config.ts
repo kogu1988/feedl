@@ -22,6 +22,13 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
+      // 2026-09-13 — Ayrı `/pricing` sayfası KALDIRILDI (kullanıcı kararı):
+      // plan kartları ve satın alma akışı zaten ana sayfadaki `#pricing`
+      // bölümünde (aynı `PricingManager`). İki yüzey aynı şeyi gösterdiği için
+      // bakım yükü ve yanlış senkron riski vardı.
+      // 308 (kalıcı): eski bağlantılar ve arama motoru sonuçları ana sayfaya
+      // devredilir; `/pricing` artık hiçbir yüzeyde bağlantı almıyor.
+      { source: "/pricing", destination: "/#pricing", permanent: true },
       // Changelog 2026-09-05'te /portal altından üst seviyeye taşındı
       // (/changelog) — canlıdaki eski URL'ler geçici redirect ile korunur.
       { source: "/portal/changelog", destination: "/changelog", permanent: false },

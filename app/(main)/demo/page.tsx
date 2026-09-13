@@ -71,7 +71,7 @@ export default function DemoPage() {
           <SignUpButton forceRedirectUrl="/onboarding">
             <Button size="lg">Ücretsiz Başla</Button>
           </SignUpButton>
-          <Button size="lg" variant="outline" render={<Link href="/pricing" />}>
+          <Button size="lg" variant="outline" render={<Link href="/#pricing" />}>
             Fiyatlandırma
           </Button>
         </div>

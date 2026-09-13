@@ -61,7 +61,7 @@ export function SiteFooter({ brand }: { brand: { name: string; brandColor?: stri
             </p>
             <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
               Topla, analiz et, önceliklendir ve duyur — hepsi tek bir
-              herkese açık topluluk portalında.
+              portalda.
             </p>
           </div>
           <ul

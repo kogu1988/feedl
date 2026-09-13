@@ -7,7 +7,7 @@ başlangıç — herkese açık bir topluluk portalı + gelir odaklı öncelikle
 **Canlı:** [https://feedl.app](https://feedl.app)
 
 > **Tek söz kaynağı:** Bu README (ürün + konumlandırma + temel özellikler).
-> UI metinleri (`landing / pricing / demo`) buradaki söz dağarcığından beslenir.
+> UI metinleri (`landing / demo`) buradaki söz dağarcığından beslenir.
 
 ---
 
@@ -109,7 +109,11 @@ Belirli bir rakip markayı ADIYLA anma veya kötüleme (marka adı taşıyan
 karşılaştırma yasal risk); son kullanıcı
 yüzeyinde webhook/API jargonu kullanma.
 
-## Fiyatlandırma (bkz. `pricing/page.tsx` · `components/custom/plan-config.ts`)
+## Fiyatlandırma (bkz. ana sayfa `#pricing` bölümü · `components/custom/plan-config.ts`)
+
+> 2026-09-13: ayrı `/pricing` sayfası **kaldırıldı** (kullanıcı kararı) — plan
+> kartları ve satın alma akışı ana sayfadaki `#pricing` bölümünde (aynı
+> `PricingManager`). Eski yol `next.config.ts`'te 308 ile ana sayfaya devredilir.
 
 - **Free:** 1 workspace · 1 board · 1 üye · 50 takipçi · "Powered by feedl" rozeti.
 - **Pro:** Sınırsız workspace & board · 10 üye · özel domain · marka kaldırma ·
@@ -266,7 +270,7 @@ e2e/               Playwright smoke + axe erişilebilirlik
 ### Yüksek seviye
 
 ```
-     Public UI (landing/demo/pricing)    Dashboard (sidebar)    Widget (iframe)
+     Public UI (landing/demo)           Dashboard (sidebar)    Widget (iframe)
                  └──────────────┬───────────────┘
                           Next.js 15 App Router (RSC + API)
          ┌─────────────────────┼──────────────────────┐

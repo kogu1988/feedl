@@ -13,6 +13,8 @@ describe("isPublicPath — public yüzeyler", () => {
   it("kök ve tek segmentli public sayfalar", () => {
     for (const p of [
       "/",
+      // 2026-09-13: sayfası KALDIRILDI ama ana sayfaya 308 yönlendirdiği için
+      // public kalır (aksi halde eski bağlantılar Clerk oturumuna düşerdi).
       "/pricing",
       "/alternative",
       "/how-to-collect-feedback",

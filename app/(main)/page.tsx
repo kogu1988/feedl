@@ -26,7 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { HeroDemoCard } from "@/components/custom/hero-demo-card";
 import { PricingManager } from "@/components/custom/pricing-manager";
-import { PLAN_POSITIONING } from "@/lib/plan-copy";
+import { PLAN_POSITIONING, ACCOUNT_PRO_NOTE, TRIAL_VS_WITHDRAWAL_NOTE, priceCurrencyNote } from "@/lib/plan-copy";
 import { generateCanonical, ogImage } from "@/lib/seo";
 
 // Landing SEO — root layout'un title template'i + metadataBase'ine dayanır;
@@ -134,7 +134,7 @@ export default async function RootPage() {
   ];
 
   // Sprint 63r: Free özellikler önce, Pro özellikler sonra (net hiyerarşi).
-  // 2026-09-12 (Free/Pro dil birliği): metinler /pricing'teki gerçek plan
+  // 2026-09-12 (Free/Pro dil birliği): metinler plan kartlarındaki gerçek plan
   // içeriğiyle hizalandı — Free'de olmayan bir şey Free gibi, Free'de olan bir
   // şey de Pro gibi anlatılmaz. Kanonik konumlandırma: PLAN_POSITIONING
   // (lib/plan-copy.ts — NOT: components/custom/plan-config.ts DEĞİL; o dosya
@@ -298,7 +298,7 @@ export default async function RootPage() {
             <Button
               size="lg"
               variant="ghost"
-              render={<Link href="/pricing" />}
+              render={<Link href="/#pricing" />}
             >
               Fiyatlandırma
             </Button>
@@ -383,34 +383,40 @@ export default async function RootPage() {
         </div>
       </section>
 
-      <section className="mt-20 sm:mt-24">
+      {/* `id` — eski /pricing bağlantıları ve nav artık buraya çapa atıyor
+          (`/#pricing`). `scroll-mt-20` sticky üst barın (h-14) altında kalmasın. */}
+      <section id="pricing" className="mt-20 scroll-mt-20 sm:mt-24">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-2xl font-bold tracking-tight">
             Hangi plan sana uygun?
           </h2>
           {/* 2026-09-12 (Free/Pro dil birliği): Pro'nun "neden para ödeyeyim?"
               cevabı tek cümlede — özellik listesinden önce konumlandırma.
-              Kanonik kaynak: PLAN_POSITIONING (plan-config.ts). */}
+              Kanonik kaynak: PLAN_POSITIONING (lib/plan-copy.ts). */}
           <p className="mt-3 text-muted-foreground">
             {PLAN_POSITIONING.free} {PLAN_POSITIONING.pro} Her plan kullanıcı
             başına değil, ekip başına fiyatlandırılır.
           </p>
         </div>
 
-        {/* Sprint 63r: tüm plan kartları TEK STANDART — /pricing ile aynı
-            PricingManager (Free kartı + Pro kartı, Pro'da aylık/yıllık switch
-            varsayılan yıllık). Landing feedl kök workspace'ini temsil eder. */}
+        {/* Sprint 63r + 2026-09-13: tek standart plan kartları. Önceden ayrı bir
+            `/pricing` sayfası vardı; artık AYNI PricingManager yalnız burada —
+            sayfa kaldırıldı (kullanıcı kararı), eski yol buraya yönlenir. */}
         <div className="mt-10">
           <PricingManager workspaceSlug="feedl" workspaceId={landingWorkspaceId} />
         </div>
 
-        <p className="mt-6 text-center text-muted-foreground">
-          Karşılaştırma ve tüm detaylar için{" "}
-          <Link href="/pricing" className="font-medium underline-offset-4 hover:underline">
-            fiyatlandırma sayfasına
-          </Link>
-          {" "}göz at.
-        </p>
+        {/* Sprint 69.2–69.4 notları — `/pricing` sayfası kaldırıldığı için buraya
+            taşındı (2026-09-13). Aksi halde bu üç açıklama kullanıcıya hiç
+            görünmezdi: hesap düzeyi Pro kuralı, para birimi ve deneme↔cayma
+            ayrımı. Sunucu-safe kaynak: lib/plan-copy.ts. */}
+        <div className="mt-6 grid gap-2 text-center text-sm text-muted-foreground">
+          <p>{ACCOUNT_PRO_NOTE}</p>
+          <p className="text-xs">
+            Ödeme Paddle tarafından güvenle işlenir (merchant of record).{" "}
+            {priceCurrencyNote()} {TRIAL_VS_WITHDRAWAL_NOTE}
+          </p>
+        </div>
       </section>
 
       <section className="mt-20 rounded-2xl border bg-brand-soft p-8 text-center sm:mt-24">

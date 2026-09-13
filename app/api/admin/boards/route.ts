@@ -126,7 +126,7 @@ export async function POST(req: Request) {
     }
     const workspaceId = await getWorkspaceId();
     // 2026-09-12 (plan matrisi): private board'lar Pro özelliğidir. Karar
-    // kullanıcı onaylı — /pricing ve landing bunu zaten Pro olarak pazarlıyordu,
+    // kullanıcı onaylı — plan kartları bunu zaten Pro olarak pazarlıyordu,
     // ama kodda kapı yoktu (Free de gizli board açabiliyordu).
     if (parsed.data.visibility === "private") {
       const proErr = await requirePro();

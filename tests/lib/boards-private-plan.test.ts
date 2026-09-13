@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // 2026-09-12 (plan matrisi, kullanıcı kararı) — REGRESYON TESTİ.
 //
-// "Gizli (private) board" /pricing ve landing'de Pro olarak pazarlanıyordu ama
+// "Gizli (private) board" plan kartlarında Pro olarak pazarlanıyordu ama
 // kodda plan kapısı YOKTU: Free bir workspace gizli board açabiliyordu. Bu
 // dosya kapının gerçekten çalıştığını sunucu tarafında kanıtlar:
 //   - POST  : private + free → 403, HİÇ yazma yok

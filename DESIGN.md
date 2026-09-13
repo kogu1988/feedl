@@ -134,7 +134,7 @@ Alanlar olur. `layout.tsx` `getDashboardScope()` ile
   `sticky top-0 z-40 bg-background`; container **her sayfada tam genişlik**
   (`max-w-none`); marka karosu (`size-6 rounded-md bg-brand` + ChevronsUpIcon
   koyu mürekkep), aktif nav vurgusu `bg-muted`; sağda `ThemeToggle` +
-  Clerk butonları. **Satış/marka yüzeyi** (`/`, `/demo`, `/pricing`, `/contact`,
+  Clerk butonları. **Satış/marka yüzeyi** (`/`, `/demo`, `/contact`,
   `/privacy`, `/terms`) → Demo+Fiyat; **admin** (`/dashboard*`) → yalnız
   "Portal" (public board'a atla; sidebar zaten nav); **auth/işlem**
   (`/sign-in`, `/sign-up`, `/onboarding`, `/invites`) → nav YOK;
@@ -145,7 +145,7 @@ Alanlar olur. `layout.tsx` `getDashboardScope()` ile
   Demo+Fiyat, public toplulukta Portal/Yol/Güncellemeler; admin ve auth
   yüzeylerinde footer render edilmez (marka/legal sayfaları public kalır).
 - **Marketing h1 merdiveni (2026-09-05):** landing hero `text-4xl
-  sm:text-5xl lg:text-6xl`; demo/pricing h1 `text-3xl sm:text-4xl`;
+  sm:text-5xl lg:text-6xl`; demo h1 `text-3xl sm:text-4xl`;
   bölüm h2'leri `text-2xl` — yalnız ana sayfa en büyük ölçeği taşır.
 - **Landing (`app/(main)/page.tsx`):** asimetrik hero — sol metin blok /
   sağda mock kart ("Karanlık mod desteği") + "Nasıl çalışır" 1-2-3
@@ -166,7 +166,7 @@ Alanlar olur. `layout.tsx` `getDashboardScope()` ile
   + `truncate`; ayraç ChevronRight. Tek seviyeli sayfalarda, dashboard
   ve widget'ta breadcrumb YOK (üst bar + sidebar konumu zaten verir).
 - **Genişlik disiplini (2026-09-05, rev. 3 — işe göre hizalama):**
-  **Herkese açık yüzeyler** (landing, demo, pricing, portal + alt
+  **Herkese açık yüzeyler** (landing, demo, portal + alt
   sayfaları, roadmap, changelog) ortalanmış kolon: `container mx-auto
   max-w-6xl` — gösteri/okuma ölçeği ister; landing hero'sundaki
   asimetrik bloklar kolon içinde kalır. **Uygulama sayfaları**
@@ -195,7 +195,7 @@ Alanlar olur. `layout.tsx` `getDashboardScope()` ile
 
 - **Radius iki katman (2026-09-05):** uygulama içi kartlar ve primitifler
   `rounded-xl` (Card primitive zaten böyle); marketing/display yüzeyleri
-  (landing, demo, pricing kartları, CTA paneli, toast) `rounded-2xl`;
+  (landing, demo, plan kartları, CTA paneli, toast) `rounded-2xl`;
   küçük elemanlar (buton, input, badge) token radius (`rounded-md`
   ailesi). Elle kart yazarken Card primitive'ini kullan ya da bu
   katmanlara uyun — tek radius her yerde değil, hiyerarşi koda yansır.
@@ -408,7 +408,7 @@ tabular-nums` · landing hero `text-4xl sm:text-5xl lg:text-6xl`.
 |----|-------|----------|
 | `sm` | 640px | Landing hero tek kolon → 2 kolon; çoklu kartlar 2 sütun |
 | `md` | 768px | Üst bar nav görünür (hamburger kapanır); 2×2 KPI/tablet |
-| `lg` | 1024px | Portal fikir detayı 2 kolon; pricing kartları yan yana |
+| `lg` | 1024px | Portal fikir detayı 2 kolon; plan kartları yan yana |
 | `xl` | 1280px | Geniş dashboard veri yoğunluğu; `max-w-6xl` public kolon |
 | `2xl` | 1536px | (nadir) |
 

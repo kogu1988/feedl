@@ -12,7 +12,9 @@ import { useCheckout } from "@/components/custom/use-checkout";
 import { CheckoutStatusBanner } from "@/components/custom/checkout-status";
 import { track } from "@/lib/analytics/client";
 
-// Sprint 49/52 (Faz 5) — public /pricing. Free vs Pro karşılaştırma tablosu;
+// Sprint 49/52 (Faz 5) — plan karşılaştırma tablosu + Paddle checkout.
+// 2026-09-13: yalnız ANA SAYFADA render edilir (ayrı `/pricing` sayfası
+// kaldırıldı; eski yol buraya — `/#pricing` — yönlendiriyor).
 // "Pro'ya Geç" Paddle.js overlay checkout'u açar (webhook provisioning'dan
 // sorumludur). Slug workspace'te satırı ile eşleştirilir.
 // 2026-09-12: canlı (live) tahsilat AKTİF — 2026-09-12'de gerçek bir Pro satın
@@ -22,7 +24,7 @@ import { track } from "@/lib/analytics/client";
 // PRO_PLAN.yearlyMonthlyPrice, aylıkta PRO_PLAN.monthlyPrice. Butonlar kart
 // içi altta aynı hizada (flex-col + mt-auto), hepsi Button komponenti.
 
-// Free/PRO listeleri /pricing'in GERÇEK plan matrisini anlatır ve landing'deki
+// Free/PRO listeleri plan matrisinin GERÇEK halini anlatır ve landing'deki
 // özellik kartlarıyla aynı dili kullanır (bkz. PLAN_POSITIONING,
 // components/custom/plan-config.ts). Free'de olan bir şey Pro gibi, Free'de
 // olmayan bir şey Free gibi anlatılmaz.

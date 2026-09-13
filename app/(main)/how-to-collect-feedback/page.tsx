@@ -194,7 +194,7 @@ export default function HowToCollectFeedbackPage() {
         </p>
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
           <Button render={<Link href="/sign-up" />}>Kayıt Ol</Button>
-          <Button variant="outline" render={<Link href="/pricing" />}>Fiyatlandırmayı Gör</Button>
+          <Button variant="outline" render={<Link href="/#pricing" />}>Fiyatlandırmayı Gör</Button>
         </div>
       </section>
     </main>

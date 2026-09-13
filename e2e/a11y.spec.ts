@@ -11,7 +11,8 @@ const PUBLIC_ROUTES = [
   "/portal",
   "/roadmap",
   "/changelog",
-  "/pricing",
+  // 2026-09-13: `/pricing` KALDIRILDI (ana sayfaya 308 yönlendiriyor; kendi
+  // sayfası yok). Plan kartları ana sayfada — o yüzden `/` taraması kapsıyor.
   "/demo",
   // 2026-09-12: Free/Pro rozetleri ve plan özetiyle yeniden yapılandırıldı —
   // SEO'ya açık bir yüzey olduğu için a11y taramasına alındı.

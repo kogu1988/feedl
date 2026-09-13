@@ -12,6 +12,10 @@
 // Tam eşleşme gereken yollar (kök ve tek segmentli sayfalar).
 const PUBLIC_EXACT = new Set([
   "/",
+  // 2026-09-13 — `/pricing` sayfası kaldırıldı ve ana sayfaya 308 yönlendiriyor
+  // (next.config.ts). Yol KASITLI olarak public kalır: middleware burayı
+  // korusaydı, anonim bir ziyaretçi (ör. eski bir bağlantıdan gelen) yönlendirme
+  // yerine Clerk oturum ekranına düşerdi. Kendi sayfası yoktur.
   "/pricing",
   // SEO: ticari niyetli karşılaştırma sayfası + kurulum rehberi.
   "/alternative",
@@ -74,7 +78,7 @@ const PUBLIC_PREFIXES = [
   "/api/votes",
 ];
 
-// Sondaki tek eğik çizgiyi at (kök hariç): "/pricing/" → "/pricing".
+// Sondaki tek eğik çizgiyi at (kök hariç): "/alternative/" → "/alternative".
 function normalize(pathname: string): string {
   if (pathname.length > 1 && pathname.endsWith("/")) {
     return pathname.slice(0, -1);

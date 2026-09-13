@@ -47,7 +47,9 @@ describe("sitemap.xml", () => {
   it("derives the base URL from the request host (workspace/custom domain)", async () => {
     const res = await sitemapGET(req("/sitemap.xml", "acme.feedl.app"));
     const xml = await res.text();
-    expect(xml).toContain("https://acme.feedl.app/pricing");
+    expect(xml).toContain("https://acme.feedl.app/demo");
+    // Kaldırılan sayfa sitemap'te yer almaz (2026-09-13).
+    expect(xml).not.toContain("/pricing");
   });
 
   it("bilinmeyen host'ta BOŞ urlset döner ve noindex başlığı taşır", async () => {

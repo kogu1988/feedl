@@ -174,7 +174,7 @@ export default function AlternativePage() {
         </div>
       </section>
 
-      {/* Fiyatlandırma özeti — /pricing ile AYNI dil (tek kaynak: PLAN_POSITIONING) */}
+      {/* Fiyatlandırma özeti — plan dili tek kaynak: PLAN_POSITIONING (lib/plan-copy.ts) */}
       <section className="mt-20 sm:mt-24">
         <h2 className="text-2xl font-bold tracking-tight">Basit fiyatlandırma</h2>
         <div className="mt-6 grid gap-6 md:grid-cols-2">
@@ -200,7 +200,9 @@ export default function AlternativePage() {
           </div>
         </div>
         <p className="mt-6 max-w-2xl text-sm text-muted-foreground">
-          Güncel fiyatları <Link href="/pricing" className="underline underline-offset-2 hover:text-primary">fiyatlandırma sayfasında</Link> görebilirsin.
+          Güncel fiyatlar ve plan karşılaştırması{" "}
+          <Link href="/#pricing" className="underline underline-offset-2 hover:text-primary">ana sayfada</Link>
+          .
         </p>
       </section>
 

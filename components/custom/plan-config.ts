@@ -10,7 +10,7 @@
 // 2026-09-12 (Free/Pro dil birliği) — planın KONUMLANDIRMA metinleri burada
 // DEĞİL, `lib/plan-copy.ts` içindedir. Nedeni: bu dosya `"use client"` taşır,
 // ve bir client modülünden düz VERİ import eden server component o değeri
-// `undefined` olarak görür (client reference proxy'si). Landing /pricing gibi
+// `undefined` olarak görür (client reference proxy'si). Ana sayfa gibi
 // server sayfaları bu yüzden `@/lib/plan-copy` okur. Denetlenmiş plan matrisi
 // ve açık kalan uyumsuzluk notu da orada tutulur.
 

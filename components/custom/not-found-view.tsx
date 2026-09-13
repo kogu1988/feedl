@@ -40,7 +40,7 @@ export function NotFoundView({ hostUnknown = false }: { hostUnknown?: boolean } 
           </p>
           <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
             <Button render={<Link href={APP_URL} />}>feedl.app&apos;e git</Button>
-            <Button variant="outline" render={<Link href={`${APP_URL}/pricing`} />}>
+            <Button variant="outline" render={<Link href={`${APP_URL}/#pricing`} />}>
               Planları gör
             </Button>
           </div>

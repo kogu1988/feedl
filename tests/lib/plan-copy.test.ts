@@ -8,7 +8,7 @@ import {
 
 // Sprint 69 — plan konumlandırma metinleri (tek kaynak).
 //
-// Neden test: bu sabitler LANDING ve /pricing tarafından OKUNUR; birinin
+// Neden test: bu sabitler ANA SAYFA tarafından OKUNUR; birinin
 // boşalması sayfada sessizce boş bir cümle (`<!-- -->`) bırakır — bu repoda
 // tam olarak bir kez yaşandı (client modülden veri importu). Ayrıca marka
 // adı taşıyan karşılaştırma dili yasal risk olduğu için yasak.

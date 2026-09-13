@@ -207,7 +207,7 @@ onboarding akışı → `select name, count(*) from analytics_events group by 1`
 | 69.1 | **Karar briefi** | TR-first mi EN-first mi? Kanıt: saha görüşmelerinin dili/konumu, ilk 10 kullanıcının profili. Tek sayfalık karar + gerekçe (`docs/`) | 2 s (saha girdisiyle) |
 | 69.2 | Kararın asgari uygulaması | **TR-first ise:** TRY gösterimi + yerel konumlandırma. **EN-first ise:** i18n iskeleti (`[locale]` + sözlük katmanı) + `<html lang>` dinamik | 1-3 gün (seçime bağlı) |
 | 69.3 | Pricing: hesap düzeyi Pro | `lib/plan-copy.ts`, `components/custom/pricing-manager.tsx` | "Bir workspace'in Pro ise, sahip olduğun diğer workspace'ler de Pro" tek cümle (§3.4) | 0.5 s |
-| 69.4 | Fiyat/deneme netliği | `app/(main)/pricing/page.tsx`, `docs/free-pro_plans.md` (§7) | "14 gün ücretsiz deneme" ≠ "14 gün cayma hakkı" ayrımını UI'da netleştir | 0.5 s |
+| 69.4 | Fiyat/deneme netliği | `app/(main)/page.tsx` (`#pricing`), `docs/free-pro_plans.md` (§7) | "14 gün ücretsiz deneme" ≠ "14 gün cayma hakkı" ayrımını UI'da netleştir. **Not (2026-09-13):** notlar önce `/pricing`'e konmuştu; o sayfa kaldırılınca **ana sayfadaki plan kartlarının altına taşındı** | 0.5 s |
 | 69.5 | Landing ↔ pricing uyumu | `app/(main)/page.tsx` | §3.4'teki Free/Pro dil birliğinin son kontrolü (AI Autopilot vs AI Insights) | 0.5 s |
 | 69.6 | Test | `tests/lib/paddle-plans.test.ts` + pricing testleri | Plan metni/limit tutarlılığı | 1 s |
 
@@ -348,7 +348,7 @@ Plan tamamlandığında şunlar doğru olmalı:
 
 1. **Kayıt → onboarding:** yeni hesapla `/onboarding` → workspace adı + marka rengi → oluştur → dashboard'a yönlenir.
 2. **Örnek veri:** onboarding'de "Örnek verilerle göster" işaretli → panoda fikirler ve gelir skoru dolu mu? → "Veri ve gizlilik"ten kaldır → temizlendi mi?
-3. **Pro akışı:** owner ile `/pricing` → "Pro'ya Geç" → Paddle checkout açılır → ödeme sonrası `/dashboard`'a döner ve Pro görünür.
+3. **Pro akışı:** owner ile ana sayfadaki plan kartlarından → "Pro'ya Geç" → Paddle checkout açılır → ödeme sonrası `/dashboard`'a döner ve Pro görünür. (Eski `/pricing` yolu ana sayfaya 308 yönlendirir — 2026-09-13'te kaldırıldı.)
 4. **Fikir gönderimi:** `/portal` → anonim gönderim modunda fikir oluştur → widget'ta da dene (ara/gönder/görsel butonlarının birbirini iptali + ESC).
 5. **Üyelik:** ikinci bir hesapla davet kabul → role göre menü kısıtları doğru mu?
 6. **Workspace silme:** `/dashboard/workspaces` → Geç → "Veri ve gizlilik" → sil (`deneme` silinebilir; varsayılan `feedl` silinemez).
