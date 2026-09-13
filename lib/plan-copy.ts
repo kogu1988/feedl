@@ -43,3 +43,26 @@ export const PLAN_POSITIONING = {
   free: "Free geri bildirimi toplar.",
   pro: "Pro hangi geri bildirimin gerçekten önemli olduğunu gösterir.",
 } as const;
+
+// 2026-09-13 (Sprint 69.3) — HESAP DÜZEYİ PRO açıklaması.
+//
+// Kural: bir hesabın SAHİP OLDUĞU workspace'lerden biri Pro ise, o kişinin
+// sahip olduğu DİĞER workspace'ler de Pro sayılır (lib/paddle.ts →
+// resolveAccountPlanKey). Başkasının workspace'ine `member` olarak eklenmek bu
+// devralmayı VERMEZ — kararı oranın owner'ı verir.
+//
+// Neden yüzeylere yazılır: önceden Pro kullanıcı ikinci bir workspace açtığında
+// orada Free limitleri ve "Pro" kilitleri görüyordu ("CSV İndir · Pro") ve bunun
+// NEDEN böyle olduğunu anlatan hiçbir metin yoktu. Kural doğruydu ama
+// görünmüyordu; tek cümle bu sürprizi kapatır.
+export const ACCOUNT_PRO_NOTE =
+  "Bir workspace'inde Pro varsa, sahip olduğun diğer workspace'lerde de Pro açılır.";
+
+// 2026-09-13 (Sprint 69.4) — "14 gün" üç ayrı kavram: ücretsiz DENEME süresi,
+// iade penceresi ve yasal cayma hakkı. Kullanıcıya tek bir "14 gün" gibi
+// sunulmaması gerektiği için fiyat/kart metinlerinde bu ayrım açıkça yazılır.
+// Sayı BİLEREK yazılmaz: `PRO_TRIAL_DAYS` client modülünde (`plan-config.ts`)
+// yaşar ve buradan import edilirse sunucuda `undefined` gelir (client reference
+// proxy'si) — sabiti iki yere kopyalamak yerine metni sayısız tutuyoruz.
+export const TRIAL_VS_WITHDRAWAL_NOTE =
+  "Ücretsiz deneme ile yasal cayma/iade hakkı ayrı şeylerdir; ayrıntı İade Politikası'nda.";

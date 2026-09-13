@@ -2,7 +2,11 @@ import { eq } from "drizzle-orm";
 import { auth } from "@clerk/nextjs/server";
 
 import { PricingManager } from "@/components/custom/pricing-manager";
-import { PLAN_POSITIONING } from "@/lib/plan-copy";
+import {
+  ACCOUNT_PRO_NOTE,
+  PLAN_POSITIONING,
+  TRIAL_VS_WITHDRAWAL_NOTE,
+} from "@/lib/plan-copy";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
 import { workspaces } from "@/lib/db/schema";
@@ -61,6 +65,10 @@ export default async function PricingPage() {
           {PLAN_POSITIONING.free} {PLAN_POSITIONING.pro} Her ölçekte ekip için
           basit, kullanıcı başına değil ekip başına fiyatlandırma.
         </p>
+        {/* Sprint 69.3 — hesap düzeyi Pro kuralı görünür olsun. */}
+        <p className="mt-3 max-w-xl text-sm text-muted-foreground">
+          {ACCOUNT_PRO_NOTE}
+        </p>
       </div>
 
       <div className="mt-10">
@@ -74,7 +82,7 @@ export default async function PricingPage() {
 
       <p className="mt-10 text-xs text-muted-foreground">
         Ödeme Paddle tarafından güvenle işlenir (merchant of record). Fiyatlar
-        USD, vergi dahildir.
+        USD, vergi dahildir. {TRIAL_VS_WITHDRAWAL_NOTE}
       </p>
     </main>
   );

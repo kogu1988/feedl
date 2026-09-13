@@ -137,7 +137,8 @@ export default async function RootPage() {
   // 2026-09-12 (Free/Pro dil birliği): metinler /pricing'teki gerçek plan
   // içeriğiyle hizalandı — Free'de olmayan bir şey Free gibi, Free'de olan bir
   // şey de Pro gibi anlatılmaz. Kanonik konumlandırma: PLAN_POSITIONING
-  // (components/custom/plan-config.ts).
+  // (lib/plan-copy.ts — NOT: components/custom/plan-config.ts DEĞİL; o dosya
+  // "use client" taşır ve sunucu bileşeninde değerleri undefined yapar).
   const features = [
     {
       title: "AI Autopilot",
