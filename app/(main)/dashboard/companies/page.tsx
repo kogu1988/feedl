@@ -6,7 +6,7 @@ import {
   type CompanyView,
   type OpportunityView,
   type UserOption,
-} from "@/components/custom/companies-manager";
+} from "@/components/custom/companies/companies-manager";
 import { Notice } from "@/components/custom/notice";
 import { getTeamUserId } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
