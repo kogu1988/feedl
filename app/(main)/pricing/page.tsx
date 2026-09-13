@@ -6,6 +6,7 @@ import {
   ACCOUNT_PRO_NOTE,
   PLAN_POSITIONING,
   TRIAL_VS_WITHDRAWAL_NOTE,
+  priceCurrencyNote,
 } from "@/lib/plan-copy";
 import { getDb } from "@/lib/db";
 import { getWorkspaceId } from "@/lib/db/workspace";
@@ -69,6 +70,11 @@ export default async function PricingPage() {
         <p className="mt-3 max-w-xl text-sm text-muted-foreground">
           {ACCOUNT_PRO_NOTE}
         </p>
+        {/* Sprint 69.2 — yerel konumlandırma (TR-first kararı): destek dilini
+            açıkça söyler. Doğrulanabilir bir olgu; hukuki iddia içermez. */}
+        <p className="mt-2 max-w-xl text-sm text-muted-foreground">
+          Türkçe arayüz ve Türkçe destek.
+        </p>
       </div>
 
       <div className="mt-10">
@@ -81,8 +87,8 @@ export default async function PricingPage() {
       </div>
 
       <p className="mt-10 text-xs text-muted-foreground">
-        Ödeme Paddle tarafından güvenle işlenir (merchant of record). Fiyatlar
-        USD, vergi dahildir. {TRIAL_VS_WITHDRAWAL_NOTE}
+        Ödeme Paddle tarafından güvenle işlenir (merchant of record).{" "}
+        {priceCurrencyNote()} {TRIAL_VS_WITHDRAWAL_NOTE}
       </p>
     </main>
   );

@@ -6,7 +6,7 @@ import { Check, CreditCardIcon, ExternalLinkIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/custom/empty-state";
 import { PlanChangeCard } from "@/components/custom/plan-change-card";
-import { isPro, PRO_PLAN, PRO_TRIAL_DAYS } from "@/components/custom/plan-config";
+import { isPro, PRO_TRIAL_DAYS, getPriceDisplay } from "@/components/custom/plan-config";
 import { useCheckout } from "@/components/custom/use-checkout";
 import { CheckoutStatusBanner } from "@/components/custom/checkout-status";
 import { track } from "@/lib/analytics/client";
@@ -94,7 +94,9 @@ export function BillingOverview({
   const billingStatus = paddleSubscriptionStatus ?? "";
   const statusLabel = STATUS_LABELS[billingStatus] ?? null;
   const paymentIssue = billingStatus === "past_due" || billingStatus === "dunned";
-  const proPrice = annual ? PRO_PLAN.yearlyMonthlyPrice : PRO_PLAN.monthlyPrice;
+  // Sprint 69.2 — TR-first: gösterim para birimi env'den çözülür (TRY yoksa USD).
+  const price = getPriceDisplay();
+  const proPrice = annual ? price.yearlyMonthly : price.monthly;
 
   function handleProChange() {
     // Sprint 65 — huni: Pro'ya geç CTA tıklandı (billing sayfası).
@@ -198,8 +200,8 @@ export function BillingOverview({
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
             {annual
-              ? `Yıllık faturalandırmayla ayda ${PRO_PLAN.yearlyMonthlyPrice} (yıllık ${PRO_PLAN.yearlyTotal}).`
-              : `Aylık faturalandırmayla ayda ${PRO_PLAN.monthlyPrice}.`}{" "}
+              ? `Yıllık faturalandırmayla ayda ${price.yearlyMonthly} (yıllık ${price.yearlyTotal}).`
+              : `Aylık faturalandırmayla ayda ${price.monthly}.`}{" "}
             {PRO_TRIAL_DAYS > 0 ? `${PRO_TRIAL_DAYS} gün ücretsiz deneme.` : ""}
           </p>
           <ul className="mt-4 space-y-1.5 text-sm">

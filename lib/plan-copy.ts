@@ -66,3 +66,14 @@ export const ACCOUNT_PRO_NOTE =
 // proxy'si) — sabiti iki yere kopyalamak yerine metni sayısız tutuyoruz.
 export const TRIAL_VS_WITHDRAWAL_NOTE =
   "Ücretsiz deneme ile yasal cayma/iade hakkı ayrı şeylerdir; ayrıntı İade Politikası'nda.";
+
+// Sprint 69.2 — TR-first: fiyat birimi notu SUNUCU tarafında da okunabilmeli.
+//
+// Neden burada (plan-config'te DEĞİL): `plan-config.ts` "use client" taşır;
+// oradaki bir FONKSİYONU sunucu bileşeninde çağırmak client-reference proxy'sine
+// takılır. Bu modül client'sız olduğu için hem sunucuda hem client'ta çalışır.
+export function priceCurrencyNote(): string {
+  return process.env.NEXT_PUBLIC_PRICE_CURRENCY === "TRY"
+    ? "Fiyatlar TL, vergi dahildir."
+    : "Fiyatlar USD, vergi dahildir.";
+}

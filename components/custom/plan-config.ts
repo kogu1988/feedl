@@ -35,6 +35,57 @@ export function isPro(plan: string): boolean {
   return plan === "pro";
 }
 
+// ── Sprint 69.2 — TR-FIRST FİYAT GÖSTERİMİ (2026-09-13, kullanıcı kararı) ────
+//
+// Karar: hedef pazar ÖNCE Türkiye. Ürün zaten Türkçe ("use client" öncesi tüm
+// metinler TR, `<html lang="tr">`), eksik olan para birimiydi.
+//
+// NEDEN UYDURMA KUR YOK: TRY fiyat Paddle'da GERÇEK bir fiyat nesnesi olarak
+// tanımlanmalıdır (aksi halde kullanıcı sayfada ₺X görüp ödeme ekranında $
+// görür). Bu yüzden TRY, env ile AÇILIR bir özelliktir:
+//   NEXT_PUBLIC_PRICE_CURRENCY=TRY
+//   NEXT_PUBLIC_PRICE_TRY_MONTHLY=749
+//   NEXT_PUBLIC_PRICE_TRY_YEARLY_MONTHLY=590
+//   NEXT_PUBLIC_PRICE_TRY_YEARLY_TOTAL=7080
+// Üç TRY değeri de yoksa otomatik olarak USD'ye düşer — kırık/boş fiyat
+// gösterilmez (bu repodaki "sessiz undefined" sınıfına karşı açık kapı).
+export type DisplayCurrency = "USD" | "TRY";
+
+export interface PriceDisplay {
+  currency: DisplayCurrency;
+  monthly: string;
+  yearlyMonthly: string;
+  yearlyTotal: string;
+}
+
+function tryOrFallback(): PriceDisplay | null {
+  if (process.env.NEXT_PUBLIC_PRICE_CURRENCY !== "TRY") return null;
+  const monthly = (process.env.NEXT_PUBLIC_PRICE_TRY_MONTHLY ?? "").trim();
+  const yearlyMonthly = (process.env.NEXT_PUBLIC_PRICE_TRY_YEARLY_MONTHLY ?? "").trim();
+  const yearlyTotal = (process.env.NEXT_PUBLIC_PRICE_TRY_YEARLY_TOTAL ?? "").trim();
+  // ÜÇ değer de gerekir: kısmi yapılandırma karışık para birimi gösterirdi.
+  if (!monthly || !yearlyMonthly || !yearlyTotal) return null;
+  const tl = (v: string) => `₺${v}`;
+  return {
+    currency: "TRY",
+    monthly: tl(monthly),
+    yearlyMonthly: tl(yearlyMonthly),
+    yearlyTotal: tl(yearlyTotal),
+  };
+}
+
+/** Fiyat gösterimini çözer. TRY yapılandırılmamışsa USD (varsayılan) döner. */
+export function getPriceDisplay(): PriceDisplay {
+  return (
+    tryOrFallback() ?? {
+      currency: "USD",
+      monthly: PRO_PLAN.monthlyPrice,
+      yearlyMonthly: PRO_PLAN.yearlyMonthlyPrice,
+      yearlyTotal: PRO_PLAN.yearlyTotal,
+    }
+  );
+}
+
 // Canlı hazırlık: Pro abonelik için Paddle tarafında da trial süresi/bedeli
 // ürün üzerinde tanımlanır (kod değil, Paddle dashboard). Kod, webhook'ta
 // `trialing` durumunu zaten 'pro' sayar; UI'da deneme süresini buradan göster.
