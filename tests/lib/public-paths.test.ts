@@ -18,6 +18,7 @@ describe("isPublicPath — public yüzeyler", () => {
       "/pricing",
       "/alternative",
       "/how-to-collect-feedback",
+      "/how-to-use-feedl",
       "/demo",
       // Ürün-dışı araştırma anketi (kök host'a kapılı + noindex).
       "/survey",

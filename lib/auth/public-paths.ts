@@ -17,9 +17,11 @@ const PUBLIC_EXACT = new Set([
   // korusaydı, anonim bir ziyaretçi (ör. eski bir bağlantıdan gelen) yönlendirme
   // yerine Clerk oturum ekranına düşerdi. Kendi sayfası yoktur.
   "/pricing",
-  // SEO: ticari niyetli karşılaştırma sayfası + kurulum rehberi.
+  // SEO: ticari niyetli karşılaştırma sayfası + iki rehber.
   "/alternative",
   "/how-to-collect-feedback",
+  // Ürün-içi kullanım rehberi (workspace/board/widget kurulumu).
+  "/how-to-use-feedl",
   // Ürün turu + demo.
   "/demo",
   // Ürün-dışı araştırma anketi (Tally tam sayfa gömme). Kök host'a kapılı ve

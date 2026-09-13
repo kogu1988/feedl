@@ -7,9 +7,7 @@ import { useAuth } from "@clerk/nextjs";
 // Sprint 63+ (IA standardı) + 2026-09-06 revizyonları:
 // footer yalnızca anonim ziyaretçiye gösterilir (Giriş yapmış kullanıcı ürünü
 // kullanıyor → pazarlama gürültüsü yok; admin/auth/işlem yüzeylerinde de yok).
-// İçerik: marka tanıtımı (sol) + şirket/legal linkleri TEK SIRA (sağ) + ortalanmış
-// telif. "Ürün" bağlantıları (Demo/Fiyat) tüm footer'lardan kaldırıldı — nav üst
-// bardadır. PRIVATE_APP_PREFIXES private yüzeyleri belirler.
+// PRIVATE_APP_PREFIXES private yüzeyleri belirler.
 const PRIVATE_APP_PREFIXES = [
   "/dashboard",
   "/onboarding",
@@ -18,17 +16,38 @@ const PRIVATE_APP_PREFIXES = [
   "/sign-up",
 ];
 
-// Tek sıra, tek standart: şirket/legal + SEO kaynak linkleri AYNI listede ve
-// AYNI stille (aralarında görsel fark yok). SEO linkleri orphan sayfaları
-// (alternative / how-to-collect-feedback) anonim ziyaretçiye ulaştırır.
-const footerLinks = [
-  { href: "/alternative", label: "Neden feedl" },
-  { href: "/how-to-collect-feedback", label: "Geri Bildirim Rehberi" },
-  { href: "/contact", label: "İletişim" },
-  { href: "/privacy", label: "Gizlilik Politikası" },
-  { href: "/terms", label: "Kullanım Şartları" },
-  // Sprint 63x — Paddle canlı onayı: refund politikası linki zorunlu.
-  { href: "/refund", label: "İade Politikası" },
+// 2026-09-14 (kullanıcı isteği) — linkler TEK SIRA yerine HİYERARŞİK gruplara
+// ayrıldı. Her grup bir başlık + dikey liste; böylece "ürün", "kaynak" ve
+// "şirket/yasal" ayrımı gözle okunur oluyor. Sıralama kuralları:
+//   · "Ürün" önce (ürün-marka yüzeyi), "Şirket" sonra (yasal/iletişim).
+//   · İLETİŞİM en sonda (kullanıcı isteği): son grubun son maddesidir.
+// Yeni bir public sayfa eklenirse doğru gruba yazılır (orphan sayfa bırakma).
+const FOOTER_GROUPS: Array<{
+  heading: string;
+  links: Array<{ href: string; label: string }>;
+}> = [
+  {
+    heading: "Ürün",
+    links: [
+      { href: "/alternative", label: "Neden feedl" },
+      { href: "/how-to-use-feedl", label: "Kullanım Rehberi" },
+    ],
+  },
+  {
+    heading: "Kaynaklar",
+    links: [{ href: "/how-to-collect-feedback", label: "Geri Bildirim Rehberi" }],
+  },
+  {
+    heading: "Şirket",
+    links: [
+      { href: "/privacy", label: "Gizlilik Politikası" },
+      { href: "/terms", label: "Kullanım Şartları" },
+      // Sprint 63x — Paddle canlı onayı: refund politikası linki zorunlu.
+      { href: "/refund", label: "İade Politikası" },
+      // En sonda: iletişim diğer linklerden sonra gelir (kullanıcı isteği).
+      { href: "/contact", label: "İletişim" },
+    ],
+  },
 ];
 
 export function SiteFooter({ brand }: { brand: { name: string; brandColor?: string | null; logoUrl?: string | null } }) {
@@ -42,8 +61,8 @@ export function SiteFooter({ brand }: { brand: { name: string; brandColor?: stri
   return (
     <footer className="border-t">
       <div className="container mx-auto max-w-none px-4 pb-8 pt-10">
-        {/* Üst satır: marka tanıtımı (sol) + şirket linkleri TEK SIRA (sağ). */}
-        <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+        {/* Üst satır: marka tanıtımı (sol) + hiyerarşik link grupları (sağ). */}
+        <div className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
           <div className="max-w-xs">
             {/* Sprint 63z: workspace logoUrl yoksa varsayılan turuncu marka logosu. */}
             <div className="flex items-center gap-2">
@@ -64,21 +83,33 @@ export function SiteFooter({ brand }: { brand: { name: string; brandColor?: stri
               portalda.
             </p>
           </div>
-          <ul
-            className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm md:pt-1"
+
+          {/* Gruplar: her biri başlık + dikey liste. Tüm linkler AYNI stilde
+              (aralarında görsel fark yok) — ayrım yalnız başlıkla verilir. */}
+          <nav
             aria-label="Alt bilgi linkleri"
+            className="grid gap-x-10 gap-y-6 sm:grid-cols-3"
           >
-            {footerLinks.map((link) => (
-              <li key={link.href}>
-                <Link
-                  href={link.href}
-                  className="text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  {link.label}
-                </Link>
-              </li>
+            {FOOTER_GROUPS.map((group) => (
+              <div key={group.heading}>
+                <h2 className="text-xs font-semibold text-foreground">
+                  {group.heading}
+                </h2>
+                <ul className="mt-3 space-y-2 text-sm">
+                  {group.links.map((link) => (
+                    <li key={link.href}>
+                      <Link
+                        href={link.href}
+                        className="text-muted-foreground transition-colors hover:text-foreground"
+                      >
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             ))}
-          </ul>
+          </nav>
         </div>
 
         {/* Telif — normal footer içinde, ortalanmış. */}
