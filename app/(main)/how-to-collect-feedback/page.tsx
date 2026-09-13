@@ -202,6 +202,98 @@ const METRICS = [
   { name: "Kapanan döngü", how: "Yayınlanan / duyurulan fikir oranı", target: "%100'e ne kadar yakınsa güven o kadar yüksek" },
 ];
 
+// ── "Neden feedl?" — rehberin kendi kriterleriyle bağlantılı farklılaşma ────
+//
+// KURAL: her madde, rehberin DAHA ÖNCE kurduğu bir problemle eşleşir. Genel
+// pazarlama cümlesi değil; "bu adımı elle yaparsan şu olur, bizde şu olur".
+// Rakip marka adı YOK, kanıtsız üstünlük iddiası YOK (README söz dağarcığı).
+const WHY_FEEDL = [
+  {
+    problem: "“En çok oy alan” ile “en çok değer yaratan” ayrılamıyor",
+    solution:
+      "Her istek oy + müşteri sayısı + açık fırsat (MRR) ile skorlanır. Böylece 3 yüksek gelirli müşterinin istediği bir ihtiyaç, 90 oylu genel bir isteği geçebilir.",
+    plan: "pro",
+  },
+  {
+    problem: "Yüzlerce fikri elle etiketlemek/özetlemek sürüyor",
+    solution:
+      "AI her yeni fikirde otomatik çalışır: etiket, özet, duygu analizi ve tekrar tespiti. Triyaj işi fikrin geldiği anda biter.",
+    plan: "free",
+  },
+  {
+    problem: "AI yanlış sınıflandırınca kimse düzeltmiyor",
+    solution:
+      "Bir fikri “ilgisiz” işaretlemek ya da türünü düzeltmek bu workspace'e özel bir sinyale dönüşür ve sonraki sınıflandırmaları yönlendirir.",
+    plan: "free",
+  },
+  {
+    problem: "“Duyurmamak” hatası — geri bildirim veren sesini duymuyor",
+    solution:
+      "Kapalı döngü: portal → oy → yol haritası → değişiklik günlüğü. Durumu “yayında” yaptığın an oy veren ve takip eden herkese e-posta otomatik gider.",
+    plan: "free",
+  },
+  {
+    problem: "“Kim, nerede, hangi cihazda?” bilgisi kayboluyor",
+    solution:
+      "Widget ürünün içinde çalışır; sayfa, cihaz, viewport, tarayıcı ve işletim sistemi otomatik kaydedilir. Görsel geri bildirimde sorunlu nokta işaretlenip ekran görüntüsü eklenir.",
+    plan: "free",
+  },
+  {
+    problem: "Kararın “işe yaradı mı?” sorusu hiç cevaplanmıyor",
+    solution:
+      "Yayına giren bir fikrin gerçekleşen sonucunu (genişleme / elde tutma / verimlilik + gelir etkisi) kaydedersin; birikim zamanla önceliklendirmeyi tahminden çıkarır.",
+    plan: "pro",
+  },
+];
+
+// ── Karşılaştırma — "neden hazır bir araç?" ────────────────────────────────
+// Kategoriler GENEL tutulur (marka adı yok) ve takas dürüstçe yazılır:
+// kendi geliştirme en esnek ama mühendislik zamanı ister.
+const COMPARISON = [
+  {
+    criterion: "Fikir toplama yüzeyi",
+    manual: "E-posta + tablo: her yeni fikir elle satır olur",
+    formTool: "Form var, ama oylama/roadmap yok",
+    build: "Var — geliştirme süresi",
+    feedl: "Portal + widget (2 satır script) hazır",
+  },
+  {
+    criterion: "Oylama ve sıralama",
+    manual: "Elle sayılır, güncel kalmaz",
+    formTool: "Yok / eklenti ile sınırlı",
+    build: "Var — geliştirme süresi",
+    feedl: "Oylama + sıralama kutudan çıkar",
+  },
+  {
+    criterion: "AI triyaj (etiket/özet/tekrar)",
+    manual: "Yok — tamamen elle",
+    formTool: "Yok",
+    build: "Var — model maliyeti ve bakımı sende",
+    feedl: "Her fikirde otomatik çalışır",
+  },
+  {
+    criterion: "Gelir ağırlıklı öncelik",
+    manual: "Yok — oy sayısı tek sinyal",
+    formTool: "Yok",
+    build: "Var — veri modelini sen kurarsın",
+    feedl: "Oy + müşteri + fırsat/MRR skoru ve açıklaması",
+  },
+  {
+    criterion: "Duyuru döngüsü",
+    manual: "Elle e-posta listesi",
+    formTool: "Yok",
+    build: "Var — geliştirme süresi",
+    feedl: "Roadmap + changelog + otomatik bildirim",
+  },
+  {
+    criterion: "Kurulum ve bakım",
+    manual: "Kurulum yok, ama sürekli emek",
+    formTool: "Hızlı kurulur, geri kalanı yok",
+    build: "En esnek; en yüksek mühendislik maliyeti",
+    feedl: "Hosted ve hazır; bakım bizde",
+  },
+];
+
 // ── SSS ────────────────────────────────────────────────────────────────────
 const FAQ = [
   {
@@ -282,6 +374,8 @@ export default function HowToCollectFeedbackPage() {
   // İçindekiler — uzun sayfada gezinme (bağlantılar gerçek bölümlere gider).
   const toc = [
     { href: "#adimlar", label: "7 adımda akış" },
+    { href: "#neden-feedl", label: "Neden feedl?" },
+    { href: "#karsilastirma", label: "Elle yapmakla karşılaştırma" },
     { href: "#kanal-secimi", label: "Hangi kanaldan toplamalı?" },
     { href: "#soru-tasarimi", label: "Ne sormalı, ne sormamalı?" },
     { href: "#baglam", label: "Hangi bağlamı kaydetmeli?" },
@@ -431,6 +525,82 @@ export default function HowToCollectFeedbackPage() {
         </ol>
       </section>
 
+      {/* "Neden feedl?" — rehberin kurduğu her problemle eşleşen çözüm.
+          Sayfanın ticari işi de bu: sadece "nasıl yapılır" değil,
+          "neden bunu bizimle yapmalısın" sorusunu cevaplar. */}
+      <section id="neden-feedl" className="mx-auto mt-20 max-w-5xl scroll-mt-20">
+        <h2 className="text-2xl font-bold tracking-tight">Neden feedl?</h2>
+        <p className="mt-3 max-w-3xl text-muted-foreground">
+          Bu rehberdeki adımların çoğunu elle de yapabilirsin — ama her biri
+          başka bir yerde kopuyor. Aşağıda her satır, yukarıda anlattığımız bir
+          problemin karşılığıdır.
+        </p>
+        <ul className="mt-6 grid gap-4 md:grid-cols-2">
+          {WHY_FEEDL.map((item) => (
+            <li key={item.problem} className="rounded-2xl border bg-card p-5">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-sm font-semibold">{item.problem}</p>
+                {item.plan === "pro" ? <ProBadge /> : <FreeBadge />}
+              </div>
+              <p className="mt-2 text-sm text-muted-foreground">{item.solution}</p>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-4 text-sm text-muted-foreground">
+          Ayrıca: ekip başına fiyatlandırma (kullanıcı başına değil), entegrasyonlar
+          (Slack, Jira, Linear, Zendesk, Intercom), public API + webhook ve özel alan
+          adı + marka kaldırma. Kurulum yok — tarayıcından çalışır.
+        </p>
+        <div className="mt-6 flex flex-wrap items-center gap-3">
+          <Button render={<Link href="/sign-up" />}>Ücretsiz Başla</Button>
+          <Button variant="outline" render={<Link href="/demo" />}>
+            Canlı Demoyu Gör
+          </Button>
+        </div>
+      </section>
+
+      {/* Karşılaştırma — kategoriler GENEL (marka adı yok); takaslar dürüstçe. */}
+      <section id="karsilastirma" className="mx-auto mt-20 max-w-5xl scroll-mt-20">
+        <h2 className="text-2xl font-bold tracking-tight">
+          Elle yapmakla karşılaştırma
+        </h2>
+        <p className="mt-3 max-w-3xl text-muted-foreground">
+          “Kendim yaparım” her zaman bir seçenek; maliyeti mühendislik zamanıdır.
+          Aşağıdaki karşılaştırma hangi işin kimde kaldığını gösterir.
+        </p>
+        <div className="mt-6 overflow-x-auto rounded-2xl border">
+          <table className="w-full min-w-[46rem] border-collapse text-left text-sm">
+            <caption className="sr-only">
+              Elle toplama, genel form aracı, kendi geliştirme ve feedl karşılaştırması
+            </caption>
+            <thead className="bg-muted/50">
+              <tr>
+                <th scope="col" className="p-3 font-semibold">Kriter</th>
+                <th scope="col" className="p-3 font-semibold">Elle (e-posta + tablo)</th>
+                <th scope="col" className="p-3 font-semibold">Genel form aracı</th>
+                <th scope="col" className="p-3 font-semibold">Kendin geliştir</th>
+                <th scope="col" className="p-3 font-semibold">feedl</th>
+              </tr>
+            </thead>
+            <tbody>
+              {COMPARISON.map((row) => (
+                <tr key={row.criterion} className="border-t align-top">
+                  <th scope="row" className="p-3 font-medium">{row.criterion}</th>
+                  <td className="p-3 text-muted-foreground">{row.manual}</td>
+                  <td className="p-3 text-muted-foreground">{row.formTool}</td>
+                  <td className="p-3 text-muted-foreground">{row.build}</td>
+                  <td className="p-3 font-medium">{row.feedl}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="mt-4 text-sm text-muted-foreground">
+          Kendi geliştirmenin karşılığı vardır: tam kontrol ve sıfır abonelik.
+          İhtiyacın standart geri bildirim döngüsünün dışındaysa doğru seçim
+          olabilir; sıradan bir döngüyü yeniden yazmak genelde zaman kaybıdır.
+        </p>
+      </section>
       {/* Kanal seçimi */}
       <section id="kanal-secimi" className="mx-auto mt-20 max-w-5xl scroll-mt-20">
         <h2 className="text-2xl font-bold tracking-tight">
