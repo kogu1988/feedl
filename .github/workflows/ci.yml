@@ -12,6 +12,18 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Sprint 71.2 — migration'lar BOŞ bir veritabanında baştan kurulabiliyor mu?
+  #
+  # Neden ayrı ve gizli anahtarsız: 64 migration + 37 tablo var ve şemanın
+  # sıfırdan kurulabildiği hiç kanıtlanmamıştı (glm_analyse.md R8). Geçici bir
+  # `pgvector` konteyneri açılır (GitHub runner'larında Docker hazır), tüm
+  # migration'lar sırayla uygulanır, konteyner silinir. Bulut/DB sırrı YOK.
+  migrations:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: node tools/verify-migrations.mjs
+
   test-and-build:
     runs-on: ubuntu-latest
     # Build, gerçek servislere bağlanmadan çalışır: tüm okumalar lazy

@@ -9,6 +9,7 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:integration": "vitest run tests/integration",
+    "verify:migrations": "node tools/verify-migrations.mjs",
     "test:e2e": "playwright test",
     "vendor:capture": "node tools/vendor-widget-capture.mjs"
   },

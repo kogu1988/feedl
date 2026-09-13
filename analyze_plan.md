@@ -18,7 +18,7 @@
 > | 68 Activation Friction | ✅ | `is_sample` (mig 0063) + örnek veri onboarding + CSV yazar hatası düzeltildi |
 > | 69 Positioning | ✅ | **TR-first kararı** + TL fiyat (env-gated) + hesap Pro/deneme notları |
 > | 70 Decomposition | ✅ | inngest 1→9 dosya; dashboard 1246→688+498; companies → 5 dosya |
-> | 71 Test Depth | 🟡 | 71.1 ✅ · 71.4 ✅ · 71.6 ✅ · 71.7 ✅ · 71.2/71.3/71.5 ⏸️ (§13) |
+> | 71 Test Depth | ✅ | 71.1 ✅ · 71.2 ✅ · 71.4 ✅ · 71.6 ✅ · 71.7 ✅ · 71.3 ⏸️ (kullanıcı kararı: şimdilik atlandı) |
 > | ∥ Saha Hattı | ⏸️ | 20 görüşme — kodla yapılamaz |
 
 ---
@@ -331,11 +331,24 @@ Plan tamamlandığında şunlar doğru olmalı:
 
 ## 13. Kalan İşler (altyapı/kullanıcı aksiyonu gerektirir)
 
+> **71.2 KAPANDI (2026-09-13).** Neon branch gerekmedi: `tools/verify-migrations.mjs`
+> geçici bir Docker (`pgvector/pgvector:pg16`) konteynerinde **64 migration'ın
+> tamamını boş bir veritabanında** uyguladı → **64/64 · 37 tablo**. Ücretsiz,
+> izole, gizli anahtarsız; CI'da ayrı `migrations` job'u olarak koşuyor.
+
 | # | İş | Neden bekliyor | Yapılacak |
 |---|---|---|---|
-| 71.2 | Migration'ları SIFIRDAN doğrulama | Boş bir veritabanı gerekir; üretimde çalıştırılamaz | Yeni bir Neon branch aç → `DATABASE_URL=<branch> bash -c 'for f in migrations/*.sql; do psql "$DATABASE_URL" -f "$f"; done'`. Alternatif: branch'i CI'da bos açıp tüm migration'ları uygulayan bir job. |
-| 71.3 | Auth e2e'nin GERÇEKTEN koşması (3 skip kapanır) | Clerk **test/dev** instance + Fakes gerekir (gizli anahtar) | README'deki 4 adım (Clerk Fakes + webhook + `tools/seed-e2e.mjs` + `npm run test:e2e`). |
+| 71.3 | Auth e2e'nin GERÇEKTEN koşması (3 skip kapanır) | **Kullanıcı kararı (2026-09-13): şimdilik atlandı** — "dev ortamına gerek yok". Teknik not: Clerk'in test kullanıcısı özelliği (**Fakes**) yalnız **dev** instance'ta bulunur; canlı instance'ta otomatik test kullanıcısı üretilemez, bu yüzden admin/onboarding akışları e2e ile otomatik doğrulanamıyor. İleride ya Clerk dev instance açılır ya da aşağıdaki elle kontrol listesi uygulanır. | İleride: Clerk dev instance + Fakes + `tools/seed-e2e.mjs` + `npm run test:e2e`. |
 | 71.5 | Custom domain uçtan uca provası | Gerçek bir domain + DNS erişimi gerekir | `test.feedl.app` KULLANILAMAZ; başka bir domain al → `_feedl.<domain>` TXT → Vercel'e ekle → apex için A kaydı. |
 | ∥ | 20 müşteri görüşmesi (M1) | Saha işi | `docs/FEEDL-ROADMAP.md` M1 çıkış kriterleri. |
-| — | Onboarding örnek veri akışının **interaktif** doğrulaması | Tarayıcı gerektirir (ajan tıklayamaz) | Yeni hesapla `/onboarding` → "Örnek verilerle göster" işaretli → pane + gelir skoru dolu mu? Sonra "Veri ve gizlilik"ten kaldır. |
-| — | Workspace silme akışının canlı provası | Tarayıcı gerektirir | `/dashboard/workspaces` → Geç → "Veri ve gizlilik" → sil (`deneme` silinebilir). |
+
+### Elle kontrol listesi (otomatik e2e kapsamı dışında kalan akışlar)
+
+71.3 atlandığı için şu akışlar **yalnız elle** doğrulanır (her sürüm öncesi ~10 dk):
+
+1. **Kayıt → onboarding:** yeni hesapla `/onboarding` → workspace adı + marka rengi → oluştur → dashboard'a yönlenir.
+2. **Örnek veri:** onboarding'de "Örnek verilerle göster" işaretli → panoda fikirler ve gelir skoru dolu mu? → "Veri ve gizlilik"ten kaldır → temizlendi mi?
+3. **Pro akışı:** owner ile `/pricing` → "Pro'ya Geç" → Paddle checkout açılır → ödeme sonrası `/dashboard`'a döner ve Pro görünür.
+4. **Fikir gönderimi:** `/portal` → anonim gönderim modunda fikir oluştur → widget'ta da dene (ara/gönder/görsel butonlarının birbirini iptali + ESC).
+5. **Üyelik:** ikinci bir hesapla davet kabul → role göre menü kısıtları doğru mu?
+6. **Workspace silme:** `/dashboard/workspaces` → Geç → "Veri ve gizlilik" → sil (`deneme` silinebilir; varsayılan `feedl` silinemez).
