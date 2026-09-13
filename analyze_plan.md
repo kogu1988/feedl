@@ -6,6 +6,23 @@
 
 ---
 
+> **DURUM (2026-09-13, son güncelleme):** Sprint 65–70 **TAMAMLANDI**; Sprint 71'in
+> kodla kapanabilen maddeleri **TAMAMLANDI**. Kalan üç madde altyapı/kullanıcı
+> aksiyonu gerektirir (§13).
+>
+> | Sprint | Durum | Kanıt |
+> |---|---|---|
+> | 65 Funnel Visibility | ✅ | `analytics_events` (mig 0062) + `after()` yazımı + 7 olay + panel |
+> | 66 First Real Data | ✅ | 14 fikir/4 şirket/3 fırsat canlıda; izolasyon + AI 14/14 |
+> | 67 Repo Hygiene | ✅ | `feedl-docs` yedeği; Dependabot 0 açık; SKILL.md temiz; vite 6 pin |
+> | 68 Activation Friction | ✅ | `is_sample` (mig 0063) + örnek veri onboarding + CSV yazar hatası düzeltildi |
+> | 69 Positioning | ✅ | **TR-first kararı** + TL fiyat (env-gated) + hesap Pro/deneme notları |
+> | 70 Decomposition | ✅ | inngest 1→9 dosya; dashboard 1246→688+498; companies → 5 dosya |
+> | 71 Test Depth | 🟡 | 71.1 ✅ · 71.4 ✅ · 71.6 ✅ · 71.7 ✅ · 71.2/71.3/71.5 ⏸️ (§13) |
+> | ∥ Saha Hattı | ⏸️ | 20 görüşme — kodla yapılamaz |
+
+---
+
 ## 0. Planlama İlkeleri
 
 Bu plandaki sıralama üç kurala göre kurulmuştur:
@@ -309,3 +326,16 @@ Plan tamamlandığında şunlar doğru olmalı:
 ---
 
 *Hazırlayan: Zed agent · 2026-09-13 · Kaynak: `glm_analyse.md`*
+
+---
+
+## 13. Kalan İşler (altyapı/kullanıcı aksiyonu gerektirir)
+
+| # | İş | Neden bekliyor | Yapılacak |
+|---|---|---|---|
+| 71.2 | Migration'ları SIFIRDAN doğrulama | Boş bir veritabanı gerekir; üretimde çalıştırılamaz | Yeni bir Neon branch aç → `DATABASE_URL=<branch> bash -c 'for f in migrations/*.sql; do psql "$DATABASE_URL" -f "$f"; done'`. Alternatif: branch'i CI'da bos açıp tüm migration'ları uygulayan bir job. |
+| 71.3 | Auth e2e'nin GERÇEKTEN koşması (3 skip kapanır) | Clerk **test/dev** instance + Fakes gerekir (gizli anahtar) | README'deki 4 adım (Clerk Fakes + webhook + `tools/seed-e2e.mjs` + `npm run test:e2e`). |
+| 71.5 | Custom domain uçtan uca provası | Gerçek bir domain + DNS erişimi gerekir | `test.feedl.app` KULLANILAMAZ; başka bir domain al → `_feedl.<domain>` TXT → Vercel'e ekle → apex için A kaydı. |
+| ∥ | 20 müşteri görüşmesi (M1) | Saha işi | `docs/FEEDL-ROADMAP.md` M1 çıkış kriterleri. |
+| — | Onboarding örnek veri akışının **interaktif** doğrulaması | Tarayıcı gerektirir (ajan tıklayamaz) | Yeni hesapla `/onboarding` → "Örnek verilerle göster" işaretli → pane + gelir skoru dolu mu? Sonra "Veri ve gizlilik"ten kaldır. |
+| — | Workspace silme akışının canlı provası | Tarayıcı gerektirir | `/dashboard/workspaces` → Geç → "Veri ve gizlilik" → sil (`deneme` silinebilir). |
