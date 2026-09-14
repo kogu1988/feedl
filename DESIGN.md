@@ -473,5 +473,18 @@ veya EmptyState; **hata:** `Notice tone=error`; **boş:** `EmptyState`;
   ikonlar `aria-hidden`.
 - **Klavye:** native `select`/`button`/`Link`; dialogu `Escape`/overlay;
   disclosure `aria-expanded` + bölge.
+- **Atlama linki:** layout'ta “İçeriğe atla” linki (`href="#icerik"`); normalde
+  `sr-only`, yalnız odaklanınca görünür (WCAG 2.4.1 Bypass Blocks) — sticky üst
+  barın nav'ı tab'lanmadan geçilir.
+- **Bölüm / landmark (2026-09-14 kararı):** içerik navigasyonu **başlıklarla**
+  yapılır (`h1→h2→h3`); `<section>`'lar varsayılan olarak **adsızdır** (adsız
+  section landmark DEĞİLDİR). `region` landmark'ı yalnızca **birkaç (≤~5) gerçek
+  ana alanı** olan sayfalarda adlandırılır (`aria-labelledby` → ör.
+  `/alternative`, `/contact`, `/demo`). Uzun dokümanlarda (rehberler, yasal
+  maddeler) bölümleri adlandırma: başlık listesiyle örtüşen region listesi
+  landmark menüsünü şişirir.
+- **Kod blokları:** `<pre>` tek başına değil, `<pre><code>` olarak yazılır.
+- **İletişim bilgisi:** `<address>` ile işaretlenir (`/contact`);
+  `font-style` gerekiyorsa `not-italic`.
 - **Hareket azaltma:** `prefers-reduced-motion` globals.css bloğu tüm
   dekoratif süreleri sıfırlar (§8).
