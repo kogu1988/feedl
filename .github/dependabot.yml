@@ -38,11 +38,23 @@ updates:
       - dependency-name: "eslint-config-next"
         update-types: ["version-update:semver-major"]
       - dependency-name: "next"
-        update-types: ["version-update:semver-major"]
+        # 15.5 hattı kilitli: minor da hattın dışına çıkarır, yalnız patch açık.
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
       # vite 8 rolldown'a geçti; platforma özel native binding npm'in bilinen
       # optional-dependency hatasıyla (npm/cli#4828) Windows'ta KURULMAZ ve
       # yerel `vitest` "Cannot find native binding" ile hiç başlamaz. CI (Linux)
       # yeşil kalıyordu, yani yeşil CI bu kırılmayı GİZLEDİ (2026-09-13'te
       # yaşandı ve vite 6.4.3'e geri dönüldü). Vite major'ı açık kalmasın.
       - dependency-name: "vite"
+        update-types: ["version-update:semver-major"]
+      # 2026-09-14 triyajı — kapatılan Dependabot PR'ları geri açılmasın.
+      # svix 2.4.0 Node >= 22 ister; CI ve üretim Node 20'de çalışır. Node
+      # 20 -> 22 yükseltmesi yapılana kadar minor/major kapalı (patch açık).
+      - dependency-name: "svix"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      # typescript major'ı (5 -> 7) kırıcı ve CI'da kırmızı: planlı yükseltme ister.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      # vitest major'ı (4 -> 5) runner/config yüzeyini değiştirir ve CI kırmızı.
+      - dependency-name: "vitest"
         update-types: ["version-update:semver-major"]
