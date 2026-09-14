@@ -26,26 +26,37 @@ export default function ContactPage() {
         sürede dönüş yaparız.
       </p>
 
-      <div className="mt-10 rounded-xl border bg-card p-6 shadow-sm sm:p-8">
-        <h2 className="text-lg font-semibold">Doğrudan e-posta</h2>
+      <section
+        aria-labelledby="iletisim-baslik"
+        className="mt-10 rounded-xl border bg-card p-6 shadow-sm sm:p-8"
+      >
+        <h2 id="iletisim-baslik" className="text-lg font-semibold">
+          Doğrudan e-posta
+        </h2>
         <p className="mt-2 text-sm text-muted-foreground">
           Bize en hızlı şekilde e-posta ile ulaşabilirsin. Cevap oranımız
           yüksektir — genellikle 1 iş günü içinde yanıtlarız.
         </p>
-        <a
-          href="mailto:hi@feedl.app"
-          className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-        >
-          <span aria-hidden="true">✉️</span>
-          <span>hi@feedl.app</span>
-        </a>
+        {/* `<address>` iletişim bilgisinin semantik karşılığıdır (modern
+            standart). Footer'daki “İletişim” linki bu bloğa çapalar. */}
+        <address id="iletisim" className="mt-4 not-italic">
+          <a
+            href="mailto:hi@feedl.app"
+            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
+            <span aria-hidden="true">✉️</span>
+            <span>hi@feedl.app</span>
+          </a>
+        </address>
         <p className="mt-3 text-xs text-muted-foreground">
           E-posta istemcin otomatik açılır; konu alanını kısaca doldurun.
         </p>
-      </div>
+      </section>
 
-      <div className="mt-10">
-        <h2 className="text-lg font-semibold">Neler için yazabilirsin?</h2>
+      <section aria-labelledby="iletisim-neler-baslik" className="mt-10">
+        <h2 id="iletisim-neler-baslik" className="text-lg font-semibold">
+          Neler için yazabilirsin?
+        </h2>
         <ul className="mt-4 max-w-prose space-y-3 text-sm text-muted-foreground">
           <li className="flex gap-2">
             <span aria-hidden="true">•</span>
@@ -64,7 +75,7 @@ export default function ContactPage() {
             <span><span className="font-medium text-foreground">Hukuk:</span> gizlilik veya veri talepleri — <a href="/privacy" className="underline underline-offset-4 hover:text-primary">Gizlilik Politikası</a>.</span>
           </li>
         </ul>
-      </div>
+      </section>
     </main>
   );
 }

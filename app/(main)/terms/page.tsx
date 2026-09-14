@@ -34,8 +34,10 @@ export default function TermsPage() {
           </p>
         </section>
 
-        <section>
-          <h2 className="text-lg font-semibold">1. Hizmet</h2>
+        <section aria-labelledby="sartlar-1-baslik">
+          <h2 id="sartlar-1-baslik" className="text-lg font-semibold">
+            1. Hizmet
+          </h2>
           <p className="mt-2 text-muted-foreground">
             Feedl; müşteri geri bildirimlerinin toplanması, yönetilmesi, analiz edilmesi,
             önceliklendirilmesi ve duyurulması için kullanılan bir SaaS platformudur. Hizmet
@@ -48,8 +50,10 @@ export default function TermsPage() {
           </p>
         </section>
 
-        <section>
-          <h2 className="text-lg font-semibold">2. Hesap ve Uygunluk</h2>
+        <section aria-labelledby="sartlar-2-baslik">
+          <h2 id="sartlar-2-baslik" className="text-lg font-semibold">
+            2. Hesap ve Uygunluk
+          </h2>
           <p className="mt-2 text-muted-foreground">
             Hesap oluştururken verdiğiniz bilgilerin doğru ve güncel olmasını sağlamalısınız.
             Hesabınızın güvenliğinden ve hesabınız üzerinden gerçekleştirilen faaliyetlerden
@@ -59,8 +63,10 @@ export default function TermsPage() {
           </p>
         </section>
 
-        <section>
-          <h2 className="text-lg font-semibold">3. Çalışma Alanları</h2>
+        <section aria-labelledby="sartlar-3-baslik">
+          <h2 id="sartlar-3-baslik" className="text-lg font-semibold">
+            3. Çalışma Alanları
+          </h2>
           <p className="mt-2 text-muted-foreground">
             Feedl&apos;de bir çalışma alanı (“Workspace”) oluşturabilirsiniz. Workspace
             yöneticileri; kullanıcı davet edebilir, roller ve yetkiler atayabilir, içerikleri
@@ -72,8 +78,10 @@ export default function TermsPage() {
           </p>
         </section>
 
-        <section>
-          <h2 className="text-lg font-semibold">4. Abonelikler ve Ödemeler</h2>
+        <section aria-labelledby="sartlar-4-baslik">
+          <h2 id="sartlar-4-baslik" className="text-lg font-semibold">
+            4. Abonelikler ve Ödemeler
+          </h2>
           <p className="mt-2 text-muted-foreground">
             Feedl ücretsiz ve ücretli planlar sunabilir. Ücretli planlarda fiyat, faturalandırma
             sıklığı, plan kapsamı ve varsa deneme süresi satın alma sırasında açıkça gösterilir.
@@ -91,8 +99,10 @@ export default function TermsPage() {
           </p>
         </section>
 
-        <section>
-          <h2 className="text-lg font-semibold">5. Abonelik İptali</h2>
+        <section aria-labelledby="sartlar-5-baslik">
+          <h2 id="sartlar-5-baslik" className="text-lg font-semibold">
+            5. Abonelik İptali
+          </h2>
           <p className="mt-2 text-muted-foreground">
             Aboneliğinizi hesabınız üzerinden veya Paddle&apos;ın sağladığı abonelik yönetim
             araçları üzerinden iptal edebilirsiniz. İptal, aksi belirtilmedikçe mevcut
@@ -102,8 +112,10 @@ export default function TermsPage() {
           </p>
         </section>
 
-        <section>
-          <h2 className="text-lg font-semibold">6. Deneme ve Ücretsiz Planlar</h2>
+        <section aria-labelledby="sartlar-6-baslik">
+          <h2 id="sartlar-6-baslik" className="text-lg font-semibold">
+            6. Deneme ve Ücretsiz Planlar
+          </h2>
           <p className="mt-2 text-muted-foreground">
             Feedl ücretsiz deneme veya ücretsiz plan sunabilir. Deneme süresi ve kapsamı satın
             alma sırasında açıkça belirtilir. Deneme süresinin ücretli aboneliğe dönüşmesi
@@ -113,8 +125,10 @@ export default function TermsPage() {
           </p>
         </section>
 
-        <section>
-          <h2 className="text-lg font-semibold">7. Kabul Edilebilir Kullanım</h2>
+        <section aria-labelledby="sartlar-7-baslik">
+          <h2 id="sartlar-7-baslik" className="text-lg font-semibold">
+            7. Kabul Edilebilir Kullanım
+          </h2>
           <p className="mt-2 text-muted-foreground">
             Hizmeti kullanırken yürürlükteki yasalara uymalı, başkalarının haklarını ihlal
             etmemeli, yetkisiz erişim sağlamaya çalışmamalı, hizmetin güvenliğini veya
@@ -128,8 +142,10 @@ export default function TermsPage() {
           </p>
         </section>
 
-        <section>
-          <h2 className="text-lg font-semibold">8. Kullanıcı İçeriği</h2>
+        <section aria-labelledby="sartlar-8-baslik">
+          <h2 id="sartlar-8-baslik" className="text-lg font-semibold">
+            8. Kullanıcı İçeriği
+          </h2>
           <p className="mt-2 text-muted-foreground">
             Hizmete gönderdiğiniz içeriklerin (“User Content”) mülkiyeti size veya ilgili
             Workspace sahibine ait olmaya devam eder. Feedl&apos;e, Hizmeti sunmak, işletmek,
@@ -143,8 +159,10 @@ export default function TermsPage() {
           </p>
         </section>
 
-        <section>
-          <h2 className="text-lg font-semibold">9. Public İçerik</h2>
+        <section aria-labelledby="sartlar-9-baslik">
+          <h2 id="sartlar-9-baslik" className="text-lg font-semibold">
+            9. Public İçerik
+          </h2>
           <p className="mt-2 text-muted-foreground">
             Bir Workspace sahibi veya yetkili kullanıcısı bir içeriği public olarak yayınlarsa,
             bu içerik internet üzerinden erişilebilir hale gelebilir. Public içeriklerin
@@ -155,8 +173,10 @@ export default function TermsPage() {
           </p>
         </section>
 
-        <section>
-          <h2 className="text-lg font-semibold">10. AI Özellikleri</h2>
+        <section aria-labelledby="sartlar-10-baslik">
+          <h2 id="sartlar-10-baslik" className="text-lg font-semibold">
+            10. AI Özellikleri
+          </h2>
           <p className="mt-2 text-muted-foreground">
             Feedl bazı özelliklerinde üçüncü taraf yapay zeka servisleri kullanır. AI çıktıları
             otomatik olarak oluşturulur ve yanlış, eksik olabilir; bağlamı yanlış yorumlayabilir;
@@ -168,8 +188,10 @@ export default function TermsPage() {
           </p>
         </section>
 
-        <section>
-          <h2 className="text-lg font-semibold">11. Üçüncü Taraf Hizmetleri ve İçerikleri</h2>
+        <section aria-labelledby="sartlar-11-baslik">
+          <h2 id="sartlar-11-baslik" className="text-lg font-semibold">
+            11. Üçüncü Taraf Hizmetleri ve İçerikleri
+          </h2>
           <p className="mt-2 text-muted-foreground">
             Feedl üçüncü taraf hizmetlerle entegre olabilir. Bu hizmetlerin kullanılabilmesi için
             ilgili üçüncü tarafın hesabına, API anahtarına veya yetkilendirmesine ihtiyaç
@@ -179,8 +201,10 @@ export default function TermsPage() {
           </p>
         </section>
 
-        <section>
-          <h2 className="text-lg font-semibold">12. Fikri Mülkiyet</h2>
+        <section aria-labelledby="sartlar-12-baslik">
+          <h2 id="sartlar-12-baslik" className="text-lg font-semibold">
+            12. Fikri Mülkiyet
+          </h2>
           <p className="mt-2 text-muted-foreground">
             Feedl ve Hizmet ile ilgili yazılım, tasarım, marka, logo, metin, arayüz, veri
             yapıları, teknik altyapı ve diğer içerikler Feedl&apos;e veya lisans verenlerine
@@ -191,8 +215,10 @@ export default function TermsPage() {
           </p>
         </section>
 
-        <section>
-          <h2 className="text-lg font-semibold">13. Geri Bildirim</h2>
+        <section aria-labelledby="sartlar-13-baslik">
+          <h2 id="sartlar-13-baslik" className="text-lg font-semibold">
+            13. Geri Bildirim
+          </h2>
           <p className="mt-2 text-muted-foreground">
             Feedl&apos;e gönderdiğiniz ürün önerileri, hata bildirimleri veya diğer geri
             bildirimleri Hizmeti geliştirmek amacıyla kullanabiliriz. Bize gönderdiğiniz geri
@@ -202,8 +228,10 @@ export default function TermsPage() {
           </p>
         </section>
 
-        <section>
-          <h2 className="text-lg font-semibold">14. Hizmetin Kullanılabilirliği</h2>
+        <section aria-labelledby="sartlar-14-baslik">
+          <h2 id="sartlar-14-baslik" className="text-lg font-semibold">
+            14. Hizmetin Kullanılabilirliği
+          </h2>
           <p className="mt-2 text-muted-foreground">
             Feedl, Hizmeti makul şekilde erişilebilir tutmaya çalışır ancak Hizmetin kesintisiz,
             hatasız, tamamen güvenli veya her cihaz/tarayıcıyla uyumlu olacağını garanti etmez.
@@ -212,8 +240,10 @@ export default function TermsPage() {
           </p>
         </section>
 
-        <section>
-          <h2 className="text-lg font-semibold">15. Hizmette Değişiklikler</h2>
+        <section aria-labelledby="sartlar-15-baslik">
+          <h2 id="sartlar-15-baslik" className="text-lg font-semibold">
+            15. Hizmette Değişiklikler
+          </h2>
           <p className="mt-2 text-muted-foreground">
             Feedl, Hizmetin özelliklerini, teknolojisini, limitlerini veya arayüzünü
             değiştirebilir. Ücretli bir planın temel özelliklerinde önemli ve olumsuz bir
@@ -222,8 +252,10 @@ export default function TermsPage() {
           </p>
         </section>
 
-        <section>
-          <h2 className="text-lg font-semibold">16. Askıya Alma ve Fesih</h2>
+        <section aria-labelledby="sartlar-16-baslik">
+          <h2 id="sartlar-16-baslik" className="text-lg font-semibold">
+            16. Askıya Alma ve Fesih
+          </h2>
           <p className="mt-2 text-muted-foreground">
             Feedl; Koşulların ihlali, yasa dışı faaliyet, dolandırıcılık veya ödeme kötüye
             kullanımı, güvenlik riski, diğer kullanıcıların güvenliğine yönelik tehdit, Hizmetin
@@ -234,8 +266,10 @@ export default function TermsPage() {
           </p>
         </section>
 
-        <section>
-          <h2 className="text-lg font-semibold">17. Garanti Reddi</h2>
+        <section aria-labelledby="sartlar-17-baslik">
+          <h2 id="sartlar-17-baslik" className="text-lg font-semibold">
+            17. Garanti Reddi
+          </h2>
           <p className="mt-2 text-muted-foreground">
             Yürürlükteki hukukun izin verdiği azami ölçüde Hizmet, “olduğu gibi” ve “mevcut
             olduğu şekilde” sağlanır. Feedl; belirli bir ticari sonuca, gelir artışına, müşteri
@@ -245,8 +279,10 @@ export default function TermsPage() {
           </p>
         </section>
 
-        <section>
-          <h2 className="text-lg font-semibold">18. Sorumluluğun Sınırlandırılması</h2>
+        <section aria-labelledby="sartlar-18-baslik">
+          <h2 id="sartlar-18-baslik" className="text-lg font-semibold">
+            18. Sorumluluğun Sınırlandırılması
+          </h2>
           <p className="mt-2 text-muted-foreground">
             Yürürlükteki hukukun izin verdiği azami ölçüde Feedl veya bağlı kuruluşları,
             yöneticileri, çalışanları veya hizmet sağlayıcıları; dolaylı zararlar, kar kaybı,
@@ -260,8 +296,10 @@ export default function TermsPage() {
           </p>
         </section>
 
-        <section>
-          <h2 className="text-lg font-semibold">19. Tazmin</h2>
+        <section aria-labelledby="sartlar-19-baslik">
+          <h2 id="sartlar-19-baslik" className="text-lg font-semibold">
+            19. Tazmin
+          </h2>
           <p className="mt-2 text-muted-foreground">
             Hizmeti Koşullara aykırı şekilde kullanmanız, yasa dışı faaliyetleriniz, üçüncü
             kişilerin fikri mülkiyet/gizlilik/diğer haklarını ihlal eden içerikleriniz veya
@@ -271,16 +309,20 @@ export default function TermsPage() {
           </p>
         </section>
 
-        <section>
-          <h2 className="text-lg font-semibold">20. Gizlilik</h2>
+        <section aria-labelledby="sartlar-20-baslik">
+          <h2 id="sartlar-20-baslik" className="text-lg font-semibold">
+            20. Gizlilik
+          </h2>
           <p className="mt-2 text-muted-foreground">
             Kişisel verilerin işlenmesi, Privacy Policy kapsamında gerçekleştirilir. Privacy
             Policy bu Koşulların ayrılmaz bir parçası olarak değerlendirilir.
           </p>
         </section>
 
-        <section>
-          <h2 className="text-lg font-semibold">21. Paddle</h2>
+        <section aria-labelledby="sartlar-21-baslik">
+          <h2 id="sartlar-21-baslik" className="text-lg font-semibold">
+            21. Paddle
+          </h2>
           <p className="mt-2 text-muted-foreground">
             Paddle, Feedl&apos;in yazılım ve dijital hizmetlerinin satışında Merchant of Record
             ve yetkili satıcı olarak hareket eder. Ödeme işlemleri Paddle&apos;ın ilgili
@@ -290,8 +332,10 @@ export default function TermsPage() {
           </p>
         </section>
 
-        <section>
-          <h2 className="text-lg font-semibold">22. Koşullarda Değişiklik</h2>
+        <section aria-labelledby="sartlar-22-baslik">
+          <h2 id="sartlar-22-baslik" className="text-lg font-semibold">
+            22. Koşullarda Değişiklik
+          </h2>
           <p className="mt-2 text-muted-foreground">
             Bu Koşulları zaman zaman güncelleyebiliriz. Güncellenmiş Koşullar bu sayfada
             yayınlandığı tarihten itibaren geçerli olur. Önemli değişikliklerde uygulanabilir
@@ -300,8 +344,10 @@ export default function TermsPage() {
           </p>
         </section>
 
-        <section>
-          <h2 className="text-lg font-semibold">23. Uygulanacak Hukuk</h2>
+        <section aria-labelledby="sartlar-23-baslik">
+          <h2 id="sartlar-23-baslik" className="text-lg font-semibold">
+            23. Uygulanacak Hukuk
+          </h2>
           <p className="mt-2 text-muted-foreground">
             Bu Koşullar {LEGAL.jurisdiction} hukukuna tabidir. Ancak tüketici olarak
             bulunduğunuz ülkedeki emredici tüketici koruma hükümleri bu madde tarafından ortadan
@@ -310,8 +356,10 @@ export default function TermsPage() {
           </p>
         </section>
 
-        <section>
-          <h2 className="text-lg font-semibold">24-25. Bölünebilirlik ve Sözleşmenin Tamamı</h2>
+        <section aria-labelledby="sartlar-24-baslik">
+          <h2 id="sartlar-24-baslik" className="text-lg font-semibold">
+            24-25. Bölünebilirlik ve Sözleşmenin Tamamı
+          </h2>
           <p className="mt-2 text-muted-foreground">
             Bu Koşulların herhangi bir hükmünün geçersiz veya uygulanamaz bulunması, diğer
             hükümlerin geçerliliğini etkilemez. Bu Koşullar, Privacy Policy ve uygulanabilir
@@ -320,8 +368,10 @@ export default function TermsPage() {
           </p>
         </section>
 
-        <section>
-          <h2 className="text-lg font-semibold">26. İletişim</h2>
+        <section aria-labelledby="sartlar-26-baslik">
+          <h2 id="sartlar-26-baslik" className="text-lg font-semibold">
+            26. İletişim
+          </h2>
           <p className="mt-2 text-muted-foreground">
             <strong>{LEGAL.companyName}</strong>
             <br />

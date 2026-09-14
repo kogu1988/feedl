@@ -149,8 +149,16 @@ export default function AlternativePage() {
       </section>
 
       {/* Özellik listesi */}
-      <section className="mt-20 sm:mt-24">
-        <h2 className="text-2xl font-bold tracking-tight">Feedl&apos;de ne var</h2>
+      <section
+        aria-labelledby="alternative-ozellikler-baslik"
+        className="mt-20 sm:mt-24"
+      >
+        <h2
+          id="alternative-ozellikler-baslik"
+          className="text-2xl font-bold tracking-tight"
+        >
+          Feedl&apos;de ne var
+        </h2>
         <p className="mt-2 max-w-2xl text-muted-foreground">
           İhtiyacın olan çekirdek akışın tamamı, fazlasıyla.
         </p>
@@ -162,8 +170,10 @@ export default function AlternativePage() {
       </section>
 
       {/* Neden farklı */}
-      <section className="mt-20 sm:mt-24">
-        <h2 className="text-2xl font-bold tracking-tight">Neden feedl?</h2>
+      <section aria-labelledby="alternative-neden-baslik" className="mt-20 sm:mt-24">
+        <h2 id="alternative-neden-baslik" className="text-2xl font-bold tracking-tight">
+          Neden feedl?
+        </h2>
         <div className="mt-6 grid gap-6 md:grid-cols-2">
           {DIFFERENCES.map((d) => (
             <div key={d.title} className="rounded-lg border p-5">
@@ -175,8 +185,10 @@ export default function AlternativePage() {
       </section>
 
       {/* Fiyatlandırma özeti — plan dili tek kaynak: PLAN_POSITIONING (lib/plan-copy.ts) */}
-      <section className="mt-20 sm:mt-24">
-        <h2 className="text-2xl font-bold tracking-tight">Basit fiyatlandırma</h2>
+      <section aria-labelledby="alternative-fiyat-baslik" className="mt-20 sm:mt-24">
+        <h2 id="alternative-fiyat-baslik" className="text-2xl font-bold tracking-tight">
+          Basit fiyatlandırma
+        </h2>
         <div className="mt-6 grid gap-6 md:grid-cols-2">
           <div className="flex h-full flex-col rounded-2xl border bg-card p-6">
             <p className="text-lg font-semibold">Free</p>
@@ -202,8 +214,10 @@ export default function AlternativePage() {
       </section>
 
       {/* SSS (FAQPage schema'nın kaynağı) */}
-      <section className="mt-20 sm:mt-24">
-        <h2 className="text-2xl font-bold tracking-tight">Sık sorulanlar</h2>
+      <section aria-labelledby="alternative-sss-baslik" className="mt-20 sm:mt-24">
+        <h2 id="alternative-sss-baslik" className="text-2xl font-bold tracking-tight">
+          Sık sorulanlar
+        </h2>
         <div className="mt-6 max-w-3xl space-y-4">
           {FAQ.map((f) => (
             <div key={f.q} className="rounded-lg border p-5">
@@ -215,8 +229,13 @@ export default function AlternativePage() {
       </section>
 
       {/* Kapanış CTA */}
-      <section className="mt-20 rounded-2xl border bg-brand-soft p-8 text-center sm:mt-24">
-        <h2 className="text-2xl font-bold tracking-tight">Bugün ücretsiz başla</h2>
+      <section
+        aria-labelledby="alternative-kapanis-baslik"
+        className="mt-20 rounded-2xl border bg-brand-soft p-8 text-center sm:mt-24"
+      >
+        <h2 id="alternative-kapanis-baslik" className="text-2xl font-bold tracking-tight">
+          Bugün ücretsiz başla
+        </h2>
         <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
           Müşteri isteklerini topla, AI ile analiz et, gelir skoruyla önceliklendir.
         </p>

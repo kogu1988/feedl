@@ -45,7 +45,8 @@ const FOOTER_GROUPS: Array<{
       // Sprint 63x — Paddle canlı onayı: refund politikası linki zorunlu.
       { href: "/refund", label: "İade Politikası" },
       // En sonda: iletişim diğer linklerden sonra gelir (kullanıcı isteği).
-      { href: "/contact", label: "İletişim" },
+      // İletişim sayfasındaki `<address id="iletisim">` bloğuna çapalar.
+      { href: "/contact#iletisim", label: "İletişim" },
     ],
   },
 ];

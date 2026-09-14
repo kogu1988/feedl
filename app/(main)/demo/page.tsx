@@ -102,8 +102,10 @@ export default function DemoPage() {
       </section>
 
       {/* Örnek fikir kartı — gerçek portal yapısı (tıklanamaz) */}
-      <section className="mt-16">
-        <h2 className="text-xl font-semibold">Örnek bir fikir kartı</h2>
+      <section aria-labelledby="demo-ornek-kart-baslik" className="mt-16">
+        <h2 id="demo-ornek-kart-baslik" className="text-xl font-semibold">
+          Örnek bir fikir kartı
+        </h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Portalda her fikir bu şekilde görünür; oy, durum, duygu ve etiketler
           otomatik dolar.
