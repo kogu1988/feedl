@@ -23,6 +23,13 @@ const PUBLIC_ROUTES = [
   // 2026-09-12: marka adı taşıyan rota kaldırılıp içerik araç-bağımsız hâle
   // getirildi (`/alternative`); SEO'ya açık yüzey olduğu için taramaya alındı.
   "/alternative",
+  // 2026-09-14: yasal + iletişim sayfaları da taranıyor. Bunlar anonim
+  // ziyaretçiye açık, indekslenen yüzeyler — regresyon (ör. kontrast/link
+  // adı) sessizce yayına çıkmasın.
+  "/privacy",
+  "/terms",
+  "/refund",
+  "/contact",
 ];
 
 // Kritik (AA) kural seti — salt bilgi/öneri olanları hariç tut.

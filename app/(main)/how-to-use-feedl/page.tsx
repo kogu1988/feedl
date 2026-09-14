@@ -427,12 +427,8 @@ export default function HowToUseFeedlPage() {
       </div>
 
       {/* Kurulum akışı — doğrusal gerçek sıra → numbered <ol>. */}
-      <section
-        id="akis"
-        aria-labelledby="akis-baslik"
-        className="mx-auto mt-12 max-w-3xl scroll-mt-20"
-      >
-        <h2 id="akis-baslik" className="text-2xl font-bold tracking-tight">
+      <section id="akis" className="mx-auto mt-12 max-w-3xl scroll-mt-20">
+        <h2 className="text-2xl font-bold tracking-tight">
           Kurulum akışı — altı adımda
         </h2>
         <p className="mt-3 text-muted-foreground">
@@ -482,15 +478,9 @@ export default function HowToUseFeedlPage() {
         <section
           key={section.id}
           id={section.id}
-          aria-labelledby={`${section.id}-baslik`}
           className="mx-auto mt-20 max-w-3xl scroll-mt-20"
         >
-          <h2
-            id={`${section.id}-baslik`}
-            className="text-2xl font-bold tracking-tight"
-          >
-            {section.title}
-          </h2>
+          <h2 className="text-2xl font-bold tracking-tight">{section.title}</h2>
           <p className="mt-3 text-muted-foreground">{section.summary}</p>
           <ul className="mt-6 space-y-4">
             {section.steps.map((step) => (
@@ -511,16 +501,8 @@ export default function HowToUseFeedlPage() {
       ))}
 
       {/* Widget snippet — gerçek kullanım örneği */}
-      <section
-        aria-labelledby="widget-snippet-baslik"
-        className="mx-auto mt-20 max-w-3xl scroll-mt-20"
-      >
-        <h2
-          id="widget-snippet-baslik"
-          className="text-2xl font-bold tracking-tight"
-        >
-          Widget snippet örneği
-        </h2>
+      <section className="mx-auto mt-20 max-w-3xl scroll-mt-20">
+        <h2 className="text-2xl font-bold tracking-tight">Widget snippet örneği</h2>
         <p className="mt-3 text-muted-foreground">
           Widget ekranı bu etiketi senin ayarlarına göre doldurur. Aşağıdaki,
           seçeneklerin ne anlama geldiğini gösteren bir örnektir.
@@ -537,12 +519,8 @@ export default function HowToUseFeedlPage() {
       </section>
 
       {/* Plan karşılaştırması */}
-      <section
-        id="planlar"
-        aria-labelledby="planlar-baslik"
-        className="mx-auto mt-20 max-w-3xl scroll-mt-20"
-      >
-        <h2 id="planlar-baslik" className="text-2xl font-bold tracking-tight">
+      <section id="planlar" className="mx-auto mt-20 max-w-3xl scroll-mt-20">
+        <h2 className="text-2xl font-bold tracking-tight">
           Free / Pro karşılaştırması
         </h2>
         <p className="mt-3 text-muted-foreground">
@@ -585,14 +563,8 @@ export default function HowToUseFeedlPage() {
       </section>
 
       {/* SSS */}
-      <section
-        id="sss"
-        aria-labelledby="sss-baslik"
-        className="mx-auto mt-20 max-w-3xl scroll-mt-20"
-      >
-        <h2 id="sss-baslik" className="text-2xl font-bold tracking-tight">
-          Sık sorulanlar
-        </h2>
+      <section id="sss" className="mx-auto mt-20 max-w-3xl scroll-mt-20">
+        <h2 className="text-2xl font-bold tracking-tight">Sık sorulanlar</h2>
         <dl className="mt-6 space-y-4">
           {FAQ.map((item) => (
             <div key={item.q} className="rounded-2xl border bg-card p-5">
@@ -604,11 +576,8 @@ export default function HowToUseFeedlPage() {
       </section>
 
       {/* Kapanış CTA */}
-      <section
-        aria-labelledby="kapanis-baslik"
-        className="mx-auto mt-16 max-w-3xl rounded-2xl border bg-brand-soft p-8 text-center"
-      >
-        <h2 id="kapanis-baslik" className="text-2xl font-bold tracking-tight">
+      <section className="mx-auto mt-16 max-w-3xl rounded-2xl border bg-brand-soft p-8 text-center">
+        <h2 className="text-2xl font-bold tracking-tight">
           İlk fikri birkaç dakikada topla
         </h2>
         <p className="mx-auto mt-3 max-w-xl text-muted-foreground">

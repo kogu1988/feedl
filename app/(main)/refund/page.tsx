@@ -29,10 +29,8 @@ export default function RefundPage() {
           </p>
         </section>
 
-        <section aria-labelledby="iade-1-baslik">
-          <h2 id="iade-1-baslik" className="text-lg font-semibold">
-            1. Paddle Merchant of Record
-          </h2>
+        <section>
+          <h2 className="text-lg font-semibold">1. Paddle Merchant of Record</h2>
           <p className="mt-2 text-muted-foreground">
             Feedl&apos;in ücretli planlarında ödeme işlemleri Paddle üzerinden gerçekleştirilir.
             Paddle.com, ilgili işlemlerde Merchant of Record ve yetkili satıcıdır. Bu nedenle
@@ -42,10 +40,8 @@ export default function RefundPage() {
           </p>
         </section>
 
-        <section aria-labelledby="iade-2-baslik">
-          <h2 id="iade-2-baslik" className="text-lg font-semibold">
-            2. Yasal Haklar Saklıdır
-          </h2>
+        <section>
+          <h2 className="text-lg font-semibold">2. Yasal Haklar Saklıdır</h2>
           <p className="mt-2 text-muted-foreground">
             Bu İade Politikası hiçbir şekilde tüketicilerin yürürlükteki zorunlu yasal haklarını
             ortadan kaldırmaz veya sınırlandırmaz. Tüketici koruma mevzuatının zorunlu iade veya
@@ -55,10 +51,8 @@ export default function RefundPage() {
           </p>
         </section>
 
-        <section aria-labelledby="iade-3-baslik">
-          <h2 id="iade-3-baslik" className="text-lg font-semibold">
-            3. Genel İade Politikası
-          </h2>
+        <section>
+          <h2 className="text-lg font-semibold">3. Genel İade Politikası</h2>
           <p className="mt-2 text-muted-foreground">
             Yürürlükteki hukuk tarafından zorunlu tutulmadıkça veya Feedl ya da Paddle tarafından
             ayrıca kabul edilmedikçe, ücretli abonelik ödemeleri otomatik olarak iade edilmez.
@@ -68,10 +62,8 @@ export default function RefundPage() {
           </p>
         </section>
 
-        <section aria-labelledby="iade-4-baslik">
-          <h2 id="iade-4-baslik" className="text-lg font-semibold">
-            4. Abonelik İptali
-          </h2>
+        <section>
+          <h2 className="text-lg font-semibold">4. Abonelik İptali</h2>
           <p className="mt-2 text-muted-foreground">
             Aboneliğinizi istediğiniz zaman iptal edebilirsiniz. İptal, aksi belirtilmedikçe mevcut
             ücretli faturalandırma döneminin sonunda geçerli olur. İptal sonrasında mevcut
@@ -81,10 +73,8 @@ export default function RefundPage() {
           </p>
         </section>
 
-        <section aria-labelledby="iade-5-baslik">
-          <h2 id="iade-5-baslik" className="text-lg font-semibold">
-            5. Yasal Cayma Hakkı
-          </h2>
+        <section>
+          <h2 className="text-lg font-semibold">5. Yasal Cayma Hakkı</h2>
           <p className="mt-2 text-muted-foreground">
             Uygulanabilir tüketici mevzuatı ve Paddle&apos;ın güncel Buyer Terms / Refund Policy
             hükümleri uyarınca cayma hakkınız varsa bu hakkı ilgili yasal süre içinde
@@ -104,10 +94,8 @@ export default function RefundPage() {
           </p>
         </section>
 
-        <section aria-labelledby="iade-6-baslik">
-          <h2 id="iade-6-baslik" className="text-lg font-semibold">
-            6. İade Talebi Nasıl Yapılır?
-          </h2>
+        <section>
+          <h2 className="text-lg font-semibold">6. İade Talebi Nasıl Yapılır?</h2>
           <p className="mt-2 text-muted-foreground">
             İade veya cayma talebi için öncelikle Paddle&apos;ın işlem makbuzunda veya abonelik
             yönetim alanında bulunan destek/iade seçeneklerini kullanmanızı öneririz. Ayrıca Feedl
@@ -120,10 +108,8 @@ export default function RefundPage() {
           </p>
         </section>
 
-        <section aria-labelledby="iade-7-baslik">
-          <h2 id="iade-7-baslik" className="text-lg font-semibold">
-            7. Gönüllü / Takdiri İadeler
-          </h2>
+        <section>
+          <h2 className="text-lg font-semibold">7. Gönüllü / Takdiri İadeler</h2>
           <p className="mt-2 text-muted-foreground">
             Yasal olarak zorunlu olmadığı halde Feedl veya Paddle bir iade talebini
             değerlendirebilir. Böyle bir iade talep özelinde değerlendirilir; gelecekte aynı
@@ -131,10 +117,8 @@ export default function RefundPage() {
           </p>
         </section>
 
-        <section aria-labelledby="iade-8-baslik">
-          <h2 id="iade-8-baslik" className="text-lg font-semibold">
-            8. Hatalı veya Çalışmayan Hizmet
-          </h2>
+        <section>
+          <h2 className="text-lg font-semibold">8. Hatalı veya Çalışmayan Hizmet</h2>
           <p className="mt-2 text-muted-foreground">
             Feedl&apos;in tanımlanan temel işlevlerini makul şekilde yerine getirmediğini
             düşünüyorsanız bizimle iletişime geçin. Sorunu tespit etmeye, makul olduğu ölçüde
@@ -143,10 +127,8 @@ export default function RefundPage() {
           </p>
         </section>
 
-        <section aria-labelledby="iade-9-baslik">
-          <h2 id="iade-9-baslik" className="text-lg font-semibold">
-            9. Kötüye Kullanım ve Dolandırıcılık
-          </h2>
+        <section>
+          <h2 className="text-lg font-semibold">9. Kötüye Kullanım ve Dolandırıcılık</h2>
           <p className="mt-2 text-muted-foreground">
             Sahte veya çalıntı ödeme yöntemi kullanılması, iade sisteminin kötüye kullanılması,
             dolandırıcılık şüphesi, hizmetin sistematik olarak tüketilip ardından iade talep
@@ -156,10 +138,8 @@ export default function RefundPage() {
           </p>
         </section>
 
-        <section aria-labelledby="iade-10-baslik">
-          <h2 id="iade-10-baslik" className="text-lg font-semibold">
-            10. İade Sonrası Erişim
-          </h2>
+        <section>
+          <h2 className="text-lg font-semibold">10. İade Sonrası Erişim</h2>
           <p className="mt-2 text-muted-foreground">
             Bir işlem için iade onaylandığında, ilgili ücretli hizmete erişim sona erebilir veya
             ücretsiz plana düşürülebilir. İade işleminin tamamlanması, mevcut verilerin otomatik
@@ -168,10 +148,8 @@ export default function RefundPage() {
           </p>
         </section>
 
-        <section aria-labelledby="iade-11-baslik">
-          <h2 id="iade-11-baslik" className="text-lg font-semibold">
-            11. İadenin İşlenmesi
-          </h2>
+        <section>
+          <h2 className="text-lg font-semibold">11. İadenin İşlenmesi</h2>
           <p className="mt-2 text-muted-foreground">
             İade Paddle tarafından işleniyorsa, mümkün olduğu ölçüde ödeme sırasında kullanılan aynı
             ödeme yöntemine yapılır. Paddle&apos;ın güncel politikasına göre uygun görülen iadeler,
@@ -181,10 +159,8 @@ export default function RefundPage() {
           </p>
         </section>
 
-        <section aria-labelledby="iade-12-baslik">
-          <h2 id="iade-12-baslik" className="text-lg font-semibold">
-            12. Chargeback ve Ödeme Uyuşmazlıkları
-          </h2>
+        <section>
+          <h2 className="text-lg font-semibold">12. Chargeback ve Ödeme Uyuşmazlıkları</h2>
           <p className="mt-2 text-muted-foreground">
             Bir ödeme hakkında sorun yaşarsanız öncelikle Feedl veya Paddle ile iletişime
             geçmenizi öneririz. Bir chargeback veya ödeme uyuşmazlığı başlatılması halinde, ilgili
@@ -194,10 +170,8 @@ export default function RefundPage() {
           </p>
         </section>
 
-        <section aria-labelledby="iade-13-baslik">
-          <h2 id="iade-13-baslik" className="text-lg font-semibold">
-            13. Vergiler
-          </h2>
+        <section>
+          <h2 className="text-lg font-semibold">13. Vergiler</h2>
           <p className="mt-2 text-muted-foreground">
             Paddle&apos;ın Merchant of Record olarak gerçekleştirdiği işlemlerde uygulanabilir satış
             vergisi, KDV veya benzeri vergiler işlem sırasında hesaplanabilir ve tahsil edilebilir.
@@ -206,10 +180,8 @@ export default function RefundPage() {
           </p>
         </section>
 
-        <section aria-labelledby="iade-14-baslik">
-          <h2 id="iade-14-baslik" className="text-lg font-semibold">
-            14. Politika Değişiklikleri
-          </h2>
+        <section>
+          <h2 className="text-lg font-semibold">14. Politika Değişiklikleri</h2>
           <p className="mt-2 text-muted-foreground">
             Bu İade Politikasını zaman zaman güncelleyebiliriz. Bir işlemin iadesi
             değerlendirilirken, aksi yasal olarak zorunlu olmadıkça işlem tarihindeki uygulanabilir
@@ -218,10 +190,8 @@ export default function RefundPage() {
           </p>
         </section>
 
-        <section aria-labelledby="iade-15-baslik">
-          <h2 id="iade-15-baslik" className="text-lg font-semibold">
-            15. İletişim
-          </h2>
+        <section>
+          <h2 className="text-lg font-semibold">15. İletişim</h2>
           <p className="mt-2 text-muted-foreground">
             İade, iptal veya faturalandırma hakkında sorularınız için:
             <br />

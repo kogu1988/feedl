@@ -409,14 +409,8 @@ export default function HowToCollectFeedbackPage() {
       </div>
 
       {/* Neden zor? — rehberi "neden" üzerine kurar, ürün listesine değil. */}
-      <section
-        id="neden-zor"
-        aria-labelledby="neden-zor-baslik"
-        className="mx-auto mt-12 max-w-3xl rounded-2xl border bg-muted/30 p-6"
-      >
-        <h2 id="neden-zor-baslik" className="text-base font-semibold">
-          Neden zor?
-        </h2>
+      <section className="mx-auto mt-12 max-w-3xl rounded-2xl border bg-muted/30 p-6">
+        <h2 className="text-base font-semibold">Neden zor?</h2>
         <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
           <li className="flex gap-2">
             <span aria-hidden="true">·</span>
@@ -501,11 +495,8 @@ export default function HowToCollectFeedbackPage() {
       </div>
 
       {/* Gerçek sıralı dizi → numbered <ol> (template tell değil, içerik dizi). */}
-      <section id="adimlar" aria-labelledby="adimlar-baslik" className="scroll-mt-20">
-        <h2
-          id="adimlar-baslik"
-          className="mx-auto mt-16 max-w-3xl text-2xl font-bold tracking-tight"
-        >
+      <section id="adimlar" className="scroll-mt-20">
+        <h2 className="mx-auto mt-16 max-w-3xl text-2xl font-bold tracking-tight">
           7 adımda akış
         </h2>
         <ol className="mx-auto mt-8 max-w-3xl space-y-6">
@@ -537,10 +528,8 @@ export default function HowToCollectFeedbackPage() {
       {/* "Neden feedl?" — rehberin kurduğu her problemle eşleşen çözüm.
           Sayfanın ticari işi de bu: sadece "nasıl yapılır" değil,
           "neden bunu bizimle yapmalısın" sorusunu cevaplar. */}
-      <section id="neden-feedl" aria-labelledby="neden-feedl-baslik" className="mx-auto mt-20 max-w-5xl scroll-mt-20">
-        <h2 id="neden-feedl-baslik" className="text-2xl font-bold tracking-tight">
-          Neden feedl?
-        </h2>
+      <section id="neden-feedl" className="mx-auto mt-20 max-w-5xl scroll-mt-20">
+        <h2 className="text-2xl font-bold tracking-tight">Neden feedl?</h2>
         <p className="mt-3 max-w-3xl text-muted-foreground">
           Bu rehberdeki adımların çoğunu elle de yapabilirsin — ama her biri
           başka bir yerde kopuyor. Aşağıda her satır, yukarıda anlattığımız bir
@@ -571,8 +560,8 @@ export default function HowToCollectFeedbackPage() {
       </section>
 
       {/* Karşılaştırma — kategoriler GENEL (marka adı yok); takaslar dürüstçe. */}
-      <section id="karsilastirma" aria-labelledby="karsilastirma-baslik" className="mx-auto mt-20 max-w-5xl scroll-mt-20">
-        <h2 id="karsilastirma-baslik" className="text-2xl font-bold tracking-tight">
+      <section id="karsilastirma" className="mx-auto mt-20 max-w-5xl scroll-mt-20">
+        <h2 className="text-2xl font-bold tracking-tight">
           Elle yapmakla karşılaştırma
         </h2>
         <p className="mt-3 max-w-3xl text-muted-foreground">
@@ -613,8 +602,8 @@ export default function HowToCollectFeedbackPage() {
         </p>
       </section>
       {/* Kanal seçimi */}
-      <section id="kanal-secimi" aria-labelledby="kanal-secimi-baslik" className="mx-auto mt-20 max-w-5xl scroll-mt-20">
-        <h2 id="kanal-secimi-baslik" className="text-2xl font-bold tracking-tight">
+      <section id="kanal-secimi" className="mx-auto mt-20 max-w-5xl scroll-mt-20">
+        <h2 className="text-2xl font-bold tracking-tight">
           Hangi kanaldan toplamalı?
         </h2>
         <p className="mt-3 max-w-3xl text-muted-foreground">
@@ -650,8 +639,8 @@ export default function HowToCollectFeedbackPage() {
       </section>
 
       {/* Soru tasarımı */}
-      <section id="soru-tasarimi" aria-labelledby="soru-tasarimi-baslik" className="mx-auto mt-20 max-w-5xl scroll-mt-20">
-        <h2 id="soru-tasarimi-baslik" className="text-2xl font-bold tracking-tight">
+      <section id="soru-tasarimi" className="mx-auto mt-20 max-w-5xl scroll-mt-20">
+        <h2 className="text-2xl font-bold tracking-tight">
           Ne sormalı, ne sormamalı?
         </h2>
         <p className="mt-3 max-w-3xl text-muted-foreground">
@@ -686,8 +675,8 @@ export default function HowToCollectFeedbackPage() {
       </section>
 
       {/* Toplanacak bağlam */}
-      <section id="baglam" aria-labelledby="baglam-baslik" className="mx-auto mt-20 max-w-5xl scroll-mt-20">
-        <h2 id="baglam-baslik" className="text-2xl font-bold tracking-tight">
+      <section id="baglam" className="mx-auto mt-20 max-w-5xl scroll-mt-20">
+        <h2 className="text-2xl font-bold tracking-tight">
           Hangi bağlamı kaydetmeli?
         </h2>
         <p className="mt-3 max-w-3xl text-muted-foreground">
@@ -706,10 +695,8 @@ export default function HowToCollectFeedbackPage() {
       </section>
 
       {/* Sık yapılan hatalar */}
-      <section id="hatalar" aria-labelledby="hatalar-baslik" className="mx-auto mt-20 max-w-5xl scroll-mt-20">
-        <h2 id="hatalar-baslik" className="text-2xl font-bold tracking-tight">
-          Sık yapılan 5 hata
-        </h2>
+      <section id="hatalar" className="mx-auto mt-20 max-w-5xl scroll-mt-20">
+        <h2 className="text-2xl font-bold tracking-tight">Sık yapılan 5 hata</h2>
         <ul className="mt-6 grid gap-4 md:grid-cols-2">
           {MISTAKES.map((m, i) => (
             <li key={m.title} className="rounded-2xl border bg-card p-5">
@@ -726,10 +713,8 @@ export default function HowToCollectFeedbackPage() {
       </section>
 
       {/* Ölçüm */}
-      <section id="olcum" aria-labelledby="olcum-baslik" className="mx-auto mt-20 max-w-5xl scroll-mt-20">
-        <h2 id="olcum-baslik" className="text-2xl font-bold tracking-tight">
-          Ölçüm metrikleri
-        </h2>
+      <section id="olcum" className="mx-auto mt-20 max-w-5xl scroll-mt-20">
+        <h2 className="text-2xl font-bold tracking-tight">Ölçüm metrikleri</h2>
         <p className="mt-3 max-w-3xl text-muted-foreground">
           Rehberin işe yaradığını tahminle değil sayıyla anlarsın. Bu beş metriği
           aylık olarak izlemek çoğu ekip için yeterlidir.
@@ -760,10 +745,8 @@ export default function HowToCollectFeedbackPage() {
       </section>
 
       {/* Hazır davet metni */}
-      <section id="davet-metni" aria-labelledby="davet-metni-baslik" className="mx-auto mt-20 max-w-3xl scroll-mt-20">
-        <h2 id="davet-metni-baslik" className="text-2xl font-bold tracking-tight">
-          Hazır davet metni
-        </h2>
+      <section id="davet-metni" className="mx-auto mt-20 max-w-3xl scroll-mt-20">
+        <h2 className="text-2xl font-bold tracking-tight">Hazır davet metni</h2>
         <p className="mt-3 text-muted-foreground">
           Aşağıdaki metni kopyalayıp müşterilerine gönderebilirsin;{" "}
           <code className="rounded bg-muted px-1 py-0.5 text-xs">{"{{...}}"}</code>{" "}
@@ -775,10 +758,8 @@ export default function HowToCollectFeedbackPage() {
       </section>
 
       {/* SSS */}
-      <section id="sss" aria-labelledby="sss-baslik" className="mx-auto mt-20 max-w-3xl scroll-mt-20">
-        <h2 id="sss-baslik" className="text-2xl font-bold tracking-tight">
-          Sık sorulanlar
-        </h2>
+      <section id="sss" className="mx-auto mt-20 max-w-3xl scroll-mt-20">
+        <h2 className="text-2xl font-bold tracking-tight">Sık sorulanlar</h2>
         <dl className="mt-6 space-y-4">
           {FAQ.map((item) => (
             <div key={item.q} className="rounded-2xl border bg-card p-5">
@@ -790,14 +771,8 @@ export default function HowToCollectFeedbackPage() {
       </section>
 
       {/* Kapanış CTA */}
-      <section
-        id="kapanis"
-        aria-labelledby="kapanis-baslik"
-        className="mx-auto mt-16 max-w-3xl rounded-2xl border bg-brand-soft p-8 text-center"
-      >
-        <h2 id="kapanis-baslik" className="text-2xl font-bold tracking-tight">
-          İlk fikri birkaç dakikada topla
-        </h2>
+      <section className="mx-auto mt-16 max-w-3xl rounded-2xl border bg-brand-soft p-8 text-center">
+        <h2 className="text-2xl font-bold tracking-tight">İlk fikri birkaç dakikada topla</h2>
         <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
           Kurulum yok, kredi kartı yok. Free planla bugün başla; gelir verisini ve
           ekip araçlarını iş akışına katmak istediğinde Pro&apos;ya geç.

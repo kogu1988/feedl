@@ -38,10 +38,8 @@ export default function PrivacyPage() {
           </p>
         </section>
 
-        <section aria-labelledby="gizlilik-1-baslik">
-          <h2 id="gizlilik-1-baslik" className="text-lg font-semibold">
-            1. Topladığımız Bilgiler
-          </h2>
+        <section>
+          <h2 className="text-lg font-semibold">1. Topladığımız Bilgiler</h2>
           <p className="mt-2 text-muted-foreground">Hizmeti kullandığınızda aşağıdaki kategorilerde bilgi toplayabiliriz.</p>
           <h3 className="mt-2 font-medium">1.1. Hesap ve kimlik bilgileri</h3>
           <p className="mt-1 text-muted-foreground">
@@ -88,10 +86,8 @@ export default function PrivacyPage() {
           </p>
         </section>
 
-        <section aria-labelledby="gizlilik-2-baslik">
-          <h2 id="gizlilik-2-baslik" className="text-lg font-semibold">
-            2. Bilgileri Neden Kullanıyoruz?
-          </h2>
+        <section>
+          <h2 className="text-lg font-semibold">2. Bilgileri Neden Kullanıyoruz?</h2>
           <p className="mt-2 text-muted-foreground">
             Kişisel verileri; hesap oluşturma ve yönetme, kimlik doğrulama ve yetkilendirme,
             çalışma alanı ve kullanıcı rolleri yönetme, geri bildirim/oy/roadmap işleme, AI
@@ -103,10 +99,8 @@ export default function PrivacyPage() {
           </p>
         </section>
 
-        <section aria-labelledby="gizlilik-3-baslik">
-          <h2 id="gizlilik-3-baslik" className="text-lg font-semibold">
-            3. AI Özellikleri
-          </h2>
+        <section>
+          <h2 className="text-lg font-semibold">3. AI Özellikleri</h2>
           <p className="mt-2 text-muted-foreground">
             Feedl&apos;in bazı özellikleri üçüncü taraf yapay zeka ve makine öğrenimi
             servislerinden yararlanabilir. Bu özellikleri kullandığınızda, ilgili özellik
@@ -119,10 +113,8 @@ export default function PrivacyPage() {
           </p>
         </section>
 
-        <section aria-labelledby="gizlilik-4-baslik">
-          <h2 id="gizlilik-4-baslik" className="text-lg font-semibold">
-            4. Verilerin Paylaşılması
-          </h2>
+        <section>
+          <h2 className="text-lg font-semibold">4. Verilerin Paylaşılması</h2>
           <p className="mt-2 text-muted-foreground">
             Kişisel verileri; kimlik doğrulama, bulut hosting ve altyapı, veritabanı ve
             depolama, AI/ML, e-posta ve bildirim, ödeme ve Merchant of Record sağlayıcısı
@@ -136,10 +128,8 @@ export default function PrivacyPage() {
           </p>
         </section>
 
-        <section aria-labelledby="gizlilik-5-baslik">
-          <h2 id="gizlilik-5-baslik" className="text-lg font-semibold">
-            5. Çalışma Alanı ve Public Portal Verileri
-          </h2>
+        <section>
+          <h2 className="text-lg font-semibold">5. Çalışma Alanı ve Public Portal Verileri</h2>
           <p className="mt-2 text-muted-foreground">
             Feedl, müşterilerin kendi public geri bildirim portallarını oluşturmasına izin
             verir. Bir çalışma alanı yöneticisi içeriği public olarak yayınladığında, bu
@@ -150,10 +140,8 @@ export default function PrivacyPage() {
           </p>
         </section>
 
-        <section aria-labelledby="gizlilik-6-baslik">
-          <h2 id="gizlilik-6-baslik" className="text-lg font-semibold">
-            6. Çerezler ve Analitik
-          </h2>
+        <section>
+          <h2 className="text-lg font-semibold">6. Çerezler ve Analitik</h2>
           <p className="mt-2 text-muted-foreground">
             Feedl, zorunlu çerezler ve benzeri teknolojileri kullanabilir. Hizmetin kullanımı,
             performansı ve güvenilirliğini anlamak amacıyla analitik veya performans araçları
@@ -171,10 +159,8 @@ export default function PrivacyPage() {
           </p>
         </section>
 
-        <section aria-labelledby="gizlilik-7-baslik">
-          <h2 id="gizlilik-7-baslik" className="text-lg font-semibold">
-            7. Veri Saklama
-          </h2>
+        <section>
+          <h2 className="text-lg font-semibold">7. Veri Saklama</h2>
           <p className="mt-2 text-muted-foreground">
             Kişisel verileri yalnızca toplandıkları amaçların gerçekleştirilmesi için gerekli
             olduğu sürece veya yasal, muhasebesel, güvenlik ve uyuşmazlık çözümü ihtiyaçları
@@ -185,10 +171,8 @@ export default function PrivacyPage() {
           </p>
         </section>
 
-        <section aria-labelledby="gizlilik-8-baslik">
-          <h2 id="gizlilik-8-baslik" className="text-lg font-semibold">
-            8. Veri Güvenliği
-          </h2>
+        <section>
+          <h2 className="text-lg font-semibold">8. Veri Güvenliği</h2>
           <p className="mt-2 text-muted-foreground">
             Kişisel verileri yetkisiz erişim, değişiklik, kayıp veya kötüye kullanıma karşı
             korumak için erişim kontrolü, rol tabanlı yetkilendirme, şifreleme, güvenli
@@ -199,10 +183,8 @@ export default function PrivacyPage() {
           </p>
         </section>
 
-        <section aria-labelledby="gizlilik-9-baslik">
-          <h2 id="gizlilik-9-baslik" className="text-lg font-semibold">
-            9. Uluslararası Veri Aktarımları
-          </h2>
+        <section>
+          <h2 className="text-lg font-semibold">9. Uluslararası Veri Aktarımları</h2>
           <p className="mt-2 text-muted-foreground">
             Feedl ve hizmet sağlayıcıları farklı ülkelerde bulunabilir. Bu nedenle kişisel
             veriler ülkeniz dışındaki sunuculara veya hizmet sağlayıcılara aktarılabilir.
@@ -211,10 +193,8 @@ export default function PrivacyPage() {
           </p>
         </section>
 
-        <section aria-labelledby="gizlilik-10-baslik">
-          <h2 id="gizlilik-10-baslik" className="text-lg font-semibold">
-            10. Veri Koruma Hakları
-          </h2>
+        <section>
+          <h2 className="text-lg font-semibold">10. Veri Koruma Hakları</h2>
           <p className="mt-2 text-muted-foreground">
             Bulunduğunuz ülkeye ve uygulanabilir mevzuata bağlı olarak kişisel verilerinize
             erişme, yanlış verilerin düzeltilmesini isteme, verilerin silinmesini isteme, veri
@@ -228,10 +208,8 @@ export default function PrivacyPage() {
           </p>
         </section>
 
-        <section aria-labelledby="gizlilik-11-baslik">
-          <h2 id="gizlilik-11-baslik" className="text-lg font-semibold">
-            11. Çocukların Gizliliği
-          </h2>
+        <section>
+          <h2 className="text-lg font-semibold">11. Çocukların Gizliliği</h2>
           <p className="mt-2 text-muted-foreground">
             Feedl, çocuklara yönelik bir hizmet değildir. 13 yaşından küçük çocuklardan
             bilerek kişisel veri toplamayız. Uygulanabilir yerel mevzuat daha yüksek bir yaş
@@ -239,10 +217,8 @@ export default function PrivacyPage() {
           </p>
         </section>
 
-        <section aria-labelledby="gizlilik-12-baslik">
-          <h2 id="gizlilik-12-baslik" className="text-lg font-semibold">
-            12. Üçüncü Taraf Hizmetleri
-          </h2>
+        <section>
+          <h2 className="text-lg font-semibold">12. Üçüncü Taraf Hizmetleri</h2>
           <p className="mt-2 text-muted-foreground">
             Feedl&apos;in kullandığı üçüncü taraf hizmetlerin kendi gizlilik politikaları
             olabilir. Feedl, üçüncü taraf hizmetlerin kendi uygulamalarından, güvenlik
@@ -250,10 +226,8 @@ export default function PrivacyPage() {
           </p>
         </section>
 
-        <section aria-labelledby="gizlilik-13-baslik">
-          <h2 id="gizlilik-13-baslik" className="text-lg font-semibold">
-            13. Bu Politikadaki Değişiklikler
-          </h2>
+        <section>
+          <h2 className="text-lg font-semibold">13. Bu Politikadaki Değişiklikler</h2>
           <p className="mt-2 text-muted-foreground">
             Bu Politikayı zaman zaman güncelleyebiliriz. Önemli değişiklikler olduğunda
             uygulanabilir olduğu ölçüde kullanıcıları Hizmet üzerinden veya e-posta yoluyla
@@ -261,10 +235,8 @@ export default function PrivacyPage() {
           </p>
         </section>
 
-        <section aria-labelledby="gizlilik-14-baslik">
-          <h2 id="gizlilik-14-baslik" className="text-lg font-semibold">
-            14. İletişim
-          </h2>
+        <section>
+          <h2 className="text-lg font-semibold">14. İletişim</h2>
           <p className="mt-2 text-muted-foreground">
             Gizlilik, kişisel veri veya bu Politika hakkında sorularınız için:
             <br />
