@@ -31,7 +31,7 @@
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.45.2",
     "html-to-image": "^1.11.13",
-    "inngest": "^4.18.1",
+    "inngest": "^4.20.0",
     "lucide-react": "^1.44.0",
     "next": "^15.5.25",
     "next-themes": "^0.4.6",
